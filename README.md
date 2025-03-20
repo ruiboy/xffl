@@ -1,4 +1,6 @@
-# GFFL (GraphQL Fantasy Football League)
+# gffl 
+
+FFL on golang and graphql. Built with a lot of Cursor.
 
 A full-stack web application for managing a fantasy football league with GraphQL API.
 
