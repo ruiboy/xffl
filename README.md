@@ -106,6 +106,14 @@ To revert the migrations, you can run the down migration:
 psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_down.sql
 ```
 
+### Test Data
+
+Test data scripts are available in the `backend/db/test_scripts` directory. To insert test data:
+
+```bash
+psql -U postgres -d gffl -f backend/db/test_scripts/insert_test_clubs.sql
+```
+
 ### Verifying the Connection
 
 To verify that the database connection is working:

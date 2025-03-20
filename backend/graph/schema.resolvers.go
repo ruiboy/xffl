@@ -6,6 +6,9 @@ package graph
 
 import (
 	"context"
+	"gffl/db"
+	"gffl/graph/model"
+	"strconv"
 )
 
 // Echo is the resolver for the echo field.
@@ -16,6 +19,30 @@ func (r *mutationResolver) Echo(ctx context.Context, message string) (string, er
 // Hello is the resolver for the hello field.
 func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 	return "Hello from gFFL!", nil
+}
+
+// FflClubs is the resolver for the fflClubs field.
+func (r *queryResolver) FflClubs(ctx context.Context) ([]*model.FFLClub, error) {
+	var clubs []db.FFLClub
+	if err := db.DB.Find(&clubs).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert db.FFLClub to graph.FFLClub
+	result := make([]*model.FFLClub, len(clubs))
+	for i, club := range clubs {
+		result[i] = &model.FFLClub{
+			ID:        strconv.FormatUint(uint64(club.ID), 10),
+			Name:      club.Name,
+			CreatedAt: club.CreatedAt.String(),
+			UpdatedAt: club.UpdatedAt.String(),
+		}
+		if club.DeletedAt.Valid {
+			deletedAt := club.DeletedAt.Time.String()
+			result[i].DeletedAt = &deletedAt
+		}
+	}
+	return result, nil
 }
 
 // Mutation returns MutationResolver implementation.

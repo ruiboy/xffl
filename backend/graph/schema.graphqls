@@ -4,6 +4,15 @@
 
 type Query {
   hello: String!
+  fflClubs: [FFLClub!]!
+}
+
+type FFLClub {
+  id: ID!
+  name: String!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
 }
 
 type Mutation {
