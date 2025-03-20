@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gffl/db"
 	"gffl/graph"
 	"log"
 	"net/http"
@@ -22,6 +23,9 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+
+	// Initialize database connection
+	db.InitDB()
 
 	// Initialize GraphQL server
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))

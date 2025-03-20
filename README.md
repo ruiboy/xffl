@@ -25,6 +25,99 @@ gffl/
 - PostgreSQL 13 or later
 - npm or yarn
 
+## Database Setup
+
+The application uses PostgreSQL as its database. Here's how to set it up:
+
+### Installing PostgreSQL
+
+#### macOS
+```bash
+# Install PostgreSQL using Homebrew
+brew install postgresql@14
+
+# Start PostgreSQL as service
+brew services start postgresql@14
+# Or, if you don't want/need a background service you can just run:
+/usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14
+
+# Create the database
+createdb gffl
+
+# Create a PostgreSQL user (if not exists)
+createuser -s postgres
+
+# Set password for postgres user
+psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install PostgreSQL
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Create the database
+sudo -u postgres createdb gffl
+
+# Set password for postgres user
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+### Database Configuration
+
+The application uses environment variables for database configuration. A `.env` file is provided in the backend directory with the following default settings:
+
+```
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=gffl
+DB_PORT=5432
+```
+
+You can modify these values in the `.env` file to match your database setup.
+
+### Running Migrations
+
+The database schema is managed through SQL migration files in the `backend/db/migrations` directory. To apply the migrations:
+
+```bash
+# Connect to the database
+psql -U postgres -d gffl
+
+# Run the migration file
+\i backend/db/migrations/001_create_ffl_tables_up.sql
+```
+
+Alternatively, you can run the migration directly from the command line:
+
+```bash
+psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_up.sql
+```
+
+To revert the migrations, you can run the down migration:
+
+```bash
+psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_down.sql
+```
+
+### Verifying the Connection
+
+To verify that the database connection is working:
+
+1. Start the backend server:
+   ```bash
+   cd backend
+   go run main.go
+   ```
+
+2. Check the logs for any database connection errors. If there are no errors, the connection is successful.
+
 ## Backend Setup
 
 The backend is built with Go and uses gqlgen for GraphQL API generation.
