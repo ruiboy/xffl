@@ -2,9 +2,24 @@
 
 package model
 
+type CreateFFLPlayerInput struct {
+	Name   string `json:"name"`
+	ClubID string `json:"clubId"`
+}
+
 type FFLClub struct {
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	CreatedAt string       `json:"createdAt"`
+	UpdatedAt string       `json:"updatedAt"`
+	DeletedAt *string      `json:"deletedAt,omitempty"`
+	Players   []*FFLPlayer `json:"players"`
+}
+
+type FFLPlayer struct {
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
+	ClubID    string  `json:"clubId"`
 	CreatedAt string  `json:"createdAt"`
 	UpdatedAt string  `json:"updatedAt"`
 	DeletedAt *string `json:"deletedAt,omitempty"`
@@ -14,4 +29,9 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+type UpdateFFLPlayerInput struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }

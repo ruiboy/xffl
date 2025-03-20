@@ -16,6 +16,75 @@ func (r *mutationResolver) Echo(ctx context.Context, message string) (string, er
 	return message, nil
 }
 
+// CreateFFLPlayer is the resolver for the createFFLPlayer field.
+func (r *mutationResolver) CreateFFLPlayer(ctx context.Context, input model.CreateFFLPlayerInput) (*model.FFLPlayer, error) {
+	// Convert clubId from string to uint
+	clubID, err := strconv.ParseUint(input.ClubID, 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	player := db.FFLPlayer{
+		Name:   input.Name,
+		ClubID: uint(clubID),
+	}
+
+	if err := db.DB.Create(&player).Error; err != nil {
+		return nil, err
+	}
+
+	return &model.FFLPlayer{
+		ID:        strconv.FormatUint(uint64(player.ID), 10),
+		Name:      player.Name,
+		ClubID:    strconv.FormatUint(uint64(player.ClubID), 10),
+		CreatedAt: player.CreatedAt.String(),
+		UpdatedAt: player.UpdatedAt.String(),
+	}, nil
+}
+
+// UpdateFFLPlayer is the resolver for the updateFFLPlayer field.
+func (r *mutationResolver) UpdateFFLPlayer(ctx context.Context, input model.UpdateFFLPlayerInput) (*model.FFLPlayer, error) {
+	// Convert id from string to uint
+	id, err := strconv.ParseUint(input.ID, 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	var player db.FFLPlayer
+	if err := db.DB.First(&player, id).Error; err != nil {
+		return nil, err
+	}
+
+	player.Name = input.Name
+	if err := db.DB.Save(&player).Error; err != nil {
+		return nil, err
+	}
+
+	return &model.FFLPlayer{
+		ID:        strconv.FormatUint(uint64(player.ID), 10),
+		Name:      player.Name,
+		ClubID:    strconv.FormatUint(uint64(player.ClubID), 10),
+		CreatedAt: player.CreatedAt.String(),
+		UpdatedAt: player.UpdatedAt.String(),
+	}, nil
+}
+
+// DeleteFFLPlayer is the resolver for the deleteFFLPlayer field.
+func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool, error) {
+	// Convert id from string to uint
+	playerID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		return false, err
+	}
+
+	result := db.DB.Delete(&db.FFLPlayer{}, playerID)
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return result.RowsAffected > 0, nil
+}
+
 // Hello is the resolver for the hello field.
 func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 	return "Hello from gFFL!", nil
@@ -39,6 +108,42 @@ func (r *queryResolver) FflClubs(ctx context.Context) ([]*model.FFLClub, error) 
 		}
 		if club.DeletedAt.Valid {
 			deletedAt := club.DeletedAt.Time.String()
+			result[i].DeletedAt = &deletedAt
+		}
+	}
+	return result, nil
+}
+
+// FflPlayers is the resolver for the fflPlayers field.
+func (r *queryResolver) FflPlayers(ctx context.Context, clubID *string) ([]*model.FFLPlayer, error) {
+	var players []db.FFLPlayer
+	query := db.DB
+
+	// Apply club filter if provided
+	if clubID != nil {
+		id, err := strconv.ParseUint(*clubID, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		query = query.Where("club_id = ?", id)
+	}
+
+	if err := query.Find(&players).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert db.FFLPlayer to graph.FFLPlayer
+	result := make([]*model.FFLPlayer, len(players))
+	for i, player := range players {
+		result[i] = &model.FFLPlayer{
+			ID:        strconv.FormatUint(uint64(player.ID), 10),
+			Name:      player.Name,
+			ClubID:    strconv.FormatUint(uint64(player.ClubID), 10),
+			CreatedAt: player.CreatedAt.String(),
+			UpdatedAt: player.UpdatedAt.String(),
+		}
+		if player.DeletedAt.Valid {
+			deletedAt := player.DeletedAt.Time.String()
 			result[i].DeletedAt = &deletedAt
 		}
 	}
