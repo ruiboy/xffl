@@ -1,96 +1,96 @@
 <template>
-  <div class="container mx-auto p-8">
-    <div class="flex justify-between items-center mb-6">
+  <div class="players-container">
+    <div class="players-controls">
       <div class="w-72">
         <label class="block text-sm font-medium text-gray-700 mb-2">Select Club</label>
-        <select
+        <Dropdown
           v-model="selectedClub"
-          class="w-full p-2 border rounded"
-          :disabled="loading.clubs"
-        >
-          <option value="">Select a club</option>
-          <option v-for="club in clubs" :key="club.id" :value="club.id">
-            {{ club.name }}
-          </option>
-        </select>
+          :options="clubs"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select a club"
+          :loading="loading.clubs"
+          class="w-full"
+        />
       </div>
-      <button
+      <Button
         @click="openCreateModal"
-        class="bg-blue-500 text-white px-4 py-2 rounded"
+        icon="pi pi-plus"
+        label="Add Player"
         :disabled="!selectedClub"
+      />
+    </div>
+
+    <div v-if="selectedClub">
+      <DataTable
+        :value="players"
+        :loading="loading.players"
+        stripedRows
+        class="p-datatable-sm"
       >
-        Add Player
-      </button>
-    </div>
-
-    <div v-if="selectedClub" class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="player in players" :key="player.id">
-            <td class="px-6 py-4 whitespace-nowrap">{{ player.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(player.createdAt) }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(player.updatedAt) }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <button
-                @click="openEditModal(player)"
-                class="text-blue-600 hover:text-blue-900 mr-2"
-              >
-                Edit
-              </button>
-              <button
-                @click="handleDeletePlayer(player.id)"
-                class="text-red-600 hover:text-red-900"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-            {{ editingPlayer ? 'Edit Player' : 'Add Player' }}
-          </h3>
-          <div class="mt-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-            <input
-              v-model="playerName"
-              type="text"
-              class="w-full p-2 border rounded"
-              placeholder="Enter player name"
+        <Column field="name" header="Name" sortable></Column>
+        <Column field="createdAt" header="Created At" sortable>
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.createdAt) }}
+          </template>
+        </Column>
+        <Column field="updatedAt" header="Updated At" sortable>
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.updatedAt) }}
+          </template>
+        </Column>
+        <Column header="Actions" style="width: 150px">
+          <template #body="slotProps">
+            <Button
+              icon="pi pi-pencil"
+              class="p-button-text p-button-rounded p-button-sm mr-2"
+              @click="openEditModal(slotProps.data)"
             />
-          </div>
-          <div class="mt-4 flex justify-end space-x-2">
-            <button
-              @click="closeModal"
-              class="bg-gray-200 text-gray-800 px-4 py-2 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              @click="editingPlayer ? handleUpdatePlayer() : handleCreatePlayer()"
-              class="bg-blue-500 text-white px-4 py-2 rounded"
-              :disabled="!playerName"
-            >
-              {{ editingPlayer ? 'Update' : 'Create' }}
-            </button>
-          </div>
+            <Button
+              icon="pi pi-trash"
+              class="p-button-text p-button-rounded p-button-danger p-button-sm"
+              @click="handleDeletePlayer(slotProps.data.id)"
+            />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
+
+    <Dialog
+      v-model:visible="showModal"
+      :header="editingPlayer ? 'Edit Player' : 'Add Player'"
+      :modal="true"
+      :style="{ width: '450px' }"
+    >
+      <div class="p-fluid">
+        <div class="field">
+          <label for="playerName">Name</label>
+          <InputText
+            id="playerName"
+            v-model="playerName"
+            placeholder="Enter player name"
+            :class="{ 'p-invalid': submitted && !playerName }"
+          />
+          <small class="p-error" v-if="submitted && !playerName">Name is required.</small>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          class="p-button-text"
+          @click="closeModal"
+        />
+        <Button
+          :label="editingPlayer ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          @click="editingPlayer ? handleUpdatePlayer() : handleCreatePlayer()"
+          :disabled="!playerName"
+        />
+      </template>
+    </Dialog>
+
+    <ConfirmDialog></ConfirmDialog>
   </div>
 </template>
 
@@ -98,6 +98,14 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useQuery, useMutation } from '@vue/apollo-composable';
 import gql from 'graphql-tag';
+import Button from 'primevue/button';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Dropdown from 'primevue/dropdown';
+import ConfirmDialog from 'primevue/confirmdialog';
+import { useConfirm } from 'primevue/useconfirm';
 
 const GET_CLUBS = gql`
   query GetClubs {
@@ -271,14 +279,40 @@ const handleUpdatePlayer = async () => {
   }
 };
 
-const handleDeletePlayer = async (id: string) => {
-  if (!confirm('Are you sure you want to delete this player?')) return;
+const confirm = useConfirm();
 
-  try {
-    await deletePlayer({ id });
-    refetchPlayers();
-  } catch (error) {
-    console.error('Error deleting player:', error);
-  }
+const handleDeletePlayer = (id: string) => {
+  confirm.require({
+    message: 'Are you sure you want to delete this player?',
+    header: 'Delete Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: () => {
+      deletePlayer({ id });
+    },
+  });
 };
-</script> 
+</script>
+
+<style scoped>
+.players-container {
+  max-width: 700px;
+  margin: 40px auto 0 auto;
+  padding: 32px 24px 48px 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+
+.players-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.p-datatable {
+  margin-top: 24px;
+}
+</style>
