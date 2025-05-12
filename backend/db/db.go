@@ -51,12 +51,6 @@ func InitDB() {
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
-
-	// Auto migrate the schema
-	err = DB.AutoMigrate(&FFLClub{}, &FFLPlayer{})
-	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
-	}
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
