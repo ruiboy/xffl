@@ -1,6 +1,6 @@
 # gffl 
 
-FFL on golang and graphql. Built with a lot of Cursor.
+FFL on golang and graphql. Built with a lot of code agent.
 
 A full-stack web application for managing a fantasy football league with GraphQL API.
 
@@ -38,6 +38,7 @@ brew install postgresql@14
 
 # Start PostgreSQL as service
 brew services start postgresql@14
+
 # Or, if you don't want/need a background service you can just run:
 /usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14
 
