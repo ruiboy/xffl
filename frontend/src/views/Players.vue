@@ -1,59 +1,78 @@
 <template>
-  <div class="players-container">
-    <div class="players-controls">
-      <div class="w-72">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Select Club</label>
-        <Dropdown
-          v-model="selectedClub"
-          :options="clubs"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="Select a club"
-          :loading="loading.clubs"
-          class="w-full"
+  <div class="max-w-6xl mx-auto">
+    <div class="bg-surface-0 dark:bg-surface-800 rounded-lg shadow-lg p-6">
+      <div class="mb-6">
+        <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-bold mb-2">Player Management</h1>
+        <p class="text-surface-600 dark:text-surface-400">Manage players across different clubs</p>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div class="w-full sm:w-72">
+          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Select Club</label>
+          <Dropdown
+            v-model="selectedClub"
+            :options="clubs"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Select a club"
+            :loading="loading.clubs"
+            class="w-full"
+          />
+        </div>
+        <Button
+          @click="openCreateModal"
+          icon="pi pi-plus"
+          label="Add Player"
+          :disabled="!selectedClub"
+          severity="primary"
+          class="w-full sm:w-auto"
         />
       </div>
-      <Button
-        @click="openCreateModal"
-        icon="pi pi-plus"
-        label="Add Player"
-        :disabled="!selectedClub"
-      />
-    </div>
 
-    <div v-if="selectedClub">
-      <DataTable
-        :value="players"
-        :loading="loading.players"
-        stripedRows
-        class="p-datatable-sm"
-      >
-        <Column field="name" header="Name" sortable></Column>
-        <Column field="createdAt" header="Created At" sortable>
-          <template #body="slotProps">
-            {{ formatDate(slotProps.data.createdAt) }}
-          </template>
-        </Column>
-        <Column field="updatedAt" header="Updated At" sortable>
-          <template #body="slotProps">
-            {{ formatDate(slotProps.data.updatedAt) }}
-          </template>
-        </Column>
-        <Column header="Actions" style="width: 150px">
-          <template #body="slotProps">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-text p-button-rounded p-button-sm mr-2"
-              @click="openEditModal(slotProps.data)"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-rounded p-button-danger p-button-sm"
-              @click="handleDeletePlayer(slotProps.data.id)"
-            />
-          </template>
-        </Column>
-      </DataTable>
+      <div v-if="selectedClub">
+        <DataTable
+          :value="players"
+          :loading="loading.players"
+          stripedRows
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[5, 10, 20]"
+          responsiveLayout="scroll"
+          class="p-datatable-sm"
+        >
+          <Column field="name" header="Name" sortable class="font-semibold"></Column>
+          <Column field="createdAt" header="Created At" sortable>
+            <template #body="slotProps">
+              <span class="text-surface-600 dark:text-surface-400">{{ formatDate(slotProps.data.createdAt) }}</span>
+            </template>
+          </Column>
+          <Column field="updatedAt" header="Updated At" sortable>
+            <template #body="slotProps">
+              <span class="text-surface-600 dark:text-surface-400">{{ formatDate(slotProps.data.updatedAt) }}</span>
+            </template>
+          </Column>
+          <Column header="Actions" class="w-32">
+            <template #body="slotProps">
+              <div class="flex gap-2">
+                <Button
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  @click="openEditModal(slotProps.data)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  outlined
+                  size="small"
+                  @click="handleDeletePlayer(slotProps.data.id)"
+                />
+              </div>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </div>
 
     <Dialog
@@ -62,31 +81,36 @@
       :modal="true"
       :style="{ width: '450px' }"
     >
-      <div class="p-fluid">
-        <div class="field">
-          <label for="playerName">Name</label>
+      <div class="p-6">
+        <div class="mb-4">
+          <label for="playerName" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Name</label>
           <InputText
             id="playerName"
             v-model="playerName"
             placeholder="Enter player name"
-            :class="{ 'p-invalid': submitted && !playerName }"
+            class="w-full"
+            :invalid="submitted && !playerName"
           />
-          <small class="p-error" v-if="submitted && !playerName">Name is required.</small>
+          <small class="text-red-500 text-sm mt-1 block" v-if="submitted && !playerName">Name is required.</small>
         </div>
       </div>
       <template #footer>
-        <Button
-          label="Cancel"
-          icon="pi pi-times"
-          class="p-button-text"
-          @click="closeModal"
-        />
-        <Button
-          :label="editingPlayer ? 'Update' : 'Create'"
-          icon="pi pi-check"
-          @click="editingPlayer ? handleUpdatePlayer() : handleCreatePlayer()"
-          :disabled="!playerName"
-        />
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            icon="pi pi-times"
+            severity="secondary"
+            outlined
+            @click="closeModal"
+          />
+          <Button
+            :label="editingPlayer ? 'Update' : 'Create'"
+            icon="pi pi-check"
+            severity="primary"
+            @click="editingPlayer ? handleUpdatePlayer() : handleCreatePlayer()"
+            :disabled="!playerName"
+          />
+        </div>
       </template>
     </Dialog>
 
@@ -292,27 +316,5 @@ const handleDeletePlayer = (id: string) => {
     },
   });
 };
+const submitted = ref(false);
 </script>
-
-<style scoped>
-.players-container {
-  max-width: 700px;
-  margin: 40px auto 0 auto;
-  padding: 32px 24px 48px 24px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-}
-
-.players-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  gap: 24px;
-}
-
-.p-datatable {
-  margin-top: 24px;
-}
-</style>

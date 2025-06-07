@@ -15,8 +15,8 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import App from './App.vue'
 import router from './router'
 
-// Import PrimeVue styles
-import 'primevue/resources/themes/lara-light-blue/theme.css'
+// Import PrimeVue CSS theme
+import 'primevue/resources/themes/aura-dark-lime/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 
@@ -43,7 +43,9 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(PrimeVue, { ripple: true })
+app.use(PrimeVue, { 
+  ripple: true
+})
 app.use(ConfirmationService)
 app.provide(DefaultApolloClient, apolloClient)
 

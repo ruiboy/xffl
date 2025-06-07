@@ -1,53 +1,31 @@
-that<template>
-  <div class="app">
-    <nav>
-      <div class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/players">Players</router-link>
+<template>
+  <div class="min-h-screen bg-surface-0 dark:bg-surface-900">
+    <nav class="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-4">
+      <div class="max-w-7xl mx-auto">
+        <div class="flex justify-center space-x-6">
+          <Button 
+            :label="'Home'"
+            @click="$router.push('/')"
+            :outlined="$route.path !== '/'"
+            :severity="$route.path === '/' ? 'primary' : 'secondary'"
+            class="px-6 py-2"
+          />
+          <Button 
+            :label="'Players'"
+            @click="$router.push('/players')"
+            :outlined="$route.path !== '/players'"
+            :severity="$route.path === '/players' ? 'primary' : 'secondary'"
+            class="px-6 py-2"
+          />
+        </div>
       </div>
     </nav>
-    <router-view></router-view>
+    <main class="max-w-7xl mx-auto p-6">
+      <router-view></router-view>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 // Component logic will go here
-</script>
-
-<style>
-.app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-nav {
-  padding: 20px 0;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-nav h1 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 24px;
-}
-
-.nav-links {
-  display: flex;
-  justify-content: center;
-  flex: 1;
-}
-
-nav a {
-  color: #2c3e50;
-  text-decoration: none;
-  margin-right: 10px;
-}
-
-nav a.router-link-active {
-  color: #42b983;
-}
-</style> 
+</script> 

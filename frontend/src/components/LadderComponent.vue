@@ -1,32 +1,66 @@
 <template>
-  <div class="ladder">
-    <h1>League Ladder</h1>
-    <div class="ladder-table">
-      <div class="table-header">
-        <div class="pos">Pos</div>
-        <div class="team">Team</div>
-        <div class="played">P</div>
-        <div class="won">W</div>
-        <div class="lost">L</div>
-        <div class="percentage">%</div>
-        <div class="points-for">PF</div>
-        <div class="points-against">PA</div>
-      </div>
-      <div 
-        v-for="(team, index) in sortedTeams" 
-        :key="team.id"
-        class="table-row"
-        :class="{ 'even': index % 2 === 0 }"
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-surface-900 dark:text-surface-0 text-4xl font-bold mb-2">League Ladder</h1>
+      <p class="text-surface-600 dark:text-surface-400">Current team standings and statistics</p>
+    </div>
+    
+    <div class="bg-surface-0 dark:bg-surface-800 rounded-lg shadow-lg">
+      <DataTable 
+        :value="sortedTeams" 
+        :paginator="false"
+        responsiveLayout="scroll"
+        class="p-datatable-sm"
+        stripedRows
       >
-        <div class="pos">{{ index + 1 }}</div>
-        <div class="team">{{ team.name }}</div>
-        <div class="played">{{ team.played }}</div>
-        <div class="won">{{ team.won }}</div>
-        <div class="lost">{{ team.lost }}</div>
-        <div class="percentage">{{ team.percentage.toFixed(1) }}%</div>
-        <div class="points-for">{{ team.pointsFor }}</div>
-        <div class="points-against">{{ team.pointsAgainst }}</div>
-      </div>
+        <Column field="position" header="Pos" class="text-center font-bold w-16">
+          <template #body="{ index }">
+            <div class="text-primary-500 font-bold">{{ index + 1 }}</div>
+          </template>
+        </Column>
+        
+        <Column field="name" header="Team" class="font-semibold min-w-48">
+          <template #body="{ data }">
+            <div class="font-semibold text-surface-900 dark:text-surface-0">{{ data.name }}</div>
+          </template>
+        </Column>
+        
+        <Column field="played" header="P" class="text-center w-12">
+          <template #body="{ data }">
+            <div class="font-mono">{{ data.played }}</div>
+          </template>
+        </Column>
+        
+        <Column field="won" header="W" class="text-center w-12">
+          <template #body="{ data }">
+            <div class="font-mono text-green-600 dark:text-green-400">{{ data.won }}</div>
+          </template>
+        </Column>
+        
+        <Column field="lost" header="L" class="text-center w-12">
+          <template #body="{ data }">
+            <div class="font-mono text-red-600 dark:text-red-400">{{ data.lost }}</div>
+          </template>
+        </Column>
+        
+        <Column field="percentage" header="Win %" class="text-center w-20">
+          <template #body="{ data }">
+            <div class="font-mono font-bold text-primary-500">{{ data.percentage.toFixed(1) }}%</div>
+          </template>
+        </Column>
+        
+        <Column field="pointsFor" header="PF" class="text-center w-20 hidden md:table-cell">
+          <template #body="{ data }">
+            <div class="font-mono text-green-600 dark:text-green-400">{{ data.pointsFor }}</div>
+          </template>
+        </Column>
+        
+        <Column field="pointsAgainst" header="PA" class="text-center w-20 hidden md:table-cell">
+          <template #body="{ data }">
+            <div class="font-mono text-red-600 dark:text-red-400">{{ data.pointsAgainst }}</div>
+          </template>
+        </Column>
+      </DataTable>
     </div>
   </div>
 </template>
@@ -159,103 +193,3 @@ const sortedTeams = computed(() => {
   })
 })
 </script>
-
-<style scoped>
-.ladder {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-h1 {
-  text-align: center;
-  color: #2c3e50;
-  margin-bottom: 2rem;
-}
-
-.ladder-table {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.table-header,
-.table-row {
-  display: grid;
-  grid-template-columns: 50px 2fr 50px 50px 50px 80px 80px 80px;
-  align-items: center;
-  padding: 12px 16px;
-  gap: 8px;
-}
-
-.table-header {
-  background-color: #f8f9fa;
-  font-weight: bold;
-  color: #2c3e50;
-  border-bottom: 2px solid #e9ecef;
-}
-
-.table-row {
-  border-bottom: 1px solid #e9ecef;
-  transition: background-color 0.2s;
-}
-
-.table-row:hover {
-  background-color: #f8f9fa;
-}
-
-.table-row.even {
-  background-color: #fdfdfd;
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.pos {
-  text-align: center;
-  font-weight: bold;
-  color: #42b983;
-}
-
-.team {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.played,
-.won,
-.lost,
-.percentage,
-.points-for,
-.points-against {
-  text-align: center;
-  font-family: 'Courier New', monospace;
-}
-
-.percentage {
-  font-weight: bold;
-  color: #42b983;
-}
-
-.points-for {
-  color: #28a745;
-}
-
-.points-against {
-  color: #dc3545;
-}
-
-@media (max-width: 768px) {
-  .table-header,
-  .table-row {
-    grid-template-columns: 40px 1fr 40px 40px 40px 60px;
-    font-size: 14px;
-  }
-  
-  .points-for,
-  .points-against {
-    display: none;
-  }
-}
-</style>
