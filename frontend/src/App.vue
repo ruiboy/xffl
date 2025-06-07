@@ -1,8 +1,9 @@
-<template>
+that<template>
   <div class="app">
     <nav>
       <div class="nav-links">
         <router-link to="/">Home</router-link>
+        <router-link to="/ladder">Ladder</router-link>
         <router-link to="/players">Players</router-link>
       </div>
     </nav>
