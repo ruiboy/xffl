@@ -4,3 +4,4 @@ java adoptopenjdk-8.0.402+6 zulu-8.76.0.17
 nodejs 18.20.5
 golang 1.21.0
 pnpm 7.25.0
+direnv 2.36.0
