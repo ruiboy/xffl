@@ -1,4 +1,4 @@
-That<template>
+<template>
   <div class="ladder">
     <h1>League Ladder</h1>
     <div class="ladder-table">
