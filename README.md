@@ -37,6 +37,8 @@ The application uses PostgreSQL as its database. Here's how to set it up:
 brew install postgresql@14
 
 # Start PostgreSQL as service
+# If using port other than 5432, you may need to adjust configuration, eg at
+# /opt/homebrew/var/postgresql@14/postgresql.conf
 brew services start postgresql@14
 
 # Or, if you don't want/need a background service you can just run:
@@ -78,7 +80,7 @@ DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=gffl
-DB_PORT=5432
+DB_PORT=5423
 ```
 
 You can modify these values in the `.env` file to match your database setup.
