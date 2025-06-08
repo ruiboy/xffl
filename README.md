@@ -228,16 +228,16 @@ skinparam class {
   BackgroundColor<<player>> LightGreen
 }
 
-class AflLeague <<league>> {
+class League <<league>> {
   eg. AFL
 }
-class AflSeason <<league>> {
+class Season <<league>> {
   eg. AFL 2025 
 }
-class AflRound <<league>> {
+class Round <<league>> {
   eg. AFL 2025 Rd 1
 }
-class AflMatch <<league>> {
+class Match <<league>> {
   eg. CROWS v NM in AFL 2025 Rd 1
   home_club_match_id
   away_club_match_id
@@ -248,10 +248,10 @@ class AflMatch <<league>> {
   result: home_win|away_win|draw|no_result
 }
 
-class AflClub <<club>> {
+class Club <<club>> {
   eg. CROWS
 }
-class AflClubSeason <<club>> {
+class ClubSeason <<club>> {
   eg. CROWS in AFL 2025
   --
   <<denormalized>>
@@ -263,7 +263,7 @@ class AflClubSeason <<club>> {
   against
   premiership_points
 }
-class AflClubMatch <<club>> {
+class ClubMatch <<club>> {
   eg. CROWS in CROWS v NM in AFL 2025 Rd 1
   rushed_behinds
   --
@@ -272,13 +272,13 @@ class AflClubMatch <<club>> {
   premiership_points
 }
 
-class AflPlayer <<player>> {
+class Player <<player>> {
   eg. Dawson
 }
-class AflPlayerSeason <<player>> {
+class PlayerSeason <<player>> {
   eg. Dawson in CROWS in AFL 2025
 }
-class AflPlayerMatch <<player>> {
+class PlayerMatch <<player>> {
   eg. Dawson in CROWS in CROWS v NM in AFL 2025 Rd 1
   kicks
   handballs
@@ -289,21 +289,21 @@ class AflPlayerMatch <<player>> {
   behinds
 }
 
-AflLeague *-- "0..*" AflSeason
-AflSeason *-- "0..*" AflRound
-AflRound *-- "0..*" AflMatch
+League *-- "0..*" Season
+Season *-- "0..*" Round
+Round *-- "0..*" Match
 
-AflClub *-- "0..*" AflClubSeason
-AflSeason *-- "0..*" AflClubSeason
+Club *-- "0..*" ClubSeason
+Season *-- "0..*" ClubSeason
 
-AflMatch *-- "2" AflClubMatch
-AflClubSeason *-- "0..*" AflClubMatch
+Match *-- "2" ClubMatch
+ClubSeason *-- "0..*" ClubMatch
 
-AflPlayer *-- "0..*" AflPlayerSeason
-AflClubSeason *-- "0..*" AflPlayerSeason
+Player *-- "0..*" PlayerSeason
+ClubSeason *-- "0..*" PlayerSeason
 
-AflClubMatch *-- "0..*" AflPlayerMatch
-AflPlayerSeason *-- "0..*" AflPlayerMatch
+ClubMatch *-- "0..*" PlayerMatch
+PlayerSeason *-- "0..*" PlayerMatch
 
 @enduml
 ```
@@ -320,16 +320,16 @@ skinparam class {
   BackgroundColor<<player>> LightGreen
 }
 
-class FflLeague <<league>> {
+class League <<league>> {
   eg. FFL
 }
-class FflSeason <<league>> {
+class Season <<league>> {
   eg. FFL 2025 
 }
-class FflRound <<league>> {
+class Round <<league>> {
   eg. FFL 2025 Rd 1
 }
-class FflMatch <<league>> {
+class Match <<league>> {
   eg. ROOS v FRED in FFL 2025 Rd 1
   match_style: versus|bye|super_bye
   clubs[]
@@ -338,10 +338,10 @@ class FflMatch <<league>> {
   result
 }
 
-class FflClub <<club>> {
+class Club <<club>> {
   eg. ROOS
 }
-class FflClubSeason <<club>> {
+class ClubSeason <<club>> {
   eg. ROOS in FFL 2025
   --
   <<denormalized>>
@@ -354,7 +354,7 @@ class FflClubSeason <<club>> {
   extra_points
   premiership_points
 }
-class FflClubMatch <<club>> {
+class ClubMatch <<club>> {
   eg. ROOS in ROOS v FRED in FFL 2025 Rd 1
   --
   <<denormalized>>
@@ -362,15 +362,15 @@ class FflClubMatch <<club>> {
   premiership_points
 }
 
-class FflPlayer <<player>> {
+class Player <<player>> {
   eg. Dawson
 }
-class FflPlayerSeason <<player>> {
+class PlayerSeason <<player>> {
   eg. Dawson in ROOS in FFL 2025
   from_round_id
   to_round_id
 }
-class FflPlayerMatch <<player>> {
+class PlayerMatch <<player>> {
   eg. Dawson in ROOS in ROOS v FRED in FFL 2025 Rd 1
   position
   interchange_positions
@@ -378,21 +378,21 @@ class FflPlayerMatch <<player>> {
   score
 }
 
-FflLeague *-- "0..*" FflSeason
-FflSeason *-- "0..*" FflRound
-FflRound *-- "0..*" FflMatch
+League *-- "0..*" Season
+Season *-- "0..*" Round
+Round *-- "0..*" Match
 
-FflClub *-- "0..*" FflClubSeason
-FflSeason *-- "0..*" FflClubSeason
+Club *-- "0..*" ClubSeason
+Season *-- "0..*" ClubSeason
 
-FflMatch *-- "2" FflClubMatch
-FflClubSeason *-- "0..*" FflClubMatch
+Match *-- "2" ClubMatch
+ClubSeason *-- "0..*" ClubMatch
 
-FflPlayer *-- "0..*" FflPlayerSeason
-FflClubSeason *-- "0..*" FflPlayerSeason
+Player *-- "0..*" PlayerSeason
+ClubSeason *-- "0..*" PlayerSeason
 
-FflClubMatch *-- "0..*" FflPlayerMatch
-FflPlayerSeason *-- "0..*" FflPlayerMatch
+ClubMatch *-- "0..*" PlayerMatch
+PlayerSeason *-- "0..*" PlayerMatch
 
 @enduml
 ```
