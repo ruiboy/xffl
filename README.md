@@ -208,19 +208,191 @@ The frontend will be available at `http://localhost:3000`.
    - Frontend: http://localhost:3000
    - GraphQL Playground: http://localhost:8080
 
-## GraphQL API
+## Architecture
 
-The backend provides a GraphQL API with the following features:
-- Query and mutation support
-- CORS configuration for frontend access
-- GraphQL playground for testing
-- Automatic persisted queries
-- Query caching
+### Data Model
 
-## Contributing
+The application is designed to manage two types of leagues: AFL (Australian Football League) and FFL (Fantasy Football League). Each league has its own set of entities, including seasons, rounds, matches, clubs, and players.
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+Ostensibly, data is stored in first normal form (1NF). However, at this stage, to optimize read performance for the frontend, some data is denormalized. This includes pre-calculated fields like scores, premiership points, and match results.
+
+#### AFL League Data Model
+
+```plantuml 
+@startuml
+hide empty members
+
+skinparam class {
+  BackgroundColor<<league>> Gold
+  BackgroundColor<<club>> LightBlue 
+  BackgroundColor<<player>> LightGreen
+}
+
+class AflLeague <<league>> {
+  eg. AFL
+}
+class AflSeason <<league>> {
+  eg. AFL 2025 
+}
+class AflRound <<league>> {
+  eg. AFL 2025 Rd 1
+}
+class AflMatch <<league>> {
+  eg. CROWS v NM in AFL 2025 Rd 1
+  home_club_match_id
+  away_club_match_id
+  venue
+  start_dt
+  --
+  <<denormalized>>
+  result: home_win|away_win|draw|no_result
+}
+
+class AflClub <<club>> {
+  eg. CROWS
+}
+class AflClubSeason <<club>> {
+  eg. CROWS in AFL 2025
+  --
+  <<denormalized>>
+  played
+  won
+  lost
+  drawn
+  for
+  against
+  premiership_points
+}
+class AflClubMatch <<club>> {
+  eg. CROWS in CROWS v NM in AFL 2025 Rd 1
+  rushed_behinds
+  --
+  <<denormalized>>
+  score
+  premiership_points
+}
+
+class AflPlayer <<player>> {
+  eg. Dawson
+}
+class AflPlayerSeason <<player>> {
+  eg. Dawson in CROWS in AFL 2025
+}
+class AflPlayerMatch <<player>> {
+  eg. Dawson in CROWS in CROWS v NM in AFL 2025 Rd 1
+  kicks
+  handballs
+  marks
+  hitouts
+  tackles
+  goals
+  behinds
+}
+
+AflLeague *-- "0..*" AflSeason
+AflSeason *-- "0..*" AflRound
+AflRound *-- "0..*" AflMatch
+
+AflClub *-- "0..*" AflClubSeason
+AflSeason *-- "0..*" AflClubSeason
+
+AflMatch *-- "2" AflClubMatch
+AflClubSeason *-- "0..*" AflClubMatch
+
+AflPlayer *-- "0..*" AflPlayerSeason
+AflClubSeason *-- "0..*" AflPlayerSeason
+
+AflClubMatch *-- "0..*" AflPlayerMatch
+AflPlayerSeason *-- "0..*" AflPlayerMatch
+
+@enduml
+```
+
+#### FFL League Data Model
+
+```plantuml 
+@startuml
+hide empty members
+
+skinparam class {
+  BackgroundColor<<league>> Gold
+  BackgroundColor<<club>> LightBlue 
+  BackgroundColor<<player>> LightGreen
+}
+
+class FflLeague <<league>> {
+  eg. FFL
+}
+class FflSeason <<league>> {
+  eg. FFL 2025 
+}
+class FflRound <<league>> {
+  eg. FFL 2025 Rd 1
+}
+class FflMatch <<league>> {
+  eg. ROOS v FRED in FFL 2025 Rd 1
+  match_style: versus|bye|super_bye
+  clubs[]
+  --
+  <<denormalized>>
+  result
+}
+
+class FflClub <<club>> {
+  eg. ROOS
+}
+class FflClubSeason <<club>> {
+  eg. ROOS in FFL 2025
+  --
+  <<denormalized>>
+  played
+  won
+  lost
+  drawn
+  for
+  against
+  extra_points
+  premiership_points
+}
+class FflClubMatch <<club>> {
+  eg. ROOS in ROOS v FRED in FFL 2025 Rd 1
+  --
+  <<denormalized>>
+  score
+  premiership_points
+}
+
+class FflPlayer <<player>> {
+  eg. Dawson
+}
+class FflPlayerSeason <<player>> {
+  eg. Dawson in ROOS in FFL 2025
+  from_round_id
+  to_round_id
+}
+class FflPlayerMatch <<player>> {
+  eg. Dawson in ROOS in ROOS v FRED in FFL 2025 Rd 1
+  position
+  interchange_positions
+  status: dnp|subbed_in
+  score
+}
+
+FflLeague *-- "0..*" FflSeason
+FflSeason *-- "0..*" FflRound
+FflRound *-- "0..*" FflMatch
+
+FflClub *-- "0..*" FflClubSeason
+FflSeason *-- "0..*" FflClubSeason
+
+FflMatch *-- "2" FflClubMatch
+FflClubSeason *-- "0..*" FflClubMatch
+
+FflPlayer *-- "0..*" FflPlayerSeason
+FflClubSeason *-- "0..*" FflPlayerSeason
+
+FflClubMatch *-- "0..*" FflPlayerMatch
+FflPlayerSeason *-- "0..*" FflPlayerMatch
+
+@enduml
+```
