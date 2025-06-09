@@ -1,8 +1,6 @@
 package main
 
 import (
-	"gffl/db"
-	"gffl/graph"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +12,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"gffl/internal/adapters/graphql"
+	"gffl/internal/adapters/persistence"
+	"gffl/internal/application"
+	"gffl/internal/infrastructure"
 )
 
 const defaultPort = "8080"
@@ -25,10 +28,24 @@ func main() {
 	}
 
 	// Initialize database connection
-	db.InitDB()
+	database := infrastructure.NewDatabase()
+	defer database.Close()
+
+	// Initialize repositories
+	clubRepo := persistence.NewClubRepository(database.DB)
+	clubSeasonRepo := persistence.NewClubSeasonRepository(database.DB)
+	playerRepo := persistence.NewPlayerRepository(database.DB)
+
+	// Initialize use cases (application services)
+	clubUseCase := application.NewClubService(clubRepo)
+	clubSeasonUseCase := application.NewClubSeasonService(clubSeasonRepo)
+	playerUseCase := application.NewPlayerService(playerRepo, clubRepo)
+
+	// Initialize GraphQL resolver with dependency injection
+	resolver := graphql.NewResolver(clubUseCase, playerUseCase, clubSeasonUseCase)
 
 	// Initialize GraphQL server
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
 
 	// Add transports
 	srv.AddTransport(transport.Options{})

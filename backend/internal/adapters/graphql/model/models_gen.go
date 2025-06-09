@@ -16,6 +16,25 @@ type FFLClub struct {
 	Players   []*FFLPlayer `json:"players"`
 }
 
+type FFLClubSeason struct {
+	ID                string  `json:"id"`
+	ClubID            string  `json:"clubId"`
+	SeasonID          string  `json:"seasonId"`
+	ClubName          string  `json:"clubName"`
+	Played            int32   `json:"played"`
+	Won               int32   `json:"won"`
+	Lost              int32   `json:"lost"`
+	Drawn             int32   `json:"drawn"`
+	PointsFor         int32   `json:"pointsFor"`
+	PointsAgainst     int32   `json:"pointsAgainst"`
+	ExtraPoints       int32   `json:"extraPoints"`
+	PremiershipPoints int32   `json:"premiershipPoints"`
+	Percentage        float64 `json:"percentage"`
+	CreatedAt         string  `json:"createdAt"`
+	UpdatedAt         string  `json:"updatedAt"`
+	DeletedAt         *string `json:"deletedAt,omitempty"`
+}
+
 type FFLPlayer struct {
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
