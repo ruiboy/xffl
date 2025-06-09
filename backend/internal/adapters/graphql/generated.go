@@ -67,25 +67,21 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateFFLPlayer func(childComplexity int, input model.CreateFFLPlayerInput) int
 		DeleteFFLPlayer func(childComplexity int, id string) int
-		Echo            func(childComplexity int, message string) int
 		UpdateFFLPlayer func(childComplexity int, input model.UpdateFFLPlayerInput) int
 	}
 
 	Query struct {
 		FflClubs   func(childComplexity int) int
 		FflPlayers func(childComplexity int, clubID *string) int
-		Hello      func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	Echo(ctx context.Context, message string) (string, error)
 	CreateFFLPlayer(ctx context.Context, input model.CreateFFLPlayerInput) (*model.FFLPlayer, error)
 	UpdateFFLPlayer(ctx context.Context, input model.UpdateFFLPlayerInput) (*model.FFLPlayer, error)
 	DeleteFFLPlayer(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
-	Hello(ctx context.Context) (string, error)
 	FflClubs(ctx context.Context) ([]*model.FFLClub, error)
 	FflPlayers(ctx context.Context, clubID *string) ([]*model.FFLPlayer, error)
 }
@@ -217,18 +213,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.DeleteFFLPlayer(childComplexity, args["id"].(string)), true
 
-	case "Mutation.echo":
-		if e.complexity.Mutation.Echo == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_echo_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Echo(childComplexity, args["message"].(string)), true
-
 	case "Mutation.updateFFLPlayer":
 		if e.complexity.Mutation.UpdateFFLPlayer == nil {
 			break
@@ -259,13 +243,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.FflPlayers(childComplexity, args["clubId"].(*string)), true
-
-	case "Query.hello":
-		if e.complexity.Query.Hello == nil {
-			break
-		}
-
-		return e.complexity.Query.Hello(childComplexity), true
 
 	}
 	return 0, false
@@ -379,7 +356,6 @@ var sources = []*ast.Source{
 # https://gqlgen.com/getting-started/
 
 type Query {
-  hello: String!
   fflClubs: [FFLClub!]!
   fflPlayers(clubId: ID): [FFLPlayer!]!
 }
@@ -413,7 +389,6 @@ input UpdateFFLPlayerInput {
 }
 
 type Mutation {
-  echo(message: String!): String!
   createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
   deleteFFLPlayer(id: ID!): Boolean!
@@ -466,29 +441,6 @@ func (ec *executionContext) field_Mutation_deleteFFLPlayer_argsID(
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_echo_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_echo_argsMessage(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["message"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_echo_argsMessage(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
-	if tmp, ok := rawArgs["message"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
 	var zeroVal string
@@ -1200,61 +1152,6 @@ func (ec *executionContext) fieldContext_FFLPlayer_deletedAt(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_echo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_echo(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Echo(rctx, fc.Args["message"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_echo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_echo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_createFFLPlayer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createFFLPlayer(ctx, field)
 	if err != nil {
@@ -1444,50 +1341,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteFFLPlayer(ctx context.Co
 	if fc.Args, err = ec.field_Mutation_deleteFFLPlayer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_hello(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_hello(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Hello(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_hello(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
 	}
 	return fc, nil
 }
@@ -3918,13 +3771,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "echo":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_echo(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "createFFLPlayer":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createFFLPlayer(ctx, field)
@@ -3988,28 +3834,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "hello":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_hello(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "fflClubs":
 			field := field
 

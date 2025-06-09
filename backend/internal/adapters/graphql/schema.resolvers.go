@@ -11,11 +11,6 @@ import (
 	"gffl/internal/domain/ffl"
 )
 
-// Echo is the resolver for the echo field.
-func (r *mutationResolver) Echo(ctx context.Context, message string) (string, error) {
-	return fmt.Sprintf("Echo: %s", message), nil
-}
-
 // CreateFFLPlayer is the resolver for the createFFLPlayer field.
 func (r *mutationResolver) CreateFFLPlayer(ctx context.Context, input model.CreateFFLPlayerInput) (*model.FFLPlayer, error) {
 	clubID, err := ParseID(input.ClubID)
@@ -59,11 +54,6 @@ func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool
 	}
 
 	return true, nil
-}
-
-// Hello is the resolver for the hello field.
-func (r *queryResolver) Hello(ctx context.Context) (string, error) {
-	return "Hello GraphQL World!", nil
 }
 
 // FflClubs is the resolver for the fflClubs field.

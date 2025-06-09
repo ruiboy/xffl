@@ -3,7 +3,6 @@
 # https://gqlgen.com/getting-started/
 
 type Query {
-  hello: String!
   fflClubs: [FFLClub!]!
   fflPlayers(clubId: ID): [FFLPlayer!]!
 }
@@ -37,7 +36,6 @@ input UpdateFFLPlayerInput {
 }
 
 type Mutation {
-  echo(message: String!): String!
   createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
   deleteFFLPlayer(id: ID!): Boolean!
