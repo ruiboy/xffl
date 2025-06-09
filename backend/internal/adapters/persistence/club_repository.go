@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 
@@ -18,14 +18,14 @@ func NewClubRepository(db *gorm.DB) *ClubRepositoryImpl {
 }
 
 // FindAll retrieves all clubs from the database
-func (r *ClubRepositoryImpl) FindAll() ([]domain.Club, error) {
+func (r *ClubRepositoryImpl) FindAll() ([]ffl.Club, error) {
 	var fflClubs []FFLClub
 	err := r.db.Preload("Players").Find(&fflClubs).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	clubs := make([]domain.Club, len(fflClubs))
+	clubs := make([]ffl.Club, len(fflClubs))
 	for i, fflClub := range fflClubs {
 		clubs[i] = fflClub.ToDomain()
 	}
@@ -34,7 +34,7 @@ func (r *ClubRepositoryImpl) FindAll() ([]domain.Club, error) {
 }
 
 // FindByID retrieves a club by its ID
-func (r *ClubRepositoryImpl) FindByID(id uint) (*domain.Club, error) {
+func (r *ClubRepositoryImpl) FindByID(id uint) (*ffl.Club, error) {
 	var fflClub FFLClub
 	err := r.db.Preload("Players").First(&fflClub, id).Error
 	if err != nil {
@@ -46,7 +46,7 @@ func (r *ClubRepositoryImpl) FindByID(id uint) (*domain.Club, error) {
 }
 
 // Create creates a new club in the database
-func (r *ClubRepositoryImpl) Create(club *domain.Club) error {
+func (r *ClubRepositoryImpl) Create(club *ffl.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	
@@ -64,7 +64,7 @@ func (r *ClubRepositoryImpl) Create(club *domain.Club) error {
 }
 
 // Update updates an existing club in the database
-func (r *ClubRepositoryImpl) Update(club *domain.Club) error {
+func (r *ClubRepositoryImpl) Update(club *ffl.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	

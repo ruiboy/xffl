@@ -1,7 +1,7 @@
 package application
 
 import (
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 	"gffl/internal/ports/out"
 )
 
@@ -18,18 +18,18 @@ func NewClubService(clubRepo out.ClubRepository) *ClubService {
 }
 
 // GetAllClubs retrieves all clubs
-func (s *ClubService) GetAllClubs() ([]domain.Club, error) {
+func (s *ClubService) GetAllClubs() ([]ffl.Club, error) {
 	return s.clubRepo.FindAll()
 }
 
 // GetClubByID retrieves a club by its ID
-func (s *ClubService) GetClubByID(id uint) (*domain.Club, error) {
+func (s *ClubService) GetClubByID(id uint) (*ffl.Club, error) {
 	return s.clubRepo.FindByID(id)
 }
 
 // CreateClub creates a new club
-func (s *ClubService) CreateClub(name string) (*domain.Club, error) {
-	club := domain.NewClub(name)
+func (s *ClubService) CreateClub(name string) (*ffl.Club, error) {
+	club := ffl.NewClub(name)
 	err := s.clubRepo.Create(club)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (s *ClubService) CreateClub(name string) (*domain.Club, error) {
 }
 
 // UpdateClub updates an existing club
-func (s *ClubService) UpdateClub(id uint, name string) (*domain.Club, error) {
+func (s *ClubService) UpdateClub(id uint, name string) (*ffl.Club, error) {
 	club, err := s.clubRepo.FindByID(id)
 	if err != nil {
 		return nil, err

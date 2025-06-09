@@ -1,4 +1,4 @@
-package domain
+package ffl
 
 import (
 	"time"
@@ -9,17 +9,6 @@ type Club struct {
 	ID        uint
 	Name      string
 	Players   []Player
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
-}
-
-// Player represents a fantasy football player domain entity  
-type Player struct {
-	ID        uint
-	Name      string
-	ClubID    uint
-	Club      *Club
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
@@ -36,17 +25,6 @@ func NewClub(name string) *Club {
 	}
 }
 
-// NewPlayer creates a new Player domain entity
-func NewPlayer(name string, clubID uint) *Player {
-	now := time.Now()
-	return &Player{
-		Name:      name,
-		ClubID:    clubID,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
 // AddPlayer adds a player to a club
 func (c *Club) AddPlayer(player *Player) {
 	player.ClubID = c.ID
@@ -58,10 +36,4 @@ func (c *Club) AddPlayer(player *Player) {
 func (c *Club) UpdateName(name string) {
 	c.Name = name
 	c.UpdatedAt = time.Now()
-}
-
-// UpdateName updates the player's name
-func (p *Player) UpdateName(name string) {
-	p.Name = name
-	p.UpdatedAt = time.Now()
 }

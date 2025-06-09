@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 
@@ -18,14 +18,14 @@ func NewPlayerRepository(db *gorm.DB) *PlayerRepositoryImpl {
 }
 
 // FindAll retrieves all players from the database
-func (r *PlayerRepositoryImpl) FindAll() ([]domain.Player, error) {
+func (r *PlayerRepositoryImpl) FindAll() ([]ffl.Player, error) {
 	var fflPlayers []FFLPlayer
 	err := r.db.Preload("Club").Find(&fflPlayers).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	players := make([]domain.Player, len(fflPlayers))
+	players := make([]ffl.Player, len(fflPlayers))
 	for i, fflPlayer := range fflPlayers {
 		players[i] = fflPlayer.ToDomain()
 	}
@@ -34,7 +34,7 @@ func (r *PlayerRepositoryImpl) FindAll() ([]domain.Player, error) {
 }
 
 // FindByID retrieves a player by its ID
-func (r *PlayerRepositoryImpl) FindByID(id uint) (*domain.Player, error) {
+func (r *PlayerRepositoryImpl) FindByID(id uint) (*ffl.Player, error) {
 	var fflPlayer FFLPlayer
 	err := r.db.Preload("Club").First(&fflPlayer, id).Error
 	if err != nil {
@@ -46,14 +46,14 @@ func (r *PlayerRepositoryImpl) FindByID(id uint) (*domain.Player, error) {
 }
 
 // FindByClubID retrieves all players for a specific club
-func (r *PlayerRepositoryImpl) FindByClubID(clubID uint) ([]domain.Player, error) {
+func (r *PlayerRepositoryImpl) FindByClubID(clubID uint) ([]ffl.Player, error) {
 	var fflPlayers []FFLPlayer
 	err := r.db.Preload("Club").Where("club_id = ?", clubID).Find(&fflPlayers).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	players := make([]domain.Player, len(fflPlayers))
+	players := make([]ffl.Player, len(fflPlayers))
 	for i, fflPlayer := range fflPlayers {
 		players[i] = fflPlayer.ToDomain()
 	}
@@ -62,7 +62,7 @@ func (r *PlayerRepositoryImpl) FindByClubID(clubID uint) ([]domain.Player, error
 }
 
 // Create creates a new player in the database
-func (r *PlayerRepositoryImpl) Create(player *domain.Player) (*domain.Player, error) {
+func (r *PlayerRepositoryImpl) Create(player *ffl.Player) (*ffl.Player, error) {
 	var fflPlayer FFLPlayer
 	fflPlayer.FromDomain(player)
 	
@@ -80,7 +80,7 @@ func (r *PlayerRepositoryImpl) Create(player *domain.Player) (*domain.Player, er
 }
 
 // Update updates an existing player in the database
-func (r *PlayerRepositoryImpl) Update(player *domain.Player) (*domain.Player, error) {
+func (r *PlayerRepositoryImpl) Update(player *ffl.Player) (*ffl.Player, error) {
 	var fflPlayer FFLPlayer
 	fflPlayer.FromDomain(player)
 	

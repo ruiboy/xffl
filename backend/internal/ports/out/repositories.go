@@ -1,24 +1,24 @@
 package out
 
 import (
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 )
 
 // ClubRepository defines the interface for club data operations
 type ClubRepository interface {
-	FindAll() ([]domain.Club, error)
-	FindByID(id uint) (*domain.Club, error)
-	Create(club *domain.Club) error
-	Update(club *domain.Club) error
+	FindAll() ([]ffl.Club, error)
+	FindByID(id uint) (*ffl.Club, error)
+	Create(club *ffl.Club) error
+	Update(club *ffl.Club) error
 	Delete(id uint) error
 }
 
 // PlayerRepository defines the interface for player data operations
 type PlayerRepository interface {
-	FindAll() ([]domain.Player, error)
-	FindByID(id uint) (*domain.Player, error)
-	FindByClubID(clubID uint) ([]domain.Player, error)
-	Create(player *domain.Player) (*domain.Player, error)
-	Update(player *domain.Player) (*domain.Player, error)
+	FindAll() ([]ffl.Player, error)
+	FindByID(id uint) (*ffl.Player, error)
+	FindByClubID(clubID uint) ([]ffl.Player, error)
+	Create(player *ffl.Player) (*ffl.Player, error)
+	Update(player *ffl.Player) (*ffl.Player, error)
 	Delete(id uint) error
 }

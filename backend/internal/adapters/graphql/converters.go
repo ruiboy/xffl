@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"gffl/internal/adapters/graphql/model"
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 )
 
-// ClubToGraphQL converts a domain Club to GraphQL FFLClub
-func ClubToGraphQL(club *domain.Club) *model.FFLClub {
+// ClubToGraphQL converts a ffl Club to GraphQL FFLClub
+func ClubToGraphQL(club *ffl.Club) *model.FFLClub {
 	players := make([]*model.FFLPlayer, len(club.Players))
 	for i, player := range club.Players {
 		players[i] = PlayerToGraphQL(&player)
@@ -31,8 +31,8 @@ func ClubToGraphQL(club *domain.Club) *model.FFLClub {
 	}
 }
 
-// PlayerToGraphQL converts a domain Player to GraphQL FFLPlayer
-func PlayerToGraphQL(player *domain.Player) *model.FFLPlayer {
+// PlayerToGraphQL converts a ffl Player to GraphQL FFLPlayer
+func PlayerToGraphQL(player *ffl.Player) *model.FFLPlayer {
 	var deletedAt *string
 	if player.DeletedAt != nil {
 		str := player.DeletedAt.Format(time.RFC3339)
@@ -49,8 +49,8 @@ func PlayerToGraphQL(player *domain.Player) *model.FFLPlayer {
 	}
 }
 
-// ClubsToGraphQL converts a slice of domain Clubs to GraphQL FFLClubs
-func ClubsToGraphQL(clubs []domain.Club) []*model.FFLClub {
+// ClubsToGraphQL converts a slice of ffl Clubs to GraphQL FFLClubs
+func ClubsToGraphQL(clubs []ffl.Club) []*model.FFLClub {
 	result := make([]*model.FFLClub, len(clubs))
 	for i, club := range clubs {
 		result[i] = ClubToGraphQL(&club)
@@ -58,8 +58,8 @@ func ClubsToGraphQL(clubs []domain.Club) []*model.FFLClub {
 	return result
 }
 
-// PlayersToGraphQL converts a slice of domain Players to GraphQL FFLPlayers
-func PlayersToGraphQL(players []domain.Player) []*model.FFLPlayer {
+// PlayersToGraphQL converts a slice of ffl Players to GraphQL FFLPlayers
+func PlayersToGraphQL(players []ffl.Player) []*model.FFLPlayer {
 	result := make([]*model.FFLPlayer, len(players))
 	for i, player := range players {
 		result[i] = PlayerToGraphQL(&player)

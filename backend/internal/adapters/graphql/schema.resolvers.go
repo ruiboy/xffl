@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 	"gffl/internal/adapters/graphql/model"
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 )
 
 // Echo is the resolver for the echo field.
@@ -78,7 +78,7 @@ func (r *queryResolver) FflClubs(ctx context.Context) ([]*model.FFLClub, error) 
 
 // FflPlayers is the resolver for the fflPlayers field.
 func (r *queryResolver) FflPlayers(ctx context.Context, clubID *string) ([]*model.FFLPlayer, error) {
-	var players []domain.Player
+	var players []ffl.Player
 	var err error
 
 	if clubID != nil {

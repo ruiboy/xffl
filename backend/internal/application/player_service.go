@@ -1,7 +1,7 @@
 package application
 
 import (
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 	"gffl/internal/ports/out"
 )
 
@@ -20,29 +20,29 @@ func NewPlayerService(playerRepo out.PlayerRepository, clubRepo out.ClubReposito
 }
 
 // GetAllPlayers retrieves all players
-func (s *PlayerService) GetAllPlayers() ([]domain.Player, error) {
+func (s *PlayerService) GetAllPlayers() ([]ffl.Player, error) {
 	return s.playerRepo.FindAll()
 }
 
 // GetPlayerByID retrieves a player by its ID
-func (s *PlayerService) GetPlayerByID(id uint) (*domain.Player, error) {
+func (s *PlayerService) GetPlayerByID(id uint) (*ffl.Player, error) {
 	return s.playerRepo.FindByID(id)
 }
 
 // GetPlayersByClubID retrieves all players for a specific club
-func (s *PlayerService) GetPlayersByClubID(clubID uint) ([]domain.Player, error) {
+func (s *PlayerService) GetPlayersByClubID(clubID uint) ([]ffl.Player, error) {
 	return s.playerRepo.FindByClubID(clubID)
 }
 
 // CreatePlayer creates a new player
-func (s *PlayerService) CreatePlayer(name string, clubID uint) (*domain.Player, error) {
+func (s *PlayerService) CreatePlayer(name string, clubID uint) (*ffl.Player, error) {
 	// Verify the club exists
 	_, err := s.clubRepo.FindByID(clubID)
 	if err != nil {
 		return nil, err
 	}
 	
-	player := domain.NewPlayer(name, clubID)
+	player := ffl.NewPlayer(name, clubID)
 	createdPlayer, err := s.playerRepo.Create(player)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (s *PlayerService) CreatePlayer(name string, clubID uint) (*domain.Player, 
 }
 
 // UpdatePlayer updates an existing player
-func (s *PlayerService) UpdatePlayer(id uint, name string) (*domain.Player, error) {
+func (s *PlayerService) UpdatePlayer(id uint, name string) (*ffl.Player, error) {
 	player, err := s.playerRepo.FindByID(id)
 	if err != nil {
 		return nil, err

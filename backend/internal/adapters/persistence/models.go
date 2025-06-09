@@ -3,7 +3,7 @@ package persistence
 import (
 	"time"
 	
-	"gffl/internal/domain"
+	"gffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 
@@ -32,9 +32,9 @@ func (*FFLPlayer) TableName() string {
 	return "ffl.player"
 }
 
-// ToDomain converts FFLClub to domain.Club
-func (c *FFLClub) ToDomain() domain.Club {
-	players := make([]domain.Player, len(c.Players))
+// ToDomain converts FFLClub to ffl.Club
+func (c *FFLClub) ToDomain() ffl.Club {
+	players := make([]ffl.Player, len(c.Players))
 	for i, p := range c.Players {
 		players[i] = p.ToDomain()
 	}
@@ -44,7 +44,7 @@ func (c *FFLClub) ToDomain() domain.Club {
 		deletedAt = &c.DeletedAt.Time
 	}
 	
-	return domain.Club{
+	return ffl.Club{
 		ID:        c.ID,
 		Name:      c.Name,
 		Players:   players,
@@ -54,8 +54,8 @@ func (c *FFLClub) ToDomain() domain.Club {
 	}
 }
 
-// FromDomain converts domain.Club to FFLClub
-func (c *FFLClub) FromDomain(club *domain.Club) {
+// FromDomain converts ffl.Club to FFLClub
+func (c *FFLClub) FromDomain(club *ffl.Club) {
 	c.ID = club.ID
 	c.Name = club.Name
 	c.CreatedAt = club.CreatedAt
@@ -65,14 +65,14 @@ func (c *FFLClub) FromDomain(club *domain.Club) {
 	}
 }
 
-// ToDomain converts FFLPlayer to domain.Player
-func (p *FFLPlayer) ToDomain() domain.Player {
+// ToDomain converts FFLPlayer to ffl.Player
+func (p *FFLPlayer) ToDomain() ffl.Player {
 	var deletedAt *time.Time
 	if p.DeletedAt.Valid {
 		deletedAt = &p.DeletedAt.Time
 	}
 	
-	return domain.Player{
+	return ffl.Player{
 		ID:        p.ID,
 		Name:      p.Name,
 		ClubID:    p.ClubID,
@@ -82,8 +82,8 @@ func (p *FFLPlayer) ToDomain() domain.Player {
 	}
 }
 
-// FromDomain converts domain.Player to FFLPlayer
-func (p *FFLPlayer) FromDomain(player *domain.Player) {
+// FromDomain converts ffl.Player to FFLPlayer
+func (p *FFLPlayer) FromDomain(player *ffl.Player) {
 	p.ID = player.ID
 	p.Name = player.Name
 	p.ClubID = player.ClubID
