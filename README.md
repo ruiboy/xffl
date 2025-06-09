@@ -308,6 +308,8 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
+![AFL ERD](doc/erd-afl.png)
+
 #### FFL League Data Model
 
 ```plantuml 
@@ -396,3 +398,5 @@ PlayerSeason *-- "0..*" PlayerMatch
 
 @enduml
 ```
+
+![FFL ERD](doc/erd-ffl.png)
