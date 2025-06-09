@@ -1,0 +1,23 @@
+package graphql
+
+import (
+	"gffl/internal/ports/in"
+)
+
+// This file will not be regenerated automatically.
+//
+// It serves as dependency injection for your app, add any dependencies you require here.
+
+// Resolver holds the use cases for GraphQL resolvers
+type Resolver struct {
+	clubUseCase   in.ClubUseCase
+	playerUseCase in.PlayerUseCase
+}
+
+// NewResolver creates a new GraphQL resolver
+func NewResolver(clubUseCase in.ClubUseCase, playerUseCase in.PlayerUseCase) *Resolver {
+	return &Resolver{
+		clubUseCase:   clubUseCase,
+		playerUseCase: playerUseCase,
+	}
+}

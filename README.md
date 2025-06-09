@@ -149,28 +149,6 @@ To verify that the database connection is working:
 
 The backend is built with Go and uses gqlgen for GraphQL API generation.
 
-### Architecture
-
-The backend follows Clean Architecture + Hexagonal Architecture principles:
-
-#### Clean Architecture Layers:
-- **Domain Layer** (`internal/domain/`): Pure business logic, entities, value objects, domain events
-- **Application Layer** (`internal/application/`): Use cases and application services that orchestrate domain operations
-- **Interface Adapters** (`internal/adapters/`): Adapters for external systems (GraphQL, REST, Database, PubSub)
-- **Infrastructure** (`internal/infrastructure/`): Framework and tools configuration
-
-#### Hexagonal Architecture Ports:
-- **Input Ports** (`internal/ports/in/`): Interfaces defining how external systems can interact with the application
-- **Output Ports** (`internal/ports/out/`): Interfaces defining how the application interacts with external systems
-
-#### Key Components:
-- `cmd/server/main.go`: Application entry point and server setup
-- `internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `internal/adapters/persistence/`: Database implementations (output adapters)
-- `internal/domain/`: Business entities and domain logic
-- `internal/application/`: Use cases and application services
-- `internal/infrastructure/`: Database connections, HTTP server configuration
-
 ### GraphQL Code Generation
 
 After making changes to your GraphQL schema or resolvers, you'll need to regenerate the code:
@@ -238,6 +216,28 @@ The frontend will be available at `http://localhost:3000`.
    - GraphQL Playground: http://localhost:8080
 
 ## Architecture
+
+### Backend
+
+The backend follows Clean Architecture + Hexagonal Architecture principles:
+
+#### Clean Architecture Layers:
+- **Domain Layer** (`internal/domain/`): Pure business logic, entities, value objects, domain events
+- **Application Layer** (`internal/application/`): Use cases and application services that orchestrate domain operations
+- **Interface Adapters** (`internal/adapters/`): Adapters for external systems (GraphQL, REST, Database, PubSub)
+- **Infrastructure** (`internal/infrastructure/`): Framework and tools configuration
+
+#### Hexagonal Architecture Ports:
+- **Input Ports** (`internal/ports/in/`): Interfaces defining how external systems can interact with the application
+- **Output Ports** (`internal/ports/out/`): Interfaces defining how the application interacts with external systems
+
+#### Key Components:
+- `cmd/server/main.go`: Application entry point and server setup
+- `internal/adapters/graphql/`: GraphQL resolvers (input adapters)
+- `internal/adapters/persistence/`: Database implementations (output adapters)
+- `internal/domain/`: Business entities and domain logic
+- `internal/application/`: Use cases and application services
+- `internal/infrastructure/`: Database connections, HTTP server configuration
 
 ### Data Model
 
