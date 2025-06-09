@@ -5,7 +5,6 @@ package graphql
 import (
 	"bytes"
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"gffl/internal/adapters/graphql/model"
@@ -105,7 +104,7 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
+func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
@@ -199,7 +198,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createFFLPlayer_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createFFLPlayer_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -211,7 +210,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deleteFFLPlayer_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deleteFFLPlayer_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -223,7 +222,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_echo_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_echo_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -235,7 +234,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateFFLPlayer_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateFFLPlayer_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -254,7 +253,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_fflPlayers_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_fflPlayers_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -374,19 +373,52 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 	return introspection.WrapTypeFromDef(ec.Schema(), ec.Schema().Types[name]), nil
 }
 
-//go:embed "schema.graphqls"
-var sourcesFS embed.FS
+var sources = []*ast.Source{
+	{Name: "../../../../api/graphql/schema.graphqls", Input: `# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
 
-func sourceData(filename string) string {
-	data, err := sourcesFS.ReadFile(filename)
-	if err != nil {
-		panic(fmt.Sprintf("codegen problem: %s not available", filename))
-	}
-	return string(data)
+type Query {
+  hello: String!
+  fflClubs: [FFLClub!]!
+  fflPlayers(clubId: ID): [FFLPlayer!]!
 }
 
-var sources = []*ast.Source{
-	{Name: "schema.graphqls", Input: sourceData("schema.graphqls"), BuiltIn: false},
+type FFLClub {
+  id: ID!
+  name: String!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+  players: [FFLPlayer!]!
+}
+
+type FFLPlayer {
+  id: ID!
+  name: String!
+  clubId: ID!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+}
+
+input CreateFFLPlayerInput {
+  name: String!
+  clubId: ID!
+}
+
+input UpdateFFLPlayerInput {
+  id: ID!
+  name: String!
+}
+
+type Mutation {
+  echo(message: String!): String!
+  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
+  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
+  deleteFFLPlayer(id: ID!): Boolean!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -4394,6 +4426,7 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4526,6 +4559,7 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (str
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4541,6 +4575,7 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) 
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4609,6 +4644,7 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Con
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4797,6 +4833,7 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v a
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4812,6 +4849,8 @@ func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalBoolean(v)
 	return res
 }
@@ -4828,6 +4867,8 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
 }
@@ -4844,6 +4885,8 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalID(*v)
 	return res
 }
@@ -4860,6 +4903,8 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
 }

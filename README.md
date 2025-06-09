@@ -8,6 +8,9 @@ A full-stack web application for managing a fantasy football league with GraphQL
 
 ```
 gffl/
+├── api/                     # API definitions (easily discoverable)
+│   └── graphql/            # GraphQL schema definitions
+│       └── schema.graphqls
 ├── backend/           # Go backend with Clean + Hexagonal Architecture
 │   ├── cmd/
 │   │   └── server/   # Application entry point and server setup

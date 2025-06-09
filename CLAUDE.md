@@ -40,8 +40,9 @@ This is a full-stack fantasy football league application with Clean Architecture
 
 ### Key Backend Components
 
+- `api/graphql/schema.graphqls`: GraphQL schema definition (easily discoverable at top level)
 - `cmd/server/main.go`: Application entry point and server setup
-- `internal/adapters/graphql/`: GraphQL resolvers and schema (input adapters)
+- `internal/adapters/graphql/`: GraphQL resolvers (input adapters)
 - `internal/adapters/persistence/`: Database models and repositories (output adapters)
 - `internal/domain/`: Business entities (Club, Player, etc.) and domain logic
 - `internal/application/`: Use cases for business operations
@@ -58,7 +59,7 @@ This is a full-stack fantasy football league application with Clean Architecture
 
 ### Development Workflow
 
-1. After modifying GraphQL schema in `internal/adapters/graphql/schema.graphqls`, always run `cd backend && go run github.com/99designs/gqlgen generate`
+1. After modifying GraphQL schema in `api/graphql/schema.graphqls`, always run `cd backend && go run github.com/99designs/gqlgen generate`
 2. Backend runs on :8080 with GraphQL playground at root and API at /query
 3. Frontend runs on :3000 with CORS configured for localhost communication
 4. Database changes require manual SQL migration execution in `internal/adapters/persistence/migrations/`
