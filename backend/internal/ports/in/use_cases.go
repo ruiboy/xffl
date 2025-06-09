@@ -23,6 +23,11 @@ type PlayerUseCase interface {
 	DeletePlayer(id uint) error
 }
 
+// ClubSeasonUseCase defines the interface for club season business operations
+type ClubSeasonUseCase interface {
+	GetLadderBySeasonID(seasonID uint) ([]ffl.ClubSeason, error)
+}
+
 // CreatePlayerInput represents the input for creating a player
 type CreatePlayerInput struct {
 	Name   string

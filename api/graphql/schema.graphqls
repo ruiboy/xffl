@@ -5,6 +5,7 @@
 type Query {
   fflClubs: [FFLClub!]!
   fflPlayers(clubId: ID): [FFLPlayer!]!
+  fflLadder(seasonId: ID!): [FFLClubSeason!]!
 }
 
 type FFLClub {
@@ -20,6 +21,25 @@ type FFLPlayer {
   id: ID!
   name: String!
   clubId: ID!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+}
+
+type FFLClubSeason {
+  id: ID!
+  clubId: ID!
+  seasonId: ID!
+  clubName: String!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  pointsFor: Int!
+  pointsAgainst: Int!
+  extraPoints: Int!
+  premiershipPoints: Int!
+  percentage: Float!
   createdAt: String!
   updatedAt: String!
   deletedAt: String

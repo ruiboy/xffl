@@ -10,14 +10,16 @@ import (
 
 // Resolver holds the use cases for GraphQL resolvers
 type Resolver struct {
-	clubUseCase   in.ClubUseCase
-	playerUseCase in.PlayerUseCase
+	clubUseCase       in.ClubUseCase
+	playerUseCase     in.PlayerUseCase
+	clubSeasonUseCase in.ClubSeasonUseCase
 }
 
 // NewResolver creates a new GraphQL resolver
-func NewResolver(clubUseCase in.ClubUseCase, playerUseCase in.PlayerUseCase) *Resolver {
+func NewResolver(clubUseCase in.ClubUseCase, playerUseCase in.PlayerUseCase, clubSeasonUseCase in.ClubSeasonUseCase) *Resolver {
 	return &Resolver{
-		clubUseCase:   clubUseCase,
-		playerUseCase: playerUseCase,
+		clubUseCase:       clubUseCase,
+		playerUseCase:     playerUseCase,
+		clubSeasonUseCase: clubSeasonUseCase,
 	}
 }

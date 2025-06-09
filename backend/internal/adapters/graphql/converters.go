@@ -67,6 +67,43 @@ func PlayersToGraphQL(players []ffl.Player) []*model.FFLPlayer {
 	return result
 }
 
+// ClubSeasonToGraphQL converts a ffl ClubSeason to GraphQL FFLClubSeason
+func ClubSeasonToGraphQL(clubSeason *ffl.ClubSeason) *model.FFLClubSeason {
+	var deletedAt *string
+	if clubSeason.DeletedAt != nil {
+		str := clubSeason.DeletedAt.Format(time.RFC3339)
+		deletedAt = &str
+	}
+
+	return &model.FFLClubSeason{
+		ID:                strconv.FormatUint(uint64(clubSeason.ID), 10),
+		ClubID:            strconv.FormatUint(uint64(clubSeason.ClubID), 10),
+		SeasonID:          strconv.FormatUint(uint64(clubSeason.SeasonID), 10),
+		ClubName:          clubSeason.Club.Name,
+		Played:            int32(clubSeason.Played),
+		Won:               int32(clubSeason.Won),
+		Lost:              int32(clubSeason.Lost),
+		Drawn:             int32(clubSeason.Drawn),
+		PointsFor:         int32(clubSeason.PointsFor),
+		PointsAgainst:     int32(clubSeason.PointsAgainst),
+		ExtraPoints:       int32(clubSeason.ExtraPoints),
+		PremiershipPoints: int32(clubSeason.PremiershipPoints),
+		Percentage:        clubSeason.Percentage(),
+		CreatedAt:         clubSeason.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:         clubSeason.UpdatedAt.Format(time.RFC3339),
+		DeletedAt:         deletedAt,
+	}
+}
+
+// ClubSeasonsToGraphQL converts a slice of ffl ClubSeasons to GraphQL FFLClubSeasons
+func ClubSeasonsToGraphQL(clubSeasons []ffl.ClubSeason) []*model.FFLClubSeason {
+	result := make([]*model.FFLClubSeason, len(clubSeasons))
+	for i, clubSeason := range clubSeasons {
+		result[i] = ClubSeasonToGraphQL(&clubSeason)
+	}
+	return result
+}
+
 // ParseID converts a string ID to uint
 func ParseID(id string) (uint, error) {
 	parsed, err := strconv.ParseUint(id, 10, 32)

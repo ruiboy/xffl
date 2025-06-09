@@ -88,6 +88,21 @@ func (r *queryResolver) FflPlayers(ctx context.Context, clubID *string) ([]*mode
 	return PlayersToGraphQL(players), nil
 }
 
+// FflLadder is the resolver for the fflLadder field.
+func (r *queryResolver) FflLadder(ctx context.Context, seasonID string) ([]*model.FFLClubSeason, error) {
+	id, err := ParseID(seasonID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid season ID: %w", err)
+	}
+
+	clubSeasons, err := r.clubSeasonUseCase.GetLadderBySeasonID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ladder: %w", err)
+	}
+
+	return ClubSeasonsToGraphQL(clubSeasons), nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
