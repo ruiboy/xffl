@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"gffl/internal/adapters/graphql/model"
-	"gffl/internal/domain/ffl"
+	"xffl/internal/adapters/graphql/model"
+	"xffl/internal/domain/ffl"
 )
 
 // ClubToGraphQL converts a ffl Club to GraphQL FFLClub

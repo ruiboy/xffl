@@ -7,10 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gffl/internal/adapters/graphql/model"
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"xffl/internal/adapters/graphql/model"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -582,7 +582,7 @@ func (ec *executionContext) field_Mutation_createFFLPlayer_argsInput(
 ) (model.CreateFFLPlayerInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNCreateFFLPlayerInput2gfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐCreateFFLPlayerInput(ctx, tmp)
+		return ec.unmarshalNCreateFFLPlayerInput2xfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐCreateFFLPlayerInput(ctx, tmp)
 	}
 
 	var zeroVal model.CreateFFLPlayerInput
@@ -628,7 +628,7 @@ func (ec *executionContext) field_Mutation_updateFFLPlayer_argsInput(
 ) (model.UpdateFFLPlayerInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateFFLPlayerInput2gfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐUpdateFFLPlayerInput(ctx, tmp)
+		return ec.unmarshalNUpdateFFLPlayerInput2xfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐUpdateFFLPlayerInput(ctx, tmp)
 	}
 
 	var zeroVal model.UpdateFFLPlayerInput
@@ -1049,7 +1049,7 @@ func (ec *executionContext) _FFLClub_players(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.FFLPlayer)
 	fc.Result = res
-	return ec.marshalNFFLPlayer2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx, field.Selections, res)
+	return ec.marshalNFFLPlayer2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_FFLClub_players(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2069,7 +2069,7 @@ func (ec *executionContext) _Mutation_createFFLPlayer(ctx context.Context, field
 	}
 	res := resTmp.(*model.FFLPlayer)
 	fc.Result = res
-	return ec.marshalNFFLPlayer2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, field.Selections, res)
+	return ec.marshalNFFLPlayer2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createFFLPlayer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2138,7 +2138,7 @@ func (ec *executionContext) _Mutation_updateFFLPlayer(ctx context.Context, field
 	}
 	res := resTmp.(*model.FFLPlayer)
 	fc.Result = res
-	return ec.marshalNFFLPlayer2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, field.Selections, res)
+	return ec.marshalNFFLPlayer2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateFFLPlayer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2262,7 +2262,7 @@ func (ec *executionContext) _Query_fflClubs(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.FFLClub)
 	fc.Result = res
-	return ec.marshalNFFLClub2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubᚄ(ctx, field.Selections, res)
+	return ec.marshalNFFLClub2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_fflClubs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2320,7 +2320,7 @@ func (ec *executionContext) _Query_fflPlayers(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*model.FFLPlayer)
 	fc.Result = res
-	return ec.marshalNFFLPlayer2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx, field.Selections, res)
+	return ec.marshalNFFLPlayer2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_fflPlayers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2389,7 +2389,7 @@ func (ec *executionContext) _Query_fflLadder(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.FFLClubSeason)
 	fc.Result = res
-	return ec.marshalNFFLClubSeason2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeasonᚄ(ctx, field.Selections, res)
+	return ec.marshalNFFLClubSeason2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeasonᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_fflLadder(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5371,12 +5371,12 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCreateFFLPlayerInput2gfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐCreateFFLPlayerInput(ctx context.Context, v any) (model.CreateFFLPlayerInput, error) {
+func (ec *executionContext) unmarshalNCreateFFLPlayerInput2xfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐCreateFFLPlayerInput(ctx context.Context, v any) (model.CreateFFLPlayerInput, error) {
 	res, err := ec.unmarshalInputCreateFFLPlayerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNFFLClub2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLClub) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLClub2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLClub) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5400,7 +5400,7 @@ func (ec *executionContext) marshalNFFLClub2ᚕᚖgfflᚋinternalᚋadaptersᚋg
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNFFLClub2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClub(ctx, sel, v[i])
+			ret[i] = ec.marshalNFFLClub2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClub(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5420,7 +5420,7 @@ func (ec *executionContext) marshalNFFLClub2ᚕᚖgfflᚋinternalᚋadaptersᚋg
 	return ret
 }
 
-func (ec *executionContext) marshalNFFLClub2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClub(ctx context.Context, sel ast.SelectionSet, v *model.FFLClub) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLClub2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClub(ctx context.Context, sel ast.SelectionSet, v *model.FFLClub) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -5430,7 +5430,7 @@ func (ec *executionContext) marshalNFFLClub2ᚖgfflᚋinternalᚋadaptersᚋgrap
 	return ec._FFLClub(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFFLClubSeason2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeasonᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLClubSeason) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLClubSeason2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeasonᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLClubSeason) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5454,7 +5454,7 @@ func (ec *executionContext) marshalNFFLClubSeason2ᚕᚖgfflᚋinternalᚋadapte
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNFFLClubSeason2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeason(ctx, sel, v[i])
+			ret[i] = ec.marshalNFFLClubSeason2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeason(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5474,7 +5474,7 @@ func (ec *executionContext) marshalNFFLClubSeason2ᚕᚖgfflᚋinternalᚋadapte
 	return ret
 }
 
-func (ec *executionContext) marshalNFFLClubSeason2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeason(ctx context.Context, sel ast.SelectionSet, v *model.FFLClubSeason) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLClubSeason2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLClubSeason(ctx context.Context, sel ast.SelectionSet, v *model.FFLClubSeason) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -5484,11 +5484,11 @@ func (ec *executionContext) marshalNFFLClubSeason2ᚖgfflᚋinternalᚋadapters�
 	return ec._FFLClubSeason(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFFLPlayer2gfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx context.Context, sel ast.SelectionSet, v model.FFLPlayer) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLPlayer2xfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx context.Context, sel ast.SelectionSet, v model.FFLPlayer) graphql.Marshaler {
 	return ec._FFLPlayer(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFFLPlayer2ᚕᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLPlayer) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLPlayer2ᚕᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FFLPlayer) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5512,7 +5512,7 @@ func (ec *executionContext) marshalNFFLPlayer2ᚕᚖgfflᚋinternalᚋadapters�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNFFLPlayer2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, sel, v[i])
+			ret[i] = ec.marshalNFFLPlayer2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5532,7 +5532,7 @@ func (ec *executionContext) marshalNFFLPlayer2ᚕᚖgfflᚋinternalᚋadapters�
 	return ret
 }
 
-func (ec *executionContext) marshalNFFLPlayer2ᚖgfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx context.Context, sel ast.SelectionSet, v *model.FFLPlayer) graphql.Marshaler {
+func (ec *executionContext) marshalNFFLPlayer2ᚖxfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐFFLPlayer(ctx context.Context, sel ast.SelectionSet, v *model.FFLPlayer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -5606,7 +5606,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) unmarshalNUpdateFFLPlayerInput2gfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐUpdateFFLPlayerInput(ctx context.Context, v any) (model.UpdateFFLPlayerInput, error) {
+func (ec *executionContext) unmarshalNUpdateFFLPlayerInput2xfflᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐUpdateFFLPlayerInput(ctx context.Context, v any) (model.UpdateFFLPlayerInput, error) {
 	res, err := ec.unmarshalInputUpdateFFLPlayerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }

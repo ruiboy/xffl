@@ -1,9 +1,9 @@
 package application
 
 import (
-	"gffl/internal/domain/ffl"
-	"gffl/internal/ports/in"
-	"gffl/internal/ports/out"
+	"xffl/internal/domain/ffl"
+	"xffl/internal/ports/in"
+	"xffl/internal/ports/out"
 )
 
 type clubSeasonService struct {

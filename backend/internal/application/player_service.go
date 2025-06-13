@@ -1,8 +1,8 @@
 package application
 
 import (
-	"gffl/internal/domain/ffl"
-	"gffl/internal/ports/out"
+	"xffl/internal/domain/ffl"
+	"xffl/internal/ports/out"
 )
 
 // PlayerService implements the PlayerUseCase interface

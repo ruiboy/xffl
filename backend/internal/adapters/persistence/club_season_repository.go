@@ -1,8 +1,8 @@
 package persistence
 
 import (
-	"gffl/internal/domain/ffl"
-	"gffl/internal/ports/out"
+	"xffl/internal/domain/ffl"
+	"xffl/internal/ports/out"
 	"gorm.io/gorm"
 )
 

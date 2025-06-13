@@ -3,7 +3,7 @@ package persistence
 import (
 	"time"
 	
-	"gffl/internal/domain/ffl"
+	"xffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 

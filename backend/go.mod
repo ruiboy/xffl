@@ -1,4 +1,4 @@
-module gffl
+module xffl
 
 go 1.23.0
 

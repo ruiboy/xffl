@@ -20,7 +20,7 @@ func NewDatabase() *Database {
 		getEnvOrDefault("DB_HOST", "localhost"),
 		getEnvOrDefault("DB_USER", "postgres"),
 		getEnvOrDefault("DB_PASSWORD", "postgres"),
-		getEnvOrDefault("DB_NAME", "gffl"),
+		getEnvOrDefault("DB_NAME", "xffl"),
 		getEnvOrDefault("DB_PORT", "5432"),
 	)
 

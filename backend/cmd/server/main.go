@@ -13,10 +13,10 @@ import (
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"gffl/internal/adapters/graphql"
-	"gffl/internal/adapters/persistence"
-	"gffl/internal/application"
-	"gffl/internal/infrastructure"
+	"xffl/internal/adapters/graphql"
+	"xffl/internal/adapters/persistence"
+	"xffl/internal/application"
+	"xffl/internal/infrastructure"
 )
 
 const defaultPort = "8080"

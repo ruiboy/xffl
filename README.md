@@ -1,13 +1,18 @@
-# gffl 
+# xffl 
 
-FFL on golang and graphql. Built with a lot of code agent.
+FFL as a modular monolith, with experimentation into DDD, clean architecture and CQRS.
+Totally over engineered for what it does, but, experimenting.
 
-A full-stack web application for managing a fantasy football league with GraphQL API.
+FFL = Fantasy Football League
+
+Primary techs are golang, graphql, postgres, vue.
+
+Built with a lot of code agent.
 
 ## Project Structure
 
 ```
-gffl/
+xffl/
 ├── api/                     # API definitions (easily discoverable)
 │   └── graphql/            # GraphQL schema definitions
 │       └── schema.graphqls
@@ -64,7 +69,7 @@ brew services start postgresql@14
 /usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14
 
 # Create the database
-createdb gffl
+createdb xffl
 
 # Create a PostgreSQL user (if not exists)
 createuser -s postgres
@@ -84,7 +89,7 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 
 # Create the database
-sudo -u postgres createdb gffl
+sudo -u postgres createdb xffl
 
 # Set password for postgres user
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
@@ -92,13 +97,13 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 ### Database Configuration
 
-The application uses environment variables for database configuration. A `.env` file is provided in the backend directory with the following default settings:
+The application uses environment variables for database configuration. Create a `.env` file in the backend directory with the following default settings:
 
 ```
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_NAME=gffl
+DB_NAME=xffl
 DB_PORT=5423
 ```
 
@@ -109,23 +114,25 @@ You can modify these values in the `.env` file to match your database setup.
 The database schema is managed through SQL migration files in the `backend/db/migrations` directory. To apply the migrations:
 
 ```bash
-# Connect to the database
-psql -U postgres -d gffl
-
-# Run the migration file
-\i backend/db/migrations/001_create_ffl_tables_up.sql
-```
-
-Alternatively, you can run the migration directly from the command line:
-
-```bash
-psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_up.sql
+psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql
+psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql
 ```
 
 To revert the migrations, you can run the down migration:
 
 ```bash
-psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_down.sql
+psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/002_create_ffl_tables_down.sql
+psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/001_create_afl_tables_down.sql
+```
+
+Alternatively you can run interactively:
+
+```bash
+# Connect to the database
+psql -U postgres -d xffl
+
+# Run the migration file
+\i backend/...sql
 ```
 
 ### Test Data
@@ -133,7 +140,7 @@ psql -U postgres -d gffl -f backend/db/migrations/001_create_ffl_tables_down.sql
 Test data scripts are available in the `backend/db/test_scripts` directory. To insert test data:
 
 ```bash
-psql -U postgres -d gffl -f backend/db/test_scripts/insert_test_clubs.sql
+psql -U postgres -d xffl -f backend/internal/adapters/persistence/test_scripts/insert_ffl_data.sql
 ```
 
 ### Verifying the Connection
