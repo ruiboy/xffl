@@ -1,46 +1,13 @@
 # xffl 
 
-FFL as a modular monolith, with experimentation into DDD, clean architecture and CQRS.
+FFL as a modular monolith, with experimentation into DDD, bounded contexts, clean architecture, CQRS, search.
 Totally over engineered for what it does, but, experimenting.
 
-FFL = Fantasy Football League
+(FFL = Fantasy Football League)
 
-Primary techs are golang, graphql, postgres, vue.
+Primary techs are golang, graphql, postgres, Vue, Zinc
 
 Built with a lot of code agent.
-
-## Project Structure
-
-```
-xffl/
-├── api/                     # API definitions (easily discoverable)
-│   └── graphql/            # GraphQL schema definitions
-│       └── schema.graphqls
-├── backend/           # Go backend with Clean + Hexagonal Architecture
-│   ├── cmd/
-│   │   └── server/   # Application entry point and server setup
-│   ├── internal/
-│   │   ├── domain/          # Pure domain: entities, value objects, domain events
-│   │   ├── application/     # Use cases, application services
-│   │   ├── adapters/
-│   │   │   ├── graphql/     # GraphQL resolvers (input adapters)
-│   │   │   ├── rest/        # REST controllers (optional)
-│   │   │   ├── persistence/ # DB implementations (output adapters)
-│   │   │   └── pubsub/      # Event publishing (e.g., Kafka, NATS)
-│   │   ├── ports/
-│   │   │   ├── in/          # Interfaces for input (resolver/service interfaces)
-│   │   │   └── out/         # Interfaces for output (repo, event bus)
-│   │   └── infrastructure/  # DB config, HTTP server setup, etc.
-│   ├── pkg/
-│   │   └── shared/          # Common helpers, errors, utils
-│   ├── go.mod
-│   ├── go.sum
-│   └── gqlgen.yml          # GraphQL code generation config
-└── frontend/         # Vue.js frontend
-    ├── src/          # Source code
-    ├── public/       # Static assets
-    └── index.html    # Entry HTML file
-```
 
 ## Prerequisites
 
@@ -111,19 +78,14 @@ You can modify these values in the `.env` file to match your database setup.
 
 ### Running Migrations
 
-The database schema is managed through SQL migration files in the `backend/db/migrations` directory. To apply the migrations:
+The database schema is managed through SQL migration files. To apply the migrations:
 
 ```bash
 psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql
 psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql
 ```
 
-To revert the migrations, you can run the down migration:
-
-```bash
-psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/002_create_ffl_tables_down.sql
-psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/001_create_afl_tables_down.sql
-```
+You can revert by running the down migrations.
 
 Alternatively you can run interactively:
 
@@ -184,18 +146,8 @@ The GraphQL server will start on `http://localhost:8080` with the following endp
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
-## Frontend Setup
-
-The frontend is built with Vue 3, TypeScript, and Vite.
-
-### Key Components
-
-- `src/App.vue` - Root component
-- `src/router/` - Vue Router configuration
-- `src/views/` - Page components
-- `src/components/` - Reusable components
-- `src/stores/` - Pinia state management
-- `src/graphql/` - GraphQL queries and mutations
+## Web 
+Frontend Setup
 
 ### Running the Frontend
 
@@ -225,7 +177,51 @@ The frontend will be available at `http://localhost:3000`.
    - Frontend: http://localhost:3000
    - GraphQL Playground: http://localhost:8080
 
+## Project Structure
+
+```
+xffl/
+├── api/                     # API definitions (easily discoverable)
+│   └── graphql/            # GraphQL schema definitions
+│       └── schema.graphqls
+├── backend/           # Go backend with Clean + Hexagonal Architecture
+│   ├── cmd/
+│   │   └── server/   # Application entry point and server setup
+│   ├── internal/
+│   │   ├── domain/          # Pure domain: entities, value objects, domain events
+│   │   ├── application/     # Use cases, application services
+│   │   ├── adapters/
+│   │   │   ├── graphql/     # GraphQL resolvers (input adapters)
+│   │   │   ├── rest/        # REST controllers (optional)
+│   │   │   ├── persistence/ # DB implementations (output adapters)
+│   │   │   └── pubsub/      # Event publishing (e.g., Kafka, NATS)
+│   │   ├── ports/
+│   │   │   ├── in/          # Interfaces for input (resolver/service interfaces)
+│   │   │   └── out/         # Interfaces for output (repo, event bus)
+│   │   └── infrastructure/  # DB config, HTTP server setup, etc.
+│   ├── pkg/
+│   │   └── shared/          # Common helpers, errors, utils
+│   ├── go.mod
+│   ├── go.sum
+│   └── gqlgen.yml          # GraphQL code generation config
+└── frontend/         # Vue.js frontend
+    ├── src/          # Source code
+    ├── public/       # Static assets
+    └── index.html    # Entry HTML file
+```
+
 ## Architecture
+
+### Frontend
+
+#### Key Components
+
+- `src/App.vue` - Root component
+- `src/router/` - Vue Router configuration
+- `src/views/` - Page components
+- `src/components/` - Reusable components
+- `src/stores/` - Pinia state management
+- `src/graphql/` - GraphQL queries and mutations
 
 ### Backend
 
