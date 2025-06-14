@@ -1,9 +1,11 @@
 # xffl 
 
-FFL as a modular monolith, with experimentation into DDD, bounded contexts, clean architecture, CQRS, search.
+Multi-service fantasy football league application with both AFL and FFL services. Built as a modular architecture with experimentation into DDD, bounded contexts, clean architecture, CQRS, and search.
+
 Totally over engineered for what it does, but, experimenting.
 
-(FFL = Fantasy Football League)
+- **AFL** = Australian Football League  
+- **FFL** = Fantasy Football League
 
 Primary techs are golang, graphql, postgres, Vue, Zinc
 
@@ -64,87 +66,99 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 ### Database Configuration
 
-The application uses environment variables for database configuration. Create a `.env` file in the backend directory with the following default settings:
+The application uses environment variables for database configuration. Copy the example environment file and customize for your setup:
 
+```bash
+# For FFL service
+cp services/ffl/.env.example services/ffl/.env
+# Edit services/ffl/.env with your database credentials
+
+# For AFL service (when available)
+cp services/afl/.env.example services/afl/.env
+# Edit services/afl/.env with your database credentials
+```
+
+Example configuration:
 ```
 DB_HOST=localhost
 DB_USER=postgres
-DB_PASSWORD=postgres
+DB_PASSWORD=your_password_here
 DB_NAME=xffl
-DB_PORT=5423
+DB_PORT=5432
 ```
 
-You can modify these values in the `.env` file to match your database setup.
+**Note**: `.env` files are ignored by git for security. Never commit actual credentials to the repository.
 
 ### Running Migrations
 
 The database schema is managed through SQL migration files. To apply the migrations:
 
 ```bash
-psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql
-psql -U postgres -d xffl -f backend/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql
+# AFL migrations
+psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql
+
+# FFL migrations  
+psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql
 ```
 
 You can revert by running the down migrations.
 
-Alternatively you can run interactively:
-
-```bash
-# Connect to the database
-psql -U postgres -d xffl
-
-# Run the migration file
-\i backend/...sql
-```
-
 ### Test Data
 
-Test data scripts are available in the `backend/db/test_scripts` directory. To insert test data:
+Test data scripts are available in the service directories. To insert test data:
 
 ```bash
-psql -U postgres -d xffl -f backend/internal/adapters/persistence/test_scripts/insert_ffl_data.sql
+psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/test_scripts/insert_ffl_data.sql
 ```
 
-### Verifying the Connection
+## Services Setup
 
-To verify that the database connection is working:
+The application consists of multiple Go services using a shared package for common functionality.
 
-1. Start the backend server:
-   ```bash
-   cd backend
-   go run cmd/server/main.go
-   ```
+### Shared Package
 
-2. Check the logs for any database connection errors. If there are no errors, the connection is successful.
-
-## Backend Setup
-
-The backend is built with Go and uses gqlgen for GraphQL API generation.
-
-### GraphQL Code Generation
-
-After making changes to your GraphQL schema or resolvers, you'll need to regenerate the code:
+The `pkg/` directory contains shared utilities used by all services:
 
 ```bash
-cd backend
+# Validate the shared package
+cd pkg
+go mod tidy
+go test ./...
+```
+
+### FFL Service
+
+```bash
+# Generate GraphQL code
+cd services/ffl
 go run github.com/99designs/gqlgen generate
-```
 
-This will:
-- Generate type-safe Go code from your GraphQL schema
-- Update resolver interfaces
-- Create new resolver stubs for any new queries or mutations
+# Build the service
+go build -o bin/server cmd/server/main.go
 
-### Running the Backend
-
-```bash
-cd backend
+# Or run directly
 go run cmd/server/main.go
 ```
 
-The GraphQL server will start on `http://localhost:8080` with the following endpoints:
+The FFL service will start on `http://localhost:8080` with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
+
+### AFL Service (Future)
+
+```bash
+# Generate GraphQL code  
+cd services/afl
+go run github.com/99designs/gqlgen generate
+
+# Build the service
+go build -o bin/server cmd/server/main.go
+
+# Or run directly
+PORT=8081 go run cmd/server/main.go
+```
+
+The AFL service will start on `http://localhost:8081` when implemented.
 
 ## Web 
 Frontend Setup
@@ -161,53 +175,60 @@ The frontend will be available at `http://localhost:3000`.
 
 ## Development
 
-1. Start the backend server:
+1. Start the FFL service:
    ```bash
-   cd backend
+   cd services/ffl
    go run cmd/server/main.go
    ```
 
-2. Start the frontend development server:
+2. Start the AFL service (when available):
+   ```bash
+   cd services/afl
+   PORT=8081 go run cmd/server/main.go
+   ```
+
+3. Start the frontend development server:
    ```bash
    cd frontend
    npm run dev
    ```
 
-3. Access the application:
+4. Access the application:
    - Frontend: http://localhost:3000
-   - GraphQL Playground: http://localhost:8080
+   - FFL GraphQL Playground: http://localhost:8080
+   - AFL GraphQL Playground: http://localhost:8081
 
 ## Project Structure
 
 ```
 xffl/
-├── api/                     # API definitions (easily discoverable)
-│   └── graphql/            # GraphQL schema definitions
-│       └── schema.graphqls
-├── backend/           # Go backend with Clean + Hexagonal Architecture
-│   ├── cmd/
-│   │   └── server/   # Application entry point and server setup
-│   ├── internal/
-│   │   ├── domain/          # Pure domain: entities, value objects, domain events
-│   │   ├── application/     # Use cases, application services
-│   │   ├── adapters/
-│   │   │   ├── graphql/     # GraphQL resolvers (input adapters)
-│   │   │   ├── rest/        # REST controllers (optional)
-│   │   │   ├── persistence/ # DB implementations (output adapters)
-│   │   │   └── pubsub/      # Event publishing (e.g., Kafka, NATS)
-│   │   ├── ports/
-│   │   │   ├── in/          # Interfaces for input (resolver/service interfaces)
-│   │   │   └── out/         # Interfaces for output (repo, event bus)
-│   │   └── infrastructure/  # DB config, HTTP server setup, etc.
-│   ├── pkg/
-│   │   └── shared/          # Common helpers, errors, utils
-│   ├── go.mod
-│   ├── go.sum
-│   └── gqlgen.yml          # GraphQL code generation config
-└── frontend/         # Vue.js frontend
-    ├── src/          # Source code
-    ├── public/       # Static assets
-    └── index.html    # Entry HTML file
+├── services/                    # Independent microservices
+│   ├── ffl/                    # Fantasy Football League service
+│   │   ├── api/graphql/        # FFL GraphQL schema
+│   │   ├── cmd/server/         # Service entry point
+│   │   ├── internal/           # Service-specific code
+│   │   │   ├── domain/         # FFL business entities
+│   │   │   ├── application/    # FFL use cases
+│   │   │   ├── adapters/       # GraphQL resolvers, persistence
+│   │   │   └── ports/          # Interface definitions
+│   │   ├── go.mod              # FFL service dependencies
+│   │   └── gqlgen.yml          # GraphQL generation config
+│   └── afl/                    # Australian Football League service (future)
+│       ├── api/graphql/        # AFL GraphQL schema
+│       ├── cmd/server/         # Service entry point
+│       ├── internal/           # Service-specific code
+│       └── go.mod              # AFL service dependencies
+├── pkg/                        # Shared packages
+│   ├── database/               # Database connection utilities
+│   ├── config/                 # Configuration management
+│   ├── utils/                  # Common utilities
+│   └── go.mod                  # Shared package dependencies
+├── frontend/                   # Vue.js frontend
+│   ├── src/                    # Source code
+│   ├── public/                 # Static assets
+│   └── index.html              # Entry HTML file
+├── go.work                     # Go workspace configuration
+└── go.work.sum                 # Go workspace dependencies (git ignored)
 ```
 
 ## Architecture
@@ -223,27 +244,33 @@ xffl/
 - `src/stores/` - Pinia state management
 - `src/graphql/` - GraphQL queries and mutations
 
-### Backend
+### Services Architecture
 
-The backend follows Clean Architecture + Hexagonal Architecture principles:
+Each service follows Clean Architecture + Hexagonal Architecture principles:
 
-#### Clean Architecture Layers:
-- **Domain Layer** (`internal/domain/`): Pure business logic, entities, value objects, domain events
-- **Application Layer** (`internal/application/`): Use cases and application services that orchestrate domain operations
-- **Interface Adapters** (`internal/adapters/`): Adapters for external systems (GraphQL, REST, Database, PubSub)
-- **Infrastructure** (`internal/infrastructure/`): Framework and tools configuration
+#### Service Independence:
+- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8080)
+- **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8081)
+- **Shared Package** (`pkg/`): Common utilities used by all services
+
+#### Clean Architecture Layers (per service):
+- **Domain Layer** (`services/*/internal/domain/`): Pure business logic, entities, value objects
+- **Application Layer** (`services/*/internal/application/`): Use cases and application services
+- **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
+- **Infrastructure** (`pkg/`): Shared database connections, configuration
 
 #### Hexagonal Architecture Ports:
-- **Input Ports** (`internal/ports/in/`): Interfaces defining how external systems can interact with the application
-- **Output Ports** (`internal/ports/out/`): Interfaces defining how the application interacts with external systems
+- **Input Ports** (`services/*/internal/ports/in/`): Service interfaces
+- **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
 
-#### Key Components:
-- `cmd/server/main.go`: Application entry point and server setup
-- `internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `internal/adapters/persistence/`: Database implementations (output adapters)
-- `internal/domain/`: Business entities and domain logic
-- `internal/application/`: Use cases and application services
-- `internal/infrastructure/`: Database connections, HTTP server configuration
+#### Key Components (per service):
+- `services/*/cmd/server/main.go`: Service entry point and server setup
+- `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
+- `services/*/internal/adapters/persistence/`: Database implementations (output adapters)
+- `services/*/internal/domain/`: Service-specific business entities
+- `services/*/internal/application/`: Service-specific use cases
+- `pkg/database/`: Shared database connection utilities
+- `pkg/config/`: Shared configuration management
 
 ### Data Model
 
