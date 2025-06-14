@@ -1,7 +1,7 @@
 package out
 
 import (
-	"xffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain/ffl"
 )
 
 // ClubRepository defines the interface for club data operations

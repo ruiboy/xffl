@@ -1,7 +1,7 @@
 package graphql
 
 import (
-	"xffl/internal/ports/in"
+	"xffl/services/ffl/internal/ports/in"
 )
 
 // This file will not be regenerated automatically.

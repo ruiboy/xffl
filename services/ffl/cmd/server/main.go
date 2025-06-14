@@ -13,10 +13,10 @@ import (
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"xffl/internal/adapters/graphql"
-	"xffl/internal/adapters/persistence"
-	"xffl/internal/application"
-	"xffl/internal/infrastructure"
+	"xffl/services/ffl/internal/adapters/graphql"
+	"xffl/services/ffl/internal/adapters/persistence"
+	"xffl/services/ffl/internal/application"
+	"xffl/pkg/database"
 )
 
 const defaultPort = "8080"
@@ -28,13 +28,13 @@ func main() {
 	}
 
 	// Initialize database connection
-	database := infrastructure.NewDatabase()
-	defer database.Close()
+	db := database.NewDatabase()
+	defer db.Close()
 
 	// Initialize repositories
-	clubRepo := persistence.NewClubRepository(database.DB)
-	clubSeasonRepo := persistence.NewClubSeasonRepository(database.DB)
-	playerRepo := persistence.NewPlayerRepository(database.DB)
+	clubRepo := persistence.NewClubRepository(db.DB)
+	clubSeasonRepo := persistence.NewClubSeasonRepository(db.DB)
+	playerRepo := persistence.NewPlayerRepository(db.DB)
 
 	// Initialize use cases (application services)
 	clubUseCase := application.NewClubService(clubRepo)

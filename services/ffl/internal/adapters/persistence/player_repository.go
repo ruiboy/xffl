@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"xffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 

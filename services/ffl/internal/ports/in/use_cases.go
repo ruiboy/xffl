@@ -1,7 +1,7 @@
 package in
 
 import (
-	"xffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain/ffl"
 )
 
 // ClubUseCase defines the interface for club business operations

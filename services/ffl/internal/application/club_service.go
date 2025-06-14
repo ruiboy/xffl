@@ -1,8 +1,8 @@
 package application
 
 import (
-	"xffl/internal/domain/ffl"
-	"xffl/internal/ports/out"
+	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/ports/out"
 )
 
 // ClubService implements the ClubUseCase interface

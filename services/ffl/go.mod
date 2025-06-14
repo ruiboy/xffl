@@ -1,4 +1,4 @@
-module xffl
+module xffl/services/ffl
 
 go 1.23.0
 
@@ -10,6 +10,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.27
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
+	xffl/pkg v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -30,3 +31,5 @@ require (
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 )
+
+replace xffl/pkg => ../../pkg

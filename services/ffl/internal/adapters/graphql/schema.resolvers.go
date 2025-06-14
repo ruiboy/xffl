@@ -7,8 +7,8 @@ package graphql
 import (
 	"context"
 	"fmt"
-	"xffl/internal/adapters/graphql/model"
-	"xffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/adapters/graphql/model"
+	"xffl/services/ffl/internal/domain/ffl"
 )
 
 // CreateFFLPlayer is the resolver for the createFFLPlayer field.
