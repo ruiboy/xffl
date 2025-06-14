@@ -462,3 +462,64 @@ PlayerSeason *-- "0..*" PlayerMatch
 ```
 
 ![FFL ERD](doc/erd-ffl.png)
+
+## Architecture Decisions
+
+This project demonstrates a **modular microservices architecture** that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
+
+### Current Architecture Choices
+
+#### 🎯 **Independent Services with Shared Infrastructure**
+- **Decision**: Separate AFL and FFL services sharing a common database and utilities
+- **Why for Hobby**: Easy to develop and run locally, simple deployment, shared data model
+- **Scale Path**: Services can be split to separate databases, deployed independently, or combined into a monolith if needed
+
+#### 🔗 **GraphQL APIs per Service**
+- **Decision**: Each service exposes its own GraphQL endpoint (AFL: 8081, FFL: 8080)
+- **Why for Hobby**: Type-safe APIs, excellent developer experience, can test services independently
+- **Scale Path**: Add GraphQL Gateway/Federation for unified frontend experience
+
+#### 📦 **Go Workspace with Shared Package**
+- **Decision**: `pkg/` directory for shared utilities, independent service modules
+- **Why for Hobby**: Code reuse without duplication, workspace keeps everything in sync
+- **Scale Path**: Extract `pkg/` to separate repository/module, or inline into services
+
+#### 🗄️ **Shared Database with Schema Separation**
+- **Decision**: Single PostgreSQL database with `afl.*` and `ffl.*` schemas
+- **Why for Hobby**: Simple setup, easy cross-schema queries, single backup/restore
+- **Scale Path**: Split to microservice-per-database, add read replicas, event sourcing
+
+#### 🏗️ **Clean Architecture + Hexagonal Patterns**
+- **Decision**: Domain/Application/Adapters layers with port/adapter interfaces
+- **Why for Hobby**: Enforces good separation, makes testing easier, educational value
+- **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
+
+### Frontend Integration Strategy
+
+#### 🎨 **Multiple GraphQL Endpoints (Current)**
+- **Decision**: Frontend calls AFL and FFL services directly on different ports
+- **Why for Hobby**: Simple, no additional infrastructure, direct service communication
+- **Scale Path**: Add GraphQL Gateway for unified schema and cross-service queries
+
+#### 🚪 **Deployment Flexibility**
+- **Decision**: Services can run in same Kubernetes pod or separate pods
+- **Why for Hobby**: Start simple (same pod), easy resource sharing, localhost communication
+- **Scale Path**: Independent pod deployment, auto-scaling, service mesh (Istio/Linkerd)
+
+### Technology Rationale
+
+| Choice | Hobby Benefit | Enterprise Scaling |
+|--------|---------------|-------------------|
+| **Go Services** | Fast compilation, simple deployment, excellent tooling | High performance, excellent concurrency, cloud-native |
+| **GraphQL** | Type safety, single endpoint, excellent dev tools | Schema federation, efficient data loading, API evolution |
+| **PostgreSQL** | Mature, reliable, excellent JSON support | Horizontal scaling (Citus), advanced features, ecosystem |
+| **Vue.js** | Gentle learning curve, good documentation | Component ecosystem, SSR (Nuxt), mobile (Ionic) |
+| **Clean Architecture** | Forces good habits, testable, educational | Scales to large teams, enables microservices, maintainable |
+
+### Migration Paths
+
+The architecture is designed to support multiple evolution paths:
+
+1. **Monolith Consolidation**: Merge services into single binary if complexity isn't needed
+2. **True Microservices**: Separate databases, independent deployment, service mesh
+3. **Event-Driven**: Add message queues, event sourcing, CQRS patterns
