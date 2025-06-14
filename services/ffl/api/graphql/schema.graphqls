@@ -1,0 +1,62 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Query {
+  fflClubs: [FFLClub!]!
+  fflPlayers(clubId: ID): [FFLPlayer!]!
+  fflLadder(seasonId: ID!): [FFLClubSeason!]!
+}
+
+type FFLClub {
+  id: ID!
+  name: String!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+  players: [FFLPlayer!]!
+}
+
+type FFLPlayer {
+  id: ID!
+  name: String!
+  clubId: ID!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+}
+
+type FFLClubSeason {
+  id: ID!
+  clubId: ID!
+  seasonId: ID!
+  clubName: String!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  pointsFor: Int!
+  pointsAgainst: Int!
+  extraPoints: Int!
+  premiershipPoints: Int!
+  percentage: Float!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String
+}
+
+input CreateFFLPlayerInput {
+  name: String!
+  clubId: ID!
+}
+
+input UpdateFFLPlayerInput {
+  id: ID!
+  name: String!
+}
+
+type Mutation {
+  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
+  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
+  deleteFFLPlayer(id: ID!): Boolean!
+}
