@@ -4,5 +4,6 @@ toolchain go1.24.1
 
 use (
 	./services/ffl
+	./services/afl
 	./pkg
 )

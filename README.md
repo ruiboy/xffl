@@ -121,7 +121,7 @@ The `pkg/` directory contains shared utilities used by all services:
 
 ```bash
 # Validate the shared package
-cd pkg
+ cd pkg
 go mod tidy
 go test ./...
 ```

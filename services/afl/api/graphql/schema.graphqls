@@ -1,0 +1,13 @@
+# AFL GraphQL schema
+
+type Query {
+  aflClubs: [Club!]!
+}
+
+type Club {
+  id: ID!
+  name: String!
+  abbreviation: String!
+  createdAt: String!
+  updatedAt: String!
+}
