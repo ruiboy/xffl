@@ -17,6 +17,13 @@
             :severity="$route.path === '/players' ? 'primary' : 'secondary'"
             class="px-6 py-2"
           />
+          <Button 
+            :label="'AFL Clubs'"
+            @click="$router.push('/afl-clubs')"
+            :outlined="$route.path !== '/afl-clubs'"
+            :severity="$route.path === '/afl-clubs' ? 'primary' : 'secondary'"
+            class="px-6 py-2"
+          />
         </div>
       </div>
     </nav>

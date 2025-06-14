@@ -3,11 +3,10 @@
 package model
 
 type Club struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Abbreviation string `json:"abbreviation"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type Query struct {

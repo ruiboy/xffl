@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Players from '../views/Players.vue'
+import AFLClubs from '../views/AFLClubs.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/players',
       name: 'players',
       component: Players
+    },
+    {
+      path: '/afl-clubs',
+      name: 'afl-clubs',
+      component: AFLClubs
     }
   ]
 })

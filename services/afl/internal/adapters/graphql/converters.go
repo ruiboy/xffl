@@ -9,11 +9,10 @@ import (
 // ConvertClubToGraphQL converts a domain Club to a GraphQL Club
 func ConvertClubToGraphQL(club afl.Club) *model.Club {
 	return &model.Club{
-		ID:           strconv.FormatUint(uint64(club.ID), 10),
-		Name:         club.Name,
-		Abbreviation: club.Abbreviation,
-		CreatedAt:    club.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:    club.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:        strconv.FormatUint(uint64(club.ID), 10),
+		Name:      club.Name,
+		CreatedAt: club.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt: club.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }
 
