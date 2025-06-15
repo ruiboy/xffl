@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -13,10 +14,11 @@ import (
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"xffl/pkg/database"
+	"xffl/pkg/events/memory"
 	"xffl/services/ffl/internal/adapters/graphql"
 	"xffl/services/ffl/internal/adapters/persistence"
 	"xffl/services/ffl/internal/application"
-	"xffl/pkg/database"
 )
 
 const defaultPort = "8080"
@@ -31,6 +33,17 @@ func main() {
 	db := database.NewDatabase()
 	defer db.Close()
 
+	// Initialize event dispatcher
+	eventLogger := log.New(os.Stdout, "[FFL-EVENTS] ", log.LstdFlags)
+	eventDispatcher := memory.NewInMemoryDispatcher(eventLogger)
+	
+	// Start event dispatcher
+	ctx := context.Background()
+	if err := eventDispatcher.Start(ctx); err != nil {
+		log.Fatalf("Failed to start event dispatcher: %v", err)
+	}
+	defer eventDispatcher.Stop()
+
 	// Initialize repositories
 	clubRepo := persistence.NewClubRepository(db.DB)
 	clubSeasonRepo := persistence.NewClubSeasonRepository(db.DB)
@@ -40,6 +53,12 @@ func main() {
 	clubUseCase := application.NewClubService(clubRepo)
 	clubSeasonUseCase := application.NewClubSeasonService(clubSeasonRepo)
 	playerUseCase := application.NewPlayerService(playerRepo, clubRepo)
+	
+	// Initialize fantasy score service and subscribe to AFL events
+	fantasyScoreService := application.NewFantasyScoreService(eventDispatcher, eventLogger)
+	if err := eventDispatcher.Subscribe("AFL.PlayerMatchUpdated", fantasyScoreService); err != nil {
+		log.Fatalf("Failed to subscribe to AFL events: %v", err)
+	}
 
 	// Initialize GraphQL resolver with dependency injection
 	resolver := graphql.NewResolver(clubUseCase, playerUseCase, clubSeasonUseCase)
