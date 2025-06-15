@@ -153,10 +153,28 @@ The `pkg/` directory contains shared utilities used by all services:
 
 ```bash
 # Validate the shared package
- cd pkg
+cd pkg
 go mod tidy
 go test ./...
 ```
+
+### AFL Service
+
+```bash
+# Generate GraphQL code  
+cd services/afl
+go run github.com/99designs/gqlgen generate
+
+# Build the service
+go build -o bin/server cmd/server/main.go
+
+# Or run directly
+go run cmd/server/main.go
+```
+
+The AFL service will start on `http://localhost:8081`with:
+- `/query` - GraphQL API endpoint
+- `/` - GraphQL playground for testing queries
 
 ### FFL Service
 
@@ -175,22 +193,6 @@ go run cmd/server/main.go
 The FFL service will start on `http://localhost:8080` with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
-
-### AFL Service
-
-```bash
-# Generate GraphQL code  
-cd services/afl
-go run github.com/99designs/gqlgen generate
-
-# Build the service
-go build -o bin/server cmd/server/main.go
-
-# Or run directly
-go run cmd/server/main.go
-```
-
-The AFL service will start on `http://localhost:8081` when implemented.
 
 ### Gateway Service
 
@@ -228,6 +230,8 @@ The frontend will be available at `http://localhost:3000`.
 
 ## Development
 
+Pre-req: Make sure the [database is set up and migrations have been run](#database-setup).
+
 1. Start the FFL service:
    ```bash
    cd services/ffl
@@ -237,7 +241,7 @@ The frontend will be available at `http://localhost:3000`.
 2. Start the AFL service:
    ```bash
    cd services/afl
-   PORT=8081 go run cmd/server/main.go
+   go run cmd/server/main.go
    ```
 
 3. Start the gateway:
@@ -398,7 +402,7 @@ The application is designed to manage two types of leagues: AFL (Australian Foot
 
 Ostensibly, data is stored in first normal form (1NF). However, at this stage, to optimize read performance for the frontend, some data is denormalized. This includes pre-calculated fields like scores, premiership points, and match results.
 
-#### AFL League Data Model
+#### AFL Data Model
 
 ![AFL ERD](doc/erd-afl.png)
 
@@ -492,7 +496,7 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
-#### FFL League Data Model
+#### FFL Data Model
 
 ![FFL ERD](doc/erd-ffl.png)
 
