@@ -623,6 +623,11 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Simple setup, easy cross-schema queries, single backup/restore
 - **Scale Path**: Split to microservice-per-database, add read replicas, event sourcing
 
+#### 🏗️ **Clean Architecture + Hexagonal Patterns**
+- **Decision**: Domain/Application/Adapters layers with port/adapter interfaces
+- **Why for Hobby**: Enforces good separation, makes testing easier, educational value
+- **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
+
 #### 🏗️ **Event System Architecture**
 - **Decision**: Clean separation with `EventDispatcher` interface, strongly-typed domain events, serialized as json for cross-service messaging
 - **Why for Hobby**: Testable event flows, asynchronous processing, cross-service functionality without HTTP coupling
@@ -633,15 +638,20 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Zero additional infrastructure, leverages existing database, minimal setup complexity, production-ready (used by Supabase, GitHub)
 - **Scale Path**: Easy migration to NATS, Redis pub/sub, AWS EventBridge/SQS, GCP Pub/Sub, Apache Kafka via `EventDispatcher` interface
 
+#### 🔍 **Dedicated Search Engine**
+- **Decision**: Separate search service instead of PostgreSQL full-text search for player/team/match search functionality
+- **Why for Hobby**: Better search UX with autocomplete and faceted search, analytics aggregations for statistics, event-driven indexing from domain events
+- **Scale Path**: Index growth from single-node to distributed search clusters, add ML-powered relevance tuning
+
+#### 🥇 **Zinc Search Engine**
+- **Decision**: Zinc lightweight search engine over Elasticsearch/OpenSearch, Meilisearch, or Typesense
+- **Why for Hobby**: Single Go binary (~40MB), Elasticsearch-compatible API, minimal resources (~100MB RAM), native Go ecosystem fit
+- **Scale Path**: Direct migration to Elasticsearch/OpenSearch when scale demands, existing queries and indices remain compatible
+
 #### 🚪 **Deployment Flexibility**
 - **Decision**: Services can run in same Kubernetes pod or separate pods
 - **Why for Hobby**: Start simple (same pod), easy resource sharing, localhost communication
 - **Scale Path**: Independent pod deployment, auto-scaling, service mesh (Istio/Linkerd)
-
-#### 🏗️ **Clean Architecture + Hexagonal Patterns**
-- **Decision**: Domain/Application/Adapters layers with port/adapter interfaces
-- **Why for Hobby**: Enforces good separation, makes testing easier, educational value
-- **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
 
 ### Migration Paths
 
@@ -651,3 +661,4 @@ The architecture is designed to support multiple evolution paths:
 2. **True Microservices**: Separate databases, independent deployment, service mesh
 3. **Event-Driven Scale**: Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
 4. **Event Sourcing**: Add event store, replay capabilities, full audit trails
+5. **Search Scale**: Evolve from Zinc to Elasticsearch/OpenSearch clusters with advanced ML features
