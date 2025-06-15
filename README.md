@@ -24,9 +24,9 @@ Built with a lot of code agent.
 - [Services Setup](#services-setup)
   - [Shared Package](#shared-package)
   - [FFL Service](#ffl-service)
-  - [AFL Service](#afl-service-future)
+  - [AFL Service](#afl-service)
   - [Gateway Service](#gateway-service)
-- [Web Frontend Setup](#web-frontend-setup)
+- [Web](#web)
   - [Running the Frontend](#running-the-frontend)
 - [Development](#development)
 - [Project Structure](#project-structure)
@@ -296,8 +296,7 @@ xffl/
 │   ├── src/                    # Source code
 │   ├── public/                 # Static assets
 │   └── index.html              # Entry HTML file
-├── go.work                     # Go workspace configuration
-└── go.work.sum                 # Go workspace dependencies (git ignored)
+└── go.work                     # Go workspace configuration
 ```
 
 ## Architecture
