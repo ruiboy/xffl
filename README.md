@@ -7,9 +7,39 @@ Totally over engineered for what it does, but, experimenting.
 - **AFL** = Australian Football League  
 - **FFL** = Fantasy Football League
 
-Primary techs are golang, graphql, postgres, Vue, Zinc
+Primary techs are Golang, GraphQL, Postgres, Vue, Zinc
 
 Built with a lot of code agent.
+
+![Logical View](doc/logical-view.png)
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Database Setup](#database-setup)
+  - [Installing PostgreSQL](#installing-postgresql)
+  - [Database Configuration](#database-configuration)
+  - [Running Migrations](#running-migrations)
+  - [Test Data](#test-data)
+- [Services Setup](#services-setup)
+  - [Shared Package](#shared-package)
+  - [FFL Service](#ffl-service)
+  - [AFL Service](#afl-service)
+  - [Gateway Service](#gateway-service)
+- [Web](#web)
+  - [Running the Frontend](#running-the-frontend)
+- [Development](#development)
+- [Project Structure](#project-structure)
+- [Architecture](#architecture)
+  - [Frontend](#frontend)
+  - [Services Architecture](#services-architecture)
+  - [Data Model](#data-model)
+- [Architecture Decisions](#architecture-decisions)
+  - [Current Architecture Choices](#current-architecture-choices)
+  - [Frontend Integration Strategy](#frontend-integration-strategy)
+  - [Technology Rationale](#technology-rationale)
+  - [Migration Paths](#migration-paths)
+
 
 ## Prerequisites
 
@@ -159,7 +189,7 @@ go run github.com/99designs/gqlgen generate
 go build -o bin/server cmd/server/main.go
 
 # Or run directly
-PORT=8081 go run cmd/server/main.go
+go run cmd/server/main.go
 ```
 
 The AFL service will start on `http://localhost:8081` when implemented.
@@ -243,13 +273,16 @@ xffl/
 │   │   ├── api/graphql/        # FFL GraphQL schema
 │   │   ├── cmd/server/         # Service entry point
 │   │   ├── internal/           # Service-specific code
-│   │   │   ├── domain/         # FFL business entities
-│   │   │   ├── application/    # FFL use cases
+│   │   │   ├── domain/         # FFL business entities & events
+│   │   │   │   └── events/     # FFL domain events
+│   │   │   ├── application/    # FFL use cases & event handlers
 │   │   │   ├── adapters/       # GraphQL resolvers, persistence
 │   │   │   └── ports/          # Interface definitions
+│   │   │       ├── in/         # Input ports (service interfaces)
+│   │   │       └── out/        # Output ports (repository interfaces)
 │   │   ├── go.mod              # FFL service dependencies
 │   │   └── gqlgen.yml          # GraphQL generation config
-│   └── afl/                    # Australian Football League service (future)
+│   └── afl/                    # Australian Football League service
 │       ├── api/graphql/        # AFL GraphQL schema
 │       ├── cmd/server/         # Service entry point
 │       ├── internal/           # Service-specific code
@@ -259,18 +292,59 @@ xffl/
 │   └── go.mod                  # Gateway dependencies
 ├── pkg/                        # Shared packages
 │   ├── database/               # Database connection utilities
-│   ├── config/                 # Configuration management
-│   ├── utils/                  # Common utilities
+│   ├── events/                 # Cross-service event system
+│   │   ├── memory/             # In-memory event dispatcher
+│   │   ├── postgres/           # PostgreSQL LISTEN/NOTIFY dispatcher
+│   │   └── examples/           # Event system examples & demos
 │   └── go.mod                  # Shared package dependencies
 ├── frontend/                   # Vue.js frontend
 │   ├── src/                    # Source code
 │   ├── public/                 # Static assets
 │   └── index.html              # Entry HTML file
-├── go.work                     # Go workspace configuration
-└── go.work.sum                 # Go workspace dependencies (git ignored)
+└── go.work                     # Go workspace configuration
 ```
 
 ## Architecture
+
+![Logical View](doc/logical-view.png)
+
+```plantuml
+@startuml
+
+[Vue App] as vueapp
+
+node "XFFL" {
+  [Gateway] as gateway
+
+  [AFL Service] as aflservice
+  [FFL Service] as fflservice
+
+  database "AFL DB" as afldb
+  database "FFL DB" as ffldb
+
+  database "AFL Events <<queue>>" as aflqueue
+  database "FFL Events <<queue>" as fflqueue
+
+  [Search Index] as searchindex
+}
+
+vueapp <--> gateway : graphql
+
+gateway <--> aflservice : graphql
+aflservice <-> afldb
+aflservice --> aflqueue : "events (stats etc)"
+aflqueue --> searchindex
+aflqueue -> fflservice : (stats)
+
+gateway <--> fflservice : graphql
+fflservice <-> ffldb
+fflservice --> fflqueue : "events (teams, scores etc)" 
+fflqueue --> searchindex
+
+gateway <-- searchindex : rest
+
+@enduml
+```
 
 ### Frontend
 
@@ -298,6 +372,13 @@ Each service follows Clean Architecture + Hexagonal Architecture principles:
 - **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
 - **Infrastructure** (`pkg/`): Shared database connections, configuration
 
+#### Dependency Inversion Pattern:
+- **Domain entities** are pure Go structs with no external dependencies
+- **Database entities** live in persistence adapters with GORM annotations
+- **Entity mapping** converts between domain and database models
+- **Repository interfaces** defined in domain, implemented in persistence layer
+- This ensures domain layer remains independent of infrastructure concerns
+
 #### Hexagonal Architecture Ports:
 - **Input Ports** (`services/*/internal/ports/in/`): Service interfaces
 - **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
@@ -306,10 +387,12 @@ Each service follows Clean Architecture + Hexagonal Architecture principles:
 - `services/*/cmd/server/main.go`: Service entry point and server setup
 - `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
 - `services/*/internal/adapters/persistence/`: Database implementations (output adapters)
+  - Contains separate database entities (e.g., `ClubEntity`, `PlayerMatchEntity`)
+  - Maps between database entities and domain entities
 - `services/*/internal/domain/`: Service-specific business entities
+  - Pure domain entities with no infrastructure dependencies
 - `services/*/internal/application/`: Service-specific use cases
 - `pkg/database/`: Shared database connection utilities
-- `pkg/config/`: Shared configuration management
 
 ### Data Model
 
@@ -318,6 +401,8 @@ The application is designed to manage two types of leagues: AFL (Australian Foot
 Ostensibly, data is stored in first normal form (1NF). However, at this stage, to optimize read performance for the frontend, some data is denormalized. This includes pre-calculated fields like scores, premiership points, and match results.
 
 #### AFL League Data Model
+
+![AFL ERD](doc/erd-afl.png)
 
 ```plantuml 
 @startuml
@@ -409,9 +494,9 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
-![AFL ERD](doc/erd-afl.png)
-
 #### FFL League Data Model
+
+![FFL ERD](doc/erd-ffl.png)
 
 ```plantuml 
 @startuml
@@ -500,8 +585,6 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
-![FFL ERD](doc/erd-ffl.png)
-
 ## Architecture Decisions
 
 This project demonstrates a **modular microservices architecture** that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
@@ -533,9 +616,19 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Enforces good separation, makes testing easier, educational value
 - **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
 
+#### 🏗️ **Event System Architecture**
+- **Decision**: Clean separation with `EventDispatcher` interface, strongly-typed domain events, serialized as json for cross-service messaging
+- **Why for Hobby**: Testable event flows, asynchronous processing, cross-service functionality without HTTP coupling
+- **Scale Path**: Swap implementations without changing application code, add event sourcing capabilities
+
+#### 🎭 **Cross-Service Events with PostgreSQL LISTEN/NOTIFY**
+- **Decision**: Implement cross-service communication using PostgreSQL's native pub/sub messaging for domain events
+- **Why for Hobby**: Zero additional infrastructure, leverages existing database, minimal setup complexity, production-ready (used by Supabase, GitHub)
+- **Scale Path**: Easy migration to NATS, Redis pub/sub, AWS EventBridge/SQS, GCP Pub/Sub, Apache Kafka via `EventDispatcher` interface
+
 ### Frontend Integration Strategy
 
-#### 🚪 **GraphQL Gateway (Current)**
+#### 🚪 **GraphQL Gateway**
 - **Decision**: Single gateway service that proxies to AFL and FFL services
 - **Why for Hobby**: Unified frontend experience, simple CORS handling, easy to understand routing
 - **Scale Path**: Add GraphQL Federation, complex query planning, schema stitching
@@ -551,20 +644,11 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Start simple (same pod), easy resource sharing, localhost communication
 - **Scale Path**: Independent pod deployment, auto-scaling, service mesh (Istio/Linkerd)
 
-### Technology Rationale
-
-| Choice | Hobby Benefit | Enterprise Scaling |
-|--------|---------------|-------------------|
-| **Go Services** | Fast compilation, simple deployment, excellent tooling | High performance, excellent concurrency, cloud-native |
-| **GraphQL** | Type safety, single endpoint, excellent dev tools | Schema federation, efficient data loading, API evolution |
-| **PostgreSQL** | Mature, reliable, excellent JSON support | Horizontal scaling (Citus), advanced features, ecosystem |
-| **Vue.js** | Gentle learning curve, good documentation | Component ecosystem, SSR (Nuxt), mobile (Ionic) |
-| **Clean Architecture** | Forces good habits, testable, educational | Scales to large teams, enables microservices, maintainable |
-
 ### Migration Paths
 
 The architecture is designed to support multiple evolution paths:
 
 1. **Monolith Consolidation**: Merge services into single binary if complexity isn't needed
 2. **True Microservices**: Separate databases, independent deployment, service mesh
-3. **Event-Driven**: Add message queues, event sourcing, CQRS patterns
+3. **Event-Driven Scale**: Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
+4. **Event Sourcing**: Add event store, replay capabilities, full audit trails

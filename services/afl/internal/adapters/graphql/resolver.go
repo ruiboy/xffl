@@ -9,12 +9,14 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	clubUseCase in.ClubUseCase
+	clubUseCase        in.ClubUseCase
+	playerMatchUseCase in.PlayerMatchUseCase
 }
 
 // NewResolver creates a new GraphQL resolver with injected dependencies
-func NewResolver(clubUseCase in.ClubUseCase) *Resolver {
+func NewResolver(clubUseCase in.ClubUseCase, playerMatchUseCase in.PlayerMatchUseCase) *Resolver {
 	return &Resolver{
-		clubUseCase: clubUseCase,
+		clubUseCase:        clubUseCase,
+		playerMatchUseCase: playerMatchUseCase,
 	}
 }

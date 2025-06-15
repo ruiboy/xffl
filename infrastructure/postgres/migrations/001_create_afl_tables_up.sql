@@ -83,8 +83,10 @@ CREATE TABLE IF NOT EXISTS afl.club_match (
     club_season_id INTEGER NOT NULL REFERENCES afl.club_season(id) ON DELETE CASCADE,
     rushed_behinds INTEGER DEFAULT 0,
     drv_score INTEGER DEFAULT 0,
-    drv_premiership_points INTEGER DEFAULT 0
+    drv_premiership_points INTEGER DEFAULT 0,
+    CONSTRAINT uni_afl_club_match UNIQUE (club_season_id, match_id)
 );
+
 
 -- Add foreign key constraints for match table references to club_match
 ALTER TABLE afl.match 
@@ -130,7 +132,8 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
     hitouts INTEGER DEFAULT 0,
     tackles INTEGER DEFAULT 0,
     goals INTEGER DEFAULT 0,
-    behinds INTEGER DEFAULT 0
+    behinds INTEGER DEFAULT 0,
+    CONSTRAINT uni_afl_player_match UNIQUE (player_season_id, club_match_id)
 );
 
 -- Create indexes for foreign keys and performance

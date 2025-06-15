@@ -2,12 +2,42 @@
 
 package model
 
-type Club struct {
+type AFLClub struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type AFLPlayerMatch struct {
+	ID             string `json:"id"`
+	PlayerSeasonID string `json:"playerSeasonId"`
+	ClubMatchID    string `json:"clubMatchId"`
+	Kicks          int32  `json:"kicks"`
+	Handballs      int32  `json:"handballs"`
+	Marks          int32  `json:"marks"`
+	Hitouts        int32  `json:"hitouts"`
+	Tackles        int32  `json:"tackles"`
+	Goals          int32  `json:"goals"`
+	Behinds        int32  `json:"behinds"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+}
+
+type Mutation struct {
+}
+
 type Query struct {
+}
+
+type UpdateAFLPlayerMatchInput struct {
+	PlayerSeasonID string `json:"playerSeasonId"`
+	ClubMatchID    string `json:"clubMatchId"`
+	Kicks          *int32 `json:"kicks,omitempty"`
+	Handballs      *int32 `json:"handballs,omitempty"`
+	Marks          *int32 `json:"marks,omitempty"`
+	Hitouts        *int32 `json:"hitouts,omitempty"`
+	Tackles        *int32 `json:"tackles,omitempty"`
+	Goals          *int32 `json:"goals,omitempty"`
+	Behinds        *int32 `json:"behinds,omitempty"`
 }
