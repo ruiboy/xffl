@@ -160,6 +160,41 @@ PORT=8081 go run cmd/server/main.go
 
 The AFL service will start on `http://localhost:8081` when implemented.
 
+### Gateway Service
+
+The gateway provides a unified GraphQL endpoint for the frontend, routing requests to the appropriate backend services.
+
+```bash
+# Run the gateway
+cd gateway
+go run main.go
+```
+
+The gateway will start on `http://localhost:8090` with:
+- `/query` - Unified GraphQL endpoint
+- `/health` - Health check endpoint
+
+#### Gateway Routing Logic
+
+The gateway uses simple string-based routing:
+- Queries containing `afl` → AFL service (port 8081)
+- Queries containing `ffl` → FFL service (port 8080) 
+- Queries containing `_gateway` → Gateway metadata (handled locally)
+- All other queries → FFL service (default)
+
+Examples:
+```graphql
+# Routes to AFL service
+query { aflClubs { id name } }
+
+# Routes to FFL service  
+query { fflClubs { id name } }
+query { fflPlayers { id name } }
+
+# Handled by gateway
+query { _gateway { version services uptime } }
+```
+
 ## Web 
 Frontend Setup
 
@@ -187,14 +222,21 @@ The frontend will be available at `http://localhost:3000`.
    PORT=8081 go run cmd/server/main.go
    ```
 
-3. Start the frontend development server:
+3. Start the gateway:
+   ```bash
+   cd gateway
+   go run main.go
+   ```
+
+4. Start the frontend development server:
    ```bash
    cd frontend
    npm run dev
    ```
 
-4. Access the application:
-   - Frontend: http://localhost:3000
+5. Access the application:
+   - Frontend: http://localhost:3000 (uses gateway)
+   - Gateway: http://localhost:8090/query
    - FFL GraphQL Playground: http://localhost:8080
    - AFL GraphQL Playground: http://localhost:8081
 
@@ -218,6 +260,9 @@ xffl/
 │       ├── cmd/server/         # Service entry point
 │       ├── internal/           # Service-specific code
 │       └── go.mod              # AFL service dependencies
+├── gateway/                    # GraphQL Gateway service
+│   ├── main.go                 # Gateway implementation
+│   └── go.mod                  # Gateway dependencies
 ├── pkg/                        # Shared packages
 │   ├── database/               # Database connection utilities
 │   ├── config/                 # Configuration management
@@ -496,10 +541,16 @@ This project demonstrates a **modular microservices architecture** that balances
 
 ### Frontend Integration Strategy
 
-#### 🎨 **Multiple GraphQL Endpoints (Current)**
-- **Decision**: Frontend calls AFL and FFL services directly on different ports
-- **Why for Hobby**: Simple, no additional infrastructure, direct service communication
-- **Scale Path**: Add GraphQL Gateway for unified schema and cross-service queries
+#### 🚪 **GraphQL Gateway (Current)**
+- **Decision**: Single gateway service that proxies to AFL and FFL services
+- **Why for Hobby**: Unified frontend experience, simple CORS handling, easy to understand routing
+- **Scale Path**: Add GraphQL Federation, complex query planning, schema stitching
+
+#### 🎯 **Simple String-Based Routing**
+- **Decision**: Route requests based on presence of "afl" or "ffl" in query text
+- **Why for Hobby**: Zero configuration, predictable behavior, easy to debug
+- **Trade-offs**: No complex query analysis, assumes good naming conventions
+- **Scale Path**: GraphQL query parsing, field-level routing, federated schemas
 
 #### 🚪 **Deployment Flexibility**
 - **Decision**: Services can run in same Kubernetes pod or separate pods
