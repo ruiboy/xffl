@@ -44,8 +44,17 @@ Each service follows Clean Architecture + Hexagonal Architecture:
 - **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
 - **Infrastructure** (`pkg/`): Shared database connections, configuration
 
+#### Dependency Inversion Pattern:
+We follow strict dependency inversion to keep the domain pure:
+- **Domain entities**: Pure structs (e.g., `afl.Club`, `afl.PlayerMatch`) with JSON tags only
+- **Database entities**: Separate structs (e.g., `ClubEntity`, `PlayerMatchEntity`) with GORM tags
+- **Entity mapping**: Repository methods convert database ↔ domain entities
+- **Interface definition**: Repository interfaces defined in `ports/out`, implemented in `adapters/persistence`
+
+This ensures domain entities have zero infrastructure dependencies and can be tested in isolation.
+
 #### Hexagonal Architecture Ports:
-- **Input Ports** (`services/*/internal/ports/in/`): Service interfaces
+- **Input Ports** (`services/*/internal/ports/in/`): Service interfaces (use cases)
 - **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
 
 ### Gateway Architecture
@@ -70,9 +79,13 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 - `services/*/api/graphql/schema.graphqls`: GraphQL schema definition
 - `services/*/cmd/server/main.go`: Service entry point and server setup
 - `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `services/*/internal/adapters/persistence/`: Database models and repositories
-- `services/*/internal/domain/`: Business entities and domain logic
-- `services/*/internal/application/`: Use cases for business operations
+- `services/*/internal/adapters/persistence/`: Database entities and repositories
+  - Contains database entities with GORM annotations (e.g., `ClubEntity`, `PlayerMatchEntity`)
+  - Implements entity mapping between database and domain models
+- `services/*/internal/domain/`: Pure business entities and domain logic
+  - Contains pure domain entities with no infrastructure dependencies
+- `services/*/internal/application/`: Use cases and business operations
+- `services/*/internal/ports/`: Interface definitions for clean architecture
 
 #### Gateway:
 - `gateway/main.go`: Complete gateway implementation

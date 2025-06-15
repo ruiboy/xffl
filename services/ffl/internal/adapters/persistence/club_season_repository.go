@@ -15,30 +15,21 @@ func NewClubSeasonRepository(db *gorm.DB) out.ClubSeasonRepository {
 }
 
 func (r *clubSeasonRepository) FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, error) {
-	var clubSeasons []ffl.ClubSeason
+	var entities []FFLClubSeason
 	
-	// Use raw SQL to properly handle schema prefix and joins
-	err := r.db.Table("ffl.club_season cs").
-		Select("cs.*, c.name as club_name").
-		Joins("JOIN ffl.club c ON cs.club_id = c.id").
-		Where("cs.season_id = ? AND cs.deleted_at IS NULL", seasonID).
-		Order("cs.drv_premiership_points DESC").
-		Scan(&clubSeasons).Error
+	err := r.db.Preload("Club").
+		Where("season_id = ? AND deleted_at IS NULL", seasonID).
+		Order("drv_premiership_points DESC").
+		Find(&entities).Error
 	
 	if err != nil {
 		return nil, err
 	}
 	
-	// Load club data manually since Preload doesn't work well with schema prefixes
-	for i := range clubSeasons {
-		var club ffl.Club
-		err := r.db.Table("ffl.club").
-			Where("id = ?", clubSeasons[i].ClubID).
-			First(&club).Error
-		if err != nil {
-			return nil, err
-		}
-		clubSeasons[i].Club = club
+	// Convert to domain entities
+	clubSeasons := make([]ffl.ClubSeason, len(entities))
+	for i, entity := range entities {
+		clubSeasons[i] = entity.ToDomain()
 	}
 	
 	// Secondary sort by percentage (calculated field)
@@ -59,31 +50,40 @@ func (r *clubSeasonRepository) FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, 
 }
 
 func (r *clubSeasonRepository) FindByID(id uint) (*ffl.ClubSeason, error) {
-	var clubSeason ffl.ClubSeason
-	err := r.db.Table("ffl.club_season").Where("id = ? AND deleted_at IS NULL", id).First(&clubSeason).Error
+	var entity FFLClubSeason
+	err := r.db.Preload("Club").Where("id = ? AND deleted_at IS NULL", id).First(&entity).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	// Load club data manually
-	var club ffl.Club
-	err = r.db.Table("ffl.club").Where("id = ?", clubSeason.ClubID).First(&club).Error
-	if err != nil {
-		return nil, err
-	}
-	clubSeason.Club = club
-	
+	clubSeason := entity.ToDomain()
 	return &clubSeason, nil
 }
 
 func (r *clubSeasonRepository) Create(clubSeason *ffl.ClubSeason) error {
-	return r.db.Create(clubSeason).Error
+	var entity FFLClubSeason
+	entity.FromDomain(clubSeason)
+	
+	err := r.db.Create(&entity).Error
+	if err != nil {
+		return err
+	}
+	
+	// Update the domain entity with generated values
+	clubSeason.ID = entity.ID
+	clubSeason.CreatedAt = entity.CreatedAt
+	clubSeason.UpdatedAt = entity.UpdatedAt
+	
+	return nil
 }
 
 func (r *clubSeasonRepository) Update(clubSeason *ffl.ClubSeason) error {
-	return r.db.Save(clubSeason).Error
+	var entity FFLClubSeason
+	entity.FromDomain(clubSeason)
+	
+	return r.db.Save(&entity).Error
 }
 
 func (r *clubSeasonRepository) Delete(id uint) error {
-	return r.db.Where("id = ?", id).Delete(&ffl.ClubSeason{}).Error
+	return r.db.Where("id = ?", id).Delete(&FFLClubSeason{}).Error
 }

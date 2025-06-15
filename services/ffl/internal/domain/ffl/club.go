@@ -6,16 +6,12 @@ import (
 
 // Club represents a fantasy football club domain entity
 type Club struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	Name      string    `json:"name"`
-	Players   []Player  `json:"players"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	DeletedAt *time.Time `json:"deletedAt,omitempty" gorm:"index"`
-}
-
-func (c *Club) TableName() string {
-	return "ffl.club"
+	ID        uint       `json:"id"`
+	Name      string     `json:"name"`
+	Players   []Player   `json:"players"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
 // NewClub creates a new Club domain entity

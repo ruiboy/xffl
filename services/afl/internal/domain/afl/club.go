@@ -1,19 +1,12 @@
 package afl
 
-import (
-	"time"
-)
+import "time"
 
 // Club represents an AFL club entity
 type Club struct {
-	ID           uint      `json:"id" gorm:"primaryKey"`
-	Name         string    `json:"name" gorm:"not null"`
-	Abbreviation string    `json:"abbreviation" gorm:"not null;unique"`
+	ID           uint      `json:"id"`
+	Name         string    `json:"name"`
+	Abbreviation string    `json:"abbreviation"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
-}
-
-// TableName specifies the table name for this model
-func (Club) TableName() string {
-	return "afl.club"
 }

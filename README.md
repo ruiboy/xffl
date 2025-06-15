@@ -365,6 +365,13 @@ Each service follows Clean Architecture + Hexagonal Architecture principles:
 - **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
 - **Infrastructure** (`pkg/`): Shared database connections, configuration
 
+#### Dependency Inversion Pattern:
+- **Domain entities** are pure Go structs with no external dependencies
+- **Database entities** live in persistence adapters with GORM annotations
+- **Entity mapping** converts between domain and database models
+- **Repository interfaces** defined in domain, implemented in persistence layer
+- This ensures domain layer remains independent of infrastructure concerns
+
 #### Hexagonal Architecture Ports:
 - **Input Ports** (`services/*/internal/ports/in/`): Service interfaces
 - **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
@@ -373,7 +380,10 @@ Each service follows Clean Architecture + Hexagonal Architecture principles:
 - `services/*/cmd/server/main.go`: Service entry point and server setup
 - `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
 - `services/*/internal/adapters/persistence/`: Database implementations (output adapters)
+  - Contains separate database entities (e.g., `ClubEntity`, `PlayerMatchEntity`)
+  - Maps between database entities and domain entities
 - `services/*/internal/domain/`: Service-specific business entities
+  - Pure domain entities with no infrastructure dependencies
 - `services/*/internal/application/`: Service-specific use cases
 - `pkg/database/`: Shared database connection utilities
 
