@@ -23,55 +23,92 @@ type GraphQLResponse struct {
 	Errors []interface{}  `json:"errors,omitempty"`
 }
 
-type Gateway struct {
-	aflServiceURL string
-	fflServiceURL string
-	startTime     time.Time
+type ServiceConfig struct {
+	Services    map[string]ServiceDetails `json:"services"`
+	BuildTime   string                    `json:"buildTime"`
+	Version     string                    `json:"version"`
+	TypeClashes []interface{}             `json:"typeClashes"`
 }
 
-func NewGateway() *Gateway {
-	return &Gateway{
-		aflServiceURL: getEnvOrDefault("AFL_SERVICE_URL", "http://localhost:8081/query"),
-		fflServiceURL: getEnvOrDefault("FFL_SERVICE_URL", "http://localhost:8080/query"),
-		startTime:     time.Now(),
+type ServiceDetails struct {
+	URL       string   `json:"url"`
+	Queries   []string `json:"queries"`
+	Mutations []string `json:"mutations"`
+	Types     []string `json:"types"`
+}
+
+type Gateway struct {
+	config    ServiceConfig
+	startTime time.Time
+}
+
+func NewGateway() (*Gateway, error) {
+	// Load service configuration
+	configBytes, err := os.ReadFile("generated/service-config.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read service config: %w", err)
 	}
+
+	var config ServiceConfig
+	if err := json.Unmarshal(configBytes, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse service config: %w", err)
+	}
+
+	return &Gateway{
+		config:    config,
+		startTime: time.Now(),
+	}, nil
 }
 
 func (g *Gateway) routeRequest(query string) string {
-	// Simple string-based routing
+	// Use config-based routing
 	queryLower := strings.ToLower(query)
-	
-	// AFL service queries
-	if strings.Contains(queryLower, "aflclubs") {
-		return g.aflServiceURL
-	}
-	
-	// FFL service queries
-	if strings.Contains(queryLower, "fflclubs") ||
-	   strings.Contains(queryLower, "fflplayers") ||
-	   strings.Contains(queryLower, "fflladder") ||
-	   strings.Contains(queryLower, "createfflplayer") ||
-	   strings.Contains(queryLower, "updatefflplayer") ||
-	   strings.Contains(queryLower, "deletefflplayer") {
-		return g.fflServiceURL
-	}
 	
 	// Gateway metadata - handle locally
 	if strings.Contains(queryLower, "_gateway") {
 		return ""
 	}
 	
-	// Default to FFL service for unknown queries
-	return g.fflServiceURL
+	// Check each service's queries and mutations
+	for _, details := range g.config.Services {
+		// Check queries
+		for _, queryName := range details.Queries {
+			if strings.Contains(queryLower, strings.ToLower(queryName)) {
+				// Skip introspection fields
+				if strings.HasPrefix(queryName, "__") {
+					continue
+				}
+				return details.URL
+			}
+		}
+		// Check mutations  
+		for _, mutationName := range details.Mutations {
+			if strings.Contains(queryLower, strings.ToLower(mutationName)) {
+				return details.URL
+			}
+		}
+	}
+	
+	// Default to first service if no match found
+	for _, details := range g.config.Services {
+		return details.URL
+	}
+	
+	return ""
 }
 
 func (g *Gateway) handleGatewayMetadata() GraphQLResponse {
+	var services []string
+	for serviceName := range g.config.Services {
+		services = append(services, serviceName)
+	}
+
 	return GraphQLResponse{
 		Data: map[string]interface{}{
 			"_gateway": map[string]interface{}{
-				"version":   "1.0.0",
-				"services":  []string{"afl", "ffl"},
-				"lastBuild": g.startTime.Format(time.RFC3339),
+				"version":   g.config.Version,
+				"services":  services,
+				"lastBuild": g.config.BuildTime,
 				"uptime":    time.Since(g.startTime).Seconds(),
 			},
 		},
@@ -176,7 +213,10 @@ func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	gateway := NewGateway()
+	gateway, err := NewGateway()
+	if err != nil {
+		log.Fatalf("Failed to create gateway: %v", err)
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/query", gateway.handleGraphQL)
@@ -187,8 +227,11 @@ func main() {
 	fmt.Printf("🚀 XFFL Gateway starting on port %s\n", port)
 	fmt.Printf("📊 GraphQL endpoint: http://localhost:%s/query\n", port)
 	fmt.Printf("🔍 Health check: http://localhost:%s/health\n", port)
-	fmt.Printf("🔗 AFL Service: %s\n", gateway.aflServiceURL)
-	fmt.Printf("🔗 FFL Service: %s\n", gateway.fflServiceURL)
+	fmt.Printf("🔗 Loaded %d services from config\n", len(gateway.config.Services))
+	for serviceName, details := range gateway.config.Services {
+		fmt.Printf("   - %s: %s (%d queries, %d mutations)\n", 
+			serviceName, details.URL, len(details.Queries), len(details.Mutations))
+	}
 	
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

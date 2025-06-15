@@ -404,6 +404,10 @@ func formatTypeDefinition(w *strings.Builder, def *ast.Definition) {
 		}
 		w.WriteString(" {\n")
 		for _, field := range def.Fields {
+			// Skip introspection fields when formatting
+			if strings.HasPrefix(field.Name, "__") {
+				continue
+			}
 			w.WriteString("  " + field.Name)
 			if len(field.Arguments) > 0 {
 				w.WriteString("(")
