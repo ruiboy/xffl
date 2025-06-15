@@ -4,9 +4,40 @@ type Query {
   aflClubs: [AFLClub!]!
 }
 
+type Mutation {
+  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+}
+
 type AFLClub {
   id: ID!
   name: String!
   createdAt: String!
   updatedAt: String!
+}
+
+type AFLPlayerMatch {
+  id: ID!
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input UpdateAFLPlayerMatchInput {
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
 }

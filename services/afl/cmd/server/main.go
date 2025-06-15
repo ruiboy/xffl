@@ -33,12 +33,14 @@ func main() {
 
 	// Initialize repositories
 	clubRepo := persistence.NewClubRepository(db.DB)
+	playerMatchRepo := persistence.NewPlayerMatchRepository(db.DB)
 
 	// Initialize use cases (application services)
 	clubUseCase := application.NewClubService(clubRepo)
+	playerMatchUseCase := application.NewPlayerMatchService(playerMatchRepo)
 
 	// Initialize GraphQL resolver with dependency injection
-	resolver := graphql.NewResolver(clubUseCase)
+	resolver := graphql.NewResolver(clubUseCase, playerMatchUseCase)
 
 	// Initialize GraphQL server
 	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
