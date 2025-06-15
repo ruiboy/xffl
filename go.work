@@ -3,8 +3,8 @@ go 1.23.0
 toolchain go1.24.1
 
 use (
-	./services/ffl
-	./services/afl
-	./pkg
 	./gateway
+	./pkg
+	./services/afl
+	./services/ffl
 )
