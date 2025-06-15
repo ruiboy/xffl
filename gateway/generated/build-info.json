@@ -1,0 +1,10 @@
+{
+  "clashCount": 0,
+  "services": [
+    "afl",
+    "ffl"
+  ],
+  "timestamp": "2025-06-15T15:36:26+09:30",
+  "toolVersion": "1.0.0",
+  "typeCount": 22
+}

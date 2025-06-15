@@ -1,10 +1,10 @@
 # AFL GraphQL schema
 
 type Query {
-  aflClubs: [Club!]!
+  aflClubs: [AFLClub!]!
 }
 
-type Club {
+type AFLClub {
   id: ID!
   name: String!
   createdAt: String!
