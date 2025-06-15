@@ -289,8 +289,6 @@ xffl/
 │   └── go.mod                  # Gateway dependencies
 ├── pkg/                        # Shared packages
 │   ├── database/               # Database connection utilities
-│   ├── config/                 # Configuration management
-│   ├── utils/                  # Common utilities
 │   └── go.mod                  # Shared package dependencies
 ├── frontend/                   # Vue.js frontend
 │   ├── src/                    # Source code
@@ -378,7 +376,6 @@ Each service follows Clean Architecture + Hexagonal Architecture principles:
 - `services/*/internal/domain/`: Service-specific business entities
 - `services/*/internal/application/`: Service-specific use cases
 - `pkg/database/`: Shared database connection utilities
-- `pkg/config/`: Shared configuration management
 
 ### Data Model
 
