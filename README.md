@@ -73,7 +73,7 @@ The application uses environment variables for database configuration. Copy the 
 cp services/ffl/.env.example services/ffl/.env
 # Edit services/ffl/.env with your database credentials
 
-# For AFL service (when available)
+# For AFL service
 cp services/afl/.env.example services/afl/.env
 # Edit services/afl/.env with your database credentials
 ```
@@ -148,7 +148,7 @@ The FFL service will start on `http://localhost:8080` with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
-### AFL Service (Future)
+### AFL Service
 
 ```bash
 # Generate GraphQL code  
@@ -186,21 +186,7 @@ The gateway uses simple string-based routing:
 - Queries containing `_gateway` → Gateway metadata (handled locally)
 - All other queries → FFL service (default)
 
-Examples:
-```graphql
-# Routes to AFL service
-query { aflClubs { id name } }
-
-# Routes to FFL service  
-query { fflClubs { id name } }
-query { fflPlayers { id name } }
-
-# Handled by gateway
-query { _gateway { version services uptime } }
-```
-
-## Web 
-Frontend Setup
+## Web
 
 ### Running the Frontend
 
@@ -220,7 +206,7 @@ The frontend will be available at `http://localhost:3000`.
    go run cmd/server/main.go
    ```
 
-2. Start the AFL service (when available):
+2. Start the AFL service:
    ```bash
    cd services/afl
    PORT=8081 go run cmd/server/main.go
