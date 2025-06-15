@@ -35,12 +35,12 @@ func main() {
 
 	// Initialize PostgreSQL event dispatcher (separate from domain persistence)
 	eventLogger := log.New(os.Stdout, "[FFL-EVENTS] ", log.LstdFlags)
-	eventConnStr := "user=postgres dbname=xffl sslmode=disable" // Same DB, separate connection
+	eventConnStr := getEnvOrDefault("EVENT_DB_URL", "user=postgres dbname=xffl sslmode=disable")
 	eventDispatcher, err := postgres.NewPostgresDispatcher(eventConnStr, eventLogger)
 	if err != nil {
 		log.Fatalf("Failed to create PostgreSQL event dispatcher: %v", err)
 	}
-	
+
 	// Start event dispatcher
 	ctx := context.Background()
 	if err := eventDispatcher.Start(ctx); err != nil {
@@ -61,7 +61,7 @@ func main() {
 	clubUseCase := application.NewClubService(clubRepo)
 	clubSeasonUseCase := application.NewClubSeasonService(clubSeasonRepo)
 	playerUseCase := application.NewPlayerService(playerRepo, clubRepo)
-	
+
 	// Initialize fantasy score service and subscribe to AFL events
 	fantasyScoreService := application.NewFantasyScoreService(eventDispatcher, eventLogger)
 	if err := eventDispatcher.Subscribe("AFL.PlayerMatchUpdated", fantasyScoreService); err != nil {
@@ -106,4 +106,12 @@ func main() {
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

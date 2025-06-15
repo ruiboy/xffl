@@ -10,6 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Generate GraphQL code: `cd services/ffl && go run github.com/99designs/gqlgen generate`
 - Build service: `cd services/ffl && go build -o bin/server cmd/server/main.go`
 
+### Environment Variables
+- `EVENT_DB_URL` - PostgreSQL connection string for cross-service events (default: "user=postgres dbname=xffl sslmode=disable")
+- `PORT` - Service port (defaults: FFL=8080, AFL=8081, Gateway=8090)
+
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
 - No code generation needed - pure Go standard library
