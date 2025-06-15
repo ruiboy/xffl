@@ -6,5 +6,5 @@ use (
 	./services/ffl
 	./services/afl
 	./pkg
-	./tools/schema-merger
+	./gateway
 )
