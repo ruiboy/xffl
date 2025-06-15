@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -13,10 +14,11 @@ import (
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"xffl/pkg/database"
+	"xffl/pkg/events/memory"
 	"xffl/services/afl/internal/adapters/graphql"
 	"xffl/services/afl/internal/adapters/persistence"
 	"xffl/services/afl/internal/application"
-	"xffl/pkg/database"
 )
 
 const defaultPort = "8081"
@@ -31,13 +33,24 @@ func main() {
 	db := database.NewDatabase()
 	defer db.Close()
 
+	// Initialize event dispatcher
+	eventLogger := log.New(os.Stdout, "[AFL-EVENTS] ", log.LstdFlags)
+	eventDispatcher := memory.NewInMemoryDispatcher(eventLogger)
+	
+	// Start event dispatcher
+	ctx := context.Background()
+	if err := eventDispatcher.Start(ctx); err != nil {
+		log.Fatalf("Failed to start event dispatcher: %v", err)
+	}
+	defer eventDispatcher.Stop()
+
 	// Initialize repositories
 	clubRepo := persistence.NewClubRepository(db.DB)
 	playerMatchRepo := persistence.NewPlayerMatchRepository(db.DB)
 
 	// Initialize use cases (application services)
 	clubUseCase := application.NewClubService(clubRepo)
-	playerMatchUseCase := application.NewPlayerMatchService(playerMatchRepo)
+	playerMatchUseCase := application.NewPlayerMatchService(playerMatchRepo, eventDispatcher)
 
 	// Initialize GraphQL resolver with dependency injection
 	resolver := graphql.NewResolver(clubUseCase, playerMatchUseCase)
