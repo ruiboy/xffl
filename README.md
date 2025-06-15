@@ -273,13 +273,16 @@ xffl/
 │   │   ├── api/graphql/        # FFL GraphQL schema
 │   │   ├── cmd/server/         # Service entry point
 │   │   ├── internal/           # Service-specific code
-│   │   │   ├── domain/         # FFL business entities
-│   │   │   ├── application/    # FFL use cases
+│   │   │   ├── domain/         # FFL business entities & events
+│   │   │   │   └── events/     # FFL domain events
+│   │   │   ├── application/    # FFL use cases & event handlers
 │   │   │   ├── adapters/       # GraphQL resolvers, persistence
 │   │   │   └── ports/          # Interface definitions
+│   │   │       ├── in/         # Input ports (service interfaces)
+│   │   │       └── out/        # Output ports (repository interfaces)
 │   │   ├── go.mod              # FFL service dependencies
 │   │   └── gqlgen.yml          # GraphQL generation config
-│   └── afl/                    # Australian Football League service (future)
+│   └── afl/                    # Australian Football League service
 │       ├── api/graphql/        # AFL GraphQL schema
 │       ├── cmd/server/         # Service entry point
 │       ├── internal/           # Service-specific code
@@ -289,6 +292,10 @@ xffl/
 │   └── go.mod                  # Gateway dependencies
 ├── pkg/                        # Shared packages
 │   ├── database/               # Database connection utilities
+│   ├── events/                 # Cross-service event system
+│   │   ├── memory/             # In-memory event dispatcher
+│   │   ├── postgres/           # PostgreSQL LISTEN/NOTIFY dispatcher
+│   │   └── examples/           # Event system examples & demos
 │   └── go.mod                  # Shared package dependencies
 ├── frontend/                   # Vue.js frontend
 │   ├── src/                    # Source code
@@ -609,9 +616,19 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Enforces good separation, makes testing easier, educational value
 - **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
 
+#### 🏗️ **Event System Architecture**
+- **Decision**: Clean separation with `EventDispatcher` interface, strongly-typed domain events, serialized as json for cross-service messaging
+- **Why for Hobby**: Testable event flows, asynchronous processing, cross-service functionality without HTTP coupling
+- **Scale Path**: Swap implementations without changing application code, add event sourcing capabilities
+
+#### 🎭 **Cross-Service Events with PostgreSQL LISTEN/NOTIFY**
+- **Decision**: Implement cross-service communication using PostgreSQL's native pub/sub messaging for domain events
+- **Why for Hobby**: Zero additional infrastructure, leverages existing database, minimal setup complexity, production-ready (used by Supabase, GitHub)
+- **Scale Path**: Easy migration to NATS, Redis pub/sub, AWS EventBridge/SQS, GCP Pub/Sub, Apache Kafka via `EventDispatcher` interface
+
 ### Frontend Integration Strategy
 
-#### 🚪 **GraphQL Gateway (Current)**
+#### 🚪 **GraphQL Gateway**
 - **Decision**: Single gateway service that proxies to AFL and FFL services
 - **Why for Hobby**: Unified frontend experience, simple CORS handling, easy to understand routing
 - **Scale Path**: Add GraphQL Federation, complex query planning, schema stitching
@@ -633,4 +650,5 @@ The architecture is designed to support multiple evolution paths:
 
 1. **Monolith Consolidation**: Merge services into single binary if complexity isn't needed
 2. **True Microservices**: Separate databases, independent deployment, service mesh
-3. **Event-Driven**: Add message queues, event sourcing, CQRS patterns
+3. **Event-Driven Scale**: Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
+4. **Event Sourcing**: Add event store, replay capabilities, full audit trails
