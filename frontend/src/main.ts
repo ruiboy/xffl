@@ -20,9 +20,9 @@ import 'primevue/resources/themes/aura-dark-lime/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 
-// Create Apollo Client
+// Create Apollo Client - now pointing to gateway
 const httpLink = createHttpLink({
-  uri: 'http://localhost:8080/query',
+  uri: 'http://localhost:8090/query',
   credentials: 'include',
   headers: {
     'Content-Type': 'application/json',
