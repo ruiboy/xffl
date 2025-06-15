@@ -7,9 +7,39 @@ Totally over engineered for what it does, but, experimenting.
 - **AFL** = Australian Football League  
 - **FFL** = Fantasy Football League
 
-Primary techs are golang, graphql, postgres, Vue, Zinc
+Primary techs are Golang, GraphQL, Postgres, Vue, Zinc
 
 Built with a lot of code agent.
+
+![Logical View](doc/logical-view.png)
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Database Setup](#database-setup)
+  - [Installing PostgreSQL](#installing-postgresql)
+  - [Database Configuration](#database-configuration)
+  - [Running Migrations](#running-migrations)
+  - [Test Data](#test-data)
+- [Services Setup](#services-setup)
+  - [Shared Package](#shared-package)
+  - [FFL Service](#ffl-service)
+  - [AFL Service](#afl-service-future)
+  - [Gateway Service](#gateway-service)
+- [Web Frontend Setup](#web-frontend-setup)
+  - [Running the Frontend](#running-the-frontend)
+- [Development](#development)
+- [Project Structure](#project-structure)
+- [Architecture](#architecture)
+  - [Frontend](#frontend)
+  - [Services Architecture](#services-architecture)
+  - [Data Model](#data-model)
+- [Architecture Decisions](#architecture-decisions)
+  - [Current Architecture Choices](#current-architecture-choices)
+  - [Frontend Integration Strategy](#frontend-integration-strategy)
+  - [Technology Rationale](#technology-rationale)
+  - [Migration Paths](#migration-paths)
+
 
 ## Prerequisites
 
@@ -159,7 +189,7 @@ go run github.com/99designs/gqlgen generate
 go build -o bin/server cmd/server/main.go
 
 # Or run directly
-PORT=8081 go run cmd/server/main.go
+go run cmd/server/main.go
 ```
 
 The AFL service will start on `http://localhost:8081` when implemented.
@@ -272,6 +302,46 @@ xffl/
 
 ## Architecture
 
+![Logical View](doc/logical-view.png)
+
+```plantuml
+@startuml
+
+[Vue App] as vueapp
+
+node "XFFL" {
+  [Gateway] as gateway
+
+  [AFL Service] as aflservice
+  [FFL Service] as fflservice
+
+  database "AFL DB" as afldb
+  database "FFL DB" as ffldb
+
+  database "AFL Events <<queue>>" as aflqueue
+  database "FFL Events <<queue>" as fflqueue
+
+  [Search Index] as searchindex
+}
+
+vueapp <--> gateway : graphql
+
+gateway <--> aflservice : graphql
+aflservice <-> afldb
+aflservice --> aflqueue : "events (stats etc)"
+aflqueue --> searchindex
+aflqueue -> fflservice : (stats)
+
+gateway <--> fflservice : graphql
+fflservice <-> ffldb
+fflservice --> fflqueue : "events (teams, scores etc)" 
+fflqueue --> searchindex
+
+gateway <-- searchindex : rest
+
+@enduml
+```
+
 ### Frontend
 
 #### Key Components
@@ -318,6 +388,8 @@ The application is designed to manage two types of leagues: AFL (Australian Foot
 Ostensibly, data is stored in first normal form (1NF). However, at this stage, to optimize read performance for the frontend, some data is denormalized. This includes pre-calculated fields like scores, premiership points, and match results.
 
 #### AFL League Data Model
+
+![AFL ERD](doc/erd-afl.png)
 
 ```plantuml 
 @startuml
@@ -409,9 +481,9 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
-![AFL ERD](doc/erd-afl.png)
-
 #### FFL League Data Model
+
+![FFL ERD](doc/erd-ffl.png)
 
 ```plantuml 
 @startuml
@@ -500,8 +572,6 @@ PlayerSeason *-- "0..*" PlayerMatch
 @enduml
 ```
 
-![FFL ERD](doc/erd-ffl.png)
-
 ## Architecture Decisions
 
 This project demonstrates a **modular microservices architecture** that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
@@ -550,16 +620,6 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Decision**: Services can run in same Kubernetes pod or separate pods
 - **Why for Hobby**: Start simple (same pod), easy resource sharing, localhost communication
 - **Scale Path**: Independent pod deployment, auto-scaling, service mesh (Istio/Linkerd)
-
-### Technology Rationale
-
-| Choice | Hobby Benefit | Enterprise Scaling |
-|--------|---------------|-------------------|
-| **Go Services** | Fast compilation, simple deployment, excellent tooling | High performance, excellent concurrency, cloud-native |
-| **GraphQL** | Type safety, single endpoint, excellent dev tools | Schema federation, efficient data loading, API evolution |
-| **PostgreSQL** | Mature, reliable, excellent JSON support | Horizontal scaling (Citus), advanced features, ecosystem |
-| **Vue.js** | Gentle learning curve, good documentation | Component ecosystem, SSR (Nuxt), mobile (Ionic) |
-| **Clean Architecture** | Forces good habits, testable, educational | Scales to large teams, enables microservices, maintainable |
 
 ### Migration Paths
 
