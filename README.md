@@ -91,24 +91,28 @@ DB_PORT=5432
 
 ### Running Migrations
 
-The database schema is managed through SQL migration files. To apply the migrations:
+The database schema is managed through SQL migration files in the `infrastructure/postgres/` directory. To apply the migrations:
 
 ```bash
 # AFL migrations
-psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql
+psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql
 
 # FFL migrations  
-psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql
+psql -U postgres -d xffl -f infrastructure/postgres/migrations/002_create_ffl_tables_up.sql
 ```
 
 You can revert by running the down migrations.
 
 ### Test Data
 
-Test data scripts are available in the service directories. To insert test data:
+Test data scripts are available in the infrastructure directory. To insert test data:
 
 ```bash
-psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/test_scripts/insert_ffl_data.sql
+# AFL test data
+psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sql
+
+# FFL test data
+psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql
 ```
 
 ## Services Setup
@@ -244,7 +248,11 @@ The frontend will be available at `http://localhost:3000`.
 
 ```
 xffl/
-├── services/                    # Independent microservices
+├── infrastructure/             # Infrastructure and database setup
+│   └── postgres/               # PostgreSQL configuration
+│       ├── migrations/         # Database schema migrations
+│       └── test_data/          # Test data scripts
+├── services/                   # Independent microservices
 │   ├── ffl/                    # Fantasy Football League service
 │   │   ├── api/graphql/        # FFL GraphQL schema
 │   │   ├── cmd/server/         # Service entry point

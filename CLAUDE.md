@@ -20,9 +20,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Build for production: `cd frontend && npm run build && npm run preview`
 
 ### Database
-- Run AFL migrations: `psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/001_create_afl_tables_up.sql`
-- Run FFL migrations: `psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/migrations/002_create_ffl_tables_up.sql`
-- Insert test data: `psql -U postgres -d xffl -f services/ffl/internal/adapters/persistence/test_scripts/insert_ffl_data.sql`
+- Run AFL migrations: `psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql`
+- Run FFL migrations: `psql -U postgres -d xffl -f infrastructure/postgres/migrations/002_create_ffl_tables_up.sql`
+- Insert AFL test data: `psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sql`
+- Insert FFL test data: `psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql`
 
 ## Architecture
 
