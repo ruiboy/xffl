@@ -1,0 +1,84 @@
+@startuml
+hide empty members
+
+skinparam class {
+  BackgroundColor<<league>> Gold
+  BackgroundColor<<club>> LightBlue 
+  BackgroundColor<<player>> LightGreen
+}
+
+class League <<league>> {
+  eg. FFL
+}
+class Season <<league>> {
+  eg. FFL 2025 
+}
+class Round <<league>> {
+  eg. FFL 2025 Rd 1
+}
+class Match <<league>> {
+  eg. ROOS v FRED in FFL 2025 Rd 1
+  match_style: versus|bye|super_bye
+  clubs[]
+  --
+  <<denormalized>>
+  result
+}
+
+class Club <<club>> {
+  eg. ROOS
+}
+class ClubSeason <<club>> {
+  eg. ROOS in FFL 2025
+  --
+  <<denormalized>>
+  played
+  won
+  lost
+  drawn
+  for
+  against
+  extra_points
+  premiership_points
+}
+class ClubMatch <<club>> {
+  eg. ROOS in ROOS v FRED in FFL 2025 Rd 1
+  --
+  <<denormalized>>
+  score
+  premiership_points
+}
+
+class Player <<player>> {
+  eg. Dawson
+}
+class PlayerSeason <<player>> {
+  eg. Dawson in ROOS in FFL 2025
+  from_round_id
+  to_round_id
+}
+class PlayerMatch <<player>> {
+  eg. Dawson in ROOS in ROOS v FRED in FFL 2025 Rd 1
+  position
+  interchange_positions
+  status: dnp|subbed_in
+  score
+}
+
+League *-- "0..*" Season
+Season *-- "0..*" Round
+Round *-- "0..*" Match
+
+Club *-- "0..*" ClubSeason
+Season *-- "0..*" ClubSeason
+
+Match *-- "2" ClubMatch
+ClubSeason *-- "0..*" ClubMatch
+
+Player *-- "0..*" PlayerSeason
+ClubSeason *-- "0..*" PlayerSeason
+
+ClubMatch *-- "0..*" PlayerMatch
+PlayerSeason *-- "0..*" PlayerMatch
+
+@enduml

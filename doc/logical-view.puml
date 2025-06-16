@@ -1,0 +1,35 @@
+@startuml
+
+[Vue App] as vueapp
+
+node "XFFL" {
+  [Gateway] as gateway
+
+  [AFL Service] as aflservice
+  [FFL Service] as fflservice
+
+  database "AFL DB" as afldb
+  database "FFL DB" as ffldb
+
+  database "AFL Events <<queue>>" as aflqueue
+  database "FFL Events <<queue>>" as fflqueue
+
+  database "Search Index" as searchindex
+}
+
+vueapp <--> gateway : graphql
+
+gateway <--> aflservice : graphql
+aflservice <-> afldb
+aflservice --> aflqueue : "events (stats etc)"
+aflqueue --> searchindex
+aflqueue -> fflservice : (stats)
+
+gateway <--> fflservice : graphql
+fflservice <-> ffldb
+fflservice --> fflqueue : "events (teams, scores etc)" 
+fflqueue --> searchindex
+
+gateway <-- searchindex : rest
+
+@enduml
