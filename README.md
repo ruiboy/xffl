@@ -327,7 +327,7 @@ node "XFFL" {
   database "AFL Events <<queue>>" as aflqueue
   database "FFL Events <<queue>" as fflqueue
 
-  [Search Index] as searchindex
+  database "Search Index" as searchindex
 }
 
 vueapp <--> gateway : graphql
