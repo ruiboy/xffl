@@ -1,0 +1,36 @@
+name: Generate PlantUML Diagrams
+
+on:
+  push:
+    paths:
+      - 'doc/*.puml'
+      - '.github/workflows/plantuml.yml'
+  pull_request:
+    paths:
+      - 'doc/*.puml'
+
+jobs:
+  generate-diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate PlantUML diagrams
+        uses: plantuml/plantuml-github-action@v1
+        with:
+          args: -v -tpng "doc/*.puml"
+
+      - name: Commit generated diagrams
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add doc/*.png
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-generate PlantUML diagrams [skip ci]"
+            git push
+          fi
