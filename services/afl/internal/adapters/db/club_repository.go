@@ -1,19 +1,18 @@
-package persistence
+package db
 
 import (
 	"time"
 	"gorm.io/gorm"
 	"xffl/services/afl/internal/domain/afl"
-	"xffl/services/afl/internal/ports/out"
 )
 
-// ClubRepository implements the ClubRepository interface
+// ClubRepository implements club database operations
 type ClubRepository struct {
 	db *gorm.DB
 }
 
 // NewClubRepository creates a new ClubRepository
-func NewClubRepository(db *gorm.DB) out.ClubRepository {
+func NewClubRepository(db *gorm.DB) *ClubRepository {
 	return &ClubRepository{db: db}
 }
 

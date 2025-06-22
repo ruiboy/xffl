@@ -17,8 +17,8 @@ import (
 	"xffl/pkg/database"
 	"xffl/pkg/events/postgres"
 	"xffl/services/afl/internal/adapters/graphql"
-	"xffl/services/afl/internal/adapters/persistence"
-	"xffl/services/afl/internal/application"
+	dbadapter "xffl/services/afl/internal/adapters/db"
+	"xffl/services/afl/internal/services"
 )
 
 const defaultPort = "8081"
@@ -53,15 +53,15 @@ func main() {
 	}()
 
 	// Initialize repositories
-	clubRepo := persistence.NewClubRepository(db.DB)
-	playerMatchRepo := persistence.NewPlayerMatchRepository(db.DB)
+	clubRepo := dbadapter.NewClubRepository(db.DB)
+	playerMatchRepo := dbadapter.NewPlayerMatchRepository(db.DB)
 
-	// Initialize use cases (application services)
-	clubUseCase := application.NewClubService(clubRepo)
-	playerMatchUseCase := application.NewPlayerMatchService(playerMatchRepo, eventDispatcher)
+	// Initialize services
+	clubService := services.NewClubService(clubRepo)
+	playerMatchService := services.NewPlayerMatchService(playerMatchRepo, eventDispatcher)
 
 	// Initialize GraphQL resolver with dependency injection
-	resolver := graphql.NewResolver(clubUseCase, playerMatchUseCase)
+	resolver := graphql.NewResolver(clubService, playerMatchService)
 
 	// Initialize GraphQL server
 	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))

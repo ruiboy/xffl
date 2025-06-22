@@ -1,19 +1,18 @@
-package persistence
+package db
 
 import (
 	"time"
 	"gorm.io/gorm"
 	"xffl/services/afl/internal/domain/afl"
-	"xffl/services/afl/internal/ports/out"
 )
 
-// PlayerMatchRepository implements the PlayerMatchRepository interface
+// PlayerMatchRepository implements player match database operations
 type PlayerMatchRepository struct {
 	db *gorm.DB
 }
 
 // NewPlayerMatchRepository creates a new player match repository
-func NewPlayerMatchRepository(db *gorm.DB) out.PlayerMatchRepository {
+func NewPlayerMatchRepository(db *gorm.DB) *PlayerMatchRepository {
 	return &PlayerMatchRepository{db: db}
 }
 

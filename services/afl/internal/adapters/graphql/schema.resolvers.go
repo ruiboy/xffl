@@ -54,7 +54,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 	}
 
 	// Update the player match
-	updatedPlayerMatch, err := r.playerMatchUseCase.UpdatePlayerMatch(uint(playerSeasonID), uint(clubMatchID), stats)
+	updatedPlayerMatch, err := r.playerMatchService.UpdatePlayerMatch(uint(playerSeasonID), uint(clubMatchID), stats)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update player match: %w", err)
 	}
@@ -64,7 +64,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 
 // AflClubs is the resolver for the aflClubs field.
 func (r *queryResolver) AflClubs(ctx context.Context) ([]*model.AFLClub, error) {
-	clubs, err := r.clubUseCase.GetAllClubs()
+	clubs, err := r.clubService.GetAllClubs()
 	if err != nil {
 		return nil, err
 	}
