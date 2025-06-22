@@ -244,23 +244,31 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
    go run cmd/server/main.go
    ```
 
-3. Start the gateway:
+3. Start the search service:
+   ```bash
+   cd services/search
+   go run cmd/server/main.go
+   ```
+
+4. Start the gateway:
    ```bash
    cd gateway
    go run main.go
    ```
 
-4. Start the frontend development server:
+5. Start the frontend development server:
    ```bash
    cd frontend
    npm run dev
    ```
 
-5. Access the application:
+6. Access the application:
    - Frontend: http://localhost:3000 (uses gateway)
    - Gateway: http://localhost:8090/query
+   - Search: http://localhost:8090/search
    - AFL GraphQL Playground: http://localhost:8080
    - FFL GraphQL Playground: http://localhost:8081
+   - Search Service Direct: http://localhost:8082/search
 
 ## Project Structure
 
@@ -283,11 +291,21 @@ xffl/
 │   │   │       └── db/         # Database output adapters
 │   │   ├── go.mod              # FFL service dependencies
 │   │   └── gqlgen.yml          # GraphQL generation config
-│   └── afl/                    # Australian Football League service
-│       ├── api/graphql/        # AFL GraphQL schema
+│   ├── afl/                    # Australian Football League service
+│   │   ├── api/graphql/        # AFL GraphQL schema
+│   │   ├── cmd/server/         # Service entry point
+│   │   ├── internal/           # Service-specific code
+│   │   └── go.mod              # AFL service dependencies
+│   └── search/                 # Search service
 │       ├── cmd/server/         # Service entry point
 │       ├── internal/           # Service-specific code
-│       └── go.mod              # AFL service dependencies
+│       │   ├── domain/         # Search entities & events
+│       │   ├── services/       # Search & indexing services
+│       │   └── adapters/       # HTTP, events, search adapters
+│       │       ├── http/       # REST API handlers
+│       │       ├── events/     # Event subscribers
+│       │       └── search/     # Zinc search adapter
+│       └── go.mod              # Search service dependencies
 ├── gateway/                    # GraphQL Gateway service
 │   ├── main.go                 # Gateway implementation
 │   └── go.mod                  # Gateway dependencies
@@ -364,7 +382,8 @@ Each service follows **Clean Architecture** with Go best practices:
 
 #### Service Independence:
 - **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8080)
-- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8081)
+- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8081)  
+- **Search Service** (`services/search/`): Handles search indexing and queries (port 8082)
 - **Shared Package** (`pkg/`): Common utilities used by all services
 
 #### Architecture Layers (per service):
@@ -391,6 +410,37 @@ Each service follows **Clean Architecture** with Go best practices:
 - `services/*/internal/services/`: Service-specific business logic and local repository interfaces
   - Each service defines interfaces for only the repository methods it needs
 - `pkg/database/`: Shared database connection utilities
+
+### Search Service Architecture
+
+The Search Service provides technology-agnostic search capabilities with event-driven indexing:
+
+#### Key Features:
+- **Technology Agnostic**: Zinc adapter with migration path to Elasticsearch/OpenSearch
+- **Event-Driven Indexing**: Subscribes to AFL/FFL domain events for eventual consistency
+- **REST API**: Unified search endpoint accessible through gateway
+- **Clean Architecture**: Domain entities, services, and adapters separation
+
+#### Search Flow:
+1. **Domain Events**: AFL/FFL services publish `player_match_updated` and `fantasy_score_calculated` events
+2. **Event Processing**: Search service subscribes and processes events to create search documents
+3. **Indexing**: Documents indexed in Zinc with structured metadata and tags
+4. **Search**: Frontend queries via gateway REST endpoint (`/search?q=query&source=afl`)
+5. **Results**: Structured search results with relevance scoring and pagination
+
+#### Search Components:
+- **Domain**: `SearchDocument`, `SearchQuery`, `SearchResults` value objects
+- **Services**: `SearchService` (query execution), `IndexingService` (event processing)
+- **Adapters**: 
+  - `ZincRepository` (search engine adapter)
+  - `EventHandlers` (domain event subscribers)
+  - `HTTPHandlers` (REST API endpoints)
+
+#### Supported Queries:
+- **Full-text search**: Players, clubs, matches across AFL and FFL
+- **Filtering**: By source (`afl`, `ffl`), document type (`player`, `club`)
+- **Sorting**: Score, relevance, custom fields
+- **Pagination**: Limit/offset with total count
 
 ### Data Model
 

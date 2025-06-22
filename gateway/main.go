@@ -24,16 +24,18 @@ type GraphQLResponse struct {
 }
 
 type Gateway struct {
-	aflServiceURL string
-	fflServiceURL string
-	startTime     time.Time
+	aflServiceURL    string
+	fflServiceURL    string
+	searchServiceURL string
+	startTime        time.Time
 }
 
 func NewGateway() *Gateway {
 	return &Gateway{
-		aflServiceURL: getEnvOrDefault("AFL_SERVICE_URL", "http://localhost:8080/query"),
-		fflServiceURL: getEnvOrDefault("FFL_SERVICE_URL", "http://localhost:8081/query"),
-		startTime:     time.Now(),
+		aflServiceURL:    getEnvOrDefault("AFL_SERVICE_URL", "http://localhost:8080/query"),
+		fflServiceURL:    getEnvOrDefault("FFL_SERVICE_URL", "http://localhost:8081/query"),
+		searchServiceURL: getEnvOrDefault("SEARCH_SERVICE_URL", "http://localhost:8082"),
+		startTime:        time.Now(),
 	}
 }
 
@@ -161,20 +163,66 @@ func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
+func (g *Gateway) handleSearch(w http.ResponseWriter, r *http.Request) {
+	// CORS headers
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Proxy search request to search service
+	searchURL := fmt.Sprintf("%s/search?%s", g.searchServiceURL, r.URL.RawQuery)
+	
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(searchURL)
+	if err != nil {
+		log.Printf("Search proxy error: %v", err)
+		http.Error(w, "Search service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy status code
+	w.WriteHeader(resp.StatusCode)
+	
+	// Copy headers
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+
+	// Copy response body
+	io.Copy(w, resp.Body)
+}
+
 func main() {
 	gateway := NewGateway()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/query", gateway.handleGraphQL)
+	mux.HandleFunc("/search", gateway.handleSearch)
 	mux.HandleFunc("/health", gateway.handleHealth)
 
 	port := getEnvOrDefault("PORT", "8090")
 
 	fmt.Printf("🚀 XFFL Minimal Gateway starting on port %s\n", port)
 	fmt.Printf("📊 GraphQL endpoint: http://localhost:%s/query\n", port)
+	fmt.Printf("🔍 Search endpoint: http://localhost:%s/search\n", port)
 	fmt.Printf("🔍 Health check: http://localhost:%s/health\n", port)
 	fmt.Printf("🔗 AFL Service: %s\n", gateway.aflServiceURL)
 	fmt.Printf("🔗 FFL Service: %s (default)\n", gateway.fflServiceURL)
+	fmt.Printf("🔗 Search Service: %s\n", gateway.searchServiceURL)
 	fmt.Printf("🎯 Routing: 'afl' → AFL, 'ffl' → FFL, default → FFL\n")
 
 	log.Fatal(http.ListenAndServe(":"+port, mux))

@@ -7,12 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Services (Go)
 - Start AFL service: `cd services/afl && go run cmd/server/main.go` (port 8080)
 - Start FFL service: `cd services/ffl && go run cmd/server/main.go` (port 8081)
+- Start Search service: `cd services/search && go run cmd/server/main.go` (port 8082)
 - Generate GraphQL code: `cd services/ffl && go run github.com/99designs/gqlgen generate`
 - Build service: `cd services/ffl && go build -o bin/server cmd/server/main.go`
 
 ### Environment Variables
 - `EVENT_DB_URL` - PostgreSQL connection string for cross-service events (default: "user=postgres dbname=xffl sslmode=disable")
-- `PORT` - Service port (defaults: AFL=8080, FFL=8081, Gateway=8090)
+- `PORT` - Service port (defaults: AFL=8080, FFL=8081, Search=8082, Gateway=8090)
+- `ZINC_URL` - Zinc search engine URL (default: "http://localhost:4080")
 
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
