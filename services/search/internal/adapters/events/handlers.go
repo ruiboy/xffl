@@ -69,37 +69,3 @@ func (h *FantasyScoreHandler) HandlerName() string {
 	return "search.fantasy_score_indexer"
 }
 
-// IndexUpdateHandler handles search index update events (for monitoring/logging)
-type IndexUpdateHandler struct {
-	logger *log.Logger
-}
-
-// NewIndexUpdateHandler creates a new index update event handler
-func NewIndexUpdateHandler(logger *log.Logger) *IndexUpdateHandler {
-	if logger == nil {
-		logger = log.Default()
-	}
-	
-	return &IndexUpdateHandler{
-		logger: logger,
-	}
-}
-
-// Handle processes an index update event
-func (h *IndexUpdateHandler) Handle(ctx context.Context, event events.DomainEvent) error {
-	h.logger.Printf("IndexUpdateHandler: Search index updated - %s for aggregate %s", 
-		event.EventType(), event.AggregateID())
-	
-	// This handler is primarily for logging/monitoring
-	// In a production system, you might want to:
-	// - Update metrics
-	// - Send notifications
-	// - Update search analytics
-	
-	return nil
-}
-
-// HandlerName returns the name of this handler
-func (h *IndexUpdateHandler) HandlerName() string {
-	return "search.index_update_monitor"
-}

@@ -7,7 +7,6 @@ import (
 	"time"
 	"xffl/pkg/events"
 	"xffl/services/search/internal/domain"
-	searchEvents "xffl/services/search/internal/domain/events"
 )
 
 // eventDispatcher defines the interface for publishing events
@@ -51,12 +50,6 @@ func (s *IndexingService) HandlePlayerMatchUpdated(ctx context.Context, event ev
 		return fmt.Errorf("failed to index player match: %w", err)
 	}
 	
-	// Publish index update event
-	indexEvent := searchEvents.NewIndexUpdated(doc.ID, string(doc.Type), doc.Source, "update")
-	if err := s.eventDispatcher.Publish(ctx, indexEvent); err != nil {
-		s.logger.Printf("Failed to publish index update event: %v", err)
-		// Don't fail the operation for event publishing failures
-	}
 	
 	s.logger.Printf("Successfully indexed player match document: %s", doc.ID)
 	return nil
@@ -78,12 +71,6 @@ func (s *IndexingService) HandleFantasyScoreCalculated(ctx context.Context, even
 		return fmt.Errorf("failed to index player: %w", err)
 	}
 	
-	// Publish index update event
-	indexEvent := searchEvents.NewIndexUpdated(doc.ID, string(doc.Type), doc.Source, "update")
-	if err := s.eventDispatcher.Publish(ctx, indexEvent); err != nil {
-		s.logger.Printf("Failed to publish index update event: %v", err)
-		// Don't fail the operation for event publishing failures
-	}
 	
 	s.logger.Printf("Successfully indexed player document: %s", doc.ID)
 	return nil

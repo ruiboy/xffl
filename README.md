@@ -299,12 +299,12 @@ xffl/
 │   └── search/                 # Search service
 │       ├── cmd/server/         # Service entry point
 │       ├── internal/           # Service-specific code
-│       │   ├── domain/         # Search entities & events
+│       │   ├── domain/         # Search entities
 │       │   ├── services/       # Search & indexing services
-│       │   └── adapters/       # HTTP, events, search adapters
-│       │       ├── http/       # REST API handlers
-│       │       ├── events/     # Event subscribers
-│       │       └── search/     # Zinc search adapter
+│       │   └── adapters/       # HTTP, events, zinc adapters
+│       │       ├── http/       # REST API input adapters
+│       │       ├── events/     # Event input adapeters
+│       │       └── zinc/       # Zinc search output adapter
 │       └── go.mod              # Search service dependencies
 ├── gateway/                    # GraphQL Gateway service
 │   ├── main.go                 # Gateway implementation
