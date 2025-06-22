@@ -1,9 +1,55 @@
 package db
 
 import (
+	"time"
 	"xffl/services/ffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
+
+// FFLClub represents the database model for Club
+type FFLClub struct {
+	gorm.Model
+	Name    string      `gorm:"uniqueIndex;not null"`
+	Players []FFLPlayer `gorm:"foreignKey:ClubID"`
+}
+
+// TableName specifies the table name for FFLClub
+func (*FFLClub) TableName() string {
+	return "ffl.club"
+}
+
+// ToDomain converts FFLClub to ffl.Club
+func (c *FFLClub) ToDomain() ffl.Club {
+	players := make([]ffl.Player, len(c.Players))
+	for i, p := range c.Players {
+		players[i] = p.ToDomain()
+	}
+	
+	var deletedAt *time.Time
+	if c.DeletedAt.Valid {
+		deletedAt = &c.DeletedAt.Time
+	}
+	
+	return ffl.Club{
+		ID:        c.ID,
+		Name:      c.Name,
+		Players:   players,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+		DeletedAt: deletedAt,
+	}
+}
+
+// FromDomain converts ffl.Club to FFLClub
+func (c *FFLClub) FromDomain(club *ffl.Club) {
+	c.ID = club.ID
+	c.Name = club.Name
+	c.CreatedAt = club.CreatedAt
+	c.UpdatedAt = club.UpdatedAt
+	if club.DeletedAt != nil {
+		c.DeletedAt = gorm.DeletedAt{Time: *club.DeletedAt, Valid: true}
+	}
+}
 
 // ClubRepository implements club database operations
 type ClubRepository struct {

@@ -1,11 +1,54 @@
 package db
 
 import (
+	"time"
 	"xffl/services/ffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 
-// PlayerRepository implements the PlayerRepository interface
+// FFLPlayer represents the database model for Player
+type FFLPlayer struct {
+	gorm.Model
+	Name   string  `gorm:"not null"`
+	ClubID uint    `gorm:"not null"`
+	Club   FFLClub `gorm:"foreignKey:ClubID"`
+}
+
+// TableName specifies the table name for FFLPlayer
+func (*FFLPlayer) TableName() string {
+	return "ffl.player"
+}
+
+// ToDomain converts FFLPlayer to ffl.Player
+func (p *FFLPlayer) ToDomain() ffl.Player {
+	var deletedAt *time.Time
+	if p.DeletedAt.Valid {
+		deletedAt = &p.DeletedAt.Time
+	}
+	
+	return ffl.Player{
+		ID:        p.ID,
+		Name:      p.Name,
+		ClubID:    p.ClubID,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+		DeletedAt: deletedAt,
+	}
+}
+
+// FromDomain converts ffl.Player to FFLPlayer
+func (p *FFLPlayer) FromDomain(player *ffl.Player) {
+	p.ID = player.ID
+	p.Name = player.Name
+	p.ClubID = player.ClubID
+	p.CreatedAt = player.CreatedAt
+	p.UpdatedAt = player.UpdatedAt
+	if player.DeletedAt != nil {
+		p.DeletedAt = gorm.DeletedAt{Time: *player.DeletedAt, Valid: true}
+	}
+}
+
+// PlayerRepository implements player database operations
 type PlayerRepository struct {
 	db *gorm.DB
 }
