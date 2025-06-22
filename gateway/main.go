@@ -31,8 +31,8 @@ type Gateway struct {
 
 func NewGateway() *Gateway {
 	return &Gateway{
-		aflServiceURL: getEnvOrDefault("AFL_SERVICE_URL", "http://localhost:8081/query"),
-		fflServiceURL: getEnvOrDefault("FFL_SERVICE_URL", "http://localhost:8080/query"),
+		aflServiceURL: getEnvOrDefault("AFL_SERVICE_URL", "http://localhost:8080/query"),
+		fflServiceURL: getEnvOrDefault("FFL_SERVICE_URL", "http://localhost:8081/query"),
 		startTime:     time.Now(),
 	}
 }

@@ -1,8 +1,8 @@
 package db
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 	"xffl/services/afl/internal/domain"
 )
 
@@ -18,11 +18,11 @@ func NewClubRepository(db *gorm.DB) *ClubRepository {
 
 // ClubEntity represents the database model for club
 type ClubEntity struct {
-	ID           uint      `gorm:"primaryKey"`
-	Name         string    `gorm:"column:name;not null"`
-	Abbreviation string    `gorm:"column:abbreviation;not null;unique"`
-	CreatedAt    time.Time `gorm:"column:created_at"`
-	UpdatedAt    time.Time `gorm:"column:updated_at"`
+	ID           uint       `gorm:"primaryKey"`
+	Name         string     `gorm:"column:name;not null"`
+	Abbreviation string     `gorm:"column:abbreviation;not null;unique"`
+	CreatedAt    time.Time  `gorm:"column:created_at"`
+	UpdatedAt    time.Time  `gorm:"column:updated_at"`
 	DeletedAt    *time.Time `gorm:"column:deleted_at"`
 }
 

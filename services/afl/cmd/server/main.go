@@ -16,12 +16,12 @@ import (
 
 	"xffl/pkg/database"
 	"xffl/pkg/events/postgres"
-	"xffl/services/afl/internal/adapters/graphql"
 	dbadapter "xffl/services/afl/internal/adapters/db"
+	"xffl/services/afl/internal/adapters/graphql"
 	"xffl/services/afl/internal/services"
 )
 
-const defaultPort = "8081"
+const defaultPort = "8080"
 
 func main() {
 	port := os.Getenv("PORT")

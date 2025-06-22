@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ### Services (Go)
-- Start FFL service: `cd services/ffl && go run cmd/server/main.go` (port 8080)
-- Start AFL service: `cd services/afl && PORT=8081 go run cmd/server/main.go` (port 8081)
+- Start AFL service: `cd services/afl && go run cmd/server/main.go` (port 8080)
+- Start FFL service: `cd services/ffl && go run cmd/server/main.go` (port 8081)
 - Generate GraphQL code: `cd services/ffl && go run github.com/99designs/gqlgen generate`
 - Build service: `cd services/ffl && go build -o bin/server cmd/server/main.go`
 
 ### Environment Variables
 - `EVENT_DB_URL` - PostgreSQL connection string for cross-service events (default: "user=postgres dbname=xffl sslmode=disable")
-- `PORT` - Service port (defaults: FFL=8080, AFL=8081, Gateway=8090)
+- `PORT` - Service port (defaults: AFL=8080, FFL=8081, Gateway=8090)
 
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
@@ -69,8 +69,8 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 - **Health Check**: Available at `/health` endpoint
 
 #### Gateway Routing:
-- Queries containing `afl` → AFL service (localhost:8081)
-- Queries containing `ffl` → FFL service (localhost:8080)
+- Queries containing `afl` → AFL service (localhost:8080)
+- Queries containing `ffl` → FFL service (localhost:8081)
 - Queries containing `_gateway` → Gateway metadata (handled locally)
 - All other queries → FFL service (default)
 
@@ -100,7 +100,7 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 
 ### Development Workflow
 
-1. **Start Services**: Run AFL and FFL services on ports 8081 and 8080
+1. **Start Services**: Run AFL and FFL services on ports 8080 and 8081
 2. **Start Gateway**: Run gateway on port 8090 to proxy requests
 3. **Start Frontend**: Run Vue dev server on port 3000, configured to use gateway
 4. **GraphQL Changes**: Modify schema in `services/*/api/graphql/schema.graphqls`, then run gqlgen generate
@@ -109,7 +109,7 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 
 ### Request Flow
 
-Frontend (3000) → Gateway (8090) → AFL Service (8081) or FFL Service (8080) → PostgreSQL
+Frontend (3000) → Gateway (8090) → AFL Service (8080) or FFL Service (8081) → PostgreSQL
 
 The gateway routes requests based on simple string matching in the GraphQL query text, providing a unified API surface while keeping services independent.
 

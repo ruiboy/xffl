@@ -172,7 +172,7 @@ go build -o bin/server cmd/server/main.go
 go run cmd/server/main.go
 ```
 
-The AFL service will start on `http://localhost:8081`with:
+The AFL service will start on `http://localhost:8080`with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
@@ -190,7 +190,7 @@ go build -o bin/server cmd/server/main.go
 go run cmd/server/main.go
 ```
 
-The FFL service will start on `http://localhost:8080` with:
+The FFL service will start on `http://localhost:8081` with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
@@ -211,8 +211,8 @@ The gateway will start on `http://localhost:8090` with:
 #### Gateway Routing Logic
 
 The gateway uses simple string-based routing:
-- Queries containing `afl` → AFL service (port 8081)
-- Queries containing `ffl` → FFL service (port 8080) 
+- Queries containing `afl` → AFL service (port 8080)
+- Queries containing `ffl` → FFL service (port 8081) 
 - Queries containing `_gateway` → Gateway metadata (handled locally)
 - All other queries → FFL service (default)
 
@@ -259,8 +259,8 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
 5. Access the application:
    - Frontend: http://localhost:3000 (uses gateway)
    - Gateway: http://localhost:8090/query
-   - FFL GraphQL Playground: http://localhost:8080
-   - AFL GraphQL Playground: http://localhost:8081
+   - AFL GraphQL Playground: http://localhost:8080
+   - FFL GraphQL Playground: http://localhost:8081
 
 ## Project Structure
 
@@ -363,8 +363,8 @@ gateway <-- searchindex : rest
 Each service follows **Clean Architecture** with Go best practices:
 
 #### Service Independence:
-- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8080)
-- **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8081)
+- **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8080)
+- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8081)
 - **Shared Package** (`pkg/`): Common utilities used by all services
 
 #### Architecture Layers (per service):
@@ -600,7 +600,7 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Scale Path**: Extract `pkg/` to separate repository/module, or inline into services
 
 #### 🔗 **GraphQL APIs per Service**
-- **Decision**: Each service exposes its own GraphQL endpoint (AFL: 8081, FFL: 8080)
+- **Decision**: Each service exposes its own GraphQL endpoint (AFL: 8080, FFL: 8081)
 - **Why for Hobby**: Type-safe APIs, excellent developer experience, can test services independently
 - **Scale Path**: Add GraphQL Gateway/Federation for unified frontend experience
 
