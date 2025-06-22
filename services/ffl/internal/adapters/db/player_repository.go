@@ -2,7 +2,7 @@ package db
 
 import (
 	"time"
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 	"gorm.io/gorm"
 )
 
@@ -19,14 +19,14 @@ func (*FFLPlayer) TableName() string {
 	return "ffl.player"
 }
 
-// ToDomain converts FFLPlayer to ffl.Player
-func (p *FFLPlayer) ToDomain() ffl.Player {
+// ToDomain converts FFLPlayer to domain.Player
+func (p *FFLPlayer) ToDomain() domain.Player {
 	var deletedAt *time.Time
 	if p.DeletedAt.Valid {
 		deletedAt = &p.DeletedAt.Time
 	}
 	
-	return ffl.Player{
+	return domain.Player{
 		ID:        p.ID,
 		Name:      p.Name,
 		ClubID:    p.ClubID,
@@ -36,8 +36,8 @@ func (p *FFLPlayer) ToDomain() ffl.Player {
 	}
 }
 
-// FromDomain converts ffl.Player to FFLPlayer
-func (p *FFLPlayer) FromDomain(player *ffl.Player) {
+// FromDomain converts domain.Player to FFLPlayer
+func (p *FFLPlayer) FromDomain(player *domain.Player) {
 	p.ID = player.ID
 	p.Name = player.Name
 	p.ClubID = player.ClubID
@@ -61,14 +61,14 @@ func NewPlayerRepository(db *gorm.DB) *PlayerRepository {
 }
 
 // FindAll retrieves all players from the database
-func (r *PlayerRepository) FindAll() ([]ffl.Player, error) {
+func (r *PlayerRepository) FindAll() ([]domain.Player, error) {
 	var fflPlayers []FFLPlayer
 	err := r.db.Preload("Club").Find(&fflPlayers).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	players := make([]ffl.Player, len(fflPlayers))
+	players := make([]domain.Player, len(fflPlayers))
 	for i, fflPlayer := range fflPlayers {
 		players[i] = fflPlayer.ToDomain()
 	}
@@ -77,7 +77,7 @@ func (r *PlayerRepository) FindAll() ([]ffl.Player, error) {
 }
 
 // FindByID retrieves a player by its ID
-func (r *PlayerRepository) FindByID(id uint) (*ffl.Player, error) {
+func (r *PlayerRepository) FindByID(id uint) (*domain.Player, error) {
 	var fflPlayer FFLPlayer
 	err := r.db.Preload("Club").First(&fflPlayer, id).Error
 	if err != nil {
@@ -89,14 +89,14 @@ func (r *PlayerRepository) FindByID(id uint) (*ffl.Player, error) {
 }
 
 // FindByClubID retrieves all players for a specific club
-func (r *PlayerRepository) FindByClubID(clubID uint) ([]ffl.Player, error) {
+func (r *PlayerRepository) FindByClubID(clubID uint) ([]domain.Player, error) {
 	var fflPlayers []FFLPlayer
 	err := r.db.Preload("Club").Where("club_id = ?", clubID).Find(&fflPlayers).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	players := make([]ffl.Player, len(fflPlayers))
+	players := make([]domain.Player, len(fflPlayers))
 	for i, fflPlayer := range fflPlayers {
 		players[i] = fflPlayer.ToDomain()
 	}
@@ -105,7 +105,7 @@ func (r *PlayerRepository) FindByClubID(clubID uint) ([]ffl.Player, error) {
 }
 
 // Create creates a new player in the database
-func (r *PlayerRepository) Create(player *ffl.Player) (*ffl.Player, error) {
+func (r *PlayerRepository) Create(player *domain.Player) (*domain.Player, error) {
 	var fflPlayer FFLPlayer
 	fflPlayer.FromDomain(player)
 	
@@ -123,7 +123,7 @@ func (r *PlayerRepository) Create(player *ffl.Player) (*ffl.Player, error) {
 }
 
 // Update updates an existing player in the database
-func (r *PlayerRepository) Update(player *ffl.Player) (*ffl.Player, error) {
+func (r *PlayerRepository) Update(player *domain.Player) (*domain.Player, error) {
 	var fflPlayer FFLPlayer
 	fflPlayer.FromDomain(player)
 	

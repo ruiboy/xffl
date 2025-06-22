@@ -1,15 +1,15 @@
 package services
 
 import (
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 )
 
 // clubRepository defines the interface for club data operations needed by ClubService
 type clubRepository interface {
-	FindAll() ([]ffl.Club, error)
-	FindByID(id uint) (*ffl.Club, error)
-	Create(club *ffl.Club) error
-	Update(club *ffl.Club) error
+	FindAll() ([]domain.Club, error)
+	FindByID(id uint) (*domain.Club, error)
+	Create(club *domain.Club) error
+	Update(club *domain.Club) error
 	Delete(id uint) error
 }
 
@@ -26,18 +26,18 @@ func NewClubService(clubRepo clubRepository) *ClubService {
 }
 
 // GetAllClubs retrieves all clubs
-func (s *ClubService) GetAllClubs() ([]ffl.Club, error) {
+func (s *ClubService) GetAllClubs() ([]domain.Club, error) {
 	return s.clubRepo.FindAll()
 }
 
 // GetClubByID retrieves a club by its ID
-func (s *ClubService) GetClubByID(id uint) (*ffl.Club, error) {
+func (s *ClubService) GetClubByID(id uint) (*domain.Club, error) {
 	return s.clubRepo.FindByID(id)
 }
 
 // CreateClub creates a new club
-func (s *ClubService) CreateClub(name string) (*ffl.Club, error) {
-	club := ffl.NewClub(name)
+func (s *ClubService) CreateClub(name string) (*domain.Club, error) {
+	club := domain.NewClub(name)
 	err := s.clubRepo.Create(club)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (s *ClubService) CreateClub(name string) (*ffl.Club, error) {
 }
 
 // UpdateClub updates an existing club
-func (s *ClubService) UpdateClub(id uint, name string) (*ffl.Club, error) {
+func (s *ClubService) UpdateClub(id uint, name string) (*domain.Club, error) {
 	club, err := s.clubRepo.FindByID(id)
 	if err != nil {
 		return nil, err

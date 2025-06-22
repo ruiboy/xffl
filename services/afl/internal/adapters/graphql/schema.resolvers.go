@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"xffl/services/afl/internal/adapters/graphql/model"
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 )
 
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
@@ -26,7 +26,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 	}
 
 	// Build stats from input (only update provided fields)
-	stats := afl.PlayerMatch{
+	stats := domain.PlayerMatch{
 		PlayerSeasonID: uint(playerSeasonID),
 		ClubMatchID:    uint(clubMatchID),
 	}

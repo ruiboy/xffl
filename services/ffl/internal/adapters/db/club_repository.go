@@ -2,7 +2,7 @@ package db
 
 import (
 	"time"
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 	"gorm.io/gorm"
 )
 
@@ -18,9 +18,9 @@ func (*FFLClub) TableName() string {
 	return "ffl.club"
 }
 
-// ToDomain converts FFLClub to ffl.Club
-func (c *FFLClub) ToDomain() ffl.Club {
-	players := make([]ffl.Player, len(c.Players))
+// ToDomain converts FFLClub to domain.Club
+func (c *FFLClub) ToDomain() domain.Club {
+	players := make([]domain.Player, len(c.Players))
 	for i, p := range c.Players {
 		players[i] = p.ToDomain()
 	}
@@ -30,7 +30,7 @@ func (c *FFLClub) ToDomain() ffl.Club {
 		deletedAt = &c.DeletedAt.Time
 	}
 	
-	return ffl.Club{
+	return domain.Club{
 		ID:        c.ID,
 		Name:      c.Name,
 		Players:   players,
@@ -40,8 +40,8 @@ func (c *FFLClub) ToDomain() ffl.Club {
 	}
 }
 
-// FromDomain converts ffl.Club to FFLClub
-func (c *FFLClub) FromDomain(club *ffl.Club) {
+// FromDomain converts domain.Club to FFLClub
+func (c *FFLClub) FromDomain(club *domain.Club) {
 	c.ID = club.ID
 	c.Name = club.Name
 	c.CreatedAt = club.CreatedAt
@@ -64,14 +64,14 @@ func NewClubRepository(db *gorm.DB) *ClubRepository {
 }
 
 // FindAll retrieves all clubs from the database
-func (r *ClubRepository) FindAll() ([]ffl.Club, error) {
+func (r *ClubRepository) FindAll() ([]domain.Club, error) {
 	var fflClubs []FFLClub
 	err := r.db.Preload("Players").Find(&fflClubs).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	clubs := make([]ffl.Club, len(fflClubs))
+	clubs := make([]domain.Club, len(fflClubs))
 	for i, fflClub := range fflClubs {
 		clubs[i] = fflClub.ToDomain()
 	}
@@ -80,7 +80,7 @@ func (r *ClubRepository) FindAll() ([]ffl.Club, error) {
 }
 
 // FindByID retrieves a club by its ID
-func (r *ClubRepository) FindByID(id uint) (*ffl.Club, error) {
+func (r *ClubRepository) FindByID(id uint) (*domain.Club, error) {
 	var fflClub FFLClub
 	err := r.db.Preload("Players").First(&fflClub, id).Error
 	if err != nil {
@@ -92,7 +92,7 @@ func (r *ClubRepository) FindByID(id uint) (*ffl.Club, error) {
 }
 
 // Create creates a new club in the database
-func (r *ClubRepository) Create(club *ffl.Club) error {
+func (r *ClubRepository) Create(club *domain.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	
@@ -110,7 +110,7 @@ func (r *ClubRepository) Create(club *ffl.Club) error {
 }
 
 // Update updates an existing club in the database
-func (r *ClubRepository) Update(club *ffl.Club) error {
+func (r *ClubRepository) Update(club *domain.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	

@@ -1,4 +1,4 @@
-package ffl
+package domain
 
 import (
 	"time"

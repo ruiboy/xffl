@@ -1,4 +1,4 @@
-package afl
+package domain
 
 import "time"
 

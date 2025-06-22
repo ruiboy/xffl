@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 	"xffl/services/ffl/internal/adapters/graphql/model"
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 )
 
 // CreateFFLPlayer is the resolver for the createFFLPlayer field.
@@ -68,7 +68,7 @@ func (r *queryResolver) FflClubs(ctx context.Context) ([]*model.FFLClub, error) 
 
 // FflPlayers is the resolver for the fflPlayers field.
 func (r *queryResolver) FflPlayers(ctx context.Context, clubID *string) ([]*model.FFLPlayer, error) {
-	var players []ffl.Player
+	var players []domain.Player
 	var err error
 
 	if clubID != nil {

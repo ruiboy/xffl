@@ -3,7 +3,7 @@ package db
 import (
 	"time"
 	"gorm.io/gorm"
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 )
 
 // ClubRepository implements club database operations
@@ -32,14 +32,14 @@ func (ClubEntity) TableName() string {
 }
 
 // FindAll retrieves all clubs from the database
-func (r *ClubRepository) FindAll() ([]afl.Club, error) {
+func (r *ClubRepository) FindAll() ([]domain.Club, error) {
 	var entities []ClubEntity
 	err := r.db.Where("deleted_at IS NULL").Find(&entities).Error
 	if err != nil {
 		return nil, err
 	}
 
-	clubs := make([]afl.Club, len(entities))
+	clubs := make([]domain.Club, len(entities))
 	for i, entity := range entities {
 		clubs[i] = *r.entityToDomain(entity)
 	}
@@ -47,7 +47,7 @@ func (r *ClubRepository) FindAll() ([]afl.Club, error) {
 }
 
 // FindByID retrieves a club by its ID
-func (r *ClubRepository) FindByID(id uint) (*afl.Club, error) {
+func (r *ClubRepository) FindByID(id uint) (*domain.Club, error) {
 	var entity ClubEntity
 	err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&entity).Error
 	if err != nil {
@@ -57,8 +57,8 @@ func (r *ClubRepository) FindByID(id uint) (*afl.Club, error) {
 }
 
 // entityToDomain converts database entity to domain model
-func (r *ClubRepository) entityToDomain(entity ClubEntity) *afl.Club {
-	return &afl.Club{
+func (r *ClubRepository) entityToDomain(entity ClubEntity) *domain.Club {
+	return &domain.Club{
 		ID:           entity.ID,
 		Name:         entity.Name,
 		Abbreviation: entity.Abbreviation,

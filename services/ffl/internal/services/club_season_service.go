@@ -1,12 +1,12 @@
 package services
 
 import (
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 )
 
 // clubSeasonRepository defines the interface for club season data operations needed by ClubSeasonService
 type clubSeasonRepository interface {
-	FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, error)
+	FindBySeasonID(seasonID uint) ([]domain.ClubSeason, error)
 }
 
 // ClubSeasonService implements club season business logic
@@ -22,6 +22,6 @@ func NewClubSeasonService(clubSeasonRepo clubSeasonRepository) *ClubSeasonServic
 }
 
 // GetLadderBySeasonID retrieves the ladder for a given season
-func (s *ClubSeasonService) GetLadderBySeasonID(seasonID uint) ([]ffl.ClubSeason, error) {
+func (s *ClubSeasonService) GetLadderBySeasonID(seasonID uint) ([]domain.ClubSeason, error) {
 	return s.clubSeasonRepo.FindBySeasonID(seasonID)
 }

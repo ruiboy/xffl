@@ -1,12 +1,12 @@
 package services
 
 import (
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 )
 
 // clubRepository defines the interface for club data operations needed by ClubService
 type clubRepository interface {
-	FindAll() ([]afl.Club, error)
+	FindAll() ([]domain.Club, error)
 }
 
 // ClubService implements club business logic
@@ -22,6 +22,6 @@ func NewClubService(clubRepo clubRepository) *ClubService {
 }
 
 // GetAllClubs retrieves all clubs
-func (s *ClubService) GetAllClubs() ([]afl.Club, error) {
+func (s *ClubService) GetAllClubs() ([]domain.Club, error) {
 	return s.clubRepo.FindAll()
 }

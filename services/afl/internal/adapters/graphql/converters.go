@@ -3,11 +3,11 @@ package graphql
 import (
 	"strconv"
 	"xffl/services/afl/internal/adapters/graphql/model"
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 )
 
 // ConvertClubToGraphQL converts a domain Club to a GraphQL Club
-func ConvertClubToGraphQL(club afl.Club) *model.AFLClub {
+func ConvertClubToGraphQL(club domain.Club) *model.AFLClub {
 	return &model.AFLClub{
 		ID:        strconv.FormatUint(uint64(club.ID), 10),
 		Name:      club.Name,
@@ -17,7 +17,7 @@ func ConvertClubToGraphQL(club afl.Club) *model.AFLClub {
 }
 
 // ConvertClubsToGraphQL converts a slice of domain Clubs to GraphQL Clubs
-func ConvertClubsToGraphQL(clubs []afl.Club) []*model.AFLClub {
+func ConvertClubsToGraphQL(clubs []domain.Club) []*model.AFLClub {
 	var result []*model.AFLClub
 	for _, club := range clubs {
 		result = append(result, ConvertClubToGraphQL(club))
@@ -26,7 +26,7 @@ func ConvertClubsToGraphQL(clubs []afl.Club) []*model.AFLClub {
 }
 
 // ConvertPlayerMatchToGraphQL converts a domain PlayerMatch to a GraphQL PlayerMatch
-func ConvertPlayerMatchToGraphQL(playerMatch afl.PlayerMatch) *model.AFLPlayerMatch {
+func ConvertPlayerMatchToGraphQL(playerMatch domain.PlayerMatch) *model.AFLPlayerMatch {
 	return &model.AFLPlayerMatch{
 		ID:             strconv.FormatUint(uint64(playerMatch.ID), 10),
 		PlayerSeasonID: strconv.FormatUint(uint64(playerMatch.PlayerSeasonID), 10),

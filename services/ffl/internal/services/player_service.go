@@ -1,22 +1,22 @@
 package services
 
 import (
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 )
 
 // playerRepository defines the interface for player data operations needed by PlayerService
 type playerRepository interface {
-	FindAll() ([]ffl.Player, error)
-	FindByID(id uint) (*ffl.Player, error)
-	FindByClubID(clubID uint) ([]ffl.Player, error)
-	Create(player *ffl.Player) (*ffl.Player, error)
-	Update(player *ffl.Player) (*ffl.Player, error)
+	FindAll() ([]domain.Player, error)
+	FindByID(id uint) (*domain.Player, error)
+	FindByClubID(clubID uint) ([]domain.Player, error)
+	Create(player *domain.Player) (*domain.Player, error)
+	Update(player *domain.Player) (*domain.Player, error)
 	Delete(id uint) error
 }
 
 // playerServiceClubRepository defines the club repository interface needed by PlayerService
 type playerServiceClubRepository interface {
-	FindByID(id uint) (*ffl.Club, error)
+	FindByID(id uint) (*domain.Club, error)
 }
 
 // PlayerService implements player business logic
@@ -34,29 +34,29 @@ func NewPlayerService(playerRepo playerRepository, clubRepo playerServiceClubRep
 }
 
 // GetAllPlayers retrieves all players
-func (s *PlayerService) GetAllPlayers() ([]ffl.Player, error) {
+func (s *PlayerService) GetAllPlayers() ([]domain.Player, error) {
 	return s.playerRepo.FindAll()
 }
 
 // GetPlayerByID retrieves a player by its ID
-func (s *PlayerService) GetPlayerByID(id uint) (*ffl.Player, error) {
+func (s *PlayerService) GetPlayerByID(id uint) (*domain.Player, error) {
 	return s.playerRepo.FindByID(id)
 }
 
 // GetPlayersByClubID retrieves all players for a specific club
-func (s *PlayerService) GetPlayersByClubID(clubID uint) ([]ffl.Player, error) {
+func (s *PlayerService) GetPlayersByClubID(clubID uint) ([]domain.Player, error) {
 	return s.playerRepo.FindByClubID(clubID)
 }
 
 // CreatePlayer creates a new player
-func (s *PlayerService) CreatePlayer(name string, clubID uint) (*ffl.Player, error) {
+func (s *PlayerService) CreatePlayer(name string, clubID uint) (*domain.Player, error) {
 	// Verify the club exists
 	_, err := s.clubRepo.FindByID(clubID)
 	if err != nil {
 		return nil, err
 	}
 	
-	player := ffl.NewPlayer(name, clubID)
+	player := domain.NewPlayer(name, clubID)
 	createdPlayer, err := s.playerRepo.Create(player)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (s *PlayerService) CreatePlayer(name string, clubID uint) (*ffl.Player, err
 }
 
 // UpdatePlayer updates an existing player
-func (s *PlayerService) UpdatePlayer(id uint, name string) (*ffl.Player, error) {
+func (s *PlayerService) UpdatePlayer(id uint, name string) (*domain.Player, error) {
 	player, err := s.playerRepo.FindByID(id)
 	if err != nil {
 		return nil, err
