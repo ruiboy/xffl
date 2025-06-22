@@ -1,24 +1,24 @@
-package persistence
+package db
 
 import (
 	"xffl/services/ffl/internal/domain/ffl"
 	"gorm.io/gorm"
 )
 
-// ClubRepositoryImpl implements the ClubRepository interface
-type ClubRepositoryImpl struct {
+// ClubRepository implements club database operations
+type ClubRepository struct {
 	db *gorm.DB
 }
 
-// NewClubRepository creates a new ClubRepositoryImpl
-func NewClubRepository(db *gorm.DB) *ClubRepositoryImpl {
-	return &ClubRepositoryImpl{
+// NewClubRepository creates a new ClubRepository
+func NewClubRepository(db *gorm.DB) *ClubRepository {
+	return &ClubRepository{
 		db: db,
 	}
 }
 
 // FindAll retrieves all clubs from the database
-func (r *ClubRepositoryImpl) FindAll() ([]ffl.Club, error) {
+func (r *ClubRepository) FindAll() ([]ffl.Club, error) {
 	var fflClubs []FFLClub
 	err := r.db.Preload("Players").Find(&fflClubs).Error
 	if err != nil {
@@ -34,7 +34,7 @@ func (r *ClubRepositoryImpl) FindAll() ([]ffl.Club, error) {
 }
 
 // FindByID retrieves a club by its ID
-func (r *ClubRepositoryImpl) FindByID(id uint) (*ffl.Club, error) {
+func (r *ClubRepository) FindByID(id uint) (*ffl.Club, error) {
 	var fflClub FFLClub
 	err := r.db.Preload("Players").First(&fflClub, id).Error
 	if err != nil {
@@ -46,7 +46,7 @@ func (r *ClubRepositoryImpl) FindByID(id uint) (*ffl.Club, error) {
 }
 
 // Create creates a new club in the database
-func (r *ClubRepositoryImpl) Create(club *ffl.Club) error {
+func (r *ClubRepository) Create(club *ffl.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	
@@ -64,7 +64,7 @@ func (r *ClubRepositoryImpl) Create(club *ffl.Club) error {
 }
 
 // Update updates an existing club in the database
-func (r *ClubRepositoryImpl) Update(club *ffl.Club) error {
+func (r *ClubRepository) Update(club *ffl.Club) error {
 	var fflClub FFLClub
 	fflClub.FromDomain(club)
 	
@@ -72,6 +72,6 @@ func (r *ClubRepositoryImpl) Update(club *ffl.Club) error {
 }
 
 // Delete deletes a club by its ID
-func (r *ClubRepositoryImpl) Delete(id uint) error {
+func (r *ClubRepository) Delete(id uint) error {
 	return r.db.Delete(&FFLClub{}, id).Error
 }

@@ -18,7 +18,7 @@ func (r *mutationResolver) CreateFFLPlayer(ctx context.Context, input model.Crea
 		return nil, fmt.Errorf("invalid club ID: %w", err)
 	}
 
-	player, err := r.playerUseCase.CreatePlayer(input.Name, clubID)
+	player, err := r.playerService.CreatePlayer(input.Name, clubID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create player: %w", err)
 	}
@@ -33,7 +33,7 @@ func (r *mutationResolver) UpdateFFLPlayer(ctx context.Context, input model.Upda
 		return nil, fmt.Errorf("invalid player ID: %w", err)
 	}
 
-	player, err := r.playerUseCase.UpdatePlayer(id, input.Name)
+	player, err := r.playerService.UpdatePlayer(id, input.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update player: %w", err)
 	}
@@ -48,7 +48,7 @@ func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool
 		return false, fmt.Errorf("invalid player ID: %w", err)
 	}
 
-	err = r.playerUseCase.DeletePlayer(playerID)
+	err = r.playerService.DeletePlayer(playerID)
 	if err != nil {
 		return false, fmt.Errorf("failed to delete player: %w", err)
 	}
@@ -58,7 +58,7 @@ func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool
 
 // FflClubs is the resolver for the fflClubs field.
 func (r *queryResolver) FflClubs(ctx context.Context) ([]*model.FFLClub, error) {
-	clubs, err := r.clubUseCase.GetAllClubs()
+	clubs, err := r.clubService.GetAllClubs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get clubs: %w", err)
 	}
@@ -76,9 +76,9 @@ func (r *queryResolver) FflPlayers(ctx context.Context, clubID *string) ([]*mode
 		if parseErr != nil {
 			return nil, fmt.Errorf("invalid club ID: %w", parseErr)
 		}
-		players, err = r.playerUseCase.GetPlayersByClubID(id)
+		players, err = r.playerService.GetPlayersByClubID(id)
 	} else {
-		players, err = r.playerUseCase.GetAllPlayers()
+		players, err = r.playerService.GetAllPlayers()
 	}
 
 	if err != nil {
@@ -95,7 +95,7 @@ func (r *queryResolver) FflLadder(ctx context.Context, seasonID string) ([]*mode
 		return nil, fmt.Errorf("invalid season ID: %w", err)
 	}
 
-	clubSeasons, err := r.clubSeasonUseCase.GetLadderBySeasonID(id)
+	clubSeasons, err := r.clubSeasonService.GetLadderBySeasonID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ladder: %w", err)
 	}

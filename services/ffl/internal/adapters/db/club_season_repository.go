@@ -1,20 +1,21 @@
-package persistence
+package db
 
 import (
 	"xffl/services/ffl/internal/domain/ffl"
-	"xffl/services/ffl/internal/ports/out"
 	"gorm.io/gorm"
 )
 
-type clubSeasonRepository struct {
+// ClubSeasonRepository implements club season database operations
+type ClubSeasonRepository struct {
 	db *gorm.DB
 }
 
-func NewClubSeasonRepository(db *gorm.DB) out.ClubSeasonRepository {
-	return &clubSeasonRepository{db: db}
+// NewClubSeasonRepository creates a new ClubSeasonRepository
+func NewClubSeasonRepository(db *gorm.DB) *ClubSeasonRepository {
+	return &ClubSeasonRepository{db: db}
 }
 
-func (r *clubSeasonRepository) FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, error) {
+func (r *ClubSeasonRepository) FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, error) {
 	var entities []FFLClubSeason
 	
 	err := r.db.Preload("Club").
@@ -49,7 +50,7 @@ func (r *clubSeasonRepository) FindBySeasonID(seasonID uint) ([]ffl.ClubSeason, 
 	return clubSeasons, nil
 }
 
-func (r *clubSeasonRepository) FindByID(id uint) (*ffl.ClubSeason, error) {
+func (r *ClubSeasonRepository) FindByID(id uint) (*ffl.ClubSeason, error) {
 	var entity FFLClubSeason
 	err := r.db.Preload("Club").Where("id = ? AND deleted_at IS NULL", id).First(&entity).Error
 	if err != nil {
@@ -60,7 +61,7 @@ func (r *clubSeasonRepository) FindByID(id uint) (*ffl.ClubSeason, error) {
 	return &clubSeason, nil
 }
 
-func (r *clubSeasonRepository) Create(clubSeason *ffl.ClubSeason) error {
+func (r *ClubSeasonRepository) Create(clubSeason *ffl.ClubSeason) error {
 	var entity FFLClubSeason
 	entity.FromDomain(clubSeason)
 	
@@ -77,13 +78,13 @@ func (r *clubSeasonRepository) Create(clubSeason *ffl.ClubSeason) error {
 	return nil
 }
 
-func (r *clubSeasonRepository) Update(clubSeason *ffl.ClubSeason) error {
+func (r *ClubSeasonRepository) Update(clubSeason *ffl.ClubSeason) error {
 	var entity FFLClubSeason
 	entity.FromDomain(clubSeason)
 	
 	return r.db.Save(&entity).Error
 }
 
-func (r *clubSeasonRepository) Delete(id uint) error {
+func (r *ClubSeasonRepository) Delete(id uint) error {
 	return r.db.Where("id = ?", id).Delete(&FFLClubSeason{}).Error
 }

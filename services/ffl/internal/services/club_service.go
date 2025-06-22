@@ -1,17 +1,25 @@
-package application
+package services
 
 import (
 	"xffl/services/ffl/internal/domain/ffl"
-	"xffl/services/ffl/internal/ports/out"
 )
 
-// ClubService implements the ClubUseCase interface
+// clubRepository defines the interface for club data operations needed by ClubService
+type clubRepository interface {
+	FindAll() ([]ffl.Club, error)
+	FindByID(id uint) (*ffl.Club, error)
+	Create(club *ffl.Club) error
+	Update(club *ffl.Club) error
+	Delete(id uint) error
+}
+
+// ClubService implements club business logic
 type ClubService struct {
-	clubRepo out.ClubRepository
+	clubRepo clubRepository
 }
 
 // NewClubService creates a new ClubService
-func NewClubService(clubRepo out.ClubRepository) *ClubService {
+func NewClubService(clubRepo clubRepository) *ClubService {
 	return &ClubService{
 		clubRepo: clubRepo,
 	}

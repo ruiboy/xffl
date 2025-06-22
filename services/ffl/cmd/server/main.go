@@ -17,8 +17,8 @@ import (
 	"xffl/pkg/database"
 	"xffl/pkg/events/postgres"
 	"xffl/services/ffl/internal/adapters/graphql"
-	"xffl/services/ffl/internal/adapters/persistence"
-	"xffl/services/ffl/internal/application"
+	dbadapter "xffl/services/ffl/internal/adapters/db"
+	"xffl/services/ffl/internal/services"
 )
 
 const defaultPort = "8080"
@@ -53,23 +53,23 @@ func main() {
 	}()
 
 	// Initialize repositories
-	clubRepo := persistence.NewClubRepository(db.DB)
-	clubSeasonRepo := persistence.NewClubSeasonRepository(db.DB)
-	playerRepo := persistence.NewPlayerRepository(db.DB)
+	clubRepo := dbadapter.NewClubRepository(db.DB)
+	clubSeasonRepo := dbadapter.NewClubSeasonRepository(db.DB)
+	playerRepo := dbadapter.NewPlayerRepository(db.DB)
 
-	// Initialize use cases (application services)
-	clubUseCase := application.NewClubService(clubRepo)
-	clubSeasonUseCase := application.NewClubSeasonService(clubSeasonRepo)
-	playerUseCase := application.NewPlayerService(playerRepo, clubRepo)
+	// Initialize services
+	clubService := services.NewClubService(clubRepo)
+	clubSeasonService := services.NewClubSeasonService(clubSeasonRepo)
+	playerService := services.NewPlayerService(playerRepo, clubRepo)
 
 	// Initialize fantasy score service and subscribe to AFL events
-	fantasyScoreService := application.NewFantasyScoreService(eventDispatcher, eventLogger)
+	fantasyScoreService := services.NewFantasyScoreService(eventDispatcher, eventLogger)
 	if err := eventDispatcher.Subscribe("AFL.PlayerMatchUpdated", fantasyScoreService); err != nil {
 		log.Fatalf("Failed to subscribe to AFL events: %v", err)
 	}
 
 	// Initialize GraphQL resolver with dependency injection
-	resolver := graphql.NewResolver(clubUseCase, playerUseCase, clubSeasonUseCase)
+	resolver := graphql.NewResolver(clubService, playerService, clubSeasonService)
 
 	// Initialize GraphQL server
 	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))

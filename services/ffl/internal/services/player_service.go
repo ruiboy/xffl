@@ -1,18 +1,32 @@
-package application
+package services
 
 import (
 	"xffl/services/ffl/internal/domain/ffl"
-	"xffl/services/ffl/internal/ports/out"
 )
 
-// PlayerService implements the PlayerUseCase interface
+// playerRepository defines the interface for player data operations needed by PlayerService
+type playerRepository interface {
+	FindAll() ([]ffl.Player, error)
+	FindByID(id uint) (*ffl.Player, error)
+	FindByClubID(clubID uint) ([]ffl.Player, error)
+	Create(player *ffl.Player) (*ffl.Player, error)
+	Update(player *ffl.Player) (*ffl.Player, error)
+	Delete(id uint) error
+}
+
+// playerServiceClubRepository defines the club repository interface needed by PlayerService
+type playerServiceClubRepository interface {
+	FindByID(id uint) (*ffl.Club, error)
+}
+
+// PlayerService implements player business logic
 type PlayerService struct {
-	playerRepo out.PlayerRepository
-	clubRepo   out.ClubRepository
+	playerRepo playerRepository
+	clubRepo   playerServiceClubRepository
 }
 
 // NewPlayerService creates a new PlayerService
-func NewPlayerService(playerRepo out.PlayerRepository, clubRepo out.ClubRepository) *PlayerService {
+func NewPlayerService(playerRepo playerRepository, clubRepo playerServiceClubRepository) *PlayerService {
 	return &PlayerService{
 		playerRepo: playerRepo,
 		clubRepo:   clubRepo,
