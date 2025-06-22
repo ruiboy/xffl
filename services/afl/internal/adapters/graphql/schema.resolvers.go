@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"xffl/services/afl/internal/adapters/graphql/model"
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 )
 
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
@@ -26,7 +26,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 	}
 
 	// Build stats from input (only update provided fields)
-	stats := afl.PlayerMatch{
+	stats := domain.PlayerMatch{
 		PlayerSeasonID: uint(playerSeasonID),
 		ClubMatchID:    uint(clubMatchID),
 	}
@@ -54,7 +54,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 	}
 
 	// Update the player match
-	updatedPlayerMatch, err := r.playerMatchUseCase.UpdatePlayerMatch(uint(playerSeasonID), uint(clubMatchID), stats)
+	updatedPlayerMatch, err := r.playerMatchService.UpdatePlayerMatch(uint(playerSeasonID), uint(clubMatchID), stats)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update player match: %w", err)
 	}
@@ -64,7 +64,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input model
 
 // AflClubs is the resolver for the aflClubs field.
 func (r *queryResolver) AflClubs(ctx context.Context) ([]*model.AFLClub, error) {
-	clubs, err := r.clubUseCase.GetAllClubs()
+	clubs, err := r.clubService.GetAllClubs()
 	if err != nil {
 		return nil, err
 	}

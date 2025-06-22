@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"xffl/services/ffl/internal/adapters/graphql/model"
-	"xffl/services/ffl/internal/domain/ffl"
+	"xffl/services/ffl/internal/domain"
 )
 
 // ClubToGraphQL converts a ffl Club to GraphQL FFLClub
-func ClubToGraphQL(club *ffl.Club) *model.FFLClub {
+func ClubToGraphQL(club *domain.Club) *model.FFLClub {
 	players := make([]*model.FFLPlayer, len(club.Players))
 	for i, player := range club.Players {
 		players[i] = PlayerToGraphQL(&player)
@@ -32,7 +32,7 @@ func ClubToGraphQL(club *ffl.Club) *model.FFLClub {
 }
 
 // PlayerToGraphQL converts a ffl Player to GraphQL FFLPlayer
-func PlayerToGraphQL(player *ffl.Player) *model.FFLPlayer {
+func PlayerToGraphQL(player *domain.Player) *model.FFLPlayer {
 	var deletedAt *string
 	if player.DeletedAt != nil {
 		str := player.DeletedAt.Format(time.RFC3339)
@@ -50,7 +50,7 @@ func PlayerToGraphQL(player *ffl.Player) *model.FFLPlayer {
 }
 
 // ClubsToGraphQL converts a slice of ffl Clubs to GraphQL FFLClubs
-func ClubsToGraphQL(clubs []ffl.Club) []*model.FFLClub {
+func ClubsToGraphQL(clubs []domain.Club) []*model.FFLClub {
 	result := make([]*model.FFLClub, len(clubs))
 	for i, club := range clubs {
 		result[i] = ClubToGraphQL(&club)
@@ -59,7 +59,7 @@ func ClubsToGraphQL(clubs []ffl.Club) []*model.FFLClub {
 }
 
 // PlayersToGraphQL converts a slice of ffl Players to GraphQL FFLPlayers
-func PlayersToGraphQL(players []ffl.Player) []*model.FFLPlayer {
+func PlayersToGraphQL(players []domain.Player) []*model.FFLPlayer {
 	result := make([]*model.FFLPlayer, len(players))
 	for i, player := range players {
 		result[i] = PlayerToGraphQL(&player)
@@ -68,7 +68,7 @@ func PlayersToGraphQL(players []ffl.Player) []*model.FFLPlayer {
 }
 
 // ClubSeasonToGraphQL converts a ffl ClubSeason to GraphQL FFLClubSeason
-func ClubSeasonToGraphQL(clubSeason *ffl.ClubSeason) *model.FFLClubSeason {
+func ClubSeasonToGraphQL(clubSeason *domain.ClubSeason) *model.FFLClubSeason {
 	var deletedAt *string
 	if clubSeason.DeletedAt != nil {
 		str := clubSeason.DeletedAt.Format(time.RFC3339)
@@ -96,7 +96,7 @@ func ClubSeasonToGraphQL(clubSeason *ffl.ClubSeason) *model.FFLClubSeason {
 }
 
 // ClubSeasonsToGraphQL converts a slice of ffl ClubSeasons to GraphQL FFLClubSeasons
-func ClubSeasonsToGraphQL(clubSeasons []ffl.ClubSeason) []*model.FFLClubSeason {
+func ClubSeasonsToGraphQL(clubSeasons []domain.ClubSeason) []*model.FFLClubSeason {
 	result := make([]*model.FFLClubSeason, len(clubSeasons))
 	for i, clubSeason := range clubSeasons {
 		result[i] = ClubSeasonToGraphQL(&clubSeason)

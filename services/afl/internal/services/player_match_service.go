@@ -1,21 +1,26 @@
-package application
+package services
 
 import (
 	"context"
 	"xffl/pkg/events"
-	"xffl/services/afl/internal/domain/afl"
+	"xffl/services/afl/internal/domain"
 	domainEvents "xffl/services/afl/internal/domain/events"
-	"xffl/services/afl/internal/ports/out"
 )
+
+// playerMatchRepository defines the interface for player match data operations needed by PlayerMatchService
+type playerMatchRepository interface {
+	UpdatePlayerMatch(playerSeasonID, clubMatchID uint, stats domain.PlayerMatch) (*domain.PlayerMatch, error)
+	FindByPlayerSeasonAndClubMatch(playerSeasonID, clubMatchID uint) (*domain.PlayerMatch, error)
+}
 
 // PlayerMatchService implements player match business logic
 type PlayerMatchService struct {
-	playerMatchRepo out.PlayerMatchRepository
+	playerMatchRepo playerMatchRepository
 	eventDispatcher events.EventDispatcher
 }
 
 // NewPlayerMatchService creates a new player match service
-func NewPlayerMatchService(playerMatchRepo out.PlayerMatchRepository, eventDispatcher events.EventDispatcher) *PlayerMatchService {
+func NewPlayerMatchService(playerMatchRepo playerMatchRepository, eventDispatcher events.EventDispatcher) *PlayerMatchService {
 	return &PlayerMatchService{
 		playerMatchRepo: playerMatchRepo,
 		eventDispatcher: eventDispatcher,
@@ -23,7 +28,7 @@ func NewPlayerMatchService(playerMatchRepo out.PlayerMatchRepository, eventDispa
 }
 
 // UpdatePlayerMatch updates or creates a player match record
-func (s *PlayerMatchService) UpdatePlayerMatch(playerSeasonID, clubMatchID uint, stats afl.PlayerMatch) (*afl.PlayerMatch, error) {
+func (s *PlayerMatchService) UpdatePlayerMatch(playerSeasonID, clubMatchID uint, stats domain.PlayerMatch) (*domain.PlayerMatch, error) {
 	// Get existing stats for comparison
 	oldPlayerMatch, _ := s.playerMatchRepo.FindByPlayerSeasonAndClubMatch(playerSeasonID, clubMatchID)
 	

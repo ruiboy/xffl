@@ -1,19 +1,18 @@
-package persistence
+package db
 
 import (
 	"time"
 	"gorm.io/gorm"
-	"xffl/services/afl/internal/domain/afl"
-	"xffl/services/afl/internal/ports/out"
+	"xffl/services/afl/internal/domain"
 )
 
-// PlayerMatchRepository implements the PlayerMatchRepository interface
+// PlayerMatchRepository implements player match database operations
 type PlayerMatchRepository struct {
 	db *gorm.DB
 }
 
 // NewPlayerMatchRepository creates a new player match repository
-func NewPlayerMatchRepository(db *gorm.DB) out.PlayerMatchRepository {
+func NewPlayerMatchRepository(db *gorm.DB) *PlayerMatchRepository {
 	return &PlayerMatchRepository{db: db}
 }
 
@@ -40,7 +39,7 @@ func (PlayerMatchEntity) TableName() string {
 }
 
 // UpdatePlayerMatch updates or creates a player match record using UPSERT
-func (r *PlayerMatchRepository) UpdatePlayerMatch(playerSeasonID, clubMatchID uint, stats afl.PlayerMatch) (*afl.PlayerMatch, error) {
+func (r *PlayerMatchRepository) UpdatePlayerMatch(playerSeasonID, clubMatchID uint, stats domain.PlayerMatch) (*domain.PlayerMatch, error) {
 	// Use ON CONFLICT DO UPDATE (upsert)
 	result := r.db.Exec(`
 		INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds, created_at, updated_at)
@@ -66,7 +65,7 @@ func (r *PlayerMatchRepository) UpdatePlayerMatch(playerSeasonID, clubMatchID ui
 }
 
 // FindByPlayerSeasonAndClubMatch finds a player match by player season and club match IDs
-func (r *PlayerMatchRepository) FindByPlayerSeasonAndClubMatch(playerSeasonID, clubMatchID uint) (*afl.PlayerMatch, error) {
+func (r *PlayerMatchRepository) FindByPlayerSeasonAndClubMatch(playerSeasonID, clubMatchID uint) (*domain.PlayerMatch, error) {
 	var entity PlayerMatchEntity
 	
 	result := r.db.Where("player_season_id = ? AND club_match_id = ? AND deleted_at IS NULL", playerSeasonID, clubMatchID).First(&entity)
@@ -78,8 +77,8 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonAndClubMatch(playerSeasonID, c
 }
 
 // entityToDomain converts database entity to domain model
-func (r *PlayerMatchRepository) entityToDomain(entity PlayerMatchEntity) *afl.PlayerMatch {
-	return &afl.PlayerMatch{
+func (r *PlayerMatchRepository) entityToDomain(entity PlayerMatchEntity) *domain.PlayerMatch {
+	return &domain.PlayerMatch{
 		ID:             entity.ID,
 		PlayerSeasonID: entity.PlayerSeasonID,
 		ClubMatchID:    entity.ClubMatchID,

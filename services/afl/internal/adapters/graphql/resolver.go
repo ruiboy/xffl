@@ -1,7 +1,7 @@
 package graphql
 
 import (
-	"xffl/services/afl/internal/ports/in"
+	"xffl/services/afl/internal/services"
 )
 
 // This file will not be regenerated automatically.
@@ -9,14 +9,14 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	clubUseCase        in.ClubUseCase
-	playerMatchUseCase in.PlayerMatchUseCase
+	clubService        *services.ClubService
+	playerMatchService *services.PlayerMatchService
 }
 
 // NewResolver creates a new GraphQL resolver with injected dependencies
-func NewResolver(clubUseCase in.ClubUseCase, playerMatchUseCase in.PlayerMatchUseCase) *Resolver {
+func NewResolver(clubService *services.ClubService, playerMatchService *services.PlayerMatchService) *Resolver {
 	return &Resolver{
-		clubUseCase:        clubUseCase,
-		playerMatchUseCase: playerMatchUseCase,
+		clubService:        clubService,
+		playerMatchService: playerMatchService,
 	}
 }

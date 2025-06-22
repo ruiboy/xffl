@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ### Services (Go)
-- Start FFL service: `cd services/ffl && go run cmd/server/main.go` (port 8080)
-- Start AFL service: `cd services/afl && PORT=8081 go run cmd/server/main.go` (port 8081)
+- Start AFL service: `cd services/afl && go run cmd/server/main.go` (port 8080)
+- Start FFL service: `cd services/ffl && go run cmd/server/main.go` (port 8081)
 - Generate GraphQL code: `cd services/ffl && go run github.com/99designs/gqlgen generate`
 - Build service: `cd services/ffl && go build -o bin/server cmd/server/main.go`
 
 ### Environment Variables
 - `EVENT_DB_URL` - PostgreSQL connection string for cross-service events (default: "user=postgres dbname=xffl sslmode=disable")
-- `PORT` - Service port (defaults: FFL=8080, AFL=8081, Gateway=8090)
+- `PORT` - Service port (defaults: AFL=8080, FFL=8081, Gateway=8090)
 
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a multi-service fantasy football league application with Clean Architecture + Hexagonal Architecture principles:
+This is a multi-service fantasy football league application with **Clean Architecture**:
 
 - **Services**: Independent Go microservices (AFL, FFL) with GraphQL APIs using gqlgen
 - **Gateway**: Simple Go proxy service that routes GraphQL requests to appropriate backend services
@@ -40,26 +40,23 @@ This is a multi-service fantasy football league application with Clean Architect
 
 ### Service Architecture
 
-Each service follows Clean Architecture + Hexagonal Architecture:
+Each service follows **Clean Architecture** with Go best practices:
 
-#### Clean Architecture Layers:
-- **Domain Layer** (`services/*/internal/domain/`): Pure business logic, entities, value objects
-- **Application Layer** (`services/*/internal/application/`): Use cases and application services
-- **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
+#### Architecture Layers:
+- **Domain Layer** (`services/*/internal/domain/`): Pure business entities and domain logic
+- **Services Layer** (`services/*/internal/services/`): Business orchestration with local interfaces
+- **Adapters Layer** (`services/*/internal/adapters/`): Input/output adapters organized by type
 - **Infrastructure** (`pkg/`): Shared database connections, configuration
 
-#### Dependency Inversion Pattern:
-We follow strict dependency inversion to keep the domain pure:
+#### Go Best Practices Applied:
+Following Go best practice "define interfaces where they are consumed":
+- **Local interfaces**: Each service defines only the repository methods it needs
 - **Domain entities**: Pure structs (e.g., `afl.Club`, `afl.PlayerMatch`) with JSON tags only
 - **Database entities**: Separate structs (e.g., `ClubEntity`, `PlayerMatchEntity`) with GORM tags
 - **Entity mapping**: Repository methods convert database ↔ domain entities
-- **Interface definition**: Repository interfaces defined in `ports/out`, implemented in `adapters/persistence`
+- **Structural typing**: Repository implementations automatically satisfy service interfaces
 
-This ensures domain entities have zero infrastructure dependencies and can be tested in isolation.
-
-#### Hexagonal Architecture Ports:
-- **Input Ports** (`services/*/internal/ports/in/`): Service interfaces (use cases)
-- **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
+This ensures domain entities have zero infrastructure dependencies while following Go idioms.
 
 ### Gateway Architecture
 
@@ -72,8 +69,8 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 - **Health Check**: Available at `/health` endpoint
 
 #### Gateway Routing:
-- Queries containing `afl` → AFL service (localhost:8081)
-- Queries containing `ffl` → FFL service (localhost:8080)
+- Queries containing `afl` → AFL service (localhost:8080)
+- Queries containing `ffl` → FFL service (localhost:8081)
 - Queries containing `_gateway` → Gateway metadata (handled locally)
 - All other queries → FFL service (default)
 
@@ -83,13 +80,13 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 - `services/*/api/graphql/schema.graphqls`: GraphQL schema definition
 - `services/*/cmd/server/main.go`: Service entry point and server setup
 - `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `services/*/internal/adapters/persistence/`: Database entities and repositories
+- `services/*/internal/adapters/db/`: Database entities and repositories (output adapters)
   - Contains database entities with GORM annotations (e.g., `ClubEntity`, `PlayerMatchEntity`)
   - Implements entity mapping between database and domain models
 - `services/*/internal/domain/`: Pure business entities and domain logic
   - Contains pure domain entities with no infrastructure dependencies
-- `services/*/internal/application/`: Use cases and business operations
-- `services/*/internal/ports/`: Interface definitions for clean architecture
+- `services/*/internal/services/`: Business orchestration and local repository interfaces
+  - Each service defines interfaces for only the repository methods it needs
 
 #### Gateway:
 - `gateway/main.go`: Complete gateway implementation
@@ -103,16 +100,16 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 
 ### Development Workflow
 
-1. **Start Services**: Run AFL and FFL services on ports 8081 and 8080
+1. **Start Services**: Run AFL and FFL services on ports 8080 and 8081
 2. **Start Gateway**: Run gateway on port 8090 to proxy requests
 3. **Start Frontend**: Run Vue dev server on port 3000, configured to use gateway
 4. **GraphQL Changes**: Modify schema in `services/*/api/graphql/schema.graphqls`, then run gqlgen generate
-5. **Database Changes**: Create SQL migrations in `services/*/internal/adapters/persistence/migrations/`
-6. **Business Logic**: Add domain entities in `internal/domain/` and use cases in `internal/application/`
+5. **Database Changes**: Create SQL migrations in `infrastructure/postgres/migrations/`
+6. **Business Logic**: Add domain entities in `internal/domain/` and business logic in `internal/services/`
 
 ### Request Flow
 
-Frontend (3000) → Gateway (8090) → AFL Service (8081) or FFL Service (8080) → PostgreSQL
+Frontend (3000) → Gateway (8090) → AFL Service (8080) or FFL Service (8081) → PostgreSQL
 
 The gateway routes requests based on simple string matching in the GraphQL query text, providing a unified API surface while keeping services independent.
 

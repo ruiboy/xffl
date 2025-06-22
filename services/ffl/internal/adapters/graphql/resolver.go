@@ -1,25 +1,25 @@
 package graphql
 
 import (
-	"xffl/services/ffl/internal/ports/in"
+	"xffl/services/ffl/internal/services"
 )
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-// Resolver holds the use cases for GraphQL resolvers
+// Resolver holds the services for GraphQL resolvers
 type Resolver struct {
-	clubUseCase       in.ClubUseCase
-	playerUseCase     in.PlayerUseCase
-	clubSeasonUseCase in.ClubSeasonUseCase
+	clubService       *services.ClubService
+	playerService     *services.PlayerService
+	clubSeasonService *services.ClubSeasonService
 }
 
 // NewResolver creates a new GraphQL resolver
-func NewResolver(clubUseCase in.ClubUseCase, playerUseCase in.PlayerUseCase, clubSeasonUseCase in.ClubSeasonUseCase) *Resolver {
+func NewResolver(clubService *services.ClubService, playerService *services.PlayerService, clubSeasonService *services.ClubSeasonService) *Resolver {
 	return &Resolver{
-		clubUseCase:       clubUseCase,
-		playerUseCase:     playerUseCase,
-		clubSeasonUseCase: clubSeasonUseCase,
+		clubService:       clubService,
+		playerService:     playerService,
+		clubSeasonService: clubSeasonService,
 	}
 }

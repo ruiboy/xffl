@@ -172,7 +172,7 @@ go build -o bin/server cmd/server/main.go
 go run cmd/server/main.go
 ```
 
-The AFL service will start on `http://localhost:8081`with:
+The AFL service will start on `http://localhost:8080`with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
@@ -190,7 +190,7 @@ go build -o bin/server cmd/server/main.go
 go run cmd/server/main.go
 ```
 
-The FFL service will start on `http://localhost:8080` with:
+The FFL service will start on `http://localhost:8081` with:
 - `/query` - GraphQL API endpoint
 - `/` - GraphQL playground for testing queries
 
@@ -211,8 +211,8 @@ The gateway will start on `http://localhost:8090` with:
 #### Gateway Routing Logic
 
 The gateway uses simple string-based routing:
-- Queries containing `afl` → AFL service (port 8081)
-- Queries containing `ffl` → FFL service (port 8080) 
+- Queries containing `afl` → AFL service (port 8080)
+- Queries containing `ffl` → FFL service (port 8081) 
 - Queries containing `_gateway` → Gateway metadata (handled locally)
 - All other queries → FFL service (default)
 
@@ -259,8 +259,8 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
 5. Access the application:
    - Frontend: http://localhost:3000 (uses gateway)
    - Gateway: http://localhost:8090/query
-   - FFL GraphQL Playground: http://localhost:8080
-   - AFL GraphQL Playground: http://localhost:8081
+   - AFL GraphQL Playground: http://localhost:8080
+   - FFL GraphQL Playground: http://localhost:8081
 
 ## Project Structure
 
@@ -277,11 +277,10 @@ xffl/
 │   │   ├── internal/           # Service-specific code
 │   │   │   ├── domain/         # FFL business entities & events
 │   │   │   │   └── events/     # FFL domain events
-│   │   │   ├── application/    # FFL use cases & event handlers
-│   │   │   ├── adapters/       # GraphQL resolvers, persistence
-│   │   │   └── ports/          # Interface definitions
-│   │   │       ├── in/         # Input ports (service interfaces)
-│   │   │       └── out/        # Output ports (repository interfaces)
+│   │   │   ├── services/       # FFL services & event handlers
+│   │   │   └── adapters/       # GraphQL resolvers, persistence
+│   │   │       ├── graphql/    # GraphQL input adapters
+│   │   │       └── db/         # Database output adapters
 │   │   ├── go.mod              # FFL service dependencies
 │   │   └── gqlgen.yml          # GraphQL generation config
 │   └── afl/                    # Australian Football League service
@@ -361,39 +360,36 @@ gateway <-- searchindex : rest
 
 ### Services Architecture
 
-Each service follows Clean Architecture + Hexagonal Architecture principles:
+Each service follows **Clean Architecture** with Go best practices:
 
 #### Service Independence:
-- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8080)
-- **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8081)
+- **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8080)
+- **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8081)
 - **Shared Package** (`pkg/`): Common utilities used by all services
 
-#### Clean Architecture Layers (per service):
-- **Domain Layer** (`services/*/internal/domain/`): Pure business logic, entities, value objects
-- **Application Layer** (`services/*/internal/application/`): Use cases and application services
-- **Interface Adapters** (`services/*/internal/adapters/`): GraphQL resolvers, persistence adapters
+#### Architecture Layers (per service):
+- **Domain Layer** (`services/*/internal/domain/`): Pure business entities and domain logic
+- **Services Layer** (`services/*/internal/services/`): Business orchestration with local interfaces
+- **Adapters Layer** (`services/*/internal/adapters/`): Input/output adapters organized by type
 - **Infrastructure** (`pkg/`): Shared database connections, configuration
 
 #### Dependency Inversion Pattern:
 - **Domain entities** are pure Go structs with no external dependencies
-- **Database entities** live in persistence adapters with GORM annotations
-- **Entity mapping** converts between domain and database models
-- **Repository interfaces** defined in domain, implemented in persistence layer
-- This ensures domain layer remains independent of infrastructure concerns
-
-#### Hexagonal Architecture Ports:
-- **Input Ports** (`services/*/internal/ports/in/`): Service interfaces
-- **Output Ports** (`services/*/internal/ports/out/`): Repository and external service interfaces
+- **Database entities** live in db adapters with GORM annotations
+- **Entity mapping**: Repository methods convert database ↔ domain entities
+- **Repository interfaces** defined in service where they are consumed (Go idiom), implemented in db adapter
+- This ensures domain entities have zero infrastructure dependencies and follows Go idioms
 
 #### Key Components (per service):
 - `services/*/cmd/server/main.go`: Service entry point and server setup
 - `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `services/*/internal/adapters/persistence/`: Database implementations (output adapters)
+- `services/*/internal/adapters/db/`: Database implementations (output adapters)
   - Contains separate database entities (e.g., `ClubEntity`, `PlayerMatchEntity`)
   - Maps between database entities and domain entities
 - `services/*/internal/domain/`: Service-specific business entities
   - Pure domain entities with no infrastructure dependencies
-- `services/*/internal/application/`: Service-specific use cases
+- `services/*/internal/services/`: Service-specific business logic and local repository interfaces
+  - Each service defines interfaces for only the repository methods it needs
 - `pkg/database/`: Shared database connection utilities
 
 ### Data Model
@@ -604,7 +600,7 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Scale Path**: Extract `pkg/` to separate repository/module, or inline into services
 
 #### 🔗 **GraphQL APIs per Service**
-- **Decision**: Each service exposes its own GraphQL endpoint (AFL: 8081, FFL: 8080)
+- **Decision**: Each service exposes its own GraphQL endpoint (AFL: 8080, FFL: 8081)
 - **Why for Hobby**: Type-safe APIs, excellent developer experience, can test services independently
 - **Scale Path**: Add GraphQL Gateway/Federation for unified frontend experience
 
@@ -623,9 +619,9 @@ This project demonstrates a **modular microservices architecture** that balances
 - **Why for Hobby**: Simple setup, easy cross-schema queries, single backup/restore
 - **Scale Path**: Split to microservice-per-database, add read replicas, event sourcing
 
-#### 🏗️ **Clean Architecture + Hexagonal Patterns**
-- **Decision**: Domain/Application/Adapters layers with port/adapter interfaces
-- **Why for Hobby**: Enforces good separation, makes testing easier, educational value
+#### 🏗️ **Clean Architecture with Go Best Practices**
+- **Decision**: Domain/Services/Adapters layers with Go-idiomatic local interfaces
+- **Why for Hobby**: Enforces good separation, follows Go best practices, makes testing easier, educational value
 - **Scale Path**: Patterns scale well, can add CQRS, event sourcing, or simplify to layered architecture
 
 #### 🏗️ **Event System Architecture**
