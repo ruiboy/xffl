@@ -620,7 +620,7 @@ brew tap zinclabs/tap
 brew install zinclabs/tap/zincsearch
 
 # Create data directory and start ZincSearch
-mkdir -p zinc-data
+mkdir -p data
 ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch
 ```
 Leave this running in its own terminal. ZincSearch will be available at http://localhost:4080
