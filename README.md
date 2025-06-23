@@ -11,226 +11,50 @@ Primary techs are Golang, GraphQL, Postgres, Vue, Zinc
 
 Built with a lot of code agent.
 
-![Logical View](doc/logical-view.png)
-
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Database Setup](#database-setup)
-  - [Installing PostgreSQL](#installing-postgresql)
-  - [Database Configuration](#database-configuration)
-  - [Running Migrations](#running-migrations)
-  - [Test Data](#test-data)
-- [Services Setup](#services-setup)
-  - [Shared Package](#shared-package)
-  - [FFL Service](#ffl-service)
-  - [AFL Service](#afl-service)
-  - [Gateway Service](#gateway-service)
-- [Web](#web)
-  - [Running the Frontend](#running-the-frontend)
-- [Development](#development)
-- [Project Structure](#project-structure)
+- [Dev Quick Start](#dev-quick-start)
 - [Architecture](#architecture)
-  - [Frontend](#frontend)
   - [Services Architecture](#services-architecture)
+  - [Search Service Architecture](#search-service-architecture)
   - [Data Model](#data-model)
 - [Architecture Decisions](#architecture-decisions)
   - [Current Architecture Choices](#current-architecture-choices)
   - [Migration Paths](#migration-paths)
-
+- [Project Structure](#project-structure)
+- [Database Setup](#database-setup)
+  - [Installing PostgreSQL](#installing-postgresql)
+  - [Database Configuration](#database-configuration)
+  - [Search Service Configuration](#search-service-configuration)
+  - [Gateway Configuration](#gateway-configuration)
+  - [Running Migrations](#running-migrations)
+  - [Test Data](#test-data)
+- [Search Engine Setup](#search-engine-setup)
+  - [Installing and Running ZincSearch](#installing-and-running-zincsearch)
+  - [Creating Search Index](#creating-search-index)
+- [Services Setup](#services-setup)
+  - [Shared Package](#shared-package)
+  - [AFL Service](#afl-service)
+  - [FFL Service](#ffl-service)
+  - [Gateway Service](#gateway-service)
+- [Web](#web)
+  - [Running the Frontend](#running-the-frontend)
 
 ## Prerequisites
 
 - Go 1.16 or later
 - Node.js 16 or later
 - PostgreSQL 13 or later
+- ZincSearch
 - npm or yarn
 
-## Database Setup
+## Dev Quick Start
 
-The application uses PostgreSQL as its database. Here's how to set it up:
+Pre-reqs:
 
-### Installing PostgreSQL
-
-#### macOS
-```bash
-# Install PostgreSQL using Homebrew
-brew install postgresql@14
-
-# Start PostgreSQL as service
-# If using port other than 5432, you may need to adjust configuration, eg at
-# /opt/homebrew/var/postgresql@14/postgresql.conf
-brew services start postgresql@14
-
-# Or, if you don't want/need a background service you can just run:
-/usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14
-
-# Create the database
-createdb xffl
-
-# Create a PostgreSQL user (if not exists)
-createuser -s postgres
-
-# Set password for postgres user
-psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-```
-
-#### Linux (Ubuntu/Debian)
-```bash
-# Install PostgreSQL
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-
-# Start PostgreSQL service
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-
-# Create the database
-sudo -u postgres createdb xffl
-
-# Set password for postgres user
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-```
-
-### Database Configuration
-
-The application uses environment variables for database configuration. Copy the example environment file and customize for your setup:
-
-```bash
-# For FFL service
-cp services/ffl/.env.example services/ffl/.env
-# Edit services/ffl/.env with your database credentials
-
-# For AFL service
-cp services/afl/.env.example services/afl/.env
-# Edit services/afl/.env with your database credentials
-```
-
-Example configuration:
-```
-DB_HOST=localhost
-DB_USER=postgres
-DB_PASSWORD=your_password_here
-DB_NAME=xffl
-DB_PORT=5432
-```
-
-**Note**: `.env` files are ignored by git for security. Never commit actual credentials to the repository.
-
-### Running Migrations
-
-The database schema is managed through SQL migration files in the `infrastructure/postgres/` directory. To apply the migrations:
-
-```bash
-# AFL migrations
-psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql
-
-# FFL migrations  
-psql -U postgres -d xffl -f infrastructure/postgres/migrations/002_create_ffl_tables_up.sql
-```
-
-You can revert by running the down migrations.
-
-### Test Data
-
-Test data scripts are available in the infrastructure directory. To insert test data:
-
-```bash
-# AFL test data
-psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sql
-
-# FFL test data
-psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql
-```
-
-## Services Setup
-
-The application consists of multiple Go services using a shared package for common functionality.
-
-### Shared Package
-
-The `pkg/` directory contains shared utilities used by all services:
-
-```bash
-# Validate the shared package
-cd pkg
-go mod tidy
-go test ./...
-```
-
-### AFL Service
-
-```bash
-# Generate GraphQL code  
-cd services/afl
-go run github.com/99designs/gqlgen generate
-
-# Build the service
-go build -o bin/server cmd/server/main.go
-
-# Or run directly
-go run cmd/server/main.go
-```
-
-The AFL service will start on `http://localhost:8080`with:
-- `/query` - GraphQL API endpoint
-- `/` - GraphQL playground for testing queries
-
-### FFL Service
-
-```bash
-# Generate GraphQL code
-cd services/ffl
-go run github.com/99designs/gqlgen generate
-
-# Build the service
-go build -o bin/server cmd/server/main.go
-
-# Or run directly
-go run cmd/server/main.go
-```
-
-The FFL service will start on `http://localhost:8081` with:
-- `/query` - GraphQL API endpoint
-- `/` - GraphQL playground for testing queries
-
-### Gateway Service
-
-The gateway provides a unified GraphQL endpoint for the frontend, routing requests to the appropriate backend services.
-
-```bash
-# Run the gateway
-cd gateway
-go run main.go
-```
-
-The gateway will start on `http://localhost:8090` with:
-- `/query` - Unified GraphQL endpoint
-- `/health` - Health check endpoint
-
-#### Gateway Routing Logic
-
-The gateway uses simple string-based routing:
-- Queries containing `afl` → AFL service (port 8080)
-- Queries containing `ffl` → FFL service (port 8081) 
-- Queries containing `_gateway` → Gateway metadata (handled locally)
-- All other queries → FFL service (default)
-
-## Web
-
-### Running the Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend will be available at `http://localhost:3000`.
-
-## Development
-
-Pre-req: Make sure the [database is set up and migrations have been run](#database-setup).
+- Make sure the [database is set up and migrations have been run](#database-setup).
+- Make sure the [search engine is set up and index is created](#search-engine-setup).
 
 1. Start the FFL service:
    ```bash
@@ -244,66 +68,32 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
    go run cmd/server/main.go
    ```
 
-3. Start the gateway:
+3. Start the search service:
+   ```bash
+   cd services/search
+   go run cmd/server/main.go
+   ```
+
+4. Start the gateway:
    ```bash
    cd gateway
    go run main.go
    ```
 
-4. Start the frontend development server:
+5. Start the frontend development server:
    ```bash
-   cd frontend
+   cd frontend/web
    npm run dev
    ```
 
-5. Access the application:
-   - Frontend: http://localhost:3000 (uses gateway)
-   - Gateway: http://localhost:8090/query
-   - AFL GraphQL Playground: http://localhost:8080
-   - FFL GraphQL Playground: http://localhost:8081
-
-## Project Structure
-
-```
-xffl/
-├── infrastructure/             # Infrastructure and database setup
-│   └── postgres/               # PostgreSQL configuration
-│       ├── migrations/         # Database schema migrations
-│       └── test_data/          # Test data scripts
-├── services/                   # Independent microservices
-│   ├── ffl/                    # Fantasy Football League service
-│   │   ├── api/graphql/        # FFL GraphQL schema
-│   │   ├── cmd/server/         # Service entry point
-│   │   ├── internal/           # Service-specific code
-│   │   │   ├── domain/         # FFL business entities & events
-│   │   │   │   └── events/     # FFL domain events
-│   │   │   ├── services/       # FFL services & event handlers
-│   │   │   └── adapters/       # GraphQL resolvers, persistence
-│   │   │       ├── graphql/    # GraphQL input adapters
-│   │   │       └── db/         # Database output adapters
-│   │   ├── go.mod              # FFL service dependencies
-│   │   └── gqlgen.yml          # GraphQL generation config
-│   └── afl/                    # Australian Football League service
-│       ├── api/graphql/        # AFL GraphQL schema
-│       ├── cmd/server/         # Service entry point
-│       ├── internal/           # Service-specific code
-│       └── go.mod              # AFL service dependencies
-├── gateway/                    # GraphQL Gateway service
-│   ├── main.go                 # Gateway implementation
-│   └── go.mod                  # Gateway dependencies
-├── pkg/                        # Shared packages
-│   ├── database/               # Database connection utilities
-│   ├── events/                 # Cross-service event system
-│   │   ├── memory/             # In-memory event dispatcher
-│   │   ├── postgres/           # PostgreSQL LISTEN/NOTIFY dispatcher
-│   │   └── examples/           # Event system examples & demos
-│   └── go.mod                  # Shared package dependencies
-├── frontend/                   # Vue.js frontend
-│   ├── src/                    # Source code
-│   ├── public/                 # Static assets
-│   └── index.html              # Entry HTML file
-└── go.work                     # Go workspace configuration
-```
+6. Access the application:
+    - Frontend: http://localhost:3000 (uses gateway)
+    - Gateway: http://localhost:8090/query
+    - Search: http://localhost:8090/search
+    - ZincSearch Web UI: http://localhost:4080 (admin/admin)
+    - AFL GraphQL Playground: http://localhost:8080
+    - FFL GraphQL Playground: http://localhost:8081
+    - Search Service Direct: http://localhost:8082/search
 
 ## Architecture
 
@@ -347,17 +137,6 @@ gateway <-- searchindex : rest
 @enduml
 ```
 
-### Frontend
-
-#### Key Components
-
-- `src/App.vue` - Root component
-- `src/router/` - Vue Router configuration
-- `src/views/` - Page components
-- `src/components/` - Reusable components
-- `src/stores/` - Pinia state management
-- `src/graphql/` - GraphQL queries and mutations
-
 ### Services Architecture
 
 Each service follows **Clean Architecture** with Go best practices:
@@ -365,13 +144,13 @@ Each service follows **Clean Architecture** with Go best practices:
 #### Service Independence:
 - **AFL Service** (`services/afl/`): Handles Australian Football League operations (port 8080)
 - **FFL Service** (`services/ffl/`): Handles Fantasy Football League operations (port 8081)
+- **Search Service** (`services/search/`): Handles search indexing and queries (port 8082)
 - **Shared Package** (`pkg/`): Common utilities used by all services
 
 #### Architecture Layers (per service):
 - **Domain Layer** (`services/*/internal/domain/`): Pure business entities and domain logic
 - **Services Layer** (`services/*/internal/services/`): Business orchestration with local interfaces
 - **Adapters Layer** (`services/*/internal/adapters/`): Input/output adapters organized by type
-- **Infrastructure** (`pkg/`): Shared database connections, configuration
 
 #### Dependency Inversion Pattern:
 - **Domain entities** are pure Go structs with no external dependencies
@@ -380,17 +159,36 @@ Each service follows **Clean Architecture** with Go best practices:
 - **Repository interfaces** defined in service where they are consumed (Go idiom), implemented in db adapter
 - This ensures domain entities have zero infrastructure dependencies and follows Go idioms
 
-#### Key Components (per service):
-- `services/*/cmd/server/main.go`: Service entry point and server setup
-- `services/*/internal/adapters/graphql/`: GraphQL resolvers (input adapters)
-- `services/*/internal/adapters/db/`: Database implementations (output adapters)
-  - Contains separate database entities (e.g., `ClubEntity`, `PlayerMatchEntity`)
-  - Maps between database entities and domain entities
-- `services/*/internal/domain/`: Service-specific business entities
-  - Pure domain entities with no infrastructure dependencies
-- `services/*/internal/services/`: Service-specific business logic and local repository interfaces
-  - Each service defines interfaces for only the repository methods it needs
-- `pkg/database/`: Shared database connection utilities
+### Search Service Architecture
+
+The Search Service provides technology-agnostic search capabilities with event-driven indexing:
+
+#### Key Features:
+- **Technology Agnostic**: Zinc adapter with migration path to Elasticsearch/OpenSearch
+- **Event-Driven Indexing**: Subscribes to AFL/FFL domain events for eventual consistency
+- **REST API**: Unified search endpoint accessible through gateway
+- **Clean Architecture**: Domain entities, services, and adapters separation
+
+#### Search Flow:
+1. **Domain Events**: AFL/FFL services publish `player_match_updated` and `fantasy_score_calculated` events
+2. **Event Processing**: Search service subscribes and processes events to create search documents
+3. **Indexing**: Documents indexed in Zinc with structured metadata and tags
+4. **Search**: Frontend queries via gateway REST endpoint (`/search?q=query&source=afl`)
+5. **Results**: Structured search results with relevance scoring and pagination
+
+#### Search Components:
+- **Domain**: `SearchDocument`, `SearchQuery`, `SearchResults` value objects
+- **Services**: `SearchService` (query execution), `IndexingService` (event processing)
+- **Adapters**:
+    - `ZincRepository` (search engine adapter)
+    - `EventHandlers` (domain event subscribers)
+    - `HTTPHandlers` (REST API endpoints)
+
+#### Supported Queries:
+- **Full-text search**: Players, clubs, matches across AFL and FFL
+- **Filtering**: By source (`afl`, `ffl`), document type (`player`, `club`)
+- **Sorting**: Score, relevance, custom fields
+- **Pagination**: Limit/offset with total count
 
 ### Data Model
 
@@ -658,3 +456,267 @@ The architecture is designed to support multiple evolution paths:
 3. **Event-Driven Scale**: Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
 4. **Event Sourcing**: Add event store, replay capabilities, full audit trails
 5. **Search Scale**: Evolve from Zinc to Elasticsearch/OpenSearch clusters with advanced ML features
+
+## Project Structure
+
+```
+xffl/
+├── infrastructure/             # Infrastructure and database setup
+│   └── postgres/               # PostgreSQL configuration
+│       ├── migrations/         # Database schema migrations
+│       └── test_data/          # Test data scripts
+├── services/                   # Independent microservices
+│   ├── ffl/                    # Fantasy Football League service
+│   │   ├── api/graphql/        # FFL GraphQL schema
+│   │   ├── cmd/server/         # Service entry point
+│   │   ├── internal/           # Service-specific code
+│   │   │   ├── domain/         # FFL business entities & events
+│   │   │   │   └── events/     # FFL domain events
+│   │   │   ├── services/       # FFL services & event handlers
+│   │   │   └── adapters/       # GraphQL resolvers, persistence
+│   │   │       ├── graphql/    # GraphQL input adapters
+│   │   │       └── db/         # Database output adapters
+│   │   ├── go.mod              # FFL service dependencies
+│   │   └── gqlgen.yml          # GraphQL generation config
+│   ├── afl/                    # Australian Football League service
+│   │   ├── api/graphql/        # AFL GraphQL schema
+│   │   ├── cmd/server/         # Service entry point
+│   │   ├── internal/           # Service-specific code
+│   │   └── go.mod              # AFL service dependencies
+│   └── search/                 # Search service
+│       ├── cmd/server/         # Service entry point
+│       ├── internal/           # Service-specific code
+│       │   ├── domain/         # Search entities
+│       │   ├── services/       # Search & indexing services
+│       │   └── adapters/       # HTTP, events, zinc adapters
+│       │       ├── http/       # REST API input adapters
+│       │       ├── events/     # Event input adapeters
+│       │       └── zinc/       # Zinc search output adapter
+│       └── go.mod              # Search service dependencies
+├── gateway/                    # GraphQL Gateway service
+│   ├── main.go                 # Gateway implementation
+│   └── go.mod                  # Gateway dependencies
+├── pkg/                        # Shared packages
+│   ├── database/               # Database connection utilities
+│   ├── events/                 # Cross-service event system
+│   │   ├── memory/             # In-memory event dispatcher
+│   │   ├── postgres/           # PostgreSQL LISTEN/NOTIFY dispatcher
+│   │   └── examples/           # Event system examples & demos
+│   └── go.mod                  # Shared package dependencies
+├── frontend/                   # Frontend applications
+│   └── web/                    # Vue.js web frontend
+│       ├── src/                # Source code
+│       ├── public/             # Static assets
+│       └── index.html          # Entry HTML file
+└── go.work                     # Go workspace configuration
+```
+
+## Database Setup
+
+The application uses PostgreSQL as its database. Here's how to set it up:
+
+### Installing PostgreSQL
+
+#### macOS
+```bash
+# Install PostgreSQL using Homebrew
+brew install postgresql@14
+
+# Start PostgreSQL as service
+# If using port other than 5432, you may need to adjust configuration, eg at
+# /opt/homebrew/var/postgresql@14/postgresql.conf
+brew services start postgresql@14
+
+# Or, if you don't want/need a background service you can just run:
+/usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14
+
+# Create the database
+createdb xffl
+
+# Create a PostgreSQL user (if not exists)
+createuser -s postgres
+
+# Set password for postgres user
+psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install PostgreSQL
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Create the database
+sudo -u postgres createdb xffl
+
+# Set password for postgres user
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+### Database Configuration
+
+The application uses environment variables for database configuration. Copy the example environment file and customize for your setup:
+
+```bash
+# For FFL service
+cp services/ffl/.env.example services/ffl/.env
+# Edit services/ffl/.env with your database credentials
+
+# For AFL service
+cp services/afl/.env.example services/afl/.env
+# Edit services/afl/.env with your database credentials
+```
+
+Example configuration:
+```
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=your_password_here
+DB_NAME=xffl
+DB_PORT=5432
+```
+
+**Note**: `.env` files are ignored by git for security. Never commit actual credentials to the repository.
+
+### Running Migrations
+
+The database schema is managed through SQL migration files in the `infrastructure/postgres/` directory. To apply the migrations:
+
+```bash
+# AFL migrations
+psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql
+
+# FFL migrations  
+psql -U postgres -d xffl -f infrastructure/postgres/migrations/002_create_ffl_tables_up.sql
+```
+
+You can revert by running the down migrations.
+
+### Test Data
+
+Test data scripts are available in the infrastructure directory. To insert test data:
+
+```bash
+# AFL test data
+psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sql
+
+# FFL test data
+psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql
+```
+
+## Search Engine Setup
+
+### Installing and Running ZincSearch
+
+Install and start ZincSearch:
+
+```bash
+# First time only - install ZincSearch
+brew tap zinclabs/tap
+brew install zinclabs/tap/zincsearch
+
+# Create data directory and start ZincSearch
+mkdir -p data
+ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch
+```
+Leave this running in its own terminal. ZincSearch will be available at http://localhost:4080
+
+### Creating Search Index
+
+Once ZincSearch is running, create the XFFL search index:
+
+```bash
+# Create the XFFL search index with proper field mappings
+curl -u admin:admin -X PUT http://localhost:4080/api/index -d @infrastructure/zinc/xffl-index-config.json -H "Content-Type: application/json"
+```
+
+This creates the search index that the search service uses to index players, clubs, and match data from both AFL and FFL services.
+
+## Services Setup
+
+The application consists of multiple Go services using a shared package for common functionality.
+
+### Shared Package
+
+The `pkg/` directory contains shared utilities used by all services:
+
+```bash
+# Validate the shared package
+cd pkg
+go mod tidy
+go test ./...
+```
+
+### AFL Service
+
+```bash
+# Generate GraphQL code  
+cd services/afl
+go run github.com/99designs/gqlgen generate
+
+# Build the service
+go build -o bin/server cmd/server/main.go
+
+# Or run directly
+go run cmd/server/main.go
+```
+
+The AFL service will start on `http://localhost:8080`with:
+- `/query` - GraphQL API endpoint
+- `/` - GraphQL playground for testing queries
+
+### FFL Service
+
+```bash
+# Generate GraphQL code
+cd services/ffl
+go run github.com/99designs/gqlgen generate
+
+# Build the service
+go build -o bin/server cmd/server/main.go
+
+# Or run directly
+go run cmd/server/main.go
+```
+
+The FFL service will start on `http://localhost:8081` with:
+- `/query` - GraphQL API endpoint
+- `/` - GraphQL playground for testing queries
+
+### Gateway Service
+
+The gateway provides a unified GraphQL endpoint for web frontends, routing requests to the appropriate backend services.
+
+```bash
+# Run the gateway
+cd gateway
+go run main.go
+```
+
+The gateway will start on `http://localhost:8090` with:
+- `/query` - Unified GraphQL endpoint
+- `/health` - Health check endpoint
+
+#### Gateway Routing Logic
+
+The gateway uses simple string-based routing:
+- Queries containing `afl` → AFL service (port 8080)
+- Queries containing `ffl` → FFL service (port 8081) 
+- Queries containing `_gateway` → Gateway metadata (handled locally)
+- All other queries → FFL service (default)
+
+## Web
+
+### Running the Frontend
+
+```bash
+cd frontend/web
+npm install
+npm run dev
+```
+
+The frontend will be available at `http://localhost:3000`.
