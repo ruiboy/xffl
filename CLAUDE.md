@@ -21,9 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - No code generation needed - pure Go standard library
 
 ### Frontend (Vue.js)
-- Install dependencies: `cd frontend && npm install`
-- Start dev server: `cd frontend && npm run dev` (port 3000)
-- Build for production: `cd frontend && npm run build && npm run preview`
+- Install dependencies: `cd frontend/web && npm install`
+- Start dev server: `cd frontend/web && npm run dev` (port 3000)
+- Build for production: `cd frontend/web && npm run build && npm run preview`
 
 ### Database
 - Run AFL migrations: `psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql`
@@ -67,7 +67,7 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 - **Location**: `gateway/main.go` (single file, ~150 lines)
 - **Dependencies**: Go standard library only
 - **Routing Logic**: Routes based on presence of "afl" or "ffl" in query text
-- **CORS**: Configured for frontend at localhost:3000
+- **CORS**: Configured for web frontends at localhost:3000
 - **Health Check**: Available at `/health` endpoint
 
 #### Gateway Routing:

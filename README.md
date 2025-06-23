@@ -73,7 +73,7 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
 
 5. Start the frontend development server:
    ```bash
-   cd frontend
+   cd frontend/web
    npm run dev
    ```
 
@@ -493,10 +493,11 @@ xffl/
 │   │   ├── postgres/           # PostgreSQL LISTEN/NOTIFY dispatcher
 │   │   └── examples/           # Event system examples & demos
 │   └── go.mod                  # Shared package dependencies
-├── frontend/                   # Vue.js frontend
-│   ├── src/                    # Source code
-│   ├── public/                 # Static assets
-│   └── index.html              # Entry HTML file
+├── frontend/                   # Frontend applications
+│   └── web/                    # Vue.js web frontend
+│       ├── src/                # Source code
+│       ├── public/             # Static assets
+│       └── index.html          # Entry HTML file
 └── go.work                     # Go workspace configuration
 ```
 
@@ -650,7 +651,7 @@ The FFL service will start on `http://localhost:8081` with:
 
 ### Gateway Service
 
-The gateway provides a unified GraphQL endpoint for the frontend, routing requests to the appropriate backend services.
+The gateway provides a unified GraphQL endpoint for web frontends, routing requests to the appropriate backend services.
 
 ```bash
 # Run the gateway
@@ -675,7 +676,7 @@ The gateway uses simple string-based routing:
 ### Running the Frontend
 
 ```bash
-cd frontend
+cd frontend/web
 npm install
 npm run dev
 ```
