@@ -10,7 +10,6 @@ go.work.sum
 
 # Go binaries and build artifacts
 main
-server
 bin/
 
 # Go specific
