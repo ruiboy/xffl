@@ -16,6 +16,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `PORT` - Service port (defaults: AFL=8080, FFL=8081, Search=8082, Gateway=8090)
 - `ZINC_URL` - Zinc search engine URL (default: "http://localhost:4080")
 
+### ZincSearch (Search Engine)
+- Install: `brew tap zinclabs/tap && brew install zinclabs/tap/zincsearch`
+- Start: `ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch` (port 4080)
+- Web UI: http://localhost:4080 (admin/admin)
+
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
 - No code generation needed - pure Go standard library

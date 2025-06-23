@@ -28,6 +28,8 @@ Built with a lot of code agent.
   - [Database Configuration](#database-configuration)
   - [Running Migrations](#running-migrations)
   - [Test Data](#test-data)
+- [Search Engine Setup](#search-engine-setup)
+  - [Installing and Running ZincSearch](#installing-and-running-zincsearch)
 - [Services Setup](#services-setup)
   - [Shared Package](#shared-package)
   - [AFL Service](#afl-service)
@@ -41,11 +43,15 @@ Built with a lot of code agent.
 - Go 1.16 or later
 - Node.js 16 or later
 - PostgreSQL 13 or later
+- ZincSearch (search engine)
 - npm or yarn
 
 ## Dev Quick Start
 
-Pre-req: Make sure the [database is set up and migrations have been run](#database-setup).
+Pre-reqs:
+
+- Make sure the [database is set up and migrations have been run](#database-setup).
+- Make sure the [search engine is set up](#search-engine-setup).
 
 1. Start the FFL service:
    ```bash
@@ -81,6 +87,7 @@ Pre-req: Make sure the [database is set up and migrations have been run](#databa
     - Frontend: http://localhost:3000 (uses gateway)
     - Gateway: http://localhost:8090/query
     - Search: http://localhost:8090/search
+    - ZincSearch Web UI: http://localhost:4080 (admin/admin)
     - AFL GraphQL Playground: http://localhost:8080
     - FFL GraphQL Playground: http://localhost:8081
     - Search Service Direct: http://localhost:8082/search
@@ -597,6 +604,23 @@ psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sq
 # FFL test data
 psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql
 ```
+
+## Search Engine Setup
+
+### Installing and Running ZincSearch
+
+Install and start ZincSearch:
+
+```bash
+# First time only - install ZincSearch
+brew tap zinclabs/tap
+brew install zinclabs/tap/zincsearch
+
+# Create data directory and start ZincSearch
+mkdir -p zinc-data
+ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch
+```
+Leave this running in its own terminal. ZincSearch will be available at http://localhost:4080
 
 ## Services Setup
 
