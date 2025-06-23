@@ -1,0 +1,16 @@
+{
+  "name": "xffl",
+  "mappings": {
+    "properties": {
+      "id": {"type": "keyword"},
+      "type": {"type": "keyword"},
+      "source": {"type": "keyword"},
+      "title": {"type": "text"},
+      "content": {"type": "text"},
+      "tags": {"type": "keyword"},
+      "metadata": {"type": "object"},
+      "indexed_at": {"type": "date"},
+      "last_modified": {"type": "date"}
+    }
+  }
+}

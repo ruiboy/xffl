@@ -26,10 +26,13 @@ Built with a lot of code agent.
 - [Database Setup](#database-setup)
   - [Installing PostgreSQL](#installing-postgresql)
   - [Database Configuration](#database-configuration)
+  - [Search Service Configuration](#search-service-configuration)
+  - [Gateway Configuration](#gateway-configuration)
   - [Running Migrations](#running-migrations)
   - [Test Data](#test-data)
 - [Search Engine Setup](#search-engine-setup)
   - [Installing and Running ZincSearch](#installing-and-running-zincsearch)
+  - [Creating Search Index](#creating-search-index)
 - [Services Setup](#services-setup)
   - [Shared Package](#shared-package)
   - [AFL Service](#afl-service)
@@ -43,7 +46,7 @@ Built with a lot of code agent.
 - Go 1.16 or later
 - Node.js 16 or later
 - PostgreSQL 13 or later
-- ZincSearch (search engine)
+- ZincSearch
 - npm or yarn
 
 ## Dev Quick Start
@@ -51,7 +54,7 @@ Built with a lot of code agent.
 Pre-reqs:
 
 - Make sure the [database is set up and migrations have been run](#database-setup).
-- Make sure the [search engine is set up](#search-engine-setup).
+- Make sure the [search engine is set up and index is created](#search-engine-setup).
 
 1. Start the FFL service:
    ```bash
@@ -621,6 +624,17 @@ mkdir -p zinc-data
 ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch
 ```
 Leave this running in its own terminal. ZincSearch will be available at http://localhost:4080
+
+### Creating Search Index
+
+Once ZincSearch is running, create the XFFL search index:
+
+```bash
+# Create the XFFL search index with proper field mappings
+curl -u admin:admin -X PUT http://localhost:4080/api/index -d @infrastructure/zinc/xffl-index-config.json -H "Content-Type: application/json"
+```
+
+This creates the search index that the search service uses to index players, clubs, and match data from both AFL and FFL services.
 
 ## Services Setup
 
