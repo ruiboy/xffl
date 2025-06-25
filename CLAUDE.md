@@ -25,6 +25,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Web UI: http://localhost:4080 (admin/admin)
 - Create XFFL index: `curl -u admin:admin -X PUT http://localhost:4080/api/index -d @infrastructure/zinc/xffl-index-config.json -H "Content-Type: application/json"`
 
+### AsyncAPI (Event Documentation)
+- Install CLI: `npm install -g @asyncapi/cli`
+- Generate docs: `asyncapi generate docs infrastructure/events/asyncapi/xffl-events.yaml --output docs/events/`
+- Start studio: `asyncapi start studio infrastructure/events/asyncapi/xffl-events.yaml`
+- Event specs: `infrastructure/events/asyncapi/`
+
 ### Gateway (Go)
 - Start gateway: `cd gateway && go run main.go` (port 8090)
 - No code generation needed - pure Go standard library

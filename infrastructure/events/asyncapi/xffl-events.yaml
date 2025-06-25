@@ -1,0 +1,71 @@
+asyncapi: 2.6.0
+info:
+  title: XFFL Event Architecture
+  version: 1.0.0
+  description: |
+    Complete event message formats for the XFFL (eXtended Fantasy Football League) application.
+    
+    ## Event Flow
+    1. AFL service publishes player match updates
+    2. FFL service subscribes and calculates fantasy scores
+    3. Search service subscribes to both AFL and FFL events for indexing
+
+  contact:
+    name: XFFL Development Team
+  license:
+    name: MIT
+
+channels:
+  # AFL Service Events
+  AFL.PlayerMatchUpdated:
+    description: Published when AFL player match statistics are updated
+    subscribe:
+      summary: Subscribe to AFL player match updates
+      description: |
+        Consumed by:
+        - FFL service (to calculate fantasy scores)
+        - Search service (to index player data)
+      message:
+        $ref: './afl-events.yaml#/components/messages/PlayerMatchUpdated'
+
+  # FFL Service Events  
+  FFL.FantasyScoreCalculated:
+    description: Published when fantasy scores are calculated
+    subscribe:
+      summary: Subscribe to fantasy score calculations
+      description: |
+        Consumed by:
+        - Search service (to index fantasy score data)
+      message:
+        $ref: './ffl-events.yaml#/components/messages/FantasyScoreCalculated'
+
+components:
+  schemas:
+    # Common schemas used across services
+    BaseEvent:
+      type: object
+      description: Base event structure for all domain events
+      properties:
+        eventType:
+          type: string
+          description: Type of the event
+          examples: ["AFL.PlayerMatchUpdated", "FFL.FantasyScoreCalculated"]
+        eventVersion:
+          type: string
+          description: Version of the event schema
+          pattern: '^v\d+$'
+          example: "v1"
+        aggregateId:
+          type: string
+          description: ID of the aggregate that generated this event
+          examples: ["afl-player-season-123", "ffl-player-season-456"]
+        occurredAt:
+          type: string
+          format: date-time
+          description: When the event occurred
+      required:
+        - eventType
+        - eventVersion
+        - aggregateId
+        - occurredAt
+

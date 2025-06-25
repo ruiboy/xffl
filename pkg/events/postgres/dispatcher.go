@@ -11,6 +11,7 @@ import (
 
 	"github.com/lib/pq"
 	"xffl/pkg/events"
+	"xffl/pkg/events/validation"
 )
 
 // PostgresDispatcher implements EventDispatcher using PostgreSQL LISTEN/NOTIFY
@@ -20,6 +21,7 @@ type PostgresDispatcher struct {
 	subscribers map[string][]events.EventHandler
 	listeners   map[string]*pq.Listener
 	logger      *log.Logger
+	validator   *validation.AsyncAPIValidator // Optional validator
 	mu          sync.RWMutex
 	ctx         context.Context
 	cancel      context.CancelFunc
@@ -110,6 +112,17 @@ func (d *PostgresDispatcher) Subscribe(eventType string, handler events.EventHan
 
 // Publish sends an event using PostgreSQL NOTIFY
 func (d *PostgresDispatcher) Publish(ctx context.Context, event events.DomainEvent) error {
+	// Validate event against AsyncAPI schema if validator is configured
+	if d.validator != nil {
+		if err := d.validator.ValidateEvent(event); err != nil {
+			d.logger.Printf("Event validation failed for %s: %v", event.EventType(), err)
+			// Log validation error but don't fail the publish operation
+			// This ensures graceful degradation during schema evolution
+		} else {
+			d.logger.Printf("Event validation passed for %s", event.EventType())
+		}
+	}
+
 	// Serialize event data
 	eventData, err := json.Marshal(map[string]interface{}{
 		"eventType":    event.EventType(),
@@ -246,6 +259,18 @@ func convertEventTypeToChannel(eventType string) string {
 		}
 	}
 	return result
+}
+
+// EnableValidation enables AsyncAPI schema validation for events
+func (d *PostgresDispatcher) EnableValidation(schemaDir string) error {
+	validator, err := validation.NewAsyncAPIValidator(schemaDir)
+	if err != nil {
+		return fmt.Errorf("failed to create AsyncAPI validator: %w", err)
+	}
+	
+	d.validator = validator
+	d.logger.Printf("AsyncAPI validation enabled for event types: %v", validator.GetSupportedEventTypes())
+	return nil
 }
 
 // GenericEvent implements DomainEvent for PostgreSQL-received events

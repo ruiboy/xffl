@@ -3,8 +3,10 @@ module xffl/pkg
 go 1.23.0
 
 require (
+	github.com/xeipuuv/gojsonschema v1.2.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
