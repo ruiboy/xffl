@@ -21,7 +21,7 @@ type PostgresDispatcher struct {
 	subscribers map[string][]events.EventHandler
 	listeners   map[string]*pq.Listener
 	logger      *log.Logger
-	validator   *validation.AsyncAPIValidator // Optional validator
+	validator   validation.EventValidator // Optional validator
 	mu          sync.RWMutex
 	ctx         context.Context
 	cancel      context.CancelFunc
@@ -261,15 +261,15 @@ func convertEventTypeToChannel(eventType string) string {
 	return result
 }
 
-// EnableValidation enables AsyncAPI schema validation for events
-func (d *PostgresDispatcher) EnableValidation(schemaDir string) error {
-	validator, err := validation.NewAsyncAPIValidator(schemaDir)
+// EnableValidation enables struct-based validation for events
+func (d *PostgresDispatcher) EnableValidation() error {
+	validator, err := validation.NewStructValidator()
 	if err != nil {
-		return fmt.Errorf("failed to create AsyncAPI validator: %w", err)
+		return fmt.Errorf("failed to create struct validator: %w", err)
 	}
 	
 	d.validator = validator
-	d.logger.Printf("AsyncAPI validation enabled for event types: %v", validator.GetSupportedEventTypes())
+	d.logger.Printf("Struct validation enabled for event types: %v", validator.GetSupportedEventTypes())
 	return nil
 }
 

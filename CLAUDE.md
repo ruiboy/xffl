@@ -27,7 +27,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### AsyncAPI (Event Documentation)
 - Install CLI: `npm install -g @asyncapi/cli`
-- Generate docs: `asyncapi generate docs infrastructure/events/asyncapi/xffl-events.yaml --output docs/events/`
+- Generate Go structs: `make generate-events`
+- Generate docs: `make generate-docs`
+- Validate specs: `make validate-asyncapi`
 - Start studio: `asyncapi start studio infrastructure/events/asyncapi/xffl-events.yaml`
 - Event specs: `infrastructure/events/asyncapi/`
 
@@ -117,14 +119,15 @@ The gateway provides a unified GraphQL endpoint using simple string-based routin
 
 ### Development Workflow
 
-1. **Start Zinc**: Start Zinc search engine with `ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch`
-2. **Setup Search Index**: Create the XFFL search index with `curl -u admin:admin -X PUT http://localhost:4080/api/index -d @infrastructure/zinc/xffl-index-config.json -H "Content-Type: application/json"`
-3. **Start Services**: Run AFL, FFL, and Search services on ports 8080, 8081, and 8082
-4. **Start Gateway**: Run gateway on port 8090 to proxy requests
-5. **Start Frontend**: Run Vue dev server on port 3000, configured to use gateway
-6. **GraphQL Changes**: Modify schema in `services/*/api/graphql/schema.graphqls`, then run gqlgen generate
+1. **Development Setup**: Run `make dev-setup` for complete environment setup
+2. **Start Zinc**: Start Zinc search engine with `ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch`
+3. **Setup Search Index**: `make setup-zinc` to create the XFFL search index
+4. **Start Services**: `make start-services` for startup commands (run in separate terminals)
+5. **Event Changes**: Modify AsyncAPI specs in `infrastructure/events/asyncapi/`, then run `make generate-events`
+6. **GraphQL Changes**: Modify schema in `services/*/api/graphql/schema.graphqls`, then run `make generate-gql`
 7. **Database Changes**: Create SQL migrations in `infrastructure/postgres/migrations/`
-8. **Business Logic**: Add domain entities in `internal/domain/` and business logic in `internal/services/`
+8. **Build All**: `make build` to build all services
+9. **Test All**: `make test` to run all tests
 
 ### Request Flow
 
