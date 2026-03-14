@@ -3,6 +3,7 @@ module xffl/pkg
 go 1.23.0
 
 require (
+	github.com/go-playground/validator/v10 v10.22.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )

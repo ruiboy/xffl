@@ -1,0 +1,119 @@
+asyncapi: 2.6.0
+info:
+  title: AFL Service Events
+  version: 1.0.0
+  description: |
+    Events published by the AFL (Australian Football League) service.
+    Defines message formats for cross-service communication.
+
+channels:
+  AFL.PlayerMatchUpdated:
+    description: Published when player match statistics are updated
+    publish:
+      summary: Publish player match statistics update
+      description: |
+        Triggered when player match statistics are updated via GraphQL mutation.
+        Contains both old and new statistics for comparison.
+      message:
+        $ref: '#/components/messages/PlayerMatchUpdated'
+
+components:
+  messages:
+    PlayerMatchUpdated:
+      name: PlayerMatchUpdated
+      title: Player Match Updated Event
+      summary: Player match statistics have been updated
+      description: |
+        Event published when a player's match statistics are modified.
+        Includes both the previous and new statistical values.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerMatchUpdatedPayload'
+      examples:
+        - name: PlayerStatsUpdate
+          summary: Example player statistics update
+          payload:
+            playerSeasonId: 123
+            clubMatchId: 456
+            oldStats:
+              kicks: 15
+              handballs: 8
+              marks: 5
+              hitouts: 0
+              tackles: 4
+              goals: 2
+              behinds: 1
+            newStats:
+              kicks: 18
+              handballs: 10
+              marks: 6
+              hitouts: 0
+              tackles: 5
+              goals: 3
+              behinds: 1
+
+  schemas:
+    PlayerMatchUpdatedPayload:
+      type: object
+      description: Payload for player match updated event
+      properties:
+        playerSeasonId:
+          type: integer
+          description: ID of the player season record
+          minimum: 1
+        clubMatchId:
+          type: integer
+          description: ID of the club match
+          minimum: 1
+        oldStats:
+          $ref: '#/components/schemas/PlayerStats'
+          description: Player statistics before the update
+        newStats:
+          $ref: '#/components/schemas/PlayerStats'
+          description: Player statistics after the update
+      required: 
+        - playerSeasonId
+        - clubMatchId
+        - oldStats
+        - newStats
+
+    PlayerStats:
+      type: object
+      description: Statistical data for a player in a match
+      properties:
+        kicks:
+          type: integer
+          description: Number of kicks
+          minimum: 0
+        handballs:
+          type: integer
+          description: Number of handballs
+          minimum: 0
+        marks:
+          type: integer
+          description: Number of marks (catches)
+          minimum: 0
+        hitouts:
+          type: integer
+          description: Number of hitouts (ruck contests won)
+          minimum: 0
+        tackles:
+          type: integer
+          description: Number of tackles
+          minimum: 0
+        goals:
+          type: integer
+          description: Number of goals scored
+          minimum: 0
+        behinds:
+          type: integer
+          description: Number of behinds scored
+          minimum: 0
+      required:
+        - kicks
+        - handballs
+        - marks
+        - hitouts
+        - tackles
+        - goals
+        - behinds

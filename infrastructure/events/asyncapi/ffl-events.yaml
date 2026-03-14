@@ -1,0 +1,76 @@
+asyncapi: 2.6.0
+info:
+  title: FFL Service Events
+  version: 1.0.0
+  description: |
+    Events published by the FFL (Fantasy Football League) service.
+    Defines message formats for cross-service communication.
+
+channels:
+  FFL.FantasyScoreCalculated:
+    description: Published when fantasy scores are calculated for a player
+    publish:
+      summary: Publish fantasy score calculation
+      description: |
+        Triggered when fantasy scores are calculated based on AFL player statistics.
+        Usually occurs in response to AFL.PlayerMatchUpdated events.
+      message:
+        $ref: '#/components/messages/FantasyScoreCalculated'
+
+components:
+  messages:
+    FantasyScoreCalculated:
+      name: FantasyScoreCalculated
+      title: Fantasy Score Calculated Event
+      summary: Fantasy score has been calculated for a player
+      description: |
+        Event published when fantasy scores are calculated for a player based on 
+        their AFL match statistics. Contains both the original AFL score and the
+        calculated fantasy score.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/FantasyScoreCalculatedPayload'
+      examples:
+        - name: FantasyScoreCalculation
+          summary: Example fantasy score calculation
+          payload:
+            playerSeasonId: 123
+            clubMatchId: 456
+            aflScore: 85
+            fantasyScore: 92
+            source: "AFL.PlayerMatchUpdated"
+
+  schemas:
+    FantasyScoreCalculatedPayload:
+      type: object
+      description: Payload for fantasy score calculated event
+      properties:
+        playerSeasonId:
+          type: integer
+          description: ID of the player season record
+          minimum: 1
+        clubMatchId:
+          type: integer
+          description: ID of the club match
+          minimum: 1
+        aflScore:
+          type: integer
+          description: Original AFL statistical score
+          minimum: 0
+        fantasyScore:
+          type: integer
+          description: Calculated fantasy score based on league rules
+          minimum: 0
+        source:
+          type: string
+          description: Source event that triggered this calculation
+          enum:
+            - "AFL.PlayerMatchUpdated"
+            - "Manual"
+          example: "AFL.PlayerMatchUpdated"
+      required:
+        - playerSeasonId
+        - clubMatchId
+        - aflScore
+        - fantasyScore
+        - source
