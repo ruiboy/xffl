@@ -21,6 +21,20 @@ PlantUML sources: [doc/logical-view.puml](doc/logical-view.puml), [doc/erd-afl.p
 
 See `ai/architecture/` for bounded contexts, service map, and principles.
 
+### Architecture Decisions
+
+This project demonstrates a modular microservices architecture that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
+
+The architecture supports multiple evolution paths:
+
+- **Monolith Consolidation:** Merge services into single binary if complexity isn't needed
+- **True Microservices:** Separate databases, independent deployment, service mesh
+- **Event-Driven Scale:** Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
+- **Event Sourcing:** Add event store, replay capabilities, full audit trails
+- **Search Scale:** Evolve from Zinc to Elasticsearch/OpenSearch clusters
+
+See `ai/decisions`.
+
 ## Key Docs
 
 | Doc | Purpose |
