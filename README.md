@@ -21,6 +21,15 @@ PlantUML sources: [doc/logical-view.puml](doc/logical-view.puml), [doc/erd-afl.p
 
 See `ai/architecture/` for bounded contexts, service map, and principles.
 
+## Key Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [CLAUDE.md](CLAUDE.md) | Primary instructions for AI agents |
+| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts |
+| [ai/plans/](ai/plans/) | Roadmap and current sprint |
+| [ai/decisions/](ai/decisions/) | Architecture Decision Records |
+
 ## Getting Started
 
 ### Prerequisites
@@ -30,41 +39,39 @@ See `ai/architecture/` for bounded contexts, service map, and principles.
 - ZincSearch
 - Node.js 16+
 
-### Database
+*Database and search engine setup will be added when local dev environment is configured.*
 
-```bash
-createdb xffl
-psql -U postgres -d xffl -f infrastructure/postgres/migrations/001_create_afl_tables_up.sql
-psql -U postgres -d xffl -f infrastructure/postgres/migrations/002_create_ffl_tables_up.sql
+## Development Workflow
 
-# Optional test data
-psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_afl_data.sql
-psql -U postgres -d xffl -f infrastructure/postgres/test_data/insert_ffl_data.sql
-```
+### What's next?
 
-### Search Engine
+1. Check `ai/plans/current-sprint.md` — see what's in progress
+2. Check `ai/plans/roadmap.md` — see the bigger picture
+3. Open Claude Code and start working — it reads `CLAUDE.md` automatically
 
-```bash
-brew tap zinclabs/tap && brew install zinclabs/tap/zincsearch
-ZINC_FIRST_ADMIN_USER=admin ZINC_FIRST_ADMIN_PASSWORD=admin zincsearch
-curl -u admin:admin -X PUT http://localhost:4080/api/index -d @infrastructure/zinc/xffl-index-config.json -H "Content-Type: application/json"
-```
+### How it works
 
-### Run Services
+The `ai/` directory is the interface between you (the human architect) and AI agents.
 
-```bash
-cd services/afl && go run cmd/server/main.go    # :8080
-cd services/ffl && go run cmd/server/main.go    # :8081
-cd services/search && go run cmd/server/main.go # :8082
-cd gateway && go run main.go                    # :8090
-cd frontend/web && npm install && npm run dev   # :3000
-```
+1. **You** define the *what* and *why* in `ai/` (architecture, plans, decisions)
+2. **Agents** read `ai/` and do the *how* (code, tests, infrastructure)
+3. **You** review, steer, and update `ai/` as the project evolves
 
-## Key Docs
+### Daily loop
 
-| Doc | Purpose |
-|-----|---------|
-| [CLAUDE.md](CLAUDE.md) | Primary instructions for AI agents |
-| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts |
-| [ai/plans/](ai/plans/) | Roadmap and current sprint |
-| [ai/decisions/](ai/decisions/) | Architecture Decision Records |
+1. Update `ai/plans/current-sprint.md` with today's focus
+2. Open Claude Code — it picks up context from `CLAUDE.md` → `ai/`
+3. Work with the agent: requirements → TDD → implement → review
+4. Commit working code, update sprint tasks
+
+### Future: Agentic Stack
+
+The target setup for maximum solo-developer productivity:
+
+| Tool | Role |
+|------|------|
+| **GSD** | Project manager — planning, task breakdown, prioritisation |
+| **Superpowers** | Coding workflow — structured development flow |
+| **Claude Code** | Implementation — coding, testing, repo modification |
+
+GSD and Superpowers are not yet integrated. For now, use Claude Code directly with the `ai/` docs as your steering mechanism.
