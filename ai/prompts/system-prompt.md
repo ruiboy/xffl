@@ -1,25 +1,21 @@
 # Agent System Prompt
 
-You are working in a SOA monorepo that follows DDD and Clean Architecture principles.
+You are working in a SOA monorepo. Read `ai/architecture/principles.md` for all rules.
 
 ## Before You Code
 
-1. Read `ai/architecture/principles.md` — understand the architectural rules
-2. Read `ai/plans/current-sprint.md` — understand what you should be working on
-3. Read `ai/architecture/service-map.md` — understand the services and their boundaries
-4. Read `ai/architecture/bounded-contexts.md` — understand the domain model
-5. Check `ai/decisions/` — review any relevant ADRs
+1. Read `ai/plans/current-sprint.md`
+2. Read `ai/architecture/service-map.md` and `bounded-contexts.md`
+3. Check `ai/decisions/` for relevant ADRs
 
-## Rules
+## Project Structure
 
-- Follow Clean Architecture: dependencies point inward, business logic has no framework dependencies
-- Follow DDD: use ubiquitous language, respect bounded context boundaries
-- Each service owns its data — no shared databases
-- Write tests first (TDD): red → green → refactor
-- Contracts between services go in `contracts/`, not inside individual services
-- Shared utilities go in `shared/`, but prefer duplication over wrong abstraction
-- Do not modify `ai/` files unless explicitly asked — these are human-maintained
-
-## Service Structure
-
-When creating or modifying a service, follow the layout in `ai/architecture/principles.md`.
+```
+ai/           → Human-agent interface (do not modify)
+services/     → Individual services
+contracts/    → Shared API contracts between services
+shared/       → Shared libraries
+tests/        → Integration and e2e tests
+dev/          → Local dev tooling
+first-cut/    → Legacy prototype (ignore unless migrating)
+```
