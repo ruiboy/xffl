@@ -1,10 +1,16 @@
 # Bounded Contexts
 
-<!-- Define each bounded context, its ubiquitous language, and relationships -->
-<!-- Example:
-## Identity & Access
-- **Key concepts:** User, Role, Permission, Session
-- **Relationships:** Upstream to all other contexts (provides auth tokens)
--->
+## AFL
+Real-world Australian Football League data.
 
-*To be defined — add bounded contexts here as the domain model is established.*
+**Key concepts:** Club, Season, Round, Match, PlayerMatch (kicks, handballs, marks, hitouts, tackles, goals, behinds)
+
+**Publishes:** `AFL.PlayerMatchUpdated`
+
+## FFL
+Fantasy league built on AFL statistics.
+
+**Key concepts:** Club, Player, ClubSeason (ladder: wins/losses/draws/points/premiership points), PlayerMatch (position, status)
+
+**Subscribes:** `AFL.PlayerMatchUpdated` → calculates fantasy score
+**Publishes:** `FFL.FantasyScoreCalculated`

@@ -1,10 +1,29 @@
 # Service Map
 
-<!-- List each service, its bounded context, and key responsibilities -->
-<!-- Example:
-| Service | Bounded Context | Responsibilities |
-|---------|----------------|-----------------|
-| user-service | Identity & Access | User registration, authentication, profile management |
--->
+| Service | Bounded Context | Port | API | Purpose |
+|---------|----------------|------|-----|---------|
+| AFL | AFL | 8080 | GraphQL | AFL clubs, players, match statistics |
+| FFL | FFL | 8081 | GraphQL | Fantasy clubs, players, scoring, ladder |
+| Search | — | 8082 | REST | Full-text search via Zinc |
+| Gateway | — | 8090 | GraphQL proxy | Routes queries to AFL/FFL, proxies search |
 
-*To be defined — add services here as the domain model is established.*
+## Event Flow
+
+```
+AFL.PlayerMatchUpdated → FFL (calculates fantasy score)
+                       → Search (indexes player match)
+
+FFL.FantasyScoreCalculated → Search (indexes/updates player)
+```
+
+## Infrastructure
+
+- **Database:** PostgreSQL — separate schemas (`afl.*`, `ffl.*`)
+- **Events:** PostgreSQL LISTEN/NOTIFY
+- **Search engine:** Zinc (port 4080)
+- **Frontend:** Vue 3 + Apollo Client (port 3000)
+
+## Shared Packages (`pkg/`)
+
+- `database/` — connection utilities
+- `events/` — dispatcher interface + PostgreSQL and in-memory implementations
