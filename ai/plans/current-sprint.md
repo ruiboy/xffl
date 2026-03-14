@@ -5,7 +5,7 @@
 ## Tasks
 - [x] Create ai/ directory structure
 - [x] Define architecture principles
-- [ ] Define domain bounded contexts
-- [ ] Define service map
+- [x] Define domain bounded contexts
+- [x] Define service map
 - [ ] Set up local dev environment
 - [ ] Implement first service skeleton
