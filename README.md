@@ -40,7 +40,7 @@ See `ai/decisions`.
 | Doc | Purpose |
 |-----|---------|
 | [CLAUDE.md](CLAUDE.md) | Primary instructions for AI agents |
-| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts |
+| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts, repo map |
 | [ai/plans/](ai/plans/) | Roadmap and current sprint |
 | [ai/decisions/](ai/decisions/) | Architecture Decision Records |
 

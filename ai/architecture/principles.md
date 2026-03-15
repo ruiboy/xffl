@@ -27,7 +27,7 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 
 ## GraphQL
 
-- Every query starts from a domain root — an aggregate the user naturally thinks in (e.g., Season, Club).
+- Every query must start from a domain root (an aggregate the user naturally thinks in, e.g., Season or Club).
 - Related data is accessed by traversing edges, not by separate top-level queries.
 - Internal join entities (ClubMatch, PlayerSeason) are not query roots — they appear as nested fields of their parent.
 
@@ -40,11 +40,22 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 
 ## Rules
 
-- Prefer duplication over wrong abstraction in `shared/`
-- Prefer TDD
-- Prefer small incremental commits
-- Ask questions when requirements are unclear
-- Do not modify `ai/` files unless explicitly asked
+### Architecture Authority
+- Architecture and ADRs override the codebase.
+- If code conflicts with architecture or ADRs, propose a fix.
+
+### Boundaries
+- Do not introduce new dependencies, services, or infrastructure without an ADR.
+- Services must remain isolated; do not import code from another service.
+- Prefer duplication over incorrect abstractions in `shared/`.
+
+### Development Workflow
+- Prefer TDD.
+- Prefer small, incremental commits.
+
+### Agent Behaviour
+- When requirements are unclear: Ask a question, propose possible options, wait for confirmation before implementing.
+- Do not modify `ai/` files unless explicitly instructed.
 
 ## Service Layout
 
