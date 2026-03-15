@@ -46,14 +46,18 @@ See `ai/decisions`.
 
 ## Getting Started
 
-### Prerequisites
+Prerequisites: Docker, Go 1.23+, [just](https://github.com/casey/just)
 
-- Go 1.16+
-- PostgreSQL 13+
-- ZincSearch
-- Node.js 16+
+```sh
+cp .env.example .env
+just dev-up        # start Postgres + Zinc
+just dev-seed      # load test data (optional)
+```
 
-*Database and search engine setup will be added when local dev environment is configured.*
+For psql: `docker exec -it xffl-postgres psql -U postgres -d xffl`
+
+To stop: `just dev-down` | To nuke and start fresh: `just dev-reset`
+
 
 ## Development Workflow
 

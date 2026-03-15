@@ -7,5 +7,5 @@
 - [x] Define architecture principles
 - [x] Define domain bounded contexts
 - [x] Define service map
-- [ ] Set up local dev environment
+- [x] Set up local dev environment
 - [ ] Implement first service skeleton

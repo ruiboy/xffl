@@ -6,10 +6,10 @@
 
 1. **Domain** — entities, value objects, domain events, repository interfaces
 2. **Application** — use cases, DTOs, port interfaces
-3. **Infrastructure** — DB, messaging, external APIs
+3. **Infrastructure** — DB, messaging, external APIs, implement ports
 4. **Interface** — HTTP/gRPC handlers
 
-Dependencies point inward. Business logic has zero framework dependencies.
+Dependencies point inward; never outward. Business logic has zero framework dependencies.
 
 ## DDD
 
@@ -21,13 +21,17 @@ Dependencies point inward. Business logic has zero framework dependencies.
 ## SOA
 
 - Services are independently deployable, organized around business capabilities
-- Each service owns its data — no shared databases
+- Each service owns its data — no shared database schemas
 - Services communicate through contracts in `contracts/`
 - Prefer async; sync only when necessary
-
+ 
 ## Rules
 
 - Prefer duplication over wrong abstraction in `shared/`
+- Domain logic must be tested
+- Prefer TDD
+- Prefer small incremental commits
+- Ask questions when requirements are unclear
 - Do not modify `ai/` files unless explicitly asked
 
 ## Service Layout
