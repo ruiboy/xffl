@@ -8,11 +8,11 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 **Goal:** Dev environment + shared packages + contracts
 
-- [ ] `dev/docker-compose.yml` — PostgreSQL, Zinc (+ NATS if chosen)
-- [ ] `Makefile` — targets: `up`, `down`, `migrate`, `generate`, `test`, `lint`
-- [ ] Migration tooling (golang-migrate)
-- [ ] `shared/database/` — DB connection helper (ORM vs sqlc — decide here)
-- [ ] `shared/events/` — event dispatcher interface + implementation (PG LISTEN/NOTIFY vs NATS — decide here)
+- [x] `dev/docker-compose.yml` — PostgreSQL, Zinc
+- [x] `justfile` — recipes: `dev-up`, `dev-down`, `dev-reset`, `dev-seed`
+- [ ] Migration tooling (currently raw SQL files)
+- [ ] `shared/database/` — DB connection helper
+- [ ] `shared/events/` — event dispatcher interface + implementation
 - [ ] `shared/events/memory/` — in-memory dispatcher for testing
 - [ ] `contracts/events/` — shared event type definitions (`AFL.PlayerMatchUpdated`, `FFL.FantasyScoreCalculated`)
 
@@ -20,12 +20,12 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 **Goal:** First complete service with TDD
 
-- [ ] Domain layer — Club, Season, Round, Match, PlayerMatch entities; PlayerStats value object; PlayerMatchUpdated event; repository interfaces
-- [ ] Application layer — QueryClubs, UpdatePlayerMatch use cases
-- [ ] Infrastructure layer — DB repositories, event publisher
-- [ ] Interface layer — GraphQL schema + gqlgen resolvers, HTTP server
+- [x] Domain layer — Club, Season, Round, Match, PlayerMatch entities; repository interfaces
+- [ ] Application layer — graph-traversal queries; mutations
+- [x] Infrastructure layer — Postgres repositories
+- [x] Interface layer — GraphQL schema (query + mutation) + gqlgen resolvers, HTTP server
 - [ ] Migrations — AFL schema
-- [ ] Tests — unit (domain, use cases) + integration (repository, PostgreSQL)
+- [ ] Tests — unit (domain) + integration (GraphQL with real DB)
 
 ## Phase 3: AFL Frontend
 
