@@ -7,7 +7,7 @@ When working in this repository, follow these rules.
 
 ## Required Context
 
-Before making significant changes, review the following files:
+Before making any changes, review the following files:
 
 1. `ai/prompts/system-prompt.md` — AI operating instructions
 2. `ai/plans/current-sprint.md` — current development tasks
@@ -16,5 +16,4 @@ Before making significant changes, review the following files:
 ## Behaviour Expectations
 
 - Follow the architecture defined in `ai/architecture`.
-- Prefer small incremental changes.
 - If requirements are unclear, ask for clarification rather than guessing.

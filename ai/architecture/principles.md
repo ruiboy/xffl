@@ -35,6 +35,7 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 
 - **Domain** — unit tests. Pure logic, no mocks, no infrastructure.
 - **Interface (GraphQL)** — integration tests against the running handler with real dependencies (DB, messaging).
+- **Frontend** — end-to-end Playwright tests for all user-facing features.
 - Do not test generated code (gqlgen models, generated resolvers).
 - Table-driven tests for any function with more than one interesting input.
 
