@@ -3,12 +3,12 @@
 **Sprint goal:** Complete Phase 1 — shared packages, contracts, and tooling
 
 ## Decisions
-- [ ] Resolve ADR-009 — persistence layer (raw pgx vs sqlc+pgx vs GORM); define transaction boundary pattern
-- [ ] Resolve ADR-004 — event transport (PG LISTEN/NOTIFY vs NATS); update ADR with decision
+- [x] Resolve ADR-009 — sqlc + pgx with thin helper layer (accepted 2026-03-15)
+- [x] Resolve ADR-004 — PG LISTEN/NOTIFY as event transport (accepted 2026-03-15)
 
 ## Tasks
-- [ ] `shared/database/` — DB connection helper (depends on ADR-009)
-- [ ] Migration tooling — replace raw SQL files
-- [ ] `contracts/events/` — shared event type definitions (PlayerMatchUpdated, FantasyScoreCalculated)
-- [ ] `shared/events/` — EventDispatcher interface + implementation (depends on ADR-004); update ADR-004
-- [ ] `shared/events/memory/` — in-memory dispatcher for testing
+- [x] `shared/database/` — DB connection helper (WithTx, Queries, MapPgError)
+- [~] Migration tooling — not changing; current raw SQL init scripts are fine for now
+- [x] `contracts/events/` — shared event type definitions (PlayerMatchUpdated, FantasyScoreCalculated)
+- [x] `shared/events/` — EventDispatcher interface + PG LISTEN/NOTIFY implementation
+- [x] `shared/events/memory/` — in-memory dispatcher for testing

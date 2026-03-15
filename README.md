@@ -46,7 +46,7 @@ See `ai/decisions`.
 
 ## Getting Started
 
-Prerequisites: Docker, Go 1.23+, [just](https://github.com/casey/just)
+Prerequisites: Docker, Go 1.25+, [just](https://github.com/casey/just)
 
 ```sh
 cp .env.example .env
