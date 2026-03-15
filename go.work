@@ -1,6 +1,8 @@
 go 1.25
 
 use (
+	./contracts/events
 	./services/afl
 	./shared/database
+	./shared/events
 )

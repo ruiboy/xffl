@@ -24,7 +24,7 @@ The `EventDispatcher` interface lives in `shared/events/`. Concrete implementati
 
 ### Event Payload Convention
 
-Events carry **metadata only** (event type + aggregate ID), not full payloads. Subscribers fetch what they need. This keeps payloads well within PG's 8KB NOTIFY limit and avoids coupling subscribers to producer schemas.
+Events carry **full payloads** as JSON. At this project's scale (two event types, small structs) payloads are well within PG's 8KB NOTIFY limit. Full payloads let subscribers act on the event without calling back to the producer, which avoids extra round-trips and cross-service API coupling.
 
 ### Event Flow
 
@@ -38,7 +38,7 @@ FFL.FantasyScoreCalculated → Search (indexing)
 - **No new infrastructure** — already running Postgres, so LISTEN/NOTIFY is free to operate.
 - **Low event volume** — two event types, three subscribers. Purpose-built messaging (NATS, Kafka) is overkill.
 - **Lost messages are tolerable** — fantasy scores can be recalculated, search can be re-indexed. Nothing requires exactly-once delivery.
-- **Loose coupling** — services depend on event contracts, not on each other.
+- **Loose coupling** — services depend on event contracts in `contracts/events/`, not on each other.
 - **Testable** — in-memory dispatcher for unit/integration tests.
 
 ## Scale Path
