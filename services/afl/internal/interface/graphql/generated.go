@@ -556,15 +556,27 @@ func newExecutionContext(
 }
 
 var sources = []*ast.Source{
-	{Name: "../../../api/graphql/schema.graphqls", Input: `type Query {
+	{Name: "../../../api/graphql/mutation.graphqls", Input: `type Mutation {
+  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+}
+
+input UpdateAFLPlayerMatchInput {
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
+}
+`, BuiltIn: false},
+	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
   aflClubs: [AFLClub!]!
   aflClub(id: ID!): AFLClub!
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
-}
-
-type Mutation {
-  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
 }
 
 type AFLClub {
@@ -632,18 +644,6 @@ type AFLPlayerMatch {
   behinds: Int!
   disposals: Int!
   score: Int!
-}
-
-input UpdateAFLPlayerMatchInput {
-  playerSeasonId: ID!
-  clubMatchId: ID!
-  kicks: Int
-  handballs: Int
-  marks: Int
-  hitouts: Int
-  tackles: Int
-  goals: Int
-  behinds: Int
 }
 `, BuiltIn: false},
 }

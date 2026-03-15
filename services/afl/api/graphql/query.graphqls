@@ -5,10 +5,6 @@ type Query {
   aflSeason(id: ID!): AFLSeason!
 }
 
-type Mutation {
-  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
-}
-
 type AFLClub {
   id: ID!
   name: String!
@@ -74,16 +70,4 @@ type AFLPlayerMatch {
   behinds: Int!
   disposals: Int!
   score: Int!
-}
-
-input UpdateAFLPlayerMatchInput {
-  playerSeasonId: ID!
-  clubMatchId: ID!
-  kicks: Int
-  handballs: Int
-  marks: Int
-  hitouts: Int
-  tackles: Int
-  goals: Int
-  behinds: Int
 }

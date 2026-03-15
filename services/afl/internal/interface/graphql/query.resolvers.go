@@ -139,11 +139,6 @@ func (r *aFLSeasonResolver) Rounds(ctx context.Context, obj *AFLSeason) ([]*AFLR
 	return convertRounds(rounds), nil
 }
 
-// UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
-func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
-	return nil, fmt.Errorf("not implemented: UpdateAFLPlayerMatch")
-}
-
 // AflClubs is the resolver for the aflClubs field.
 func (r *queryResolver) AflClubs(ctx context.Context) ([]*AFLClub, error) {
 	clubs, err := r.Queries.GetClubs(ctx)
@@ -203,9 +198,6 @@ func (r *Resolver) AFLRound() AFLRoundResolver { return &aFLRoundResolver{r} }
 // AFLSeason returns AFLSeasonResolver implementation.
 func (r *Resolver) AFLSeason() AFLSeasonResolver { return &aFLSeasonResolver{r} }
 
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -214,5 +206,4 @@ type aFLClubMatchResolver struct{ *Resolver }
 type aFLMatchResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
-type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
