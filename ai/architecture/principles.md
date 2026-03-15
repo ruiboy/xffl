@@ -24,7 +24,13 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 - Each service owns its data — no shared database schemas
 - Services communicate through contracts in `contracts/`
 - Prefer async; sync only when necessary
- 
+
+## GraphQL
+
+- Every query starts from a domain root — an aggregate the user naturally thinks in (e.g., Season, Club).
+- Related data is accessed by traversing edges, not by separate top-level queries.
+- Internal join entities (ClubMatch, PlayerSeason) are not query roots — they appear as nested fields of their parent.
+
 ## Rules
 
 - Prefer duplication over wrong abstraction in `shared/`
