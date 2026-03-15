@@ -1,6 +1,6 @@
-# XFFL — Fantasy Football League (the X makes it cool)
+# XFFL — Fantasy Football League
 
-Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search.
+Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search. The X makes it sound cool.
 
 - **AFL** = Australian Football League (real match data)
 - **FFL** = Fantasy Football League (fantasy teams, scoring, ladder)
