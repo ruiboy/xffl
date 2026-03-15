@@ -21,3 +21,27 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID
+  AFLClub:
+    fields:
+      players:
+        resolver: true
+  AFLSeason:
+    fields:
+      ladder:
+        resolver: true
+      rounds:
+        resolver: true
+  AFLRound:
+    fields:
+      matches:
+        resolver: true
+  AFLMatch:
+    fields:
+      homeClubMatch:
+        resolver: true
+      awayClubMatch:
+        resolver: true
+  AFLClubMatch:
+    fields:
+      playerMatches:
+        resolver: true

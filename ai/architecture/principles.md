@@ -31,10 +31,16 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 - Related data is accessed by traversing edges, not by separate top-level queries.
 - Internal join entities (ClubMatch, PlayerSeason) are not query roots — they appear as nested fields of their parent.
 
+## Testing
+
+- **Domain** — unit tests. Pure logic, no mocks, no infrastructure.
+- **Interface (GraphQL)** — integration tests against the running handler with real dependencies (DB, messaging).
+- Do not test generated code (gqlgen models, generated resolvers).
+- Table-driven tests for any function with more than one interesting input.
+
 ## Rules
 
 - Prefer duplication over wrong abstraction in `shared/`
-- Domain logic must be tested
 - Prefer TDD
 - Prefer small incremental commits
 - Ask questions when requirements are unclear

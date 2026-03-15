@@ -26,6 +26,11 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	AFLClub() AFLClubResolver
+	AFLClubMatch() AFLClubMatchResolver
+	AFLMatch() AFLMatchResolver
+	AFLRound() AFLRoundResolver
+	AFLSeason() AFLSeasonResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -113,6 +118,23 @@ type ComplexityRoot struct {
 	}
 }
 
+type AFLClubResolver interface {
+	Players(ctx context.Context, obj *AFLClub) ([]*AFLPlayer, error)
+}
+type AFLClubMatchResolver interface {
+	PlayerMatches(ctx context.Context, obj *AFLClubMatch) ([]*AFLPlayerMatch, error)
+}
+type AFLMatchResolver interface {
+	HomeClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
+	AwayClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
+}
+type AFLRoundResolver interface {
+	Matches(ctx context.Context, obj *AFLRound) ([]*AFLMatch, error)
+}
+type AFLSeasonResolver interface {
+	Ladder(ctx context.Context, obj *AFLSeason) ([]*AFLClubSeason, error)
+	Rounds(ctx context.Context, obj *AFLSeason) ([]*AFLRound, error)
+}
 type MutationResolver interface {
 	UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error)
 }
@@ -792,7 +814,7 @@ func (ec *executionContext) _AFLClub_players(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_AFLClub_players,
 		func(ctx context.Context) (any, error) {
-			return obj.Players, nil
+			return ec.Resolvers.AFLClub().Players(ctx, obj)
 		},
 		nil,
 		ec.marshalNAFLPlayer2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerᚄ,
@@ -805,8 +827,8 @@ func (ec *executionContext) fieldContext_AFLClub_players(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "AFLClub",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -951,7 +973,7 @@ func (ec *executionContext) _AFLClubMatch_playerMatches(ctx context.Context, fie
 		field,
 		ec.fieldContext_AFLClubMatch_playerMatches,
 		func(ctx context.Context) (any, error) {
-			return obj.PlayerMatches, nil
+			return ec.Resolvers.AFLClubMatch().PlayerMatches(ctx, obj)
 		},
 		nil,
 		ec.marshalNAFLPlayerMatch2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerMatchᚄ,
@@ -964,8 +986,8 @@ func (ec *executionContext) fieldContext_AFLClubMatch_playerMatches(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "AFLClubMatch",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1389,7 +1411,7 @@ func (ec *executionContext) _AFLMatch_homeClubMatch(ctx context.Context, field g
 		field,
 		ec.fieldContext_AFLMatch_homeClubMatch,
 		func(ctx context.Context) (any, error) {
-			return obj.HomeClubMatch, nil
+			return ec.Resolvers.AFLMatch().HomeClubMatch(ctx, obj)
 		},
 		nil,
 		ec.marshalOAFLClubMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLClubMatch,
@@ -1402,8 +1424,8 @@ func (ec *executionContext) fieldContext_AFLMatch_homeClubMatch(_ context.Contex
 	fc = &graphql.FieldContext{
 		Object:     "AFLMatch",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1430,7 +1452,7 @@ func (ec *executionContext) _AFLMatch_awayClubMatch(ctx context.Context, field g
 		field,
 		ec.fieldContext_AFLMatch_awayClubMatch,
 		func(ctx context.Context) (any, error) {
-			return obj.AwayClubMatch, nil
+			return ec.Resolvers.AFLMatch().AwayClubMatch(ctx, obj)
 		},
 		nil,
 		ec.marshalOAFLClubMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLClubMatch,
@@ -1443,8 +1465,8 @@ func (ec *executionContext) fieldContext_AFLMatch_awayClubMatch(_ context.Contex
 	fc = &graphql.FieldContext{
 		Object:     "AFLMatch",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1912,7 +1934,7 @@ func (ec *executionContext) _AFLRound_matches(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_AFLRound_matches,
 		func(ctx context.Context) (any, error) {
-			return obj.Matches, nil
+			return ec.Resolvers.AFLRound().Matches(ctx, obj)
 		},
 		nil,
 		ec.marshalNAFLMatch2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLMatchᚄ,
@@ -1925,8 +1947,8 @@ func (ec *executionContext) fieldContext_AFLRound_matches(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "AFLRound",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2013,7 +2035,7 @@ func (ec *executionContext) _AFLSeason_ladder(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_AFLSeason_ladder,
 		func(ctx context.Context) (any, error) {
-			return obj.Ladder, nil
+			return ec.Resolvers.AFLSeason().Ladder(ctx, obj)
 		},
 		nil,
 		ec.marshalNAFLClubSeason2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLClubSeasonᚄ,
@@ -2026,8 +2048,8 @@ func (ec *executionContext) fieldContext_AFLSeason_ladder(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "AFLSeason",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2062,7 +2084,7 @@ func (ec *executionContext) _AFLSeason_rounds(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_AFLSeason_rounds,
 		func(ctx context.Context) (any, error) {
-			return obj.Rounds, nil
+			return ec.Resolvers.AFLSeason().Rounds(ctx, obj)
 		},
 		nil,
 		ec.marshalNAFLRound2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRoundᚄ,
@@ -2075,8 +2097,8 @@ func (ec *executionContext) fieldContext_AFLSeason_rounds(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "AFLSeason",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3995,18 +4017,49 @@ func (ec *executionContext) _AFLClub(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._AFLClub_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._AFLClub_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "players":
-			out.Values[i] = ec._AFLClub_players(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLClub_players(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4044,28 +4097,59 @@ func (ec *executionContext) _AFLClubMatch(ctx context.Context, sel ast.Selection
 		case "id":
 			out.Values[i] = ec._AFLClubMatch_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "club":
 			out.Values[i] = ec._AFLClubMatch_club(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "rushedBehinds":
 			out.Values[i] = ec._AFLClubMatch_rushedBehinds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "score":
 			out.Values[i] = ec._AFLClubMatch_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "playerMatches":
-			out.Values[i] = ec._AFLClubMatch_playerMatches(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLClubMatch_playerMatches(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4182,7 +4266,7 @@ func (ec *executionContext) _AFLMatch(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._AFLMatch_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "venue":
 			out.Values[i] = ec._AFLMatch_venue(ctx, field, obj)
@@ -4191,9 +4275,71 @@ func (ec *executionContext) _AFLMatch(ctx context.Context, sel ast.SelectionSet,
 		case "result":
 			out.Values[i] = ec._AFLMatch_result(ctx, field, obj)
 		case "homeClubMatch":
-			out.Values[i] = ec._AFLMatch_homeClubMatch(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLMatch_homeClubMatch(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "awayClubMatch":
-			out.Values[i] = ec._AFLMatch_awayClubMatch(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLMatch_awayClubMatch(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4364,18 +4510,49 @@ func (ec *executionContext) _AFLRound(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._AFLRound_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._AFLRound_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "matches":
-			out.Values[i] = ec._AFLRound_matches(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLRound_matches(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4413,23 +4590,85 @@ func (ec *executionContext) _AFLSeason(ctx context.Context, sel ast.SelectionSet
 		case "id":
 			out.Values[i] = ec._AFLSeason_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._AFLSeason_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ladder":
-			out.Values[i] = ec._AFLSeason_ladder(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLSeason_ladder(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "rounds":
-			out.Values[i] = ec._AFLSeason_rounds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLSeason_rounds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

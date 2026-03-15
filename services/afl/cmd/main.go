@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	"xffl/services/afl/internal/application"
+	pg "xffl/services/afl/internal/infrastructure/postgres"
 	gql "xffl/services/afl/internal/interface/graphql"
 )
 
@@ -19,8 +21,29 @@ func main() {
 		port = "8080"
 	}
 
-	// TODO: replace with real repository implementations
-	queries := application.NewQueries(nil, nil, nil, nil, nil, nil, nil, nil)
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/xffl?sslmode=disable"
+	}
+
+	ctx := context.Background()
+	pool, err := pg.NewPool(ctx, dbURL)
+	if err != nil {
+		log.Fatalf("unable to connect to database: %v", err)
+	}
+	defer pool.Close()
+
+	queries := application.NewQueries(
+		pg.NewClubRepository(pool),
+		pg.NewSeasonRepository(pool),
+		pg.NewRoundRepository(pool),
+		pg.NewMatchRepository(pool),
+		pg.NewClubSeasonRepository(pool),
+		pg.NewClubMatchRepository(pool),
+		pg.NewPlayerRepository(pool),
+		pg.NewPlayerMatchRepository(pool),
+		pg.NewPlayerSeasonRepository(pool),
+	)
 
 	resolver := &gql.Resolver{Queries: queries}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

@@ -41,3 +41,7 @@ type ClubSeasonRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]ClubSeason, error)
 	FindByID(ctx context.Context, id int) (ClubSeason, error)
 }
+
+type PlayerSeasonRepository interface {
+	FindByID(ctx context.Context, id int) (PlayerSeason, error)
+}

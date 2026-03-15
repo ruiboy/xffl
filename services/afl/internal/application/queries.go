@@ -8,14 +8,15 @@ import (
 
 // Queries handles all read operations for the AFL service.
 type Queries struct {
-	clubs        domain.ClubRepository
-	seasons      domain.SeasonRepository
-	rounds       domain.RoundRepository
-	matches      domain.MatchRepository
-	clubSeasons  domain.ClubSeasonRepository
-	clubMatches  domain.ClubMatchRepository
-	players      domain.PlayerRepository
-	playerMatches domain.PlayerMatchRepository
+	clubs          domain.ClubRepository
+	seasons        domain.SeasonRepository
+	rounds         domain.RoundRepository
+	matches        domain.MatchRepository
+	clubSeasons    domain.ClubSeasonRepository
+	clubMatches    domain.ClubMatchRepository
+	players        domain.PlayerRepository
+	playerMatches  domain.PlayerMatchRepository
+	playerSeasons  domain.PlayerSeasonRepository
 }
 
 func NewQueries(
@@ -27,6 +28,7 @@ func NewQueries(
 	clubMatches domain.ClubMatchRepository,
 	players domain.PlayerRepository,
 	playerMatches domain.PlayerMatchRepository,
+	playerSeasons domain.PlayerSeasonRepository,
 ) *Queries {
 	return &Queries{
 		clubs:         clubs,
@@ -37,6 +39,7 @@ func NewQueries(
 		clubMatches:   clubMatches,
 		players:       players,
 		playerMatches: playerMatches,
+		playerSeasons: playerSeasons,
 	}
 }
 
@@ -72,6 +75,10 @@ func (q *Queries) GetClubSeasons(ctx context.Context, seasonID int) ([]domain.Cl
 	return q.clubSeasons.FindBySeasonID(ctx, seasonID)
 }
 
+func (q *Queries) GetClubMatch(ctx context.Context, id int) (domain.ClubMatch, error) {
+	return q.clubMatches.FindByID(ctx, id)
+}
+
 func (q *Queries) GetClubMatches(ctx context.Context, matchID int) ([]domain.ClubMatch, error) {
 	return q.clubMatches.FindByMatchID(ctx, matchID)
 }
@@ -82,4 +89,26 @@ func (q *Queries) GetPlayerMatches(ctx context.Context, clubMatchID int) ([]doma
 
 func (q *Queries) GetPlayers(ctx context.Context, clubID int) ([]domain.Player, error) {
 	return q.players.FindByClubID(ctx, clubID)
+}
+
+func (q *Queries) GetPlayer(ctx context.Context, id int) (domain.Player, error) {
+	return q.players.FindByID(ctx, id)
+}
+
+// GetClubForClubSeason resolves the club for a club_season record.
+func (q *Queries) GetClubForClubSeason(ctx context.Context, clubSeasonID int) (domain.Club, error) {
+	cs, err := q.clubSeasons.FindByID(ctx, clubSeasonID)
+	if err != nil {
+		return domain.Club{}, err
+	}
+	return q.clubs.FindByID(ctx, cs.ClubID)
+}
+
+// GetPlayerForPlayerSeason resolves the player for a player_season record.
+func (q *Queries) GetPlayerForPlayerSeason(ctx context.Context, playerSeasonID int) (domain.Player, error) {
+	ps, err := q.playerSeasons.FindByID(ctx, playerSeasonID)
+	if err != nil {
+		return domain.Player{}, err
+	}
+	return q.players.FindByID(ctx, ps.PlayerID)
 }
