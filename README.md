@@ -35,14 +35,19 @@ The architecture supports multiple evolution paths:
 
 See `ai/decisions`.
 
-## Key Docs
+## AI Control Plane
 
-| Doc | Purpose |
-|-----|---------|
-| [CLAUDE.md](CLAUDE.md) | Primary instructions for AI agents |
+The `ai/` directory is the interface between human architects and AI agents. It separates architectural intent from implementation code.
+
+| Doc                                  | Purpose                                             |
+|--------------------------------------|-----------------------------------------------------|
+| [CLAUDE.md](CLAUDE.md)               | Primary instructions for AI agents                  |
 | [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts, repo map |
-| [ai/plans/](ai/plans/) | Roadmap and current sprint |
-| [ai/decisions/](ai/decisions/) | Architecture Decision Records |
+| [ai/plans/](ai/plans/)               | Roadmap and current sprint                          |
+| [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
+| [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
+
+Agents read this directory before making changes, ensuring implementation follows the system’s architecture and decisions.
 
 ## Getting Started
 
