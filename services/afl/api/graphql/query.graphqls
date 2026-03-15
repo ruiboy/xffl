@@ -1,0 +1,73 @@
+type Query {
+  aflClubs: [AFLClub!]!
+  aflClub(id: ID!): AFLClub!
+  aflSeasons: [AFLSeason!]!
+  aflSeason(id: ID!): AFLSeason!
+}
+
+type AFLClub {
+  id: ID!
+  name: String!
+  players: [AFLPlayer!]!
+}
+
+type AFLPlayer {
+  id: ID!
+  name: String!
+}
+
+type AFLSeason {
+  id: ID!
+  name: String!
+  ladder: [AFLClubSeason!]!
+  rounds: [AFLRound!]!
+}
+
+type AFLRound {
+  id: ID!
+  name: String!
+  matches: [AFLMatch!]!
+}
+
+type AFLMatch {
+  id: ID!
+  venue: String
+  startTime: String
+  result: String
+  homeClubMatch: AFLClubMatch
+  awayClubMatch: AFLClubMatch
+}
+
+type AFLClubMatch {
+  id: ID!
+  club: AFLClub!
+  rushedBehinds: Int!
+  score: Int!
+  playerMatches: [AFLPlayerMatch!]!
+}
+
+type AFLClubSeason {
+  id: ID!
+  club: AFLClub!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  for: Int!
+  against: Int!
+  premiershipPoints: Int!
+}
+
+type AFLPlayerMatch {
+  id: ID!
+  player: AFLPlayer!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  disposals: Int!
+  score: Int!
+}

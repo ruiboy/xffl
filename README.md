@@ -1,6 +1,6 @@
-# XFFL — Fantasy Football League (the X makes it cool)
+# XFFL — Fantasy Football League
 
-Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search.
+Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search. The X makes it sound cool.
 
 - **AFL** = Australian Football League (real match data)
 - **FFL** = Fantasy Football League (fantasy teams, scoring, ladder)
@@ -40,20 +40,24 @@ See `ai/decisions`.
 | Doc | Purpose |
 |-----|---------|
 | [CLAUDE.md](CLAUDE.md) | Primary instructions for AI agents |
-| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts |
+| [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts, repo map |
 | [ai/plans/](ai/plans/) | Roadmap and current sprint |
 | [ai/decisions/](ai/decisions/) | Architecture Decision Records |
 
 ## Getting Started
 
-### Prerequisites
+Prerequisites: Docker, Go 1.23+, [just](https://github.com/casey/just)
 
-- Go 1.16+
-- PostgreSQL 13+
-- ZincSearch
-- Node.js 16+
+```sh
+cp .env.example .env
+just dev-up        # start Postgres + Zinc
+just dev-seed      # load test data (optional)
+```
 
-*Database and search engine setup will be added when local dev environment is configured.*
+For psql: `docker exec -it xffl-postgres psql -U postgres -d xffl`
+
+To stop: `just dev-down` | To nuke and start fresh: `just dev-reset`
+
 
 ## Development Workflow
 

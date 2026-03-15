@@ -1,0 +1,15 @@
+type Mutation {
+  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+}
+
+input UpdateAFLPlayerMatchInput {
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
+}
