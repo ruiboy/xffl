@@ -10,8 +10,8 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 - [x] `dev/docker-compose.yml` — PostgreSQL, Zinc
 - [x] `justfile` — recipes: `dev-up`, `dev-down`, `dev-reset`, `dev-seed`
-- [ ] Migration tooling (currently raw SQL files)
-- [ ] `shared/database/` — DB connection helper
+- [~] Migration tooling — keeping raw SQL init scripts for now
+- [x] `shared/database/` — DB connection helper
 - [ ] `shared/events/` — event dispatcher interface + implementation
 - [ ] `shared/events/memory/` — in-memory dispatcher for testing
 - [ ] `contracts/events/` — shared event type definitions (`AFL.PlayerMatchUpdated`, `FFL.FantasyScoreCalculated`)

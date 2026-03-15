@@ -7,8 +7,8 @@
 - [x] Resolve ADR-004 — PG LISTEN/NOTIFY as event transport (accepted 2026-03-15)
 
 ## Tasks
-- [ ] `shared/database/` — DB connection helper (WithTx, Queries, MapPgError)
-- [ ] Migration tooling — replace raw SQL files
+- [x] `shared/database/` — DB connection helper (WithTx, Queries, MapPgError)
+- [~] Migration tooling — not changing; current raw SQL init scripts are fine for now
 - [ ] `contracts/events/` — shared event type definitions (PlayerMatchUpdated, FantasyScoreCalculated)
 - [ ] `shared/events/` — EventDispatcher interface + PG LISTEN/NOTIFY implementation
 - [ ] `shared/events/memory/` — in-memory dispatcher for testing
