@@ -2,7 +2,7 @@
 
 ## Context
 
-Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + frontend). Frontend interleaved after each corresponding service. Tech choices for ORM and event system deferred to Phase 1.
+Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + frontend). Frontend interleaved after each corresponding service. Tech choices for persistence layer (ADR-009) and event transport (ADR-004) to be resolved in Phase 1.
 
 ## Phase 1: Foundation
 
@@ -83,6 +83,6 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 ## Phase 9: Integration & Polish
 
 - [ ] End-to-end tests (`tests/`)
-- [ ] `make test-e2e`
+- [ ] `just test-e2e`
 - [ ] README
 - [ ] CI-ready (GitHub Actions or similar)
