@@ -2,9 +2,9 @@
 
 ## Context
 
-Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + frontend). Frontend interleaved after each corresponding service. Tech choices for persistence layer (ADR-009) and event transport (ADR-004) to be resolved in Phase 1.
+Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests.
 
-## Phase 1: Foundation
+## Phase 1: Foundation ✅
 
 **Goal:** Dev environment + shared packages + contracts
 
@@ -12,30 +12,39 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] `justfile` — recipes: `dev-up`, `dev-down`, `dev-reset`, `dev-seed`
 - [~] Migration tooling — keeping raw SQL init scripts for now
 - [x] `shared/database/` — DB connection helper
-- [ ] `shared/events/` — event dispatcher interface + implementation
-- [ ] `shared/events/memory/` — in-memory dispatcher for testing
-- [ ] `contracts/events/` — shared event type definitions (`AFL.PlayerMatchUpdated`, `FFL.FantasyScoreCalculated`)
+- [x] `shared/events/` — event dispatcher interface + PG LISTEN/NOTIFY implementation
+- [x] `shared/events/memory/` — in-memory dispatcher for testing
+- [x] `contracts/events/` — shared event type definitions
 
 ## Phase 2: AFL Service
 
-**Goal:** First complete service with TDD
+**Goal:** Complete AFL service with sqlc
 
-- [x] Domain layer — Club, Season, Round, Match, PlayerMatch entities; repository interfaces
-- [ ] Application layer — graph-traversal queries; mutations
-- [x] Infrastructure layer — Postgres repositories
-- [x] Interface layer — GraphQL schema (query + mutation) + gqlgen resolvers, HTTP server
-- [ ] Migrations — AFL schema
+- [x] Domain layer — entities + repository interfaces
+- [ ] Migrate infrastructure to sqlc (ADR-009 compliance)
+- [ ] Application layer — mutations with `DB.WithTx` transaction support
+- [x] Interface layer — GraphQL schema + resolvers + HTTP server
 - [ ] Tests — unit (domain) + integration (GraphQL with real DB)
 
-## Phase 3: AFL Frontend
+## Phase 3: UX Scaffold
 
-**Goal:** Vue 3 app scaffold + AFL views
+**Goal:** Gateway + Vue 3 app scaffold + first AFL view with edit capability
 
-- [ ] Project setup — Vue 3 + TypeScript + Vite, Apollo Client, PrimeVue, router
+- [ ] ADR — choose design system / component library
+- [ ] Gateway — GraphQL proxy routing to AFL, CORS, health checks
+- [ ] Vue 3 project setup — TypeScript, Vite, Apollo Client (pointing at gateway :8090), router
+- [ ] AFL Match view — match result with player stats, inline editing of player stats
+- [ ] Playwright tests for match view (read + edit)
+
+## Phase 4: AFL Frontend
+
+**Goal:** Remaining AFL views
+
 - [ ] AFL Clubs view — list + detail
-- [ ] Component tests (Vitest)
+- [ ] AFL Season view — ladder, rounds, matches
+- [ ] Playwright tests
 
-## Phase 4: FFL Service
+## Phase 5: FFL Service
 
 **Goal:** Fantasy league with cross-service event consumption
 
@@ -43,18 +52,18 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Application layer — ManagePlayers (CRUD), QueryLadder, CalculateFantasyScore use cases; AFL event subscriber
 - [ ] Infrastructure layer — DB repositories, event subscriber + publisher
 - [ ] Interface layer — GraphQL schema + resolvers
-- [ ] Migrations — FFL schema
+- [ ] Add FFL routing to gateway
 - [ ] Tests — unit (scoring formula, ladder) + integration (event flow)
 
-## Phase 5: FFL Frontend
+## Phase 6: FFL Frontend
 
 **Goal:** FFL views added to existing frontend
 
 - [ ] FFL Players view — full CRUD
 - [ ] FFL Ladder view — standings table
-- [ ] Component tests
+- [ ] Playwright tests
 
-## Phase 6: Search Service
+## Phase 7: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -62,27 +71,23 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Application layer — Search, IndexDocument use cases; event handlers for indexing
 - [ ] Infrastructure layer — Zinc REST client, event subscriber
 - [ ] Interface layer — REST API (`GET /search`, `GET /health`)
+- [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 7: Search Frontend
+## Phase 8: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
-- [ ] Component tests
+- [ ] Playwright tests
 
-## Phase 8: Gateway
+## Phase 9: Deployment
 
-**Goal:** Unified API entry point
-
-- [ ] GraphQL proxy routing to AFL/FFL services
-- [ ] Search passthrough to Search service
-- [ ] CORS configuration + health checks
-- [ ] Refactor frontend Apollo Client to point at gateway (:8090)
-
-## Phase 9: Integration & Polish
-
-- [ ] End-to-end tests (`tests/`)
-- [ ] `just test-e2e`
-- [ ] README
 - [ ] CI-ready (GitHub Actions or similar)
+- [ ] ADR - Consider deployment options - AWS, GCP, etc
+
+## Future Ideas
+
+- Fully feature the UX
+- Pull AFL player stats from some source
+- Mobile app
