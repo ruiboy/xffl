@@ -7,7 +7,7 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 001 | Accepted | AI-optimised monorepo with `ai/` as human-agent interface |
 | 002 | Accepted | AFL and FFL expose GraphQL (gqlgen); Search exposes REST |
 | 003 | Accepted | Single PG database (`xffl`), schema isolation (`afl.*`, `ffl.*`); no cross-schema joins |
-| 004 | Accepted | PG LISTEN/NOTIFY for events; metadata-only payloads; `EventDispatcher` interface in `shared/events/` |
+| 004 | Accepted | PG LISTEN/NOTIFY for events; full JSON payloads; `EventDispatcher` interface in `shared/events/` |
 | 005 | Accepted | Four layers per service: Domain → Application → Infrastructure → Interface; dependencies point inward |
 | 006 | Accepted | Zinc as search engine via dedicated Search service with event-driven indexing |
 | 007 | Accepted | `go.work` at repo root referencing all modules |

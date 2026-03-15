@@ -9,6 +9,6 @@
 ## Tasks
 - [x] `shared/database/` — DB connection helper (WithTx, Queries, MapPgError)
 - [~] Migration tooling — not changing; current raw SQL init scripts are fine for now
-- [ ] `contracts/events/` — shared event type definitions (PlayerMatchUpdated, FantasyScoreCalculated)
-- [ ] `shared/events/` — EventDispatcher interface + PG LISTEN/NOTIFY implementation
-- [ ] `shared/events/memory/` — in-memory dispatcher for testing
+- [x] `contracts/events/` — shared event type definitions (PlayerMatchUpdated, FantasyScoreCalculated)
+- [x] `shared/events/` — EventDispatcher interface + PG LISTEN/NOTIFY implementation
+- [x] `shared/events/memory/` — in-memory dispatcher for testing
