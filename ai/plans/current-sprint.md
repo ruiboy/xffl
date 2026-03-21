@@ -11,10 +11,10 @@
 - [x] Remove raw pgx repository implementations
 
 ### Mutations
-- [ ] Application layer — `UpdatePlayerMatch` use case with `DB.WithTx`
-- [ ] Infrastructure layer — write repository methods (Create/Update)
-- [ ] Implement `updateAFLPlayerMatch` resolver
+- [x] Application layer — `UpdatePlayerMatch` use case with `DB.WithTx`
+- [x] Infrastructure layer — write repository methods (Create/Update)
+- [x] Implement `updateAFLPlayerMatch` resolver
 
 ### Tests
-- [ ] Mutation integration tests
-- [ ] Error case tests (not found, conflicts)
+- [x] Mutation integration tests
+- [x] Error case tests (not found, conflicts)

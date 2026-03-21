@@ -15,6 +15,15 @@ func derefOr(p *int32) int {
 	return int(*p)
 }
 
+// intToInt32Ptr converts *int to *int32 for sqlc params.
+func intToInt32Ptr(p *int) *int32 {
+	if p == nil {
+		return nil
+	}
+	v := int32(*p)
+	return &v
+}
+
 // --- Club ---
 
 type ClubRepository struct{ q *sqlcgen.Queries }
@@ -233,6 +242,10 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 	}, nil
 }
 
+func (r *ClubMatchRepository) RecalculateScore(ctx context.Context, id int) error {
+	return r.q.RecalculateClubMatchScore(ctx, int32(id))
+}
+
 // --- Player ---
 
 type PlayerRepository struct{ q *sqlcgen.Queries }
@@ -295,6 +308,35 @@ func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatch
 
 func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.PlayerMatch, error) {
 	row, err := r.q.FindPlayerMatchByID(ctx, int32(id))
+	if err != nil {
+		return domain.PlayerMatch{}, err
+	}
+	return domain.PlayerMatch{
+		ID:             int(row.ID),
+		ClubMatchID:    int(row.ClubMatchID),
+		PlayerSeasonID: int(row.PlayerSeasonID),
+		Kicks:          derefOr(row.Kicks),
+		Handballs:      derefOr(row.Handballs),
+		Marks:          derefOr(row.Marks),
+		Hitouts:        derefOr(row.Hitouts),
+		Tackles:        derefOr(row.Tackles),
+		Goals:          derefOr(row.Goals),
+		Behinds:        derefOr(row.Behinds),
+	}, nil
+}
+
+func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
+	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
+		ClubMatchID:    int32(params.ClubMatchID),
+		PlayerSeasonID: int32(params.PlayerSeasonID),
+		Kicks:          intToInt32Ptr(params.Kicks),
+		Handballs:      intToInt32Ptr(params.Handballs),
+		Marks:          intToInt32Ptr(params.Marks),
+		Hitouts:        intToInt32Ptr(params.Hitouts),
+		Tackles:        intToInt32Ptr(params.Tackles),
+		Goals:          intToInt32Ptr(params.Goals),
+		Behinds:        intToInt32Ptr(params.Behinds),
+	})
 	if err != nil {
 		return domain.PlayerMatch{}, err
 	}

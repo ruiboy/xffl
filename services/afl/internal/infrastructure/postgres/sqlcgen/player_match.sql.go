@@ -97,3 +97,73 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	}
 	return items, nil
 }
+
+const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
+INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+ON CONFLICT (player_season_id, club_match_id)
+DO UPDATE SET
+    kicks = COALESCE($3, afl.player_match.kicks),
+    handballs = COALESCE($4, afl.player_match.handballs),
+    marks = COALESCE($5, afl.player_match.marks),
+    hitouts = COALESCE($6, afl.player_match.hitouts),
+    tackles = COALESCE($7, afl.player_match.tackles),
+    goals = COALESCE($8, afl.player_match.goals),
+    behinds = COALESCE($9, afl.player_match.behinds),
+    updated_at = CURRENT_TIMESTAMP
+WHERE afl.player_match.deleted_at IS NULL
+RETURNING id, club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds
+`
+
+type UpsertPlayerMatchParams struct {
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+type UpsertPlayerMatchRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error) {
+	row := q.db.QueryRow(ctx, upsertPlayerMatch,
+		arg.ClubMatchID,
+		arg.PlayerSeasonID,
+		arg.Kicks,
+		arg.Handballs,
+		arg.Marks,
+		arg.Hitouts,
+		arg.Tackles,
+		arg.Goals,
+		arg.Behinds,
+	)
+	var i UpsertPlayerMatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ClubMatchID,
+		&i.PlayerSeasonID,
+		&i.Kicks,
+		&i.Handballs,
+		&i.Marks,
+		&i.Hitouts,
+		&i.Tackles,
+		&i.Goals,
+		&i.Behinds,
+	)
+	return i, err
+}

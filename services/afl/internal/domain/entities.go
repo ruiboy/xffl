@@ -109,3 +109,17 @@ func (pm PlayerMatch) Disposals() int {
 func (pm PlayerMatch) Score() int {
 	return pm.Goals*PointsPerGoal + pm.Behinds
 }
+
+// UpsertPlayerMatchParams holds optional fields for creating or updating a PlayerMatch.
+// Nil fields are left unchanged on update.
+type UpsertPlayerMatchParams struct {
+	ClubMatchID    int
+	PlayerSeasonID int
+	Kicks          *int
+	Handballs      *int
+	Marks          *int
+	Hitouts        *int
+	Tackles        *int
+	Goals          *int
+	Behinds        *int
+}

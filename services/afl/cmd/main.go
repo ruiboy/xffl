@@ -48,7 +48,10 @@ func main() {
 		pg.NewPlayerSeasonRepository(q),
 	)
 
-	resolver := &gql.Resolver{Queries: queries}
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()

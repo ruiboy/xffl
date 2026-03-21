@@ -26,6 +26,8 @@ type Querier interface {
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	RecalculateClubMatchScore(ctx context.Context, clubMatchID int32) error
+	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }
 
 var _ Querier = (*Queries)(nil)
