@@ -1,7 +1,14 @@
-# ADR-007: Go Workspace
+---
+status: accepted
+date: 2026-03-14
+scope: repo
+enforceable: true
+rules:
+  - "go.work exists at repo root"
+  - "go.work references all modules under services/, shared/, contracts/"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-007: Go Workspace
 
 ## Context
 

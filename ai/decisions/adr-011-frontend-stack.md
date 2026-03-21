@@ -1,7 +1,11 @@
-# ADR-011: Frontend Stack
+---
+status: accepted
+date: 2026-03-14
+scope: frontend
+enforceable: false
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-011: Frontend Stack
 
 ## Context
 

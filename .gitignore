@@ -43,3 +43,7 @@ node_modules
 
 # Zinc
 data
+
+# AI runtime (working memory, logs)
+ai-runtime/*
+!ai-runtime/.gitkeep

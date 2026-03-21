@@ -1,7 +1,15 @@
-# ADR-004: Event-Driven Cross-Service Communication
+---
+status: accepted
+date: 2026-03-15
+scope: domain
+enforceable: true
+rules:
+  - "cross-service communication uses EventDispatcher interface"
+  - "events carry full JSON payloads"
+  - "subscribers must not call back to the producer"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-15
+# ADR-004: Event-Driven Cross-Service Communication
 
 ## Context
 

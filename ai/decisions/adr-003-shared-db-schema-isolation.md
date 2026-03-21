@@ -1,7 +1,15 @@
-# ADR-003: Shared Database with Schema Isolation
+---
+status: accepted
+date: 2026-03-14
+scope: infra
+enforceable: true
+rules:
+  - "no cross-schema joins"
+  - "each service accesses only its own schema"
+  - "no cross-service database imports"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-003: Shared Database with Schema Isolation
 
 ## Context
 

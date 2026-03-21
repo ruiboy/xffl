@@ -10,10 +10,16 @@ You are working in a SOA monorepo. All architectural rules are defined in `ai/ar
 
 ## Development Process
 
-1. Understand task
-2. Identify affected services
-3. Write failing tests
-4. Implement minimal solution
-5. Run tests
-6. Refactor
-7. Remind user about /checkdoc and /checkarch skills
+For non-trivial work, update `ai-runtime/current-task.md` at each step.
+
+1. **Understand** — identify affected services, relevant ADRs, bounded contexts
+   → Record in current-task.md: Summary, affected services, relevant ADRs
+2. **Test plan** — define what tests are needed before writing code
+   → Record in current-task.md: test cases under Steps
+3. **Implement** — write failing tests, then minimal implementation
+   → Record in current-task.md: files changed, decisions made
+4. **Validate** — run tests, run /checkarch and /checkdoc
+   → Record in current-task.md: test results, validation results
+5. **Reflect** — note assumptions, risks, and anything learned
+   → Record in current-task.md: Reflection section
+   → If a systemic issue emerged, propose an update to principles, ADRs, or prompts

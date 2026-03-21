@@ -1,7 +1,11 @@
-# ADR-008: Gateway Routing Strategy
+---
+status: deferred
+date: 2026-03-14
+scope: interface
+enforceable: false
+---
 
-**Status:** Deferred (Phase 8)
-**Date:** 2026-03-14
+# ADR-008: Gateway Routing Strategy
 
 ## Context
 

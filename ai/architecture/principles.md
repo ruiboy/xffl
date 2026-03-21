@@ -51,6 +51,7 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 - Prefer duplication over incorrect abstractions in `shared/`.
 
 ### Development Workflow
+- Prefer the simplest solution that satisfies current requirements.
 - Prefer TDD.
 - Prefer small, incremental commits.
 

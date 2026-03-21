@@ -1,7 +1,16 @@
-# ADR-009: Database Persistence Layer
+---
+status: accepted
+date: 2026-03-15
+scope: infra
+enforceable: true
+rules:
+  - "sqlc-generated code lives in infrastructure layer"
+  - "transaction boundaries (DB.WithTx) owned by application layer"
+  - "MapPgError lives in infrastructure layer"
+  - "domain entities have no sqlc/pgx dependencies"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-15
+# ADR-009: Database Persistence Layer
 
 ## Context
 

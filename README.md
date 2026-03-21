@@ -37,7 +37,7 @@ See `ai/decisions`.
 
 ## AI Control Plane
 
-The `ai/` directory is the interface between human architects and AI agents. It separates architectural intent from implementation code.
+The `ai/` directory is the interface between human architects and AI agents. It separates architectural intent from implementation code. It is a declarative control plane that any AI tool can read and is not tied to a specific agent or framework.
 
 | Doc                                  | Purpose                                             |
 |--------------------------------------|-----------------------------------------------------|
@@ -46,8 +46,9 @@ The `ai/` directory is the interface between human architects and AI agents. It 
 | [ai/plans/](ai/plans/)               | Roadmap and current sprint                          |
 | [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
 | [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
+| ai-runtime/                            | Working memory and runtime state (gitignored)       |
 
-Agents read this directory before making changes, ensuring implementation follows the system’s architecture and decisions.
+See [ai/architecture/control-plane.md](ai/architecture/control-plane.md) for the full design.
 
 ## Getting Started
 
@@ -87,14 +88,13 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 3. Work with the agent: requirements → TDD → implement → review
 4. Commit working code, update sprint tasks
 
-### Future: Agentic Stack
+### Evolution
 
-The target setup for maximum solo-developer productivity:
+The agentic workflow evolves incrementally based on real needs:
 
-| Tool | Role |
-|------|------|
-| **GSD** | Project manager — planning, task breakdown, prioritisation |
-| **Superpowers** | Coding workflow — structured development flow |
-| **Claude Code** | Implementation — coding, testing, repo modification |
+1. **Working memory** (done) — `ai-runtime/current-task.md` externalises agent reasoning
+2. **Skills** (done) — `.claude/skills/` for repeatable validation (checkarch, checkdoc)
+3. **Instrumentation** (future) — hooks for automatic observability
+4. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck
 
-GSD and Superpowers are not yet integrated. For now, use Claude Code directly with the `ai/` docs as your steering mechanism.
+No frameworks are adopted speculatively. Each layer is added when the previous one proves useful.

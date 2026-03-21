@@ -1,7 +1,15 @@
-# ADR-001: AI-Optimized Repository Layout
+---
+status: accepted
+date: 2026-03-14
+scope: repo
+enforceable: true
+rules:
+  - "services live under services/"
+  - "shared code lives under shared/"
+  - "contracts live under contracts/"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-001: AI-Optimized Repository Layout
 
 ## Context
 
