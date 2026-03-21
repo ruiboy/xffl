@@ -1,7 +1,14 @@
-# ADR-002: GraphQL APIs Per Service
+---
+status: accepted
+date: 2026-03-14
+scope: interface
+enforceable: true
+rules:
+  - "each service owns its own GraphQL schema"
+  - "no shared schema files across services"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-002: GraphQL APIs Per Service
 
 ## Context
 

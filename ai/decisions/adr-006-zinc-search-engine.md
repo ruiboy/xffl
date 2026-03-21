@@ -1,7 +1,11 @@
-# ADR-006: Zinc Search Engine
+---
+status: accepted
+date: 2026-03-14
+scope: infra
+enforceable: false
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-006: Zinc Search Engine
 
 ## Context
 

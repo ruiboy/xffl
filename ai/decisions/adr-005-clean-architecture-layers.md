@@ -1,7 +1,16 @@
-# ADR-005: Clean Architecture with Go Idioms
+---
+status: accepted
+date: 2026-03-14
+scope: domain
+enforceable: true
+rules:
+  - "four layers per service: domain, application, infrastructure, interface"
+  - "dependencies point inward only"
+  - "domain layer has no external dependencies"
+  - "interfaces defined where consumed"
+---
 
-**Status:** Accepted
-**Date:** 2026-03-14
+# ADR-005: Clean Architecture with Go Idioms
 
 ## Context
 
