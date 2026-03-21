@@ -64,6 +64,25 @@ The **application layer** (use cases) owns the transaction lifecycle. It is the 
 - PG `23505` (unique violation) → `domain.ErrConflict`
 - PG `23503` (FK violation) → `domain.ErrInvalidRef`
 
+### Repository Adapter
+
+Each service has a `repository.go` in its infrastructure layer that adapts sqlc-generated types to domain interfaces:
+
+```
+services/<name>/
+├── sqlc.yaml
+└── internal/infrastructure/postgres/
+    ├── sqlc/
+    ├── sqlcgen/
+    └── repository.go
+```
+
+- `sqlc/` — hand-written SQL query files, input to `sqlc generate`
+- `sqlcgen/` — generated Go code (`Querier` interface, row types, query methods). Do not edit.
+- `repository.go` — implements domain repository interfaces by delegating to `sqlcgen.Queries` and converting between sqlc row types and domain entities
+
+This keeps domain entities pure (no sqlc/pgx imports) while giving the application layer type-safe repository interfaces.
+
 ## Rationale
 
 - **SQL-first** aligns with "no magic" and Go idioms.

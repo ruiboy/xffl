@@ -5,10 +5,10 @@
 ## Tasks
 
 ### sqlc migration
-- [ ] Set up sqlc config (`services/afl/sqlc.yaml`)
-- [ ] Write SQL query files for all repositories
-- [ ] Generate sqlc code, wire into service
-- [ ] Remove raw pgx repository implementations
+- [x] Set up sqlc config (`services/afl/sqlc.yaml`)
+- [x] Write SQL query files for all repositories
+- [x] Generate sqlc code, wire into service
+- [x] Remove raw pgx repository implementations
 
 ### Mutations
 - [ ] Application layer — `UpdatePlayerMatch` use case with `DB.WithTx`

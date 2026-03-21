@@ -15,6 +15,7 @@ import (
 
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
+	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
 )
 
@@ -190,16 +191,17 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	t.Helper()
 
+	q := sqlcgen.New(pool)
 	queries := application.NewQueries(
-		pg.NewClubRepository(pool),
-		pg.NewSeasonRepository(pool),
-		pg.NewRoundRepository(pool),
-		pg.NewMatchRepository(pool),
-		pg.NewClubSeasonRepository(pool),
-		pg.NewClubMatchRepository(pool),
-		pg.NewPlayerRepository(pool),
-		pg.NewPlayerMatchRepository(pool),
-		pg.NewPlayerSeasonRepository(pool),
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
 	)
 
 	resolver := &gql.Resolver{Queries: queries}
