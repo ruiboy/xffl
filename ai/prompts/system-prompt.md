@@ -22,3 +22,4 @@ For non-trivial work, update `ai-runtime/current-task.md` at each step.
    → Record in current-task.md: test results, validation results
 5. **Reflect** — note assumptions, risks, and anything learned
    → Record in current-task.md: Reflection section
+   → If a systemic issue emerged, propose an update to principles, ADRs, or prompts
