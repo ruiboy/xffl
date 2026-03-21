@@ -8,6 +8,7 @@ rules:
   - "transaction boundaries (DB.WithTx) owned by application layer"
   - "MapPgError lives in infrastructure layer"
   - "domain entities have no sqlc/pgx dependencies"
+  - "SQL queries must not contain business logic — they read and write data only"
 ---
 
 # ADR-009: Database Persistence Layer
@@ -31,6 +32,8 @@ Services need to interact with PostgreSQL. First-cut used GORM, which introduced
 - SQL-first: all queries are hand-written SQL, sqlc generates type-safe Go code.
 - Migrations are plain SQL files.
 - Domain entities remain pure — sqlc-generated DB models and converters live in the infrastructure layer (ADR-005).
+- SQL performs reads/writes/filtering only, never implements business logic.
+
 
 ### sqlc Configuration
 
@@ -63,6 +66,25 @@ The **application layer** (use cases) owns the transaction lifecycle. It is the 
 - `pgx.ErrNoRows` → `domain.ErrNotFound`
 - PG `23505` (unique violation) → `domain.ErrConflict`
 - PG `23503` (FK violation) → `domain.ErrInvalidRef`
+
+### Repository Adapter
+
+Each service has a `repository.go` in its infrastructure layer that adapts sqlc-generated types to domain interfaces:
+
+```
+services/<name>/
+├── sqlc.yaml
+└── internal/infrastructure/postgres/
+    ├── sqlc/
+    ├── sqlcgen/
+    └── repository.go
+```
+
+- `sqlc/` — hand-written SQL query files, input to `sqlc generate`
+- `sqlcgen/` — generated Go code (`Querier` interface, row types, query methods). Do not edit.
+- `repository.go` — implements domain repository interfaces by delegating to `sqlcgen.Queries` and converting between sqlc row types and domain entities
+
+This keeps domain entities pure (no sqlc/pgx imports) while giving the application layer type-safe repository interfaces.
 
 ## Rationale
 

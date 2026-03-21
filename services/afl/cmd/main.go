@@ -12,6 +12,7 @@ import (
 
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
+	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
 )
 
@@ -33,19 +34,24 @@ func main() {
 	}
 	defer pool.Close()
 
+	q := sqlcgen.New(pool)
+
 	queries := application.NewQueries(
-		pg.NewClubRepository(pool),
-		pg.NewSeasonRepository(pool),
-		pg.NewRoundRepository(pool),
-		pg.NewMatchRepository(pool),
-		pg.NewClubSeasonRepository(pool),
-		pg.NewClubMatchRepository(pool),
-		pg.NewPlayerRepository(pool),
-		pg.NewPlayerMatchRepository(pool),
-		pg.NewPlayerSeasonRepository(pool),
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
 	)
 
-	resolver := &gql.Resolver{Queries: queries}
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()

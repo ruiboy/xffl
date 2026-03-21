@@ -15,6 +15,7 @@ import (
 
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
+	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
 )
 
@@ -190,19 +191,23 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	t.Helper()
 
+	q := sqlcgen.New(pool)
 	queries := application.NewQueries(
-		pg.NewClubRepository(pool),
-		pg.NewSeasonRepository(pool),
-		pg.NewRoundRepository(pool),
-		pg.NewMatchRepository(pool),
-		pg.NewClubSeasonRepository(pool),
-		pg.NewClubMatchRepository(pool),
-		pg.NewPlayerRepository(pool),
-		pg.NewPlayerMatchRepository(pool),
-		pg.NewPlayerSeasonRepository(pool),
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
 	)
 
-	resolver := &gql.Resolver{Queries: queries}
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	return httptest.NewServer(srv)
@@ -517,5 +522,247 @@ func TestAflClubWithPlayers(t *testing.T) {
 	}
 	if data.AflClub.Players[0].Name != "Test Player" {
 		t.Errorf("expected Test Player, got %s", data.AflClub.Players[0].Name)
+	}
+}
+
+func TestUpdatePlayerMatch_Update(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Update existing player match: change kicks from 10 to 20, leave other fields nil (unchanged)
+	mutation := fmt.Sprintf(`mutation {
+		updateAFLPlayerMatch(input: {
+			playerSeasonId: "%d"
+			clubMatchId: "%d"
+			kicks: 20
+		}) {
+			id
+			player { name }
+			kicks
+			handballs
+			disposals
+			goals
+			behinds
+			score
+		}
+	}`, ids.playerSeasonID, ids.homeClubMatchID)
+
+	result := execQuery(t, server, mutation)
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		UpdateAFLPlayerMatch struct {
+			ID     string `json:"id"`
+			Player struct {
+				Name string `json:"name"`
+			} `json:"player"`
+			Kicks     int `json:"kicks"`
+			Handballs int `json:"handballs"`
+			Disposals int `json:"disposals"`
+			Goals     int `json:"goals"`
+			Behinds   int `json:"behinds"`
+			Score     int `json:"score"`
+		} `json:"updateAFLPlayerMatch"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	pm := data.UpdateAFLPlayerMatch
+	if pm.Player.Name != "Test Player" {
+		t.Errorf("expected Test Player, got %s", pm.Player.Name)
+	}
+	if pm.Kicks != 20 {
+		t.Errorf("expected 20 kicks, got %d", pm.Kicks)
+	}
+	// Handballs should remain unchanged at 5
+	if pm.Handballs != 5 {
+		t.Errorf("expected 5 handballs (unchanged), got %d", pm.Handballs)
+	}
+	// Disposals = 20 kicks + 5 handballs = 25
+	if pm.Disposals != 25 {
+		t.Errorf("expected 25 disposals, got %d", pm.Disposals)
+	}
+	// Goals and behinds unchanged: 2 goals, 1 behind → score = 13
+	if pm.Score != 13 {
+		t.Errorf("expected score 13, got %d", pm.Score)
+	}
+}
+
+func TestUpdatePlayerMatch_Create(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Insert a second player + player_season for the away team
+	ctx := context.Background()
+	var player2ID, playerSeason2ID int
+	err := pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Test Player 2') RETURNING id").Scan(&player2ID)
+	if err != nil {
+		t.Fatalf("failed to insert player 2: %v", err)
+	}
+	err = pool.QueryRow(ctx,
+		"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		player2ID, ids.awayClubSeaID).Scan(&playerSeason2ID)
+	if err != nil {
+		t.Fatalf("failed to insert player season 2: %v", err)
+	}
+
+	// Create a new player match via mutation (no existing record for this player+clubMatch)
+	mutation := fmt.Sprintf(`mutation {
+		updateAFLPlayerMatch(input: {
+			playerSeasonId: "%d"
+			clubMatchId: "%d"
+			kicks: 8
+			handballs: 4
+			marks: 6
+			hitouts: 0
+			tackles: 3
+			goals: 1
+			behinds: 2
+		}) {
+			id
+			player { name }
+			kicks
+			handballs
+			disposals
+			goals
+			behinds
+			score
+		}
+	}`, playerSeason2ID, ids.awayClubMatchID)
+
+	result := execQuery(t, server, mutation)
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		UpdateAFLPlayerMatch struct {
+			ID     string `json:"id"`
+			Player struct {
+				Name string `json:"name"`
+			} `json:"player"`
+			Kicks     int `json:"kicks"`
+			Handballs int `json:"handballs"`
+			Disposals int `json:"disposals"`
+			Goals     int `json:"goals"`
+			Behinds   int `json:"behinds"`
+			Score     int `json:"score"`
+		} `json:"updateAFLPlayerMatch"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	pm := data.UpdateAFLPlayerMatch
+	if pm.Player.Name != "Test Player 2" {
+		t.Errorf("expected Test Player 2, got %s", pm.Player.Name)
+	}
+	if pm.Kicks != 8 {
+		t.Errorf("expected 8 kicks, got %d", pm.Kicks)
+	}
+	if pm.Disposals != 12 {
+		t.Errorf("expected 12 disposals, got %d", pm.Disposals)
+	}
+	// 1 goal * 6 + 2 behinds = 8
+	if pm.Score != 8 {
+		t.Errorf("expected score 8, got %d", pm.Score)
+	}
+}
+
+func TestUpdatePlayerMatch_RecalculatesClubMatchScore(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Update the player's goals from 2 to 5, behinds from 1 to 3
+	// New player score = 5*6 + 3 = 33
+	// Club match score = player scores + rushed_behinds(2) = 33 + 2 = 35
+	mutation := fmt.Sprintf(`mutation {
+		updateAFLPlayerMatch(input: {
+			playerSeasonId: "%d"
+			clubMatchId: "%d"
+			goals: 5
+			behinds: 3
+		}) {
+			id
+			goals
+			behinds
+			score
+		}
+	}`, ids.playerSeasonID, ids.homeClubMatchID)
+
+	result := execQuery(t, server, mutation)
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	// Now query the club match to verify drv_score was recalculated
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+	queryResult := execQuery(t, server, `{
+		aflSeason(id: "`+seasonID+`") {
+			rounds {
+				matches {
+					homeClubMatch {
+						score
+					}
+				}
+			}
+		}
+	}`)
+
+	if len(queryResult.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", queryResult.Errors)
+	}
+
+	var data struct {
+		AflSeason struct {
+			Rounds []struct {
+				Matches []struct {
+					HomeClubMatch struct {
+						Score int `json:"score"`
+					} `json:"homeClubMatch"`
+				} `json:"matches"`
+			} `json:"rounds"`
+		} `json:"aflSeason"`
+	}
+	if err := json.Unmarshal(queryResult.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	homeScore := data.AflSeason.Rounds[0].Matches[0].HomeClubMatch.Score
+	// Expected: 5 goals * 6 + 3 behinds + 2 rushed_behinds = 35
+	if homeScore != 35 {
+		t.Errorf("expected recalculated home score 35, got %d", homeScore)
+	}
+}
+
+func TestUpdatePlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	mutation := fmt.Sprintf(`mutation {
+		updateAFLPlayerMatch(input: {
+			playerSeasonId: "999999"
+			clubMatchId: "%d"
+			kicks: 5
+		}) {
+			id
+		}
+	}`, ids.homeClubMatchID)
+
+	result := execQuery(t, server, mutation)
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for invalid playerSeasonId, got none")
 	}
 }

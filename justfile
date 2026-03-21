@@ -29,3 +29,27 @@ dev-seed:
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/01_afl_seed.sql
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/02_ffl_seed.sql
     @echo "Test data loaded"
+
+# Snapshot AI control plane context for sharing or LLM ingestion
+ai-snapshot:
+    bash dev/ai-snapshot.sh
+
+# Run AFL service (port 8080)
+run-afl:
+    cd services/afl && go run ./cmd/main.go
+
+# Run FFL service (port 8081)
+run-ffl:
+    cd services/ffl && go run ./cmd/main.go
+
+# Run Search service (port 8082)
+run-search:
+    cd services/search && go run ./cmd/main.go
+
+# Run Gateway (port 8090)
+run-gateway:
+    cd services/gateway && go run ./cmd/main.go
+
+# Run Frontend (port 3000)
+run-frontend:
+    cd frontend/web && npm run dev

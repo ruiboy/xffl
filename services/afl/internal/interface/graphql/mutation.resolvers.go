@@ -7,12 +7,42 @@ package graphql
 
 import (
 	"context"
-	"fmt"
+
+	"xffl/services/afl/internal/domain"
 )
 
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
 func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
-	return nil, fmt.Errorf("not implemented: UpdateAFLPlayerMatch")
+	playerSeasonID, err := fromID(input.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+
+	pm, err := r.Commands.UpdatePlayerMatch(ctx, domain.UpsertPlayerMatchParams{
+		ClubMatchID:    clubMatchID,
+		PlayerSeasonID: playerSeasonID,
+		Kicks:          input.Kicks,
+		Handballs:      input.Handballs,
+		Marks:          input.Marks,
+		Hitouts:        input.Hitouts,
+		Tackles:        input.Tackles,
+		Goals:          input.Goals,
+		Behinds:        input.Behinds,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertPlayerMatch(pm, player), nil
 }
 
 // Mutation returns MutationResolver implementation.

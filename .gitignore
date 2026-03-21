@@ -44,6 +44,7 @@ node_modules
 # Zinc
 data
 
-# AI runtime (working memory, logs)
+# AI control plane
 ai-runtime/*
 !ai-runtime/.gitkeep
+ai-snapshot.out

@@ -109,3 +109,27 @@ func (pm PlayerMatch) Disposals() int {
 func (pm PlayerMatch) Score() int {
 	return pm.Goals*PointsPerGoal + pm.Behinds
 }
+
+// CalculateClubMatchScore computes the total score for a club match from player
+// scoring contributions and rushed behinds.
+func CalculateClubMatchScore(playerMatches []PlayerMatch, rushedBehinds int) int {
+	total := rushedBehinds
+	for _, pm := range playerMatches {
+		total += pm.Score()
+	}
+	return total
+}
+
+// UpsertPlayerMatchParams holds optional fields for creating or updating a PlayerMatch.
+// Nil fields are left unchanged on update.
+type UpsertPlayerMatchParams struct {
+	ClubMatchID    int
+	PlayerSeasonID int
+	Kicks          *int
+	Handballs      *int
+	Marks          *int
+	Hitouts        *int
+	Tackles        *int
+	Goals          *int
+	Behinds        *int
+}
