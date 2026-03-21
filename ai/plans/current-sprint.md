@@ -1,37 +1,40 @@
 # Current Sprint
 
-**Sprint goal:** ADR-012 — Refactor AFL domain entities into proper aggregates with domain purity
+**Sprint goal:** Phase 3 — UX Scaffold (Gateway + Vue 3 app + first AFL view with editing)
+
+## Research
+
+### Gateway approach (ADR-008)
+- [ ] Research gateway options (string routing, query parsing, federation, reverse proxy)
+- [ ] Evaluate against current needs (single service now, multi-service later)
+- [ ] Update ADR-008 with decision
+
+### Frontend component library (ADR-011)
+- [ ] Research current component library options (PrimeVue, alternatives)
+- [ ] Update ADR-011 with decision
 
 ## Tasks
 
-### ADR
-- [x] Write ADR-012: Domain Purity and Aggregate Completeness
-- [x] Add to decisions index
+### Gateway
+- [ ] Implement gateway service based on ADR-008 decision
+- [ ] GraphQL proxy routing to AFL service
+- [ ] CORS configuration
+- [ ] Health check endpoint
+- [ ] Add to `docker-compose.yml` / `justfile`
 
-### Domain layer — aggregate modelling
-- [x] Reshape `Match` as aggregate root: embed `Home`/`Away` as `ClubMatch` values (not IDs)
-- [x] Reshape `ClubMatch`: embed `[]PlayerMatch` as child entities
-- [x] Move `CalculateClubMatchScore` to method on `ClubMatch`
-- [x] Add `Match.Winner()` domain method
-- [x] Add domain unit tests for `ClubMatch.Score()`, `Match.Winner()`, edge cases (draw, no players)
+### Vue 3 project setup
+- [ ] Scaffold Vue 3 + TypeScript + Vite project
+- [ ] Configure Apollo Client pointing at gateway (:8090)
+- [ ] Set up Vue Router
+- [ ] Install and configure PrimeVue
+- [ ] Add to `justfile`
 
-### Domain layer — repository interfaces
-- [x] Add aggregate-aware repository methods (e.g. `MatchRepository.FindByIDWithDetails`)
-- [x] Keep existing per-entity methods for lightweight queries
-
-### Infrastructure layer — aggregate repositories
-- [x] Implement aggregate-loading repository methods (multi-query assembly)
-- [x] Reuse existing sqlc queries (no new SQL needed)
-
-### Application layer — use cases
-- [x] Add `GetMatchWithDetails` query
-- [x] Refactor `UpdatePlayerMatch` command to use aggregate for score recalculation
-
-### Interface layer — resolvers
-- [x] Update GraphQL resolvers to use `Home.ID`/`Away.ID` instead of removed `HomeClubMatchID`/`AwayClubMatchID`
-- [x] Use `StoredScore` in convert layer
+### AFL Match view
+- [ ] Match result display with player stats
+- [ ] Inline editing of player stats
+- [ ] Wire up mutations through Apollo Client
 
 ### Tests
-- [x] Domain unit tests (pure logic, no mocks) — 16/16 pass
-- [ ] Integration tests for aggregate repository methods (requires DB)
-- [x] Verify existing GraphQL integration tests still compile and pass structurally
+- [ ] Playwright setup
+- [ ] Match view read tests
+- [ ] Match view edit tests

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: revisiting
 date: 2026-03-14
 scope: frontend
 enforceable: false
