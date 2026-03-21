@@ -2,6 +2,7 @@
 
 ```
 ai/           → Human-agent interface (do not modify)
+ai-runtime/   → Agent working memory and runtime state (gitignored)
 services/     → Individual services
 contracts/    → Shared API contracts between services
 shared/       → Shared libraries

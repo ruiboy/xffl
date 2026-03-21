@@ -17,3 +17,13 @@ You are working in a SOA monorepo. All architectural rules are defined in `ai/ar
 5. Run tests
 6. Refactor
 7. Remind user about /checkdoc and /checkarch skills
+
+## Task Tracking
+
+For non-trivial work:
+- Use `ai-runtime/current-task.md` for working memory
+- Create or reset it at the start of each task
+- Update it after each step: planning, implementation, testing, validation
+- Record checkarch/checkdoc results in the Validation section
+- Add reflection before marking complete
+- Keep it concise — externalized reasoning, not documentation

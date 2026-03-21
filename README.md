@@ -46,6 +46,7 @@ The `ai/` directory is the interface between human architects and AI agents. It 
 | [ai/plans/](ai/plans/)               | Roadmap and current sprint                          |
 | [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
 | [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
+| ai-runtime/                            | Working memory and runtime state (gitignored)       |
 
 Agents read this directory before making changes, ensuring implementation follows the system’s architecture and decisions.
 
