@@ -26,7 +26,8 @@ func NewCommands(tx TxManager) *Commands {
 	return &Commands{tx: tx}
 }
 
-// UpdatePlayerMatch upserts a player match and recalculates the club match score.
+// UpdatePlayerMatch upserts a player match and recalculates the club match score
+// using domain logic.
 func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	var result domain.PlayerMatch
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
@@ -35,7 +36,18 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 			return err
 		}
 		result = pm
-		return repos.ClubMatches.RecalculateScore(ctx, params.ClubMatchID)
+
+		playerMatches, err := repos.PlayerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		clubMatch, err := repos.ClubMatches.FindByID(ctx, params.ClubMatchID)
+		if err != nil {
+			return err
+		}
+
+		score := domain.CalculateClubMatchScore(playerMatches, clubMatch.RushedBehinds)
+		return repos.ClubMatches.UpdateScore(ctx, params.ClubMatchID, score)
 	})
 	return result, err
 }

@@ -76,18 +76,19 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 	return items, nil
 }
 
-const recalculateClubMatchScore = `-- name: RecalculateClubMatchScore :exec
+const updateClubMatchScore = `-- name: UpdateClubMatchScore :exec
 UPDATE afl.club_match
-SET drv_score = (
-    SELECT COALESCE(SUM(COALESCE(goals, 0) * 6 + COALESCE(behinds, 0)), 0)
-    FROM afl.player_match
-    WHERE club_match_id = $1 AND deleted_at IS NULL
-) + COALESCE(rushed_behinds, 0),
+SET drv_score = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) RecalculateClubMatchScore(ctx context.Context, clubMatchID int32) error {
-	_, err := q.db.Exec(ctx, recalculateClubMatchScore, clubMatchID)
+type UpdateClubMatchScoreParams struct {
+	ID       int32
+	DrvScore *int32
+}
+
+func (q *Queries) UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchScore, arg.ID, arg.DrvScore)
 	return err
 }

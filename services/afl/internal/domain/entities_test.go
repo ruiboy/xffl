@@ -45,3 +45,27 @@ func TestPlayerMatch_Score(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateClubMatchScore(t *testing.T) {
+	tests := []struct {
+		name          string
+		playerMatches []PlayerMatch
+		rushedBehinds int
+		want          int
+	}{
+		{"no players no rushed", nil, 0, 0},
+		{"rushed behinds only", nil, 3, 3},
+		{"single player", []PlayerMatch{{Goals: 2, Behinds: 1}}, 0, 13},
+		{"multiple players with rushed", []PlayerMatch{
+			{Goals: 3, Behinds: 2}, // 20
+			{Goals: 1, Behinds: 0}, // 6
+		}, 4, 30},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CalculateClubMatchScore(tt.playerMatches, tt.rushedBehinds); got != tt.want {
+				t.Errorf("CalculateClubMatchScore() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}

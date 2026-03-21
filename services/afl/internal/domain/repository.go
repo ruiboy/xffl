@@ -25,7 +25,7 @@ type MatchRepository interface {
 type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
-	RecalculateScore(ctx context.Context, id int) error
+	UpdateScore(ctx context.Context, id int, score int) error
 }
 
 type PlayerMatchRepository interface {

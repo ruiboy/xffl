@@ -242,8 +242,12 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 	}, nil
 }
 
-func (r *ClubMatchRepository) RecalculateScore(ctx context.Context, id int) error {
-	return r.q.RecalculateClubMatchScore(ctx, int32(id))
+func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int) error {
+	s := int32(score)
+	return r.q.UpdateClubMatchScore(ctx, sqlcgen.UpdateClubMatchScoreParams{
+		ID:       int32(id),
+		DrvScore: &s,
+	})
 }
 
 // --- Player ---
