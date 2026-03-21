@@ -8,6 +8,7 @@ rules:
   - "transaction boundaries (DB.WithTx) owned by application layer"
   - "MapPgError lives in infrastructure layer"
   - "domain entities have no sqlc/pgx dependencies"
+  - "SQL queries must not contain business logic — they read and write data only"
 ---
 
 # ADR-009: Database Persistence Layer
@@ -31,6 +32,8 @@ Services need to interact with PostgreSQL. First-cut used GORM, which introduced
 - SQL-first: all queries are hand-written SQL, sqlc generates type-safe Go code.
 - Migrations are plain SQL files.
 - Domain entities remain pure — sqlc-generated DB models and converters live in the infrastructure layer (ADR-005).
+- SQL performs reads/writes/filtering only, never implements business logic.
+
 
 ### sqlc Configuration
 
