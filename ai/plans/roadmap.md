@@ -21,10 +21,10 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 **Goal:** Complete AFL service with sqlc
 
 - [x] Domain layer — entities + repository interfaces
-- [ ] Migrate infrastructure to sqlc (ADR-009 compliance)
-- [ ] Application layer — mutations with `DB.WithTx` transaction support
+- [x] Migrate infrastructure to sqlc (ADR-009 compliance)
+- [x] Application layer — mutations with `DB.WithTx` transaction support
 - [x] Interface layer — GraphQL schema + resolvers + HTTP server
-- [ ] Tests — unit (domain) + integration (GraphQL with real DB)
+- [x] Tests — unit (domain) + integration (GraphQL with real DB)
 
 ## Phase 3: UX Scaffold
 
