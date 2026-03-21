@@ -10,7 +10,7 @@ You are working in a SOA monorepo. All architectural rules are defined in `ai/ar
 
 ## Development Process
 
-For non-trivial work, update `ai-runtime/current-task.md` at each step.
+All non-trivial tasks MUST begin by creating or resetting `ai-runtime/current-task.md`. Do not proceed to implementation until the Understand and Test Plan sections are filled.
 
 1. **Understand** — identify affected services, relevant ADRs, bounded contexts
    → Record in current-task.md: Summary, affected services, relevant ADRs
