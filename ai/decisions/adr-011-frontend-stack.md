@@ -3,6 +3,11 @@ status: accepted
 date: 2026-03-23
 scope: frontend
 enforceable: true
+rules:
+  - "typescript strict mode, no any types"
+  - "all visual styling via Tailwind, no themed component libraries"
+  - "server state lives in Apollo cache, not duplicated in Pinia"
+  - "SPA only, no SSR framework without a new ADR"
 ---
 
 # ADR-011: Frontend Stack
@@ -36,6 +41,7 @@ Need a web frontend for managing fantasy teams, viewing AFL stats, searching, an
 
 ## Rationale
 
+- **TypeScript:** Strict mode throughout. Type safety across GraphQL queries, components, and router.
 - **Vue 3 + Vite:** Lightweight, fast HMR, standard pairing.
 - **Apollo Client:** Purpose-built for GraphQL; handles caching, queries, mutations against the gateway.
 - **Tailwind CSS:** Full control over appearance without fighting a theme system.
@@ -46,5 +52,6 @@ Need a web frontend for managing fantasy teams, viewing AFL stats, searching, an
 ## Alternatives considered
 
 - **PrimeVue themed:** Faster to start but locks into a visual identity. Rejected — want a custom look.
-- **Headless UI (Radix Vue):** Good primitives but smaller ecosystem than PrimeVue. Could supplement later for very custom components.
+- **shadcn-vue (Radix Vue):** Headless primitives with copy-paste component templates. Appealing philosophy but Vue port is less mature than React original, and you own all copied code. PrimeVue unstyled gives similar headless behaviour as a maintained dependency — less to own.
+- **Nuxt:** SSR, file-based routing, auto-imports. Overkill for an SPA that doesn't need SEO or server-side rendering. Vue + Vite + Vue Router is sufficient; can migrate later if needs change.
 - **No component library:** Maximum control but re-implementing accessibility (focus traps, ARIA, keyboard nav) is not worth it for a hobby project.
