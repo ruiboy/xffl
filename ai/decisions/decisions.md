@@ -15,3 +15,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 009 | Accepted | ✅ | sqlc + pgx; app-layer tx via `DB.WithTx`; `MapPgError` for domain error translation |
 | 010 | Accepted | — | Denormalised read models in DB; consistency maintained through domain logic on writes |
 | 011 | Accepted | — | Vue 3 + TypeScript + Vite; Apollo Client; PrimeVue |
+| 012 | Accepted | ✅ | Domain entities are pure and side-effect-free; repositories return fully-loaded aggregates; use cases orchestrate data loading |
