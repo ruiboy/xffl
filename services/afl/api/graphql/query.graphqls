@@ -60,6 +60,7 @@ type AFLClubSeason {
 
 type AFLPlayerMatch {
   id: ID!
+  playerSeasonId: ID!
   player: AFLPlayer!
   kicks: Int!
   handballs: Int!

@@ -1,0 +1,28 @@
+{
+  "name": "xffl-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.8",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.13.4",
+    "@vue/apollo-composable": "^4.2.2",
+    "graphql": "^16.10.0",
+    "graphql-tag": "^2.12.6",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  }
+}

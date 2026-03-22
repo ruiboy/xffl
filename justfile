@@ -53,3 +53,12 @@ run-gateway:
 # Run Frontend (port 3000)
 run-frontend:
     cd frontend/web && npm run dev
+
+# Run AFL service, gateway, and frontend together
+run-all:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    just run-afl &
+    just run-gateway &
+    just run-frontend &
+    wait
