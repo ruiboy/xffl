@@ -5,9 +5,9 @@
 ## Research
 
 ### Gateway approach (ADR-008)
-- [ ] Research gateway options (string routing, query parsing, federation, reverse proxy)
-- [ ] Evaluate against current needs (single service now, multi-service later)
-- [ ] Update ADR-008 with decision
+- [x] Research gateway options (string routing, query parsing, federation, reverse proxy)
+- [x] Evaluate against current needs (single service now, multi-service later)
+- [x] Update ADR-008 with decision
 
 ### Frontend component library (ADR-011)
 - [ ] Research current component library options (PrimeVue, alternatives)
@@ -16,11 +16,11 @@
 ## Tasks
 
 ### Gateway
-- [ ] Implement gateway service based on ADR-008 decision
-- [ ] GraphQL proxy routing to AFL service
-- [ ] CORS configuration
-- [ ] Health check endpoint
-- [ ] Add to `docker-compose.yml` / `justfile`
+- [x] Implement gateway service based on ADR-008 decision
+- [x] GraphQL proxy routing to AFL service
+- [x] CORS configuration
+- [x] Health check endpoint
+- [x] Add to `docker-compose.yml` / `justfile`
 
 ### Vue 3 project setup
 - [ ] Scaffold Vue 3 + TypeScript + Vite project
