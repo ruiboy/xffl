@@ -10,8 +10,8 @@
 - [x] Update ADR-008 with decision
 
 ### Frontend component library (ADR-011)
-- [ ] Research current component library options (PrimeVue, alternatives)
-- [ ] Update ADR-011 with decision
+- [x] Research current component library options (PrimeVue, alternatives)
+- [x] Update ADR-011 with decision
 
 ## Tasks
 
@@ -22,12 +22,15 @@
 - [x] Health check endpoint
 - [x] Add to `docker-compose.yml` / `justfile`
 
-### Vue 3 project setup
-- [ ] Scaffold Vue 3 + TypeScript + Vite project
-- [ ] Configure Apollo Client pointing at gateway (:8090)
-- [ ] Set up Vue Router
-- [ ] Install and configure PrimeVue
-- [ ] Add to `justfile`
+### Vue 3 project setup (pass 1)
+- [x] Scaffold Vue 3 + TypeScript + Vite project
+- [x] Configure Apollo Client pointing at gateway (:8090)
+- [x] Set up Vue Router
+- [x] Configure Tailwind CSS
+- [x] `justfile` already configured
+- [ ] Install PrimeVue unstyled (pass 2 — when first view needs it)
+- [ ] Install Pinia (pass 2 — when UI state management needed)
+- [ ] Install VueUse (pass 2 — when reactive utilities needed)
 
 ### AFL Match view
 - [ ] Match result display with player stats
