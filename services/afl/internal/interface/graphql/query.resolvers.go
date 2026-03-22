@@ -54,10 +54,10 @@ func (r *aFLMatchResolver) HomeClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	if err != nil {
 		return nil, err
 	}
-	if match.HomeClubMatchID == 0 {
+	if match.Home.ID == 0 {
 		return nil, nil
 	}
-	cm, err := r.Queries.GetClubMatch(ctx, match.HomeClubMatchID)
+	cm, err := r.Queries.GetClubMatch(ctx, match.Home.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,10 +78,10 @@ func (r *aFLMatchResolver) AwayClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	if err != nil {
 		return nil, err
 	}
-	if match.AwayClubMatchID == 0 {
+	if match.Away.ID == 0 {
 		return nil, nil
 	}
-	cm, err := r.Queries.GetClubMatch(ctx, match.AwayClubMatchID)
+	cm, err := r.Queries.GetClubMatch(ctx, match.Away.ID)
 	if err != nil {
 		return nil, err
 	}

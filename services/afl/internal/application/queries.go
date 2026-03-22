@@ -67,6 +67,10 @@ func (q *Queries) GetMatch(ctx context.Context, id int) (domain.Match, error) {
 	return q.matches.FindByID(ctx, id)
 }
 
+func (q *Queries) GetMatchWithDetails(ctx context.Context, id int) (domain.Match, error) {
+	return q.matches.FindByIDWithDetails(ctx, id)
+}
+
 func (q *Queries) GetMatches(ctx context.Context, roundID int) ([]domain.Match, error) {
 	return q.matches.FindByRoundID(ctx, roundID)
 }

@@ -46,8 +46,8 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 			return err
 		}
 
-		score := domain.CalculateClubMatchScore(playerMatches, clubMatch.RushedBehinds)
-		return repos.ClubMatches.UpdateScore(ctx, params.ClubMatchID, score)
+		clubMatch.PlayerMatches = playerMatches
+		return repos.ClubMatches.UpdateScore(ctx, params.ClubMatchID, clubMatch.Score())
 	})
 	return result, err
 }
