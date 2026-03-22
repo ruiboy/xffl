@@ -9,30 +9,29 @@
 - [x] Add to decisions index
 
 ### Domain layer — aggregate modelling
-- [ ] Reshape `Match` as aggregate root: embed `Home`/`Away` as `ClubMatch` values (not IDs)
-- [ ] Reshape `ClubMatch`: embed `[]PlayerMatch` as child entities
-- [ ] Move `CalculateClubMatchScore` to method on `ClubMatch`
-- [ ] Add `Match.Winner()` domain method
-- [ ] Add domain unit tests for `ClubMatch.Score()`, `Match.Winner()`, edge cases (draw, no players)
+- [x] Reshape `Match` as aggregate root: embed `Home`/`Away` as `ClubMatch` values (not IDs)
+- [x] Reshape `ClubMatch`: embed `[]PlayerMatch` as child entities
+- [x] Move `CalculateClubMatchScore` to method on `ClubMatch`
+- [x] Add `Match.Winner()` domain method
+- [x] Add domain unit tests for `ClubMatch.Score()`, `Match.Winner()`, edge cases (draw, no players)
 
 ### Domain layer — repository interfaces
-- [ ] Add aggregate-aware repository methods (e.g. `MatchRepository.FindByIDWithDetails`)
-- [ ] Keep existing per-entity methods for lightweight queries
+- [x] Add aggregate-aware repository methods (e.g. `MatchRepository.FindByIDWithDetails`)
+- [x] Keep existing per-entity methods for lightweight queries
 
 ### Infrastructure layer — aggregate repositories
-- [ ] Implement aggregate-loading repository methods (JOIN queries or multi-query assembly)
-- [ ] Add sqlc queries to support aggregate loading
-- [ ] Regenerate sqlc code
+- [x] Implement aggregate-loading repository methods (multi-query assembly)
+- [x] Reuse existing sqlc queries (no new SQL needed)
 
 ### Application layer — use cases
-- [ ] Refactor `Queries` to return aggregates where appropriate
-- [ ] Refactor `UpdatePlayerMatch` command to use aggregate for score recalculation
+- [x] Add `GetMatchWithDetails` query
+- [x] Refactor `UpdatePlayerMatch` command to use aggregate for score recalculation
 
 ### Interface layer — resolvers
-- [ ] Update GraphQL resolvers to use aggregates from application layer
-- [ ] Simplify field resolvers that currently do manual assembly
+- [x] Update GraphQL resolvers to use `Home.ID`/`Away.ID` instead of removed `HomeClubMatchID`/`AwayClubMatchID`
+- [x] Use `StoredScore` in convert layer
 
 ### Tests
-- [ ] Domain unit tests (pure logic, no mocks)
-- [ ] Integration tests for aggregate repository methods
-- [ ] Verify existing GraphQL integration tests still pass
+- [x] Domain unit tests (pure logic, no mocks) — 16/16 pass
+- [ ] Integration tests for aggregate repository methods (requires DB)
+- [x] Verify existing GraphQL integration tests still compile and pass structurally

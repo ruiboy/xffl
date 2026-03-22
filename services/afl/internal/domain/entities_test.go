@@ -46,25 +46,88 @@ func TestPlayerMatch_Score(t *testing.T) {
 	}
 }
 
-func TestCalculateClubMatchScore(t *testing.T) {
+func TestClubMatch_Score(t *testing.T) {
 	tests := []struct {
-		name          string
-		playerMatches []PlayerMatch
-		rushedBehinds int
-		want          int
+		name string
+		cm   ClubMatch
+		want int
 	}{
-		{"no players no rushed", nil, 0, 0},
-		{"rushed behinds only", nil, 3, 3},
-		{"single player", []PlayerMatch{{Goals: 2, Behinds: 1}}, 0, 13},
-		{"multiple players with rushed", []PlayerMatch{
-			{Goals: 3, Behinds: 2}, // 20
-			{Goals: 1, Behinds: 0}, // 6
-		}, 4, 30},
+		{"no players no rushed", ClubMatch{}, 0},
+		{"rushed behinds only", ClubMatch{RushedBehinds: 3}, 3},
+		{"single player", ClubMatch{
+			PlayerMatches: []PlayerMatch{{Goals: 2, Behinds: 1}},
+		}, 13},
+		{"multiple players with rushed", ClubMatch{
+			RushedBehinds: 4,
+			PlayerMatches: []PlayerMatch{
+				{Goals: 3, Behinds: 2}, // 20
+				{Goals: 1, Behinds: 0}, // 6
+			},
+		}, 30},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CalculateClubMatchScore(tt.playerMatches, tt.rushedBehinds); got != tt.want {
-				t.Errorf("CalculateClubMatchScore() = %d, want %d", got, tt.want)
+			if got := tt.cm.Score(); got != tt.want {
+				t.Errorf("Score() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatch_Winner(t *testing.T) {
+	tests := []struct {
+		name     string
+		match    Match
+		wantHome bool
+		wantDraw bool
+	}{
+		{
+			"home wins",
+			Match{
+				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 3}}},
+				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 1}}},
+			},
+			true, false,
+		},
+		{
+			"away wins",
+			Match{
+				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 1}}},
+				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 3}}},
+			},
+			false, false,
+		},
+		{
+			"draw",
+			Match{
+				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 2}}},
+				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 2}}},
+			},
+			false, true,
+		},
+		{
+			"no players is a draw",
+			Match{},
+			false, true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			winner := tt.match.Winner()
+			if tt.wantDraw {
+				if winner != nil {
+					t.Error("expected draw (nil winner)")
+				}
+				return
+			}
+			if winner == nil {
+				t.Fatal("expected a winner, got nil")
+			}
+			if tt.wantHome && winner != &tt.match.Home {
+				t.Error("expected home to win")
+			}
+			if !tt.wantHome && winner != &tt.match.Away {
+				t.Error("expected away to win")
 			}
 		})
 	}

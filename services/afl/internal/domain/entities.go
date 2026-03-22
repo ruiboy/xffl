@@ -45,13 +45,26 @@ type Club struct {
 }
 
 type Match struct {
-	ID              int
-	RoundID         int
-	HomeClubMatchID int
-	AwayClubMatchID int
-	Venue           string
-	StartTime       time.Time
-	Result          MatchResult
+	ID        int
+	RoundID   int
+	Home      ClubMatch
+	Away      ClubMatch
+	Venue     string
+	StartTime time.Time
+	Result    MatchResult
+}
+
+// Winner returns a pointer to the winning ClubMatch, or nil for a draw.
+func (m *Match) Winner() *ClubMatch {
+	homeScore := m.Home.Score()
+	awayScore := m.Away.Score()
+	if homeScore > awayScore {
+		return &m.Home
+	}
+	if awayScore > homeScore {
+		return &m.Away
+	}
+	return nil
 }
 
 type ClubSeason struct {
@@ -72,7 +85,17 @@ type ClubMatch struct {
 	MatchID       int
 	ClubSeasonID  int
 	RushedBehinds int
-	Score         int
+	StoredScore   int
+	PlayerMatches []PlayerMatch
+}
+
+// Score computes the total score from player contributions and rushed behinds.
+func (cm ClubMatch) Score() int {
+	total := cm.RushedBehinds
+	for _, pm := range cm.PlayerMatches {
+		total += pm.Score()
+	}
+	return total
 }
 
 type Player struct {
@@ -110,15 +133,6 @@ func (pm PlayerMatch) Score() int {
 	return pm.Goals*PointsPerGoal + pm.Behinds
 }
 
-// CalculateClubMatchScore computes the total score for a club match from player
-// scoring contributions and rushed behinds.
-func CalculateClubMatchScore(playerMatches []PlayerMatch, rushedBehinds int) int {
-	total := rushedBehinds
-	for _, pm := range playerMatches {
-		total += pm.Score()
-	}
-	return total
-}
 
 // UpsertPlayerMatchParams holds optional fields for creating or updating a PlayerMatch.
 // Nil fields are left unchanged on update.

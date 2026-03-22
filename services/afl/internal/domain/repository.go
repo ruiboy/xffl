@@ -20,6 +20,7 @@ type RoundRepository interface {
 type MatchRepository interface {
 	FindByRoundID(ctx context.Context, roundID int) ([]Match, error)
 	FindByID(ctx context.Context, id int) (Match, error)
+	FindByIDWithDetails(ctx context.Context, id int) (Match, error)
 }
 
 type ClubMatchRepository interface {

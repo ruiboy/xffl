@@ -124,13 +124,13 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 	out := make([]domain.Match, len(rows))
 	for i, row := range rows {
 		out[i] = domain.Match{
-			ID:              int(row.ID),
-			RoundID:         int(row.RoundID),
-			HomeClubMatchID: int(row.HomeClubMatchID),
-			AwayClubMatchID: int(row.AwayClubMatchID),
-			Venue:           row.Venue,
-			StartTime:       row.StartDt.Time,
-			Result:          domain.MatchResult(row.DrvResult),
+			ID:      int(row.ID),
+			RoundID: int(row.RoundID),
+			Home:    domain.ClubMatch{ID: int(row.HomeClubMatchID)},
+			Away:    domain.ClubMatch{ID: int(row.AwayClubMatchID)},
+			Venue:   row.Venue,
+			StartTime: row.StartDt.Time,
+			Result:    domain.MatchResult(row.DrvResult),
 		}
 	}
 	return out, nil
@@ -142,14 +142,64 @@ func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, e
 		return domain.Match{}, err
 	}
 	return domain.Match{
-		ID:              int(row.ID),
-		RoundID:         int(row.RoundID),
-		HomeClubMatchID: int(row.HomeClubMatchID),
-		AwayClubMatchID: int(row.AwayClubMatchID),
-		Venue:           row.Venue,
-		StartTime:       row.StartDt.Time,
-		Result:          domain.MatchResult(row.DrvResult),
+		ID:      int(row.ID),
+		RoundID: int(row.RoundID),
+		Home:    domain.ClubMatch{ID: int(row.HomeClubMatchID)},
+		Away:    domain.ClubMatch{ID: int(row.AwayClubMatchID)},
+		Venue:   row.Venue,
+		StartTime: row.StartDt.Time,
+		Result:    domain.MatchResult(row.DrvResult),
 	}, nil
+}
+
+func (r *MatchRepository) FindByIDWithDetails(ctx context.Context, id int) (domain.Match, error) {
+	match, err := r.FindByID(ctx, id)
+	if err != nil {
+		return domain.Match{}, err
+	}
+
+	if err := r.hydrateClubMatch(ctx, &match.Home); err != nil {
+		return domain.Match{}, err
+	}
+	if err := r.hydrateClubMatch(ctx, &match.Away); err != nil {
+		return domain.Match{}, err
+	}
+	return match, nil
+}
+
+func (r *MatchRepository) hydrateClubMatch(ctx context.Context, cm *domain.ClubMatch) error {
+	if cm.ID == 0 {
+		return nil
+	}
+	row, err := r.q.FindClubMatchByID(ctx, int32(cm.ID))
+	if err != nil {
+		return err
+	}
+	cm.MatchID = int(row.MatchID)
+	cm.ClubSeasonID = int(row.ClubSeasonID)
+	cm.RushedBehinds = derefOr(row.RushedBehinds)
+	cm.StoredScore = derefOr(row.DrvScore)
+
+	pmRows, err := r.q.FindPlayerMatchesByClubMatchID(ctx, int32(cm.ID))
+	if err != nil {
+		return err
+	}
+	cm.PlayerMatches = make([]domain.PlayerMatch, len(pmRows))
+	for i, pmRow := range pmRows {
+		cm.PlayerMatches[i] = domain.PlayerMatch{
+			ID:             int(pmRow.ID),
+			ClubMatchID:    int(pmRow.ClubMatchID),
+			PlayerSeasonID: int(pmRow.PlayerSeasonID),
+			Kicks:          derefOr(pmRow.Kicks),
+			Handballs:      derefOr(pmRow.Handballs),
+			Marks:          derefOr(pmRow.Marks),
+			Hitouts:        derefOr(pmRow.Hitouts),
+			Tackles:        derefOr(pmRow.Tackles),
+			Goals:          derefOr(pmRow.Goals),
+			Behinds:        derefOr(pmRow.Behinds),
+		}
+	}
+	return nil
 }
 
 // --- ClubSeason ---
@@ -222,7 +272,7 @@ func (r *ClubMatchRepository) FindByMatchID(ctx context.Context, matchID int) ([
 			MatchID:       int(row.MatchID),
 			ClubSeasonID:  int(row.ClubSeasonID),
 			RushedBehinds: derefOr(row.RushedBehinds),
-			Score:         derefOr(row.DrvScore),
+			StoredScore:   derefOr(row.DrvScore),
 		}
 	}
 	return out, nil
@@ -238,7 +288,7 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 		MatchID:       int(row.MatchID),
 		ClubSeasonID:  int(row.ClubSeasonID),
 		RushedBehinds: derefOr(row.RushedBehinds),
-		Score:         derefOr(row.DrvScore),
+		StoredScore:   derefOr(row.DrvScore),
 	}, nil
 }
 

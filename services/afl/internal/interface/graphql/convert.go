@@ -109,7 +109,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *AFLClubMatch {
 		ID:            toID(cm.ID),
 		Club:          convertClub(club),
 		RushedBehinds: cm.RushedBehinds,
-		Score:         cm.Score,
+		Score:         cm.StoredScore,
 	}
 }
 
