@@ -33,11 +33,11 @@
 - [ ] Install VueUse (pass 2 — when reactive utilities needed)
 
 ### AFL Match view
-- [ ] Match result display with player stats
-- [ ] Inline editing of player stats
-- [ ] Wire up mutations through Apollo Client
+- [x] Match result display with player stats
+- [x] Inline editing of player stats
+- [x] Wire up mutations through Apollo Client
 
 ### Tests
-- [ ] Playwright setup
-- [ ] Match view read tests
-- [ ] Match view edit tests
+- [x] Playwright setup
+- [x] Match view read tests
+- [x] Match view edit tests

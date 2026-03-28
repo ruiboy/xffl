@@ -71,6 +71,11 @@ just run-all       # AFL service + gateway + frontend
 ```
 Or individually: `just run-afl`, `just run-gateway`, `just run-frontend`
 
+### Testing
+
+```sh
+just test-e2e      # Playwright e2e tests (requires run-all + dev-seed)
+```
 
 ## Development Workflow
 

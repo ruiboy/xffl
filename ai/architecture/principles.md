@@ -57,7 +57,7 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 
 ### Agent Behaviour
 - When requirements are unclear: Ask a question, propose possible options, wait for confirmation before implementing.
-- Do not modify `ai/` files unless explicitly instructed.
+- Do not modify `ai/` files unless explicitly instructed, except: mark sprint tasks as done in `ai/plans/current-sprint.md` when completing them.
 
 ## Service Layout
 
