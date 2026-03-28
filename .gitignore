@@ -19,8 +19,6 @@ bin/
 # Vue.js
 .DS_Store
 node_modules
-/frontend/dist
-/frontend/dist-ssr
 *.local
 .env.local
 .env.*.local

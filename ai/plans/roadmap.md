@@ -26,15 +26,16 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Interface layer — GraphQL schema + resolvers + HTTP server
 - [x] Tests — unit (domain) + integration (GraphQL with real DB)
 
-## Phase 3: UX Scaffold
+## Phase 3: UX Scaffold ✅
 
 **Goal:** Gateway + Vue 3 app scaffold + first AFL view with edit capability
 
-- [ ] ADR — choose design system / component library
-- [ ] Gateway — GraphQL proxy routing to AFL, CORS, health checks
-- [ ] Vue 3 project setup — TypeScript, Vite, Apollo Client (pointing at gateway :8090), router
-- [ ] AFL Match view — match result with player stats, inline editing of player stats
-- [ ] Playwright tests for match view (read + edit)
+- [x] ADR-008 — gateway as simple reverse proxy
+- [x] ADR-011 — frontend stack (Vue 3, Apollo, Tailwind, PrimeVue unstyled)
+- [x] Gateway — GraphQL proxy routing to AFL, CORS, health checks
+- [x] Vue 3 project setup — TypeScript, Vite, Apollo Client (pointing at gateway :8090), router, Tailwind
+- [x] AFL Match view — match result with player stats, inline editing, mutations via Apollo
+- [x] Playwright e2e tests for match view (read + edit, 6 tests)
 
 ## Phase 4: AFL Frontend
 

@@ -52,7 +52,7 @@ See [ai/architecture/control-plane.md](ai/architecture/control-plane.md) for the
 
 ## Getting Started
 
-Prerequisites: Docker, Go 1.25+, [just](https://github.com/casey/just)
+Prerequisites: Docker, Go 1.25+, Node.js 20+, [just](https://github.com/casey/just)
 
 ```sh
 cp .env.example .env
@@ -64,6 +64,18 @@ For psql: `docker exec -it xffl-postgres psql -U postgres -d xffl`
 
 To stop: `just dev-down` | To nuke and start fresh: `just dev-reset`
 
+### Running
+
+```sh
+just run-all       # AFL service + gateway + frontend
+```
+Or individually: `just run-afl`, `just run-gateway`, `just run-frontend`
+
+### Testing
+
+```sh
+just test-e2e      # Playwright e2e tests (requires run-all + dev-seed)
+```
 
 ## Development Workflow
 

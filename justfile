@@ -53,3 +53,16 @@ run-gateway:
 # Run Frontend (port 3000)
 run-frontend:
     cd frontend/web && npm run dev
+
+# Run frontend e2e tests (requires run-all to be running)
+test-e2e:
+    cd frontend/web && npx playwright test
+
+# Run AFL service, gateway, and frontend together
+run-all:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    just run-afl &
+    just run-gateway &
+    just run-frontend &
+    wait

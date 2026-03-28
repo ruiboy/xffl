@@ -80,17 +80,18 @@ type ComplexityRoot struct {
 	}
 
 	AFLPlayerMatch struct {
-		Behinds   func(childComplexity int) int
-		Disposals func(childComplexity int) int
-		Goals     func(childComplexity int) int
-		Handballs func(childComplexity int) int
-		Hitouts   func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Kicks     func(childComplexity int) int
-		Marks     func(childComplexity int) int
-		Player    func(childComplexity int) int
-		Score     func(childComplexity int) int
-		Tackles   func(childComplexity int) int
+		Behinds        func(childComplexity int) int
+		Disposals      func(childComplexity int) int
+		Goals          func(childComplexity int) int
+		Handballs      func(childComplexity int) int
+		Hitouts        func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Kicks          func(childComplexity int) int
+		Marks          func(childComplexity int) int
+		Player         func(childComplexity int) int
+		PlayerSeasonID func(childComplexity int) int
+		Score          func(childComplexity int) int
+		Tackles        func(childComplexity int) int
 	}
 
 	AFLRound struct {
@@ -368,6 +369,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLPlayerMatch.Player(childComplexity), true
+	case "AFLPlayerMatch.playerSeasonId":
+		if e.ComplexityRoot.AFLPlayerMatch.PlayerSeasonID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerMatch.PlayerSeasonID(childComplexity), true
 	case "AFLPlayerMatch.score":
 		if e.ComplexityRoot.AFLPlayerMatch.Score == nil {
 			break
@@ -634,6 +641,7 @@ type AFLClubSeason {
 
 type AFLPlayerMatch {
   id: ID!
+  playerSeasonId: ID!
   player: AFLPlayer!
   kicks: Int!
   handballs: Int!
@@ -992,6 +1000,8 @@ func (ec *executionContext) fieldContext_AFLClubMatch_playerMatches(_ context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "kicks":
@@ -1573,6 +1583,35 @@ func (ec *executionContext) fieldContext_AFLPlayerMatch_id(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _AFLPlayerMatch_playerSeasonId(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerMatch_playerSeasonId,
+		func(ctx context.Context) (any, error) {
+			return obj.PlayerSeasonID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerMatch_playerSeasonId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AFLPlayerMatch_player(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerMatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2141,6 +2180,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAFLPlayerMatch(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "kicks":
@@ -4420,6 +4461,11 @@ func (ec *executionContext) _AFLPlayerMatch(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("AFLPlayerMatch")
 		case "id":
 			out.Values[i] = ec._AFLPlayerMatch_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "playerSeasonId":
+			out.Values[i] = ec._AFLPlayerMatch_playerSeasonId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

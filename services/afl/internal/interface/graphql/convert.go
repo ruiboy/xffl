@@ -115,8 +115,9 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *AFLClubMatch {
 
 func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *AFLPlayerMatch {
 	return &AFLPlayerMatch{
-		ID:        toID(pm.ID),
-		Player:    convertPlayer(player),
+		ID:             toID(pm.ID),
+		PlayerSeasonID: toID(pm.PlayerSeasonID),
+		Player:         convertPlayer(player),
 		Kicks:     pm.Kicks,
 		Handballs: pm.Handballs,
 		Marks:     pm.Marks,

@@ -7,7 +7,6 @@ package graphql
 
 import (
 	"context"
-
 	"xffl/services/afl/internal/domain"
 )
 
