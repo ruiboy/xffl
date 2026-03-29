@@ -2,7 +2,7 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-gray-800 text-left text-gray-400">
+        <tr class="border-b border-gray-200 text-left text-gray-500">
           <th class="py-2 pr-4 font-medium w-8">#</th>
           <th class="py-2 pr-4 font-medium">Club</th>
           <th class="py-2 px-2 font-medium text-right">P</th>
@@ -18,10 +18,15 @@
         <tr
           v-for="(entry, index) in ladder"
           :key="entry.id"
-          class="border-b border-gray-800/50 hover:bg-gray-900/50"
+          class="border-b border-gray-100 hover:bg-gray-50"
         >
-          <td class="py-2 pr-4 tabular-nums text-gray-500">{{ index + 1 }}</td>
-          <td class="py-2 pr-4 font-medium">{{ entry.club.name }}</td>
+          <td class="py-2 pr-4 tabular-nums text-gray-400">{{ index + 1 }}</td>
+          <td class="py-2 pr-4 font-medium">
+            <div class="flex items-center gap-2">
+              <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />
+              {{ entry.club.name }}
+            </div>
+          </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.played }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.won }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.lost }}</td>
@@ -36,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { clubLogoUrl } from '../utils/clubLogos'
+
 interface LadderEntry {
   id: string
   club: { id: string; name: string }

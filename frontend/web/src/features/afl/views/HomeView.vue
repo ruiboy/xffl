@@ -4,15 +4,15 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
       <h1 class="text-2xl font-bold mb-1">{{ data.season.name }}</h1>
-      <p class="text-gray-400 mb-6">{{ data.round.name }}</p>
+      <p class="text-gray-500 mb-6">{{ data.round.name }}</p>
 
       <section class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-300 mb-3">Ladder</h2>
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Ladder</h2>
         <LadderTable :ladder="data.season.ladder" />
       </section>
 
       <section class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-300 mb-3">Matches</h2>
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Matches</h2>
         <div class="space-y-2">
           <MatchSummary
             v-for="match in data.round.matches"
@@ -24,7 +24,7 @@
       </section>
 
       <section>
-        <h2 class="text-lg font-semibold text-gray-300 mb-3">Rounds</h2>
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Rounds</h2>
         <RoundNav
           :rounds="data.season.rounds"
           :current-round-id="data.round.id"

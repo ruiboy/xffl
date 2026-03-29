@@ -20,5 +20,7 @@
 - [x] Playwright e2e tests for each page (16 tests)
 
 ### 4. Apply UX style
-- [ ] Define and apply consistent UX styling across all AFL views
-- [ ] Leverage PrimeVue unstyled + Tailwind per ADR-011
+- [x] Switch to light theme across all components and views
+- [x] Add AFL club logos (18 teams, stored as static assets)
+- [x] Add logos to MatchSummary, LadderTable, MatchView, AdminMatchView
+- [ ] Leverage PrimeVue unstyled + Tailwind per ADR-011 (deferred)

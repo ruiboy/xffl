@@ -2,7 +2,7 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-gray-800 text-left text-gray-400">
+        <tr class="border-b border-gray-200 text-left text-gray-500">
           <th class="py-2 pr-4 font-medium">Player</th>
           <th v-for="col in statColumns" :key="col.key" class="py-2 px-2 font-medium text-right w-16">
             {{ col.label }}
@@ -15,7 +15,7 @@
         <tr
           v-for="pm in clubMatch.playerMatches"
           :key="pm.id"
-          class="border-b border-gray-800/50 hover:bg-gray-900/50"
+          class="border-b border-gray-100 hover:bg-gray-50"
         >
           <td class="py-2 pr-4 font-medium">{{ pm.player.name }}</td>
           <td v-for="col in statColumns" :key="col.key" class="py-1 px-1 text-right">
@@ -24,17 +24,17 @@
               type="number"
               :value="pm[col.key]"
               min="0"
-              class="w-14 rounded bg-transparent px-1 py-1 text-right text-gray-100 tabular-nums hover:bg-gray-800 focus:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              class="w-14 rounded bg-transparent px-1 py-1 text-right text-gray-900 tabular-nums hover:bg-gray-100 focus:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-300"
               @change="onStatChange(pm, col.key, $event)"
             />
-            <span v-else class="tabular-nums text-gray-100 px-1">{{ pm[col.key] }}</span>
+            <span v-else class="tabular-nums text-gray-900 px-1">{{ pm[col.key] }}</span>
           </td>
-          <td class="py-2 px-2 text-right tabular-nums text-gray-400">{{ pm.disposals }}</td>
-          <td class="py-2 px-2 text-right tabular-nums text-gray-400">{{ pm.score }}</td>
+          <td class="py-2 px-2 text-right tabular-nums text-gray-500">{{ pm.disposals }}</td>
+          <td class="py-2 px-2 text-right tabular-nums text-gray-500">{{ pm.score }}</td>
         </tr>
       </tbody>
       <tfoot>
-        <tr class="border-t border-gray-700 font-semibold text-gray-300">
+        <tr class="border-t border-gray-300 font-semibold text-gray-700">
           <td class="py-2 pr-4">Totals</td>
           <td v-for="col in statColumns" :key="col.key" class="py-2 px-2 text-right tabular-nums">
             {{ totals[col.key] }}

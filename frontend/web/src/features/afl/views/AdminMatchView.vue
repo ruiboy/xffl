@@ -5,12 +5,14 @@
     <template v-else-if="match">
       <div class="mb-8">
         <p class="text-sm text-gray-500 mb-2">Admin</p>
-        <h1 class="text-2xl font-bold">
+        <h1 class="text-2xl font-bold flex items-center gap-3">
+          <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
-          <span class="text-gray-500 mx-2">v</span>
+          <span class="text-gray-400 mx-1">v</span>
+          <img v-if="match.awayClubMatch" :src="clubLogoUrl(match.awayClubMatch.club.name)" :alt="match.awayClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.awayClubMatch?.club.name ?? '—' }}
         </h1>
-        <p v-if="match.venue" class="text-sm text-gray-400 mt-1">{{ match.venue }}</p>
+        <p v-if="match.venue" class="text-sm text-gray-500 mt-1">{{ match.venue }}</p>
         <p v-if="match.result" class="text-lg font-semibold mt-2">
           {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
         </p>
@@ -35,6 +37,7 @@ import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_MATCH } from '../api/queries'
 import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
 
