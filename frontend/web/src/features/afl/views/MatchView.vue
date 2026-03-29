@@ -13,6 +13,12 @@
         <p v-if="match.result" class="text-lg font-semibold mt-2">
           {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
         </p>
+        <router-link
+          :to="{ name: 'admin-match', params: { seasonId: props.seasonId, matchId: props.matchId } }"
+          class="inline-block mt-3 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Edit stats
+        </router-link>
       </div>
 
       <div v-for="side in sides" :key="side.label" class="mb-10">
