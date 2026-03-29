@@ -1,20 +1,20 @@
 <template>
   <router-link
     :to="to"
-    class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 hover:border-gray-400 transition-colors"
+    class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors"
   >
     <div class="flex items-center gap-3 font-medium">
       <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain" />
       <span :class="{ 'font-bold': winner === 'home' }">
         {{ match.homeClubMatch?.club.name ?? '—' }}
       </span>
-      <span class="text-gray-400">v</span>
+      <span class="text-text-faint">v</span>
       <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain" />
       <span :class="{ 'font-bold': winner === 'away' }">
         {{ match.awayClubMatch?.club.name ?? '—' }}
       </span>
     </div>
-    <span v-if="match.result" class="text-sm tabular-nums text-gray-500 font-semibold">
+    <span v-if="match.result" class="text-sm tabular-nums text-text-muted font-semibold">
       {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
     </span>
   </router-link>

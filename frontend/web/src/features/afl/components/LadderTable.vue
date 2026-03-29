@@ -2,7 +2,7 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-gray-200 text-left text-gray-500">
+        <tr class="border-b border-border text-left text-text-muted">
           <th class="py-2 pr-4 font-medium w-8">#</th>
           <th class="py-2 pr-4 font-medium">Club</th>
           <th class="py-2 px-2 font-medium text-right">P</th>
@@ -18,9 +18,9 @@
         <tr
           v-for="(entry, index) in ladder"
           :key="entry.id"
-          class="border-b border-gray-100 hover:bg-gray-50"
+          class="border-b border-border-subtle hover:bg-surface-hover"
         >
-          <td class="py-2 pr-4 tabular-nums text-gray-400">{{ index + 1 }}</td>
+          <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
           <td class="py-2 pr-4 font-medium">
             <div class="flex items-center gap-2">
               <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />

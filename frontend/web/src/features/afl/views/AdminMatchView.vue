@@ -1,18 +1,18 @@
 <template>
   <div>
-    <div v-if="loading" class="text-gray-400">Loading match…</div>
+    <div v-if="loading" class="text-text-faint">Loading match…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
       <div class="mb-8">
-        <p class="text-sm text-gray-500 mb-2">Admin</p>
+        <p class="text-sm text-text-muted mb-2">Admin</p>
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
-          <span class="text-gray-400 mx-1">v</span>
+          <span class="text-text-faint mx-1">v</span>
           <img v-if="match.awayClubMatch" :src="clubLogoUrl(match.awayClubMatch.club.name)" :alt="match.awayClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.awayClubMatch?.club.name ?? '—' }}
         </h1>
-        <p v-if="match.venue" class="text-sm text-gray-500 mt-1">{{ match.venue }}</p>
+        <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
         <p v-if="match.result" class="text-lg font-semibold mt-2">
           {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
         </p>

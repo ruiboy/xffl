@@ -6,8 +6,8 @@
       :to="{ name: 'round', params: { seasonId, roundId: round.id } }"
       class="rounded px-3 py-1 text-sm transition-colors"
       :class="round.id === currentRoundId
-        ? 'bg-gray-800 text-white'
-        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'"
+        ? 'bg-active text-active-text'
+        : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
     >
       {{ round.name }}
     </router-link>
