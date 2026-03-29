@@ -4,6 +4,7 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
       <div class="mb-8">
+        <p class="text-sm text-gray-500 mb-2">Admin</p>
         <h1 class="text-2xl font-bold">
           {{ match.homeClubMatch?.club.name ?? '—' }}
           <span class="text-gray-500 mx-2">v</span>
@@ -20,7 +21,8 @@
         <PlayerStatsTable
           v-if="side.clubMatch"
           :club-match="side.clubMatch"
-          :readonly="true"
+          :readonly="false"
+          @update="handleUpdate"
         />
       </div>
     </template>
@@ -29,8 +31,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useQuery } from '@vue/apollo-composable'
+import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_MATCH } from '../api/queries'
+import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
@@ -54,4 +57,10 @@ const sides = computed(() => {
     { label: match.value.awayClubMatch?.club.name ?? 'Away', clubMatch: match.value.awayClubMatch },
   ]
 })
+
+const { mutate } = useMutation(UPDATE_PLAYER_MATCH)
+
+function handleUpdate(input: { playerSeasonId: string; clubMatchId: string; [key: string]: unknown }) {
+  mutate({ input })
+}
 </script>

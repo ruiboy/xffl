@@ -12,11 +12,12 @@
 ### 2. AFL frontend page discovery
 - [x] Interview about required pages, navigation, and user flows
 - [x] Document page inventory and key interactions
-- [ ] Confirm scope before building
+- [x] Confirm scope before building
 
 ### 3. Build AFL pages
-- [ ] Implement pages identified in step 2
-- [ ] Playwright e2e tests for each page
+- [x] Add `aflLatestRound` backend query + `season` field on `AFLRound`
+- [x] Implement pages identified in step 2 (Home, Round, Match read-only, Admin Match)
+- [x] Playwright e2e tests for each page (16 tests)
 
 ### 4. Apply UX style
 - [ ] Define and apply consistent UX styling across all AFL views

@@ -17,3 +17,4 @@ For tasks that touch multiple services or involve significant new functionality,
 3. **Implement** — write failing tests, then minimal implementation
 4. **Validate** — run tests, run /checkarch and /checkdoc
 5. **Reflect** — if a systemic issue emerged, propose an update to principles, ADRs, or prompts
+6. **Update sprint** — check off completed items in `plans/current-sprint.md`
