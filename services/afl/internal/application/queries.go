@@ -59,8 +59,16 @@ func (q *Queries) GetSeason(ctx context.Context, id int) (domain.Season, error) 
 	return q.seasons.FindByID(ctx, id)
 }
 
+func (q *Queries) GetRound(ctx context.Context, id int) (domain.Round, error) {
+	return q.rounds.FindByID(ctx, id)
+}
+
 func (q *Queries) GetRounds(ctx context.Context, seasonID int) ([]domain.Round, error) {
 	return q.rounds.FindBySeasonID(ctx, seasonID)
+}
+
+func (q *Queries) GetLatestRound(ctx context.Context) (domain.Round, error) {
+	return q.rounds.FindLatest(ctx)
 }
 
 func (q *Queries) GetMatch(ctx context.Context, id int) (domain.Match, error) {

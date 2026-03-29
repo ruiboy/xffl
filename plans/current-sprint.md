@@ -5,13 +5,13 @@
 ## Tasks
 
 ### 1. AI plans & prompt improvements
-- [ ] Review and improve `plans/` structure and content
-- [ ] Review and improve `ai/prompts/system-prompt.md`
-- [ ] Ensure sprint/roadmap alignment
+- [x] Review and improve `plans/` structure and content
+- [x] Review and improve `ai/prompts/system-prompt.md`
+- [x] Ensure sprint/roadmap alignment
 
 ### 2. AFL frontend page discovery
-- [ ] Interview about required pages, navigation, and user flows
-- [ ] Document page inventory and key interactions
+- [x] Interview about required pages, navigation, and user flows
+- [x] Document page inventory and key interactions
 - [ ] Confirm scope before building
 
 ### 3. Build AFL pages

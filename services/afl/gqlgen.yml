@@ -33,6 +33,8 @@ models:
         resolver: true
   AFLRound:
     fields:
+      season:
+        resolver: true
       matches:
         resolver: true
   AFLMatch:

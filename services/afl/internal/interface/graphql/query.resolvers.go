@@ -92,6 +92,23 @@ func (r *aFLMatchResolver) AwayClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	return convertClubMatch(cm, club), nil
 }
 
+// Season is the resolver for the season field.
+func (r *aFLRoundResolver) Season(ctx context.Context, obj *AFLRound) (*AFLSeason, error) {
+	roundID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	round, err := r.Queries.GetRound(ctx, roundID)
+	if err != nil {
+		return nil, err
+	}
+	season, err := r.Queries.GetSeason(ctx, round.SeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertSeason(season), nil
+}
+
 // Matches is the resolver for the matches field.
 func (r *aFLRoundResolver) Matches(ctx context.Context, obj *AFLRound) ([]*AFLMatch, error) {
 	roundID, err := fromID(obj.ID)
@@ -181,6 +198,15 @@ func (r *queryResolver) AflSeason(ctx context.Context, id string) (*AFLSeason, e
 		return nil, err
 	}
 	return convertSeason(season), nil
+}
+
+// AflLatestRound is the resolver for the aflLatestRound field.
+func (r *queryResolver) AflLatestRound(ctx context.Context) (*AFLRound, error) {
+	round, err := r.Queries.GetLatestRound(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return convertRound(round), nil
 }
 
 // AFLClub returns AFLClubResolver implementation.

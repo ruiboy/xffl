@@ -745,6 +745,107 @@ func TestUpdatePlayerMatch_RecalculatesClubMatchScore(t *testing.T) {
 	}
 }
 
+func TestAflLatestRound(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Add a second round so we can verify "latest" picks the last one
+	ctx := context.Background()
+	var round2ID int
+	err := pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
+		ids.seasonID).Scan(&round2ID)
+	if err != nil {
+		t.Fatalf("failed to insert round 2: %v", err)
+	}
+
+	result := execQuery(t, server, `{
+		aflLatestRound {
+			name
+			season { name }
+		}
+	}`)
+
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		AflLatestRound struct {
+			Name   string `json:"name"`
+			Season struct {
+				Name string `json:"name"`
+			} `json:"season"`
+		} `json:"aflLatestRound"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	if data.AflLatestRound.Name != "Round 2" {
+		t.Errorf("expected latest round 'Round 2', got %s", data.AflLatestRound.Name)
+	}
+	if data.AflLatestRound.Season.Name != "Test 2025" {
+		t.Errorf("expected season 'Test 2025', got %s", data.AflLatestRound.Season.Name)
+	}
+}
+
+func TestAflLatestRound_MultipleSeasons(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Add a second season with its own round
+	ctx := context.Background()
+	var season2ID, round2ID int
+	err := pool.QueryRow(ctx,
+		"INSERT INTO afl.season (name, league_id) VALUES ('Test 2026', $1) RETURNING id",
+		ids.leagueID).Scan(&season2ID)
+	if err != nil {
+		t.Fatalf("failed to insert season 2: %v", err)
+	}
+	err = pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		season2ID).Scan(&round2ID)
+	if err != nil {
+		t.Fatalf("failed to insert round for season 2: %v", err)
+	}
+
+	result := execQuery(t, server, `{
+		aflLatestRound {
+			name
+			season { name }
+		}
+	}`)
+
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		AflLatestRound struct {
+			Name   string `json:"name"`
+			Season struct {
+				Name string `json:"name"`
+			} `json:"season"`
+		} `json:"aflLatestRound"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	// Should return round from the latest season (2026), not the first (2025)
+	if data.AflLatestRound.Season.Name != "Test 2026" {
+		t.Errorf("expected season 'Test 2026', got %s", data.AflLatestRound.Season.Name)
+	}
+	if data.AflLatestRound.Name != "Round 1" {
+		t.Errorf("expected 'Round 1' from latest season, got %s", data.AflLatestRound.Name)
+	}
+}
+
 func TestUpdatePlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)

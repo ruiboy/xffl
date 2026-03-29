@@ -60,6 +60,7 @@ type AFLPlayerMatch struct {
 type AFLRound struct {
 	ID      string      `json:"id"`
 	Name    string      `json:"name"`
+	Season  *AFLSeason  `json:"season"`
 	Matches []*AFLMatch `json:"matches"`
 }
 
