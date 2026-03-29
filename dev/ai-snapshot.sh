@@ -21,13 +21,12 @@ OUTPUT="$REPO_ROOT/ai-snapshot.out"
   tree "$REPO_ROOT/ai" 2>/dev/null
   echo -e "\n"
 
-  echo "=== Directory Structure (ai*) ==="
-  # This matches ai-runtime, ai-configs, etc.
-  tree -d "$REPO_ROOT"/ai* 2>/dev/null
+  echo "=== Directory Structure (plans) ==="
+  tree "$REPO_ROOT/plans" 2>/dev/null
   echo -e "\n"
 
-  echo "=== Core AI Files (Architecture, Plans, Decisions, Prompts, Runtime) ==="
-  find "$REPO_ROOT/ai/architecture" "$REPO_ROOT/ai/plans" "$REPO_ROOT/ai/decisions/decisions.md" "$REPO_ROOT/ai/prompts" "$REPO_ROOT/ai-runtime" -type f -exec echo "--- File: {} ---" \; -exec cat {} \; -exec echo -e "\n" \; 2>/dev/null
+  echo "=== Core AI Files (Architecture, Plans, Decisions, Prompts) ==="
+  find "$REPO_ROOT/ai/architecture" "$REPO_ROOT/plans" "$REPO_ROOT/ai/decisions/decisions.md" "$REPO_ROOT/ai/prompts" -type f -not -name "current-task.md" -exec echo "--- File: {} ---" \; -exec cat {} \; -exec echo -e "\n" \; 2>/dev/null
   echo -e "\n"
 
   echo "=== Claude Skills Structure ==="

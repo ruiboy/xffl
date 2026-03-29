@@ -6,18 +6,24 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/features/afl/views/SeasonsView.vue'),
+      component: () => import('@/features/afl/views/HomeView.vue'),
     },
     {
-      path: '/afl/seasons/:seasonId',
-      name: 'season',
-      component: () => import('@/features/afl/views/SeasonView.vue'),
+      path: '/afl/seasons/:seasonId/rounds/:roundId',
+      name: 'round',
+      component: () => import('@/features/afl/views/RoundView.vue'),
       props: true,
     },
     {
       path: '/afl/seasons/:seasonId/matches/:matchId',
       name: 'match',
       component: () => import('@/features/afl/views/MatchView.vue'),
+      props: true,
+    },
+    {
+      path: '/admin/afl/seasons/:seasonId/matches/:matchId',
+      name: 'admin-match',
+      component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
     },
   ],

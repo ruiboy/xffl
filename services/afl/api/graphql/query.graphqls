@@ -3,6 +3,7 @@ type Query {
   aflClub(id: ID!): AFLClub!
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
+  aflLatestRound: AFLRound!
 }
 
 type AFLClub {
@@ -26,6 +27,7 @@ type AFLSeason {
 type AFLRound {
   id: ID!
   name: String!
+  season: AFLSeason!
   matches: [AFLMatch!]!
 }
 

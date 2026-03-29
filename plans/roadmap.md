@@ -37,13 +37,17 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] AFL Match view — match result with player stats, inline editing, mutations via Apollo
 - [x] Playwright e2e tests for match view (read + edit, 6 tests)
 
-## Phase 4: AFL Frontend
+## Phase 4: AFL Frontend ✅
 
-**Goal:** Remaining AFL views
+**Goal:** Remaining AFL views + UX polish
 
-- [ ] AFL Clubs view — list + detail
-- [ ] AFL Season view — ladder, rounds, matches
-- [ ] Playwright tests
+- [x] AI plans & prompt improvements
+- [x] AFL frontend page discovery — interview, document page inventory, confirm scope
+- [x] Add `aflLatestRound` backend query + `season` field on `AFLRound`
+- [x] Build pages — Home (ladder + matches + round nav), Round (matches + top players + round nav), Match (read-only with club logos), Admin Match (editable player stats)
+- [x] Playwright e2e tests (16 tests across home, round, match, admin-match)
+- [x] UX polish — light theme, AFL club logos (18 teams), semantic Tailwind v4 `@theme` tokens, light/dark theme switcher
+- [~] PrimeVue unstyled — deferred until complex interactive components are needed (Phase 5/6)
 
 ## Phase 5: FFL Service
 
@@ -92,3 +96,4 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - Fully feature the UX
 - Pull AFL player stats from some source
 - Mobile app
+- Add start timestamps to season/round/match so ordering uses real dates instead of IDs

@@ -1,9 +1,11 @@
 # XFFL — Fantasy Football League
 
-Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search. The X makes it sound cool.
+Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search.
 
 - **AFL** = Australian Football League (real match data)
 - **FFL** = Fantasy Football League (fantasy teams, scoring, ladder)
+
+The X makes it sound cool.
 
 **Tech stack:** Go, GraphQL, PostgreSQL, Zinc, Vue 3
 
@@ -21,6 +23,17 @@ PlantUML sources: [doc/logical-view.puml](doc/logical-view.puml), [doc/erd-afl.p
 
 See `ai/architecture/` for bounded contexts, service map, and principles.
 
+### Frontend
+
+Vue 3 + TypeScript SPA served by Vite (port 3000). Apollo Client manages server state via the GraphQL gateway — no separate state store. Tailwind CSS for styling (see ADR-011).
+
+Structure mirrors backend bounded contexts:
+
+    frontend/web/src/
+    ├── features/afl/    → AFL views, components, GraphQL queries
+    ├── app/             → Router, Apollo config, global CSS
+    └── main.ts          → Entry point
+
 ### Architecture Decisions
 
 This project demonstrates a modular microservices architecture that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
@@ -37,16 +50,15 @@ See `ai/decisions`.
 
 ## AI Control Plane
 
-The `ai/` directory is the interface between human architects and AI agents. It separates architectural intent from implementation code. It is a declarative control plane that any AI tool can read and is not tied to a specific agent or framework.
+The `ai/` directory is a declarative interface between human architectural intent and AI implementation. Any AI tool can read it — not tied to a specific agent or framework.
 
 | Doc                                  | Purpose                                             |
 |--------------------------------------|-----------------------------------------------------|
 | [CLAUDE.md](CLAUDE.md)               | Primary instructions for AI agents                  |
 | [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts, repo map |
-| [ai/plans/](ai/plans/)               | Roadmap and current sprint                          |
+| [plans/](plans/)                     | Roadmap, current sprint, agent working memory       |
 | [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
 | [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
-| ai-runtime/                            | Working memory and runtime state (gitignored)       |
 
 See [ai/architecture/control-plane.md](ai/architecture/control-plane.md) for the full design.
 
@@ -81,8 +93,8 @@ just test-e2e      # Playwright e2e tests (requires run-all + dev-seed)
 
 ### What's next?
 
-1. Check `ai/plans/current-sprint.md` — see what's in progress
-2. Check `ai/plans/roadmap.md` — see the bigger picture
+1. Check `plans/current-sprint.md` — see what's in progress
+2. Check `plans/roadmap.md` — see the bigger picture
 3. Open Claude Code and start working — it reads `CLAUDE.md` automatically
 
 ### How it works
@@ -95,7 +107,7 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 
 ### Daily loop
 
-1. Update `ai/plans/current-sprint.md` with today's focus
+1. Update `plans/current-sprint.md` with today's focus
 2. Open Claude Code — it picks up context from `CLAUDE.md` → `ai/`
 3. Work with the agent: requirements → TDD → implement → review
 4. Commit working code, update sprint tasks
@@ -104,7 +116,7 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 
 The agentic workflow evolves incrementally based on real needs:
 
-1. **Working memory** (done) — `ai-runtime/current-task.md` externalises agent reasoning
+1. **Working memory** (done) — `plans/current-task.md` externalises agent reasoning
 2. **Skills** (done) — `.claude/skills/` for repeatable validation (checkarch, checkdoc)
 3. **Instrumentation** (future) — hooks for automatic observability
 4. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck
