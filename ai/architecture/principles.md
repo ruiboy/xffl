@@ -56,8 +56,10 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 - Prefer small, incremental commits.
 
 ### Agent Behaviour
+- **Never commit unless explicitly asked.** The user will say "commit", "commit that", "commit and push", etc. Do not auto-commit after completing work — the user needs to review diffs first.
 - When requirements are unclear: Ask a question, propose possible options, wait for confirmation before implementing.
-- Do not modify `ai/` files unless explicitly instructed, except: mark sprint tasks as done in `ai/plans/current-sprint.md` when completing them.
+- Do not modify `ai/` files unless explicitly instructed.
+- Agents may check off items in `plans/current-sprint.md` and `plans/current-task.md` as work is completed. Material changes to roadmap or sprint scope require discussion with the user.
 
 ## Service Layout
 

@@ -5,12 +5,12 @@ The authoritative agent instructions are in `CLAUDE.md` at the repo root. This f
 ## Before You Code
 
 1. Read `CLAUDE.md` — rules, repo map, commands
-2. Read `ai/plans/current-sprint.md` — current tasks
+2. Read `plans/current-sprint.md` — current tasks
 3. Check `ai/decisions/decisions.md` for relevant decisions; read full ADRs only when you need detail
 
 ## Workflow
 
-For tasks that touch multiple services or involve significant new functionality, create or reset `ai-runtime/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes.
+For tasks that touch multiple services or involve significant new functionality, create or reset `plans/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes.
 
 1. **Understand** — identify affected services, relevant ADRs, bounded contexts
 2. **Test plan** — define what tests are needed before writing code

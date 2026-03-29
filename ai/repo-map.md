@@ -9,11 +9,12 @@ xffl/
 ├── ai/                    → AI control plane (read-only for agents)
 │   ├── architecture/      → principles.md, service-map.md, bounded-contexts.md
 │   ├── decisions/         → ADR index (decisions.md) + individual ADRs
-│   ├── plans/             → roadmap.md, current-sprint.md
 │   └── prompts/           → Development workflow
 │
-├── ai-runtime/            → Agent working memory (gitignored)
-│   └── current-task.md    → Per-task scratchpad
+├── plans/                 → Project plans + agent working memory
+│   ├── roadmap.md         → Full project phases
+│   ├── current-sprint.md  → Active sprint tasks
+│   └── current-task.md    → Per-task scratchpad (gitignored)
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)

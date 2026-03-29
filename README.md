@@ -43,10 +43,10 @@ The `ai/` directory is the interface between human architects and AI agents. It 
 |--------------------------------------|-----------------------------------------------------|
 | [CLAUDE.md](CLAUDE.md)               | Primary instructions for AI agents                  |
 | [ai/architecture/](ai/architecture/) | Principles, service map, bounded contexts, repo map |
-| [ai/plans/](ai/plans/)               | Roadmap and current sprint                          |
+| [plans/](plans/)               | Roadmap and current sprint                          |
 | [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
 | [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
-| ai-runtime/                            | Working memory and runtime state (gitignored)       |
+| [plans/](plans/)                     | Roadmap, current sprint, agent working memory       |
 
 See [ai/architecture/control-plane.md](ai/architecture/control-plane.md) for the full design.
 
@@ -81,8 +81,8 @@ just test-e2e      # Playwright e2e tests (requires run-all + dev-seed)
 
 ### What's next?
 
-1. Check `ai/plans/current-sprint.md` — see what's in progress
-2. Check `ai/plans/roadmap.md` — see the bigger picture
+1. Check `plans/current-sprint.md` — see what's in progress
+2. Check `plans/roadmap.md` — see the bigger picture
 3. Open Claude Code and start working — it reads `CLAUDE.md` automatically
 
 ### How it works
@@ -95,7 +95,7 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 
 ### Daily loop
 
-1. Update `ai/plans/current-sprint.md` with today's focus
+1. Update `plans/current-sprint.md` with today's focus
 2. Open Claude Code — it picks up context from `CLAUDE.md` → `ai/`
 3. Work with the agent: requirements → TDD → implement → review
 4. Commit working code, update sprint tasks
@@ -104,7 +104,7 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 
 The agentic workflow evolves incrementally based on real needs:
 
-1. **Working memory** (done) — `ai-runtime/current-task.md` externalises agent reasoning
+1. **Working memory** (done) — `plans/current-task.md` externalises agent reasoning
 2. **Skills** (done) — `.claude/skills/` for repeatable validation (checkarch, checkdoc)
 3. **Instrumentation** (future) — hooks for automatic observability
 4. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck

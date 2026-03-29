@@ -5,7 +5,7 @@
 ## Tasks
 
 ### 1. AI plans & prompt improvements
-- [ ] Review and improve `ai/plans/` structure and content
+- [ ] Review and improve `plans/` structure and content
 - [ ] Review and improve `ai/prompts/system-prompt.md`
 - [ ] Ensure sprint/roadmap alignment
 

@@ -10,7 +10,7 @@ When working in this repository, follow these rules.
 Before making any changes, review the following files:
 
 1. `ai/prompts/system-prompt.md` — AI operating instructions
-2. `ai/plans/current-sprint.md` — current development tasks
+2. `plans/current-sprint.md` — current development tasks
 3. `ai/architecture/principles.md` — architecture rules
 
 ## Behaviour Expectations

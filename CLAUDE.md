@@ -5,8 +5,8 @@ AI agents must read this file before making changes to the repository.
 ## Repository Map
 
 ```
-ai/              → AI control plane — architecture, decisions, plans, prompts (read-only for agents)
-ai-runtime/      → Agent working memory — current-task.md (gitignored, ephemeral)
+ai/              → Architecture, decisions, prompts (read-only for agents)
+plans/           → Roadmap, current sprint, agent working memory
 services/afl/    → AFL service (Go, GraphQL, port 8080)
 services/gateway/→ Reverse proxy gateway (port 8090)
 frontend/web/    → Vue 3 SPA (TypeScript, Vite, port 3000)
@@ -20,7 +20,8 @@ first-cut/       → Legacy prototype (reference only)
 
 1. **Clean Architecture** — dependencies point inward (Domain ← Application ← Infrastructure ← Interface). Business logic has zero framework dependencies.
 2. **Service isolation** — no cross-service imports, no shared DB schemas, communicate through contracts.
-3. **`ai/` is read-only** — agents never modify files in `ai/` unless explicitly instructed. Exception: mark sprint tasks done in `ai/plans/current-sprint.md`.
+3. **`ai/` is read-only** — agents never modify files in `ai/` unless explicitly instructed.
+3b. **`plans/` updates** — agents may check off sprint/task items as they complete work. Material changes to roadmap or sprint scope require discussion with the user.
 4. **TDD** — write failing tests first, then minimal implementation.
 5. **No new dependencies/services/infra without an ADR.**
 6. **When unclear, ask** — propose options, wait for confirmation.
@@ -42,7 +43,7 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 ## Before Coding — Read These (tiered)
 
 **Always before coding:**
-- `ai/plans/current-sprint.md` — what to work on now
+- `plans/current-sprint.md` — what to work on now
 - `ai/architecture/principles.md` — architecture rules and service layout
 
 **Before architecture changes:**
@@ -54,7 +55,7 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 
 ## Agent Working Memory
 
-For non-trivial tasks, create or reset `ai-runtime/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes.
+For non-trivial tasks, create or reset `plans/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes. This file is gitignored.
 
 Template:
 ```markdown

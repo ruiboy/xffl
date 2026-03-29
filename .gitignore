@@ -43,6 +43,4 @@ node_modules
 data
 
 # AI control plane
-ai-runtime/*
-!ai-runtime/.gitkeep
 ai-snapshot.out
