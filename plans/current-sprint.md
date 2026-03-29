@@ -23,4 +23,5 @@
 - [x] Switch to light theme across all components and views
 - [x] Add AFL club logos (18 teams, stored as static assets)
 - [x] Add logos to MatchSummary, LadderTable, MatchView, AdminMatchView
-- [ ] Leverage PrimeVue unstyled + Tailwind per ADR-011 (deferred)
+- [~] Leverage PrimeVue unstyled + Tailwind per ADR-011 (deferred to Phase 5/6)
+- [x] Centralise design tokens with Tailwind v4 `@theme` + light/dark theme switcher
