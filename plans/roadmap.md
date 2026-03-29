@@ -92,3 +92,4 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - Fully feature the UX
 - Pull AFL player stats from some source
 - Mobile app
+- Add start timestamps to season/round/match so ordering uses real dates instead of IDs
