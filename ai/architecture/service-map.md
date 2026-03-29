@@ -5,7 +5,7 @@
 | AFL | AFL | 8080 | GraphQL | AFL clubs, players, match statistics |
 | FFL | FFL | 8081 | GraphQL | Fantasy clubs, players, scoring, ladder |
 | Search | — | 8082 | REST | Full-text search via Zinc |
-| Gateway | — | 8090 | GraphQL proxy | Routes queries to AFL/FFL, proxies search |
+| Gateway | — | 8090 | GraphQL | Single entry point for frontend; routes queries to AFL/FFL services, proxies search |
 
 ## Event Flow
 

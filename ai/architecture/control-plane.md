@@ -18,6 +18,16 @@ The ai/ directory is a declarative control plane for AI agents. Human architects
 | Plans | `plans/` | Roadmap, sprint, working memory | Collaborative (agents check off items; scope changes need discussion) |
 | Agent Config | `.claude/` | Skills, hooks, settings | Human (Claude Code only) |
 
+## Source of Truth Hierarchy
+
+When instructions conflict, architectural authority wins:
+
+1. `ai/architecture/principles.md` + `ai/decisions/` — foundational rules and ADRs
+2. `CLAUDE.md` — root agent instructions; references and delegates to the above
+3. `ai/prompts/system-prompt.md` — workflow detail; must not contradict the above
+
+CLAUDE.md is the entry point agents read first, but if it drifts from principles or ADRs, the architecture docs win.
+
 ## Constraints
 
 - `ai/` is read-only for agents — human maintains architectural intent
