@@ -47,10 +47,10 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 - [x] Fantasy score calculation test
 
 ### 8. Validate end-to-end
-- [ ] `just dev-up && just dev-seed` loads FFL data
-- [ ] `just run-ffl` starts and serves GraphQL playground
-- [ ] Gateway proxies FFL queries correctly
-- [ ] All tests pass
+- [x] `just dev-up && just dev-seed` loads FFL data
+- [x] `just run-ffl` starts and serves GraphQL playground
+- [x] Gateway proxies FFL queries correctly
+- [x] All tests pass
 
 ## Design constraint: event integration is next
 The AFL service already publishes `AFL.PlayerMatchUpdated` events. The next sprint will wire up the FFL service to subscribe to these events and auto-calculate fantasy scores. This sprint should ensure:

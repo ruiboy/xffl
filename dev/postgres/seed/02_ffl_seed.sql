@@ -1,36 +1,48 @@
--- Insert test data for FFL schema
+-- FFL test data (idempotent — safe to re-run)
+BEGIN;
 
--- Insert league
+-- Clear existing data (nullify match FKs first to break circular ref)
+UPDATE ffl.match SET home_club_match_id = NULL, away_club_match_id = NULL;
+DELETE FROM ffl.player_match;
+DELETE FROM ffl.player_season;
+DELETE FROM ffl.club_match;
+DELETE FROM ffl.match;
+DELETE FROM ffl.round;
+DELETE FROM ffl.club_season;
+DELETE FROM ffl.season;
+DELETE FROM ffl.player;
+
+-- League (unique on name)
 INSERT INTO ffl.league (name) VALUES ('Premier Fantasy Football League')
 ON CONFLICT (name) DO NOTHING;
 
--- Insert clubs
+-- Clubs (unique on name)
 INSERT INTO ffl.club (name) VALUES
     ('Ruiboys'),
     ('The Howling Cows')
 ON CONFLICT (name) DO NOTHING;
 
--- Insert season
+-- Season
 INSERT INTO ffl.season (name, league_id) VALUES
     ('2024 Season', (SELECT id FROM ffl.league WHERE name = 'Premier Fantasy Football League'));
 
--- Insert round
+-- Round
 INSERT INTO ffl.round (name, season_id) VALUES
     ('Round 1', (SELECT id FROM ffl.season WHERE name = '2024 Season'));
 
--- Insert club_season records
+-- Club seasons
 INSERT INTO ffl.club_season (club_id, season_id) VALUES
     ((SELECT id FROM ffl.club WHERE name = 'Ruiboys'), (SELECT id FROM ffl.season WHERE name = '2024 Season')),
     ((SELECT id FROM ffl.club WHERE name = 'The Howling Cows'), (SELECT id FROM ffl.season WHERE name = '2024 Season'));
 
--- Insert match (initially without club_match references)
+-- Match (initially without club_match references)
 INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
     ((SELECT id FROM ffl.round WHERE name = 'Round 1'),
      'versus',
      'MCG',
      '2024-03-15 19:30:00+00');
 
--- Insert club_match records
+-- Club match records
 INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, drv_premiership_points) VALUES
     ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1')),
      (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
@@ -50,7 +62,7 @@ SET home_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_seas
     drv_result = 'Ruiboys defeated The Howling Cows 85-72'
 WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1');
 
--- Insert 30 players for Ruiboys
+-- 30 players for Ruiboys
 INSERT INTO ffl.player (name, club_id) VALUES
     ('Marcus Bontempelli', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
     ('Christian Petracca', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
@@ -83,7 +95,7 @@ INSERT INTO ffl.player (name, club_id) VALUES
     ('Connor Rozee', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
     ('Isaac Heeney', (SELECT id FROM ffl.club WHERE name = 'Ruiboys'));
 
--- Insert 10 players for The Howling Cows
+-- 10 players for The Howling Cows
 INSERT INTO ffl.player (name, club_id) VALUES
     ('Dustin Martin', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
     ('Patrick Cripps', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
@@ -96,7 +108,7 @@ INSERT INTO ffl.player (name, club_id) VALUES
     ('Robbie Gray', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
     ('Joel Selwood', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows'));
 
--- Insert player_season records for all players
+-- Player season records for all players
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
 SELECT
     p.id,
@@ -109,8 +121,7 @@ JOIN ffl.season s ON cs.season_id = s.id
 JOIN ffl.round r ON r.season_id = s.id
 WHERE s.name = '2024 Season' AND r.name = 'Round 1';
 
--- Insert player_match records for Ruiboys (7 starters + 2 bench)
--- Starters: one per fantasy position
+-- Player match records for Ruiboys (7 starters + 2 bench)
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
 SELECT
     cm.id,
@@ -161,7 +172,7 @@ WHERE c.name = 'Ruiboys'
 ORDER BY ps.id
 OFFSET 7 LIMIT 2;
 
--- Insert player_match records for The Howling Cows (7 starters)
+-- Player match records for The Howling Cows (7 starters)
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
 SELECT
     cm.id,
@@ -185,7 +196,7 @@ WHERE c.name = 'The Howling Cows'
 ORDER BY ps.id
 LIMIT 7;
 
--- Update club_season statistics based on match results
+-- Update club_season statistics
 UPDATE ffl.club_season
 SET drv_played = 1,
     drv_won = 1,
@@ -205,3 +216,5 @@ SET drv_played = 1,
     drv_against = 85,
     drv_premiership_points = 0
 WHERE id IN (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows');
+
+COMMIT;

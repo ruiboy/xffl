@@ -65,8 +65,14 @@ func main() {
 	})
 
 	mux.HandleFunc("/query", cors(aflProxy.ServeHTTP))
-	mux.HandleFunc("/afl/query", cors(aflProxy.ServeHTTP))
-	mux.HandleFunc("/ffl/query", cors(fflProxy.ServeHTTP))
+	mux.HandleFunc("/afl/query", cors(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/query"
+		aflProxy.ServeHTTP(w, r)
+	}))
+	mux.HandleFunc("/ffl/query", cors(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/query"
+		fflProxy.ServeHTTP(w, r)
+	}))
 
 	log.Printf("Gateway starting on :%s (AFL→%s, FFL→%s)", port, aflURL, fflURL)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
