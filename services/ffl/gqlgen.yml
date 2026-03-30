@@ -1,0 +1,42 @@
+schema:
+  - api/graphql/*.graphqls
+
+exec:
+  filename: internal/interface/graphql/generated.go
+  package: graphql
+
+model:
+  filename: internal/interface/graphql/models_gen.go
+  package: graphql
+
+resolver:
+  layout: follow-schema
+  dir: internal/interface/graphql
+  package: graphql
+  filename_template: "{name}.resolvers.go"
+
+autobind: []
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+
+  FFLSeason:
+    fields:
+      ladder: { resolver: true }
+      rounds: { resolver: true }
+
+  FFLRound:
+    fields:
+      season: { resolver: true }
+      matches: { resolver: true }
+
+  FFLMatch:
+    fields:
+      homeClubMatch: { resolver: true }
+      awayClubMatch: { resolver: true }
+
+  FFLClubMatch:
+    fields:
+      playerMatches: { resolver: true }

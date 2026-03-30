@@ -1,0 +1,72 @@
+type Query {
+  fflClubs: [FFLClub!]!
+  fflClub(id: ID!): FFLClub!
+  fflPlayers: [FFLPlayer!]!
+  fflPlayer(id: ID!): FFLPlayer!
+  fflSeasons: [FFLSeason!]!
+  fflSeason(id: ID!): FFLSeason!
+  fflLatestRound: FFLRound!
+}
+
+type FFLClub {
+  id: ID!
+  name: String!
+}
+
+type FFLPlayer {
+  id: ID!
+  name: String!
+}
+
+type FFLSeason {
+  id: ID!
+  name: String!
+  ladder: [FFLClubSeason!]!
+  rounds: [FFLRound!]!
+}
+
+type FFLRound {
+  id: ID!
+  name: String!
+  season: FFLSeason!
+  matches: [FFLMatch!]!
+}
+
+type FFLMatch {
+  id: ID!
+  venue: String
+  startTime: String
+  result: String
+  homeClubMatch: FFLClubMatch
+  awayClubMatch: FFLClubMatch
+}
+
+type FFLClubMatch {
+  id: ID!
+  club: FFLClub!
+  score: Int!
+  playerMatches: [FFLPlayerMatch!]!
+}
+
+type FFLClubSeason {
+  id: ID!
+  club: FFLClub!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  for: Int!
+  against: Int!
+  percentage: Float!
+}
+
+type FFLPlayerMatch {
+  id: ID!
+  playerSeasonId: ID!
+  player: FFLPlayer!
+  position: String
+  status: String
+  backupPositions: String
+  interchangePosition: String
+  score: Int!
+}

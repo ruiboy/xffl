@@ -27,10 +27,10 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 - [x] Transaction manager implementation
 
 ### 4. Interface — GraphQL
-- [ ] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
-- [ ] gqlgen config and code generation
-- [ ] Query/mutation resolvers + field resolvers for nested types
-- [ ] Converter layer (domain ↔ GraphQL)
+- [x] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
+- [x] gqlgen config and code generation
+- [x] Query/mutation resolvers + field resolvers for nested types
+- [x] Converter layer (domain ↔ GraphQL)
 
 ### 5. Service wiring
 - [ ] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)

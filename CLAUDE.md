@@ -54,27 +54,3 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 **For development workflow detail:**
 - `ai/prompts/system-prompt.md` — development process (understand → test plan → implement → validate → reflect)
 
-## Agent Working Memory
-
-For non-trivial tasks, create or reset `plans/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes. This file is gitignored.
-
-Template:
-```markdown
-# Current Task: <short title>
-
-## Status
-Not Started | In Progress | Done
-
-## Summary
-<what and why>
-
-## Affected Services
-- <service list>
-
-## Steps
-- [ ] step 1
-- [ ] step 2
-
-## Decisions Made
-<updated as work progresses>
-```
