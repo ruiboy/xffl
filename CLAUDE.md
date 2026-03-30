@@ -8,6 +8,7 @@ AI agents must read this file before making changes to the repository.
 ai/              → Architecture, decisions, prompts (read-only for agents)
 plans/           → Roadmap, current sprint, agent working memory
 services/afl/    → AFL service (Go, GraphQL, port 8080)
+services/ffl/    → FFL service (Go, GraphQL, port 8081)
 services/gateway/→ Reverse proxy gateway (port 8090)
 frontend/web/    → Vue 3 SPA (TypeScript, Vite, port 3000)
 contracts/       → Shared event type definitions
@@ -48,7 +49,7 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 
 **Before architecture changes:**
 - `ai/decisions/decisions.md` — ADR index with summary table
-- `ai/architecture/bounded-contexts.md`, `ai/architecture/service-map.md`
+- `ai/architecture/domain.md`, `ai/architecture/service-map.md`
 
 **For development workflow detail:**
 - `ai/prompts/system-prompt.md` — development process (understand → test plan → implement → validate → reflect)
