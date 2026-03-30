@@ -7,13 +7,13 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 ## Tasks
 
 ### 1. Domain layer
-- [ ] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
-- [ ] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
-- [ ] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
-- [ ] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
-- [ ] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
-- [ ] Repository interfaces on each entity
-- [ ] Unit tests for scoring by position, percentage, bench substitution rules
+- [x] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
+- [x] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
+- [x] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
+- [x] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
+- [x] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
+- [x] Repository interfaces on each entity
+- [x] Unit tests for scoring by position, percentage, bench substitution rules
 
 ### 2. Application layer
 - [ ] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
