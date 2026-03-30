@@ -51,14 +51,14 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 ## Phase 5: FFL Service
 
-**Goal:** Fantasy league with cross-service event consumption
+**Goal:** FFL service as standalone CRUD with position-based fantasy scoring
 
-- [ ] Domain layer — Club, Player, ClubSeason, PlayerMatch entities; FantasyScore value object; FantasyScoreCalculated event; repository interfaces
-- [ ] Application layer — ManagePlayers (CRUD), QueryLadder, CalculateFantasyScore use cases; AFL event subscriber
-- [ ] Infrastructure layer — DB repositories, event subscriber + publisher
+- [ ] Domain layer — League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch entities; position-based scoring (goals/kicks/handballs/marks/tackles/hitouts/star); bench + interchange substitution logic; repository interfaces
+- [ ] Application layer — ManagePlayers (CRUD), QueryLadder, CalculateFantasyScore use cases
+- [ ] Infrastructure layer — sqlc queries, DB repositories, transaction manager
 - [ ] Interface layer — GraphQL schema + resolvers
 - [ ] Add FFL routing to gateway
-- [ ] Tests — unit (scoring formula, ladder) + integration (event flow)
+- [ ] Tests — unit (scoring by position, percentage, substitution) + integration (GraphQL with real DB)
 
 ## Phase 6: FFL Frontend
 
@@ -68,7 +68,15 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] FFL Ladder view — standings table
 - [ ] Playwright tests
 
-## Phase 7: Search Service
+## Phase 7: FFL Event Integration
+
+**Goal:** Wire up cross-service event flow between AFL and FFL
+
+- [ ] FFL subscribes to `AFL.PlayerMatchUpdated` → auto-calculates fantasy scores
+- [ ] FFL publishes `FFL.FantasyScoreCalculated`
+- [ ] Tests — integration (event flow end-to-end)
+
+## Phase 8: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -79,14 +87,14 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 8: Search Frontend
+## Phase 9: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
 
-## Phase 9: Deployment
+## Phase 10: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR - Consider deployment options - AWS, GCP, etc
