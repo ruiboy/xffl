@@ -16,15 +16,15 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 - [x] Unit tests for scoring by position, percentage, bench substitution rules
 
 ### 2. Application layer
-- [ ] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
-- [ ] Commands: ManagePlayers (CRUD), CalculateFantasyScore
-- [ ] TxManager interface (same pattern as AFL)
+- [x] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
+- [x] Commands: ManagePlayers (CRUD), CalculateFantasyScore
+- [x] TxManager interface (same pattern as AFL)
 
 ### 3. Infrastructure — sqlc + Postgres
-- [ ] SQL query files for all entities (ffl schema)
-- [ ] sqlc config and code generation
-- [ ] Repository implementations mapping sqlcgen → domain
-- [ ] Transaction manager implementation
+- [x] SQL query files for all entities (ffl schema)
+- [x] sqlc config and code generation
+- [x] Repository implementations mapping sqlcgen → domain
+- [x] Transaction manager implementation
 
 ### 4. Interface — GraphQL
 - [ ] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)

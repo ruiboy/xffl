@@ -1,0 +1,13 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "internal/infrastructure/postgres/sqlc"
+    schema: "../../dev/postgres/init/02_ffl_schema.sql"
+    gen:
+      go:
+        package: "sqlcgen"
+        out: "internal/infrastructure/postgres/sqlcgen"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true

@@ -109,44 +109,81 @@ JOIN ffl.season s ON cs.season_id = s.id
 JOIN ffl.round r ON r.season_id = s.id
 WHERE s.name = '2024 Season' AND r.name = 'Round 1';
 
--- Insert player_match records for Ruiboys players (22 starting players)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, score)
+-- Insert player_match records for Ruiboys (7 starters + 2 bench)
+-- Starters: one per fantasy position
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
 SELECT
     cm.id,
     ps.id,
-    CASE
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 6 THEN 'DEF'
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 14 THEN 'MID'
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 20 THEN 'FWD'
-        ELSE 'RUC'
+    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
+        WHEN 1 THEN 'goals'
+        WHEN 2 THEN 'kicks'
+        WHEN 3 THEN 'handballs'
+        WHEN 4 THEN 'marks'
+        WHEN 5 THEN 'tackles'
+        WHEN 6 THEN 'hitouts'
+        WHEN 7 THEN 'star'
     END,
-    FLOOR(RANDOM() * 100 + 50)::INTEGER
+    'played',
+    FLOOR(RANDOM() * 30 + 5)::INTEGER
 FROM ffl.player_season ps
 JOIN ffl.club_season cs ON ps.club_season_id = cs.id
 JOIN ffl.club_match cm ON cm.club_season_id = cs.id
 JOIN ffl.club c ON cs.club_id = c.id
 WHERE c.name = 'Ruiboys'
 ORDER BY ps.id
-LIMIT 22;
+LIMIT 7;
 
--- Insert player_match records for The Howling Cows players (all 10 players)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, score)
+-- Bench players for Ruiboys
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, score)
 SELECT
     cm.id,
     ps.id,
-    CASE
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 3 THEN 'DEF'
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 7 THEN 'MID'
-        WHEN ROW_NUMBER() OVER (ORDER BY ps.id) <= 9 THEN 'FWD'
-        ELSE 'RUC'
+    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
+        WHEN 1 THEN 'goals'
+        WHEN 2 THEN 'kicks'
     END,
-    FLOOR(RANDOM() * 100 + 40)::INTEGER
+    'played',
+    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
+        WHEN 1 THEN 'goals,kicks'
+        WHEN 2 THEN NULL
+    END,
+    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
+        WHEN 1 THEN NULL
+        WHEN 2 THEN 'kicks'
+    END,
+    FLOOR(RANDOM() * 20 + 1)::INTEGER
+FROM ffl.player_season ps
+JOIN ffl.club_season cs ON ps.club_season_id = cs.id
+JOIN ffl.club_match cm ON cm.club_season_id = cs.id
+JOIN ffl.club c ON cs.club_id = c.id
+WHERE c.name = 'Ruiboys'
+ORDER BY ps.id
+OFFSET 7 LIMIT 2;
+
+-- Insert player_match records for The Howling Cows (7 starters)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
+SELECT
+    cm.id,
+    ps.id,
+    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
+        WHEN 1 THEN 'goals'
+        WHEN 2 THEN 'kicks'
+        WHEN 3 THEN 'handballs'
+        WHEN 4 THEN 'marks'
+        WHEN 5 THEN 'tackles'
+        WHEN 6 THEN 'hitouts'
+        WHEN 7 THEN 'star'
+    END,
+    'played',
+    FLOOR(RANDOM() * 30 + 5)::INTEGER
 FROM ffl.player_season ps
 JOIN ffl.club_season cs ON ps.club_season_id = cs.id
 JOIN ffl.club_match cm ON cm.club_season_id = cs.id
 JOIN ffl.club c ON cs.club_id = c.id
 WHERE c.name = 'The Howling Cows'
-ORDER BY ps.id;
+ORDER BY ps.id
+LIMIT 7;
 
 -- Update club_season statistics based on match results
 UPDATE ffl.club_season

@@ -35,8 +35,8 @@ func (cm ClubMatch) Score() int {
 		pm := &cm.PlayerMatches[i]
 		if pm.isBench() {
 			bench = append(bench, pm)
-		} else {
-			starters[pm.Position] = pm
+		} else if pm.Position != nil {
+			starters[*pm.Position] = pm
 		}
 	}
 
@@ -44,7 +44,7 @@ func (cm ClubMatch) Score() int {
 
 	// Substitution: bench replaces DNP starters.
 	for pos, starter := range starters {
-		if starter.Status != PlayerMatchStatusDNP {
+		if starter.Status == nil || *starter.Status != PlayerMatchStatusDNP {
 			continue
 		}
 		for i, bp := range bench {

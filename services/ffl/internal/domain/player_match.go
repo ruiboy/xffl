@@ -48,8 +48,8 @@ type PlayerMatch struct {
 	ID                  int
 	ClubMatchID         int
 	PlayerSeasonID      int
-	Position            Position
-	Status              PlayerMatchStatus
+	Position            *Position
+	Status              *PlayerMatchStatus
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               int
@@ -61,9 +61,12 @@ func (pm PlayerMatch) isBench() bool {
 }
 
 // CalculateScore computes the fantasy score for this player based on their
-// position and the given AFL match statistics.
+// position and the given AFL match statistics. Returns 0 if position is nil.
 func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
-	switch pm.Position {
+	if pm.Position == nil {
+		return 0
+	}
+	switch *pm.Position {
 	case PositionGoals:
 		return stats.Goals * GoalsMultiplier
 	case PositionKicks:
@@ -87,6 +90,10 @@ func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
 	}
 }
 
+// Ptr helpers for use in struct literals.
+func PositionPtr(p Position) *Position                { return &p }
+func PlayerMatchStatusPtr(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
+
 type PlayerMatchRepository interface {
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
@@ -97,8 +104,8 @@ type PlayerMatchRepository interface {
 type UpsertPlayerMatchParams struct {
 	ClubMatchID         int
 	PlayerSeasonID      int
-	Position            Position
-	Status              PlayerMatchStatus
+	Position            *Position
+	Status              *PlayerMatchStatus
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               *int

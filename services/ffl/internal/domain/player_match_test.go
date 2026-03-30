@@ -27,11 +27,18 @@ func TestCalculateScore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pm := PlayerMatch{Position: tt.position}
+			pm := PlayerMatch{Position: PositionPtr(tt.position)}
 			if got := pm.CalculateScore(stats); got != tt.want {
 				t.Errorf("CalculateScore() = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCalculateScore_NilPosition(t *testing.T) {
+	pm := PlayerMatch{}
+	if got := pm.CalculateScore(AFLStats{Goals: 5}); got != 0 {
+		t.Errorf("CalculateScore() with nil position = %d, want 0", got)
 	}
 }
 
@@ -43,7 +50,7 @@ func TestCalculateScore_ZeroStats(t *testing.T) {
 	}
 	for _, pos := range positions {
 		t.Run(string(pos), func(t *testing.T) {
-			pm := PlayerMatch{Position: pos}
+			pm := PlayerMatch{Position: PositionPtr(pos)}
 			if got := pm.CalculateScore(stats); got != 0 {
 				t.Errorf("CalculateScore() with zero stats = %d, want 0", got)
 			}
