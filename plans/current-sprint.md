@@ -7,50 +7,50 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 ## Tasks
 
 ### 1. Domain layer
-- [ ] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
-- [ ] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
-- [ ] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
-- [ ] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
-- [ ] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
-- [ ] Repository interfaces on each entity
-- [ ] Unit tests for scoring by position, percentage, bench substitution rules
+- [x] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
+- [x] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
+- [x] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
+- [x] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
+- [x] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
+- [x] Repository interfaces on each entity
+- [x] Unit tests for scoring by position, percentage, bench substitution rules
 
 ### 2. Application layer
-- [ ] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
-- [ ] Commands: ManagePlayers (CRUD), CalculateFantasyScore
-- [ ] TxManager interface (same pattern as AFL)
+- [x] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
+- [x] Commands: ManagePlayers (CRUD), CalculateFantasyScore
+- [x] TxManager interface (same pattern as AFL)
 
 ### 3. Infrastructure — sqlc + Postgres
-- [ ] SQL query files for all entities (ffl schema)
-- [ ] sqlc config and code generation
-- [ ] Repository implementations mapping sqlcgen → domain
-- [ ] Transaction manager implementation
+- [x] SQL query files for all entities (ffl schema)
+- [x] sqlc config and code generation
+- [x] Repository implementations mapping sqlcgen → domain
+- [x] Transaction manager implementation
 
 ### 4. Interface — GraphQL
-- [ ] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
-- [ ] gqlgen config and code generation
-- [ ] Query/mutation resolvers + field resolvers for nested types
-- [ ] Converter layer (domain ↔ GraphQL)
+- [x] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
+- [x] gqlgen config and code generation
+- [x] Query/mutation resolvers + field resolvers for nested types
+- [x] Converter layer (domain ↔ GraphQL)
 
 ### 5. Service wiring
-- [ ] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
-- [ ] go.mod with pgx, gqlgen dependencies
-- [ ] Health endpoint
+- [x] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
+- [x] go.mod with pgx, gqlgen dependencies
+- [x] Health endpoint
 
 ### 6. Gateway routing
-- [ ] Add FFL service proxy to gateway (route FFL queries to :8081)
-- [ ] Update run-all in justfile to include FFL service
+- [x] Add FFL service proxy to gateway (route FFL queries to :8081)
+- [x] Update run-all in justfile to include FFL service
 
 ### 7. Integration tests
-- [ ] GraphQL integration tests (queries + mutations) against real DB
-- [ ] Test helpers: seed data, server setup, query execution
-- [ ] Fantasy score calculation test
+- [x] GraphQL integration tests (queries + mutations) against real DB
+- [x] Test helpers: seed data, server setup, query execution
+- [x] Fantasy score calculation test
 
 ### 8. Validate end-to-end
-- [ ] `just dev-up && just dev-seed` loads FFL data
-- [ ] `just run-ffl` starts and serves GraphQL playground
-- [ ] Gateway proxies FFL queries correctly
-- [ ] All tests pass
+- [x] `just dev-up && just dev-seed` loads FFL data
+- [x] `just run-ffl` starts and serves GraphQL playground
+- [x] Gateway proxies FFL queries correctly
+- [x] All tests pass
 
 ## Design constraint: event integration is next
 The AFL service already publishes `AFL.PlayerMatchUpdated` events. The next sprint will wire up the FFL service to subscribe to these events and auto-calculate fantasy scores. This sprint should ensure:

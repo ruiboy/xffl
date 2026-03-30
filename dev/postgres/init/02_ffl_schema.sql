@@ -129,9 +129,11 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     club_match_id INTEGER NOT NULL REFERENCES ffl.club_match(id) ON DELETE CASCADE,
     player_season_id INTEGER NOT NULL REFERENCES ffl.player_season(id) ON DELETE CASCADE,
     position VARCHAR(255),
-    interchange_positions TEXT,
-    status VARCHAR(50) CHECK (status IN ('dnp', 'subbed_in')),
-    score INTEGER DEFAULT 0
+    status VARCHAR(50),
+    backup_positions TEXT,
+    interchange_position VARCHAR(255),
+    score INTEGER DEFAULT 0,
+    CONSTRAINT uni_ffl_player_match UNIQUE (player_season_id, club_match_id)
 );
 
 -- Create indexes for foreign keys and performance

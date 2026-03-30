@@ -7,17 +7,19 @@ xffl/
 ├── go.work                → Go workspace referencing all modules
 │
 ├── ai/                    → AI control plane (read-only for agents)
-│   ├── architecture/      → principles.md, service-map.md, bounded-contexts.md
+│   ├── architecture/      → principles.md, service-map.md, domain.md
 │   ├── decisions/         → ADR index (decisions.md) + individual ADRs
 │   └── prompts/           → Development workflow
 │
-├── plans/                 → Project plans + agent working memory
+├── plans/                 → Project plans
 │   ├── roadmap.md         → Full project phases
-│   ├── current-sprint.md  → Active sprint tasks
-│   └── current-task.md    → Per-task scratchpad (gitignored)
+│   └── current-sprint.md  → Active sprint tasks
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)
+│   │   ├── cmd/           → Entrypoint
+│   │   └── internal/      → domain/ → application/ → infrastructure/ → interface/
+│   ├── ffl/               → FFL service (Go, GraphQL, :8081)
 │   │   ├── cmd/           → Entrypoint
 │   │   └── internal/      → domain/ → application/ → infrastructure/ → interface/
 │   └── gateway/           → Reverse proxy (:8090)

@@ -116,9 +116,8 @@ The `ai/` directory is the interface between you (the human architect) and AI ag
 
 The agentic workflow evolves incrementally based on real needs:
 
-1. **Working memory** (done) — `plans/current-task.md` externalises agent reasoning
-2. **Skills** (done) — `.claude/skills/` for repeatable validation (checkarch, checkdoc)
-3. **Instrumentation** (future) — hooks for automatic observability
-4. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck
+1. **Skills** (done) — `.claude/skills/` for repeatable validation (checkarch, checkdoc)
+2. **Instrumentation** (future) — hooks for automatic observability
+3. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck
 
 No frameworks are adopted speculatively. Each layer is added when the previous one proves useful.

@@ -1,8 +1,9 @@
-go 1.25
+go 1.25.0
 
 use (
 	./contracts/events
 	./services/afl
+	./services/ffl
 	./services/gateway
 	./shared/database
 	./shared/events

@@ -23,7 +23,7 @@ FFL.FantasyScoreCalculated → Search (indexes/updates player)
 - **Search engine:** Zinc (port 4080)
 - **Frontend:** Vue 3 + Apollo Client (port 3000)
 
-## Shared Packages (`pkg/`)
+## Shared Packages (`shared/`)
 
 - `database/` — connection utilities
 - `events/` — dispatcher interface + PostgreSQL and in-memory implementations

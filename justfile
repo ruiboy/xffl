@@ -9,7 +9,7 @@ dev-up:
     docker compose -f dev/docker-compose.yml up -d
     @echo "Waiting for Postgres..."
     @until docker exec xffl-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
-    @echo "Postgres ready on :5432 | Zinc ready on :4080"
+    @echo "Postgres ready on :${DB_PORT:-5432} | Zinc ready on :${ZINC_PORT:-4080}"
 
 # Stop local infrastructure
 dev-down:
@@ -54,15 +54,25 @@ run-gateway:
 run-frontend:
     cd frontend/web && npm run dev
 
-# Run frontend e2e tests (requires run-all to be running)
-test-e2e:
-    cd frontend/web && npx playwright test
-
-# Run AFL service, gateway, and frontend together
+# Run AFL + FFL services, gateway, and frontend together
 run-all:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     just run-afl &
+    just run-ffl &
     just run-gateway &
     just run-frontend &
     wait
+
+# Run AFL service tests
+test-afl:
+    cd services/afl && go test ./...
+
+# Run FFL service tests
+test-ffl:
+    cd services/ffl && go test ./...
+
+# Run frontend e2e tests (requires run-all to be running)
+test-e2e:
+    cd frontend/web && npx playwright test
+

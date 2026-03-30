@@ -1,0 +1,38 @@
+type Mutation {
+  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
+  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
+  deleteFFLPlayer(id: ID!): Boolean!
+  addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
+  removeFFLPlayerFromSeason(id: ID!): Boolean!
+  calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
+}
+
+input CreateFFLPlayerInput {
+  name: String!
+}
+
+input UpdateFFLPlayerInput {
+  id: ID!
+  name: String!
+}
+
+input AddFFLPlayerToSeasonInput {
+  playerId: ID!
+  clubSeasonId: ID!
+}
+
+type FFLPlayerSeason {
+  id: ID!
+  playerId: ID!
+  clubSeasonId: ID!
+}
+
+input CalculateFFLFantasyScoreInput {
+  playerMatchId: ID!
+  goals: Int!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  tackles: Int!
+  hitouts: Int!
+}

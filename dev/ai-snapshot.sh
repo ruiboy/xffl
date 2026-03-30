@@ -26,7 +26,7 @@ OUTPUT="$REPO_ROOT/ai-snapshot.out"
   echo -e "\n"
 
   echo "=== Core AI Files (Architecture, Plans, Decisions, Prompts) ==="
-  find "$REPO_ROOT/ai/architecture" "$REPO_ROOT/plans" "$REPO_ROOT/ai/decisions/decisions.md" "$REPO_ROOT/ai/prompts" -type f -not -name "current-task.md" -exec echo "--- File: {} ---" \; -exec cat {} \; -exec echo -e "\n" \; 2>/dev/null
+  find "$REPO_ROOT/ai/architecture" "$REPO_ROOT/plans" "$REPO_ROOT/ai/decisions/decisions.md" "$REPO_ROOT/ai/prompts" -type f -exec echo "--- File: {} ---" \; -exec cat {} \; -exec echo -e "\n" \; 2>/dev/null
   echo -e "\n"
 
   echo "=== Claude Skills Structure ==="

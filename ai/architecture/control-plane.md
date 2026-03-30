@@ -7,7 +7,7 @@ The ai/ directory is a declarative control plane for AI agents. Human architects
 - **Human-in-the-loop** — human is architect (what/why), agent is implementer (how)
 - **Structured environment, not autonomous agent** — no agent loops, no step automation
 - **Agent-agnostic** — any LLM tool (Claude Code, Cursor, Aider) reads ai/ and plans/
-- **Observable** — working memory in plans/current-task.md makes agent reasoning visible
+- **Observable** — sprint checklist and task tracking make progress visible
 - **Incremental** — evolve based on real usage, not hypothetical needs
 
 ## Layers
@@ -31,7 +31,6 @@ CLAUDE.md is the entry point agents read first, but if it drifts from principles
 ## Constraints
 
 - `ai/` is read-only for agents — human maintains architectural intent
-- `plans/current-task.md` is gitignored — ephemeral, per-session state
 - `.claude/` is vendor-specific — enhances but is not required
 - Architecture and ADRs override code (see principles.md)
 
