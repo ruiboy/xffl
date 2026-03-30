@@ -11,10 +11,9 @@ xffl/
 │   ├── decisions/         → ADR index (decisions.md) + individual ADRs
 │   └── prompts/           → Development workflow
 │
-├── plans/                 → Project plans + agent working memory
+├── plans/                 → Project plans
 │   ├── roadmap.md         → Full project phases
-│   ├── current-sprint.md  → Active sprint tasks
-│   └── current-task.md    → Per-task scratchpad (gitignored)
+│   └── current-sprint.md  → Active sprint tasks
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)

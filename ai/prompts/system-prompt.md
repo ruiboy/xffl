@@ -10,8 +10,6 @@ The authoritative agent instructions are in `CLAUDE.md` at the repo root. This f
 
 ## Workflow
 
-For tasks that touch multiple services or involve significant new functionality, create or reset `plans/current-task.md` before implementing. Skip for single-file fixes, doc updates, seed data changes.
-
 1. **Understand** — identify affected services, relevant ADRs, bounded contexts
 2. **Test plan** — define what tests are needed before writing code
 3. **Implement** — write failing tests, then minimal implementation
