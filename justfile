@@ -58,11 +58,12 @@ run-frontend:
 test-e2e:
     cd frontend/web && npx playwright test
 
-# Run AFL service, gateway, and frontend together
+# Run AFL + FFL services, gateway, and frontend together
 run-all:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     just run-afl &
+    just run-ffl &
     just run-gateway &
     just run-frontend &
     wait

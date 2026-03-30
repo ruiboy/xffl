@@ -33,18 +33,18 @@ Build the FFL service following the same clean architecture patterns as the AFL 
 - [x] Converter layer (domain ↔ GraphQL)
 
 ### 5. Service wiring
-- [ ] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
-- [ ] go.mod with pgx, gqlgen dependencies
-- [ ] Health endpoint
+- [x] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
+- [x] go.mod with pgx, gqlgen dependencies
+- [x] Health endpoint
 
 ### 6. Gateway routing
-- [ ] Add FFL service proxy to gateway (route FFL queries to :8081)
-- [ ] Update run-all in justfile to include FFL service
+- [x] Add FFL service proxy to gateway (route FFL queries to :8081)
+- [x] Update run-all in justfile to include FFL service
 
 ### 7. Integration tests
-- [ ] GraphQL integration tests (queries + mutations) against real DB
-- [ ] Test helpers: seed data, server setup, query execution
-- [ ] Fantasy score calculation test
+- [x] GraphQL integration tests (queries + mutations) against real DB
+- [x] Test helpers: seed data, server setup, query execution
+- [x] Fantasy score calculation test
 
 ### 8. Validate end-to-end
 - [ ] `just dev-up && just dev-seed` loads FFL data
