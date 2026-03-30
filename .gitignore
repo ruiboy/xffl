@@ -19,6 +19,7 @@ bin/
 # Vue.js
 .DS_Store
 node_modules
+.vite
 *.local
 .env.local
 .env.*.local

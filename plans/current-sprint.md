@@ -1,27 +1,64 @@
 # Current Sprint
 
-**Sprint goal:** Phase 4 — AFL Frontend (remaining views + UX polish)
+**Sprint goal:** Phase 5 — FFL Service (Fantasy Football League backend)
+
+Build the FFL service following the same clean architecture patterns as the AFL service: domain entities with business logic, sqlc for data access, gqlgen for GraphQL, and integration tests against a real database. The FFL service mirrors the AFL service's structure (league/season/round/match/club/player hierarchy) but adds fantasy scoring. Event subscription (AFL→FFL) is deferred to a later task.
 
 ## Tasks
 
-### 1. AI plans & prompt improvements
-- [x] Review and improve `plans/` structure and content
-- [x] Review and improve `ai/prompts/system-prompt.md`
-- [x] Ensure sprint/roadmap alignment
+### 1. Domain layer
+- [ ] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
+- [ ] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
+- [ ] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
+- [ ] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
+- [ ] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
+- [ ] Repository interfaces on each entity
+- [ ] Unit tests for scoring by position, percentage, bench substitution rules
 
-### 2. AFL frontend page discovery
-- [x] Interview about required pages, navigation, and user flows
-- [x] Document page inventory and key interactions
-- [x] Confirm scope before building
+### 2. Application layer
+- [ ] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
+- [ ] Commands: ManagePlayers (CRUD), CalculateFantasyScore
+- [ ] TxManager interface (same pattern as AFL)
 
-### 3. Build AFL pages
-- [x] Add `aflLatestRound` backend query + `season` field on `AFLRound`
-- [x] Implement pages identified in step 2 (Home, Round, Match read-only, Admin Match)
-- [x] Playwright e2e tests for each page (16 tests)
+### 3. Infrastructure — sqlc + Postgres
+- [ ] SQL query files for all entities (ffl schema)
+- [ ] sqlc config and code generation
+- [ ] Repository implementations mapping sqlcgen → domain
+- [ ] Transaction manager implementation
 
-### 4. Apply UX style
-- [x] Switch to light theme across all components and views
-- [x] Add AFL club logos (18 teams, stored as static assets)
-- [x] Add logos to MatchSummary, LadderTable, MatchView, AdminMatchView
-- [~] Leverage PrimeVue unstyled + Tailwind per ADR-011 (deferred to Phase 5/6)
-- [x] Centralise design tokens with Tailwind v4 `@theme` + light/dark theme switcher
+### 4. Interface — GraphQL
+- [ ] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
+- [ ] gqlgen config and code generation
+- [ ] Query/mutation resolvers + field resolvers for nested types
+- [ ] Converter layer (domain ↔ GraphQL)
+
+### 5. Service wiring
+- [ ] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
+- [ ] go.mod with pgx, gqlgen dependencies
+- [ ] Health endpoint
+
+### 6. Gateway routing
+- [ ] Add FFL service proxy to gateway (route FFL queries to :8081)
+- [ ] Update run-all in justfile to include FFL service
+
+### 7. Integration tests
+- [ ] GraphQL integration tests (queries + mutations) against real DB
+- [ ] Test helpers: seed data, server setup, query execution
+- [ ] Fantasy score calculation test
+
+### 8. Validate end-to-end
+- [ ] `just dev-up && just dev-seed` loads FFL data
+- [ ] `just run-ffl` starts and serves GraphQL playground
+- [ ] Gateway proxies FFL queries correctly
+- [ ] All tests pass
+
+## Design constraint: event integration is next
+The AFL service already publishes `AFL.PlayerMatchUpdated` events. The next sprint will wire up the FFL service to subscribe to these events and auto-calculate fantasy scores. This sprint should ensure:
+- `PlayerMatch.CalculateScore(aflStats)` is a pure domain function, callable from a future event handler
+- The application layer command for calculating scores doesn't assume where the AFL stats come from
+
+## Out of scope (deferred)
+- Event subscription (AFL.PlayerMatchUpdated → FFL.FantasyScoreCalculated) — Phase 7
+- Event publishing (FFL.FantasyScoreCalculated) — Phase 7
+- Frontend FFL views — Phase 6
+- Draft/trade mechanics — future phase
