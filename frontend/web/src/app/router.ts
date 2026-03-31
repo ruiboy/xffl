@@ -21,6 +21,12 @@ const router = createRouter({
       component: () => import('@/features/ffl/views/MatchView.vue'),
       props: true,
     },
+    {
+      path: '/ffl/seasons/:seasonId/rounds/:roundId/team-builder',
+      name: 'ffl-team-builder',
+      component: () => import('@/features/ffl/views/TeamBuilderView.vue'),
+      props: true,
+    },
 
     // AFL routes
     {
