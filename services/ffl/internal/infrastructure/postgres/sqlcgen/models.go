@@ -68,12 +68,13 @@ type FflMatch struct {
 }
 
 type FflPlayer struct {
-	ID        int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
-	Name      string
-	ClubID    *int32
+	ID          int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Name        string
+	ClubID      *int32
+	AflPlayerID *int32
 }
 
 type FflPlayerMatch struct {

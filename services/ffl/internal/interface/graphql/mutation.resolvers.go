@@ -7,7 +7,6 @@ package graphql
 
 import (
 	"context"
-
 	"xffl/services/ffl/internal/domain"
 )
 
@@ -81,12 +80,12 @@ func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input C
 		return nil, err
 	}
 	stats := domain.AFLStats{
-		Goals:    input.Goals,
-		Kicks:    input.Kicks,
+		Goals:     input.Goals,
+		Kicks:     input.Kicks,
 		Handballs: input.Handballs,
-		Marks:    input.Marks,
-		Tackles:  input.Tackles,
-		Hitouts:  input.Hitouts,
+		Marks:     input.Marks,
+		Tackles:   input.Tackles,
+		Hitouts:   input.Hitouts,
 	}
 	pm, err := r.Commands.CalculateFantasyScore(ctx, pmID, stats)
 	if err != nil {

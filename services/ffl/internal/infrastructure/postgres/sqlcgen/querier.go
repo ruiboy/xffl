@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	CreatePlayer(ctx context.Context, name string) (CreatePlayerRow, error)
+	CreatePlayer(ctx context.Context, arg CreatePlayerParams) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerSeason(ctx context.Context, id int32) error

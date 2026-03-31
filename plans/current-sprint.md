@@ -36,11 +36,11 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 - [x] No persistence yet — stub UI only
 
 ### 6. FFL Players page
-- [ ] Player CRUD (create, edit, delete)
+- [x] Player CRUD (create, edit, delete)
 - [ ] Assign/remove players to/from club seasons
 
 ### 7. Backend wiring (end of sprint)
-- [ ] Add `aflPlayerId` to FFL Player (domain + schema + migration)
+- [x] Add `aflPlayerId` to FFL Player (domain + schema + migration)
 - [ ] `setFFLLineup` mutation (batch upsert PlayerMatch)
 - [ ] Roster query via GraphQL
 - [ ] Wire Team Builder UI to real data
@@ -51,6 +51,9 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 - [ ] FFL Match tests
 - [ ] FFL Team Builder tests
 - [ ] FFL Players tests
+
+### 9. Justfile tidy-up
+- [ ] Review and clean up justfile recipes
 
 ## Out of scope
 - Event subscription (AFL→FFL) — Phase 7

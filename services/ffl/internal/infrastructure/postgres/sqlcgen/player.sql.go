@@ -10,20 +10,26 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO ffl.player (name)
-VALUES ($1)
-RETURNING id, name
+INSERT INTO ffl.player (name, afl_player_id)
+VALUES ($1, $2)
+RETURNING id, name, afl_player_id
 `
 
-type CreatePlayerRow struct {
-	ID   int32
-	Name string
+type CreatePlayerParams struct {
+	Name        string
+	AflPlayerID *int32
 }
 
-func (q *Queries) CreatePlayer(ctx context.Context, name string) (CreatePlayerRow, error) {
-	row := q.db.QueryRow(ctx, createPlayer, name)
+type CreatePlayerRow struct {
+	ID          int32
+	Name        string
+	AflPlayerID *int32
+}
+
+func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (CreatePlayerRow, error) {
+	row := q.db.QueryRow(ctx, createPlayer, arg.Name, arg.AflPlayerID)
 	var i CreatePlayerRow
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
 	return i, err
 }
 
@@ -40,15 +46,16 @@ func (q *Queries) DeletePlayer(ctx context.Context, id int32) error {
 }
 
 const findAllPlayers = `-- name: FindAllPlayers :many
-SELECT id, name
+SELECT id, name, afl_player_id
 FROM ffl.player
 WHERE deleted_at IS NULL
 ORDER BY name
 `
 
 type FindAllPlayersRow struct {
-	ID   int32
-	Name string
+	ID          int32
+	Name        string
+	AflPlayerID *int32
 }
 
 func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, error) {
@@ -60,7 +67,7 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 	items := []FindAllPlayersRow{}
 	for rows.Next() {
 		var i FindAllPlayersRow
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.AflPlayerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -72,44 +79,48 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 }
 
 const findPlayerByID = `-- name: FindPlayerByID :one
-SELECT id, name
+SELECT id, name, afl_player_id
 FROM ffl.player
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerByIDRow struct {
-	ID   int32
-	Name string
+	ID          int32
+	Name        string
+	AflPlayerID *int32
 }
 
 func (q *Queries) FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerByID, id)
 	var i FindPlayerByIDRow
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
 	return i, err
 }
 
 const updatePlayer = `-- name: UpdatePlayer :one
 UPDATE ffl.player
 SET name = $2,
+    afl_player_id = $3,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, name
+RETURNING id, name, afl_player_id
 `
 
 type UpdatePlayerParams struct {
-	ID   int32
-	Name string
+	ID          int32
+	Name        string
+	AflPlayerID *int32
 }
 
 type UpdatePlayerRow struct {
-	ID   int32
-	Name string
+	ID          int32
+	Name        string
+	AflPlayerID *int32
 }
 
 func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (UpdatePlayerRow, error) {
-	row := q.db.QueryRow(ctx, updatePlayer, arg.ID, arg.Name)
+	row := q.db.QueryRow(ctx, updatePlayer, arg.ID, arg.Name, arg.AflPlayerID)
 	var i UpdatePlayerRow
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
 	return i, err
 }

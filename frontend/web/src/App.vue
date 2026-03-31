@@ -8,7 +8,7 @@
         <router-link to="/" class="text-sm text-text-muted hover:text-text transition-colors">
           Home
         </router-link>
-        <router-link to="/afl" class="text-sm text-text-muted hover:text-text transition-colors">
+<router-link to="/afl" class="text-sm text-text-muted hover:text-text transition-colors">
           AFL
         </router-link>
         <button

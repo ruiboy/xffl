@@ -55,8 +55,9 @@ type FFLMatch struct {
 }
 
 type FFLPlayer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	AflPlayerID *string `json:"aflPlayerId,omitempty"`
 }
 
 type FFLPlayerMatch struct {

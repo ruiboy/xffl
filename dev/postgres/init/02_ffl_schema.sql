@@ -104,7 +104,8 @@ CREATE TABLE IF NOT EXISTS ffl.player (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     name VARCHAR(255) NOT NULL,
-    club_id INTEGER REFERENCES ffl.club(id) ON DELETE CASCADE
+    club_id INTEGER REFERENCES ffl.club(id) ON DELETE CASCADE,
+    afl_player_id INTEGER
 );
 
 -- Create player_season table

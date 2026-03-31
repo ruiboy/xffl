@@ -3,8 +3,9 @@ package domain
 import "context"
 
 type Player struct {
-	ID   int
-	Name string
+	ID          int
+	Name        string
+	AFLPlayerID *int
 }
 
 type PlayerRepository interface {

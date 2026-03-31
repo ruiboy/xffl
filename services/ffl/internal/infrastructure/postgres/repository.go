@@ -301,6 +301,26 @@ func NewPlayerRepository(q *sqlcgen.Queries) *PlayerRepository {
 	return &PlayerRepository{q: q}
 }
 
+func int32PtrToIntPtr(v *int32) *int {
+	if v == nil {
+		return nil
+	}
+	i := int(*v)
+	return &i
+}
+
+func intPtrToInt32Ptr(v *int) *int32 {
+	if v == nil {
+		return nil
+	}
+	i := int32(*v)
+	return &i
+}
+
+func playerFromRow(id int32, name string, aflPlayerID *int32) domain.Player {
+	return domain.Player{ID: int(id), Name: name, AFLPlayerID: int32PtrToIntPtr(aflPlayerID)}
+}
+
 func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error) {
 	rows, err := r.q.FindAllPlayers(ctx)
 	if err != nil {
@@ -308,7 +328,7 @@ func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error)
 	}
 	out := make([]domain.Player, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Player{ID: int(row.ID), Name: row.Name}
+		out[i] = playerFromRow(row.ID, row.Name, row.AflPlayerID)
 	}
 	return out, nil
 }
@@ -318,26 +338,30 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return domain.Player{ID: int(row.ID), Name: row.Name}, nil
+	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) Create(ctx context.Context, name string) (domain.Player, error) {
-	row, err := r.q.CreatePlayer(ctx, name)
-	if err != nil {
-		return domain.Player{}, err
-	}
-	return domain.Player{ID: int(row.ID), Name: row.Name}, nil
-}
-
-func (r *PlayerRepository) Update(ctx context.Context, id int, name string) (domain.Player, error) {
-	row, err := r.q.UpdatePlayer(ctx, sqlcgen.UpdatePlayerParams{
-		ID:   int32(id),
-		Name: name,
+	row, err := r.q.CreatePlayer(ctx, sqlcgen.CreatePlayerParams{
+		Name:        name,
+		AflPlayerID: nil,
 	})
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return domain.Player{ID: int(row.ID), Name: row.Name}, nil
+	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+}
+
+func (r *PlayerRepository) Update(ctx context.Context, id int, name string) (domain.Player, error) {
+	row, err := r.q.UpdatePlayer(ctx, sqlcgen.UpdatePlayerParams{
+		ID:          int32(id),
+		Name:        name,
+		AflPlayerID: nil,
+	})
+	if err != nil {
+		return domain.Player{}, err
+	}
+	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) Delete(ctx context.Context, id int) error {
