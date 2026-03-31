@@ -9,6 +9,18 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },
+    {
+      path: '/ffl/seasons/:seasonId/rounds/:roundId',
+      name: 'ffl-round',
+      component: () => import('@/features/ffl/views/RoundView.vue'),
+      props: true,
+    },
+    {
+      path: '/ffl/seasons/:seasonId/matches/:matchId',
+      name: 'ffl-match',
+      component: () => import('@/features/ffl/views/MatchView.vue'),
+      props: true,
+    },
 
     // AFL routes
     {
