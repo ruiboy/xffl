@@ -32,7 +32,7 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 - [x] Layout with position slots and roster panel
 - [x] Display roster (30 players)
 - [x] Assign players to positions (local state only)
-- [ ] Compare lineup arrangements
+- [x] Compare lineup arrangements
 - [x] No persistence yet — stub UI only
 
 ### 6. FFL Players page
