@@ -45,3 +45,4 @@ data
 
 # AI control plane
 ai-snapshot.out
+plans/current-task.md

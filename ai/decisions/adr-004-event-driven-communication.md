@@ -47,6 +47,7 @@ FFL.FantasyScoreCalculated → Search (indexing)
 - **Low event volume** — two event types, three subscribers. Purpose-built messaging (NATS, Kafka) is overkill.
 - **Lost messages are tolerable** — fantasy scores can be recalculated, search can be re-indexed. Nothing requires exactly-once delivery.
 - **Loose coupling** — services depend on event contracts in `contracts/events/`, not on each other.
+- **Events are contracts, not internal models** — event schemas are public API. Producers must not leak internal domain structure into payloads. Consumers must tolerate additional fields (additive changes are non-breaking).
 - **Testable** — in-memory dispatcher for unit/integration tests.
 
 ## Scale Path
