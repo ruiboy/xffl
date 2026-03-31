@@ -1,4 +1,4 @@
-# XFFL — Fantasy Football League
+# xFFL — Fantasy Football League
 
 Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search.
 

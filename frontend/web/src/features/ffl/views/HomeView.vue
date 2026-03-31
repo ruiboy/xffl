@@ -3,8 +3,18 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <h1 class="text-2xl font-bold mb-1">{{ data.season.name }}</h1>
-      <p class="text-text-muted mb-6">{{ data.round.name }}</p>
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">{{ data.season.name }}</h1>
+          <p class="text-text-muted">{{ data.round.name }}</p>
+        </div>
+        <router-link
+          :to="{ name: 'ffl-team-builder', params: { seasonId: data.season.id, roundId: data.round.id } }"
+          class="rounded-lg bg-active px-4 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity"
+        >
+          Build Team
+        </router-link>
+      </div>
 
       <section class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-3">Ladder</h2>

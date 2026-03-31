@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Admin match view', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: Home → match, then switch to admin URL
-    await page.goto('/')
+    // Navigate: AFL Home → match, then switch to admin URL
+    await page.goto('/afl')
     const matchLink = page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ }).first()
     const href = await matchLink.getAttribute('href')
     // Replace /afl/ with /admin/afl/ to get admin route

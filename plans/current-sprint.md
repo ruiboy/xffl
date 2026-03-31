@@ -47,11 +47,12 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 - [x] Wire Team Builder UI to real data
 
 ### 8. Playwright tests
-- [ ] FFL Home tests
-- [ ] FFL Round tests
-- [ ] FFL Match tests
-- [ ] FFL Team Builder tests
-- [ ] FFL Players tests
+- [x] FFL Home tests (9 tests)
+- [x] FFL Round tests (5 tests)
+- [x] FFL Match tests (8 tests)
+- [x] FFL Team Builder tests (7 tests)
+- [x] AFL tests updated for new routing
+- [ ] ~~FFL Players tests~~ — no Players page
 
 ### 9. Justfile tidy-up
 - [ ] Review and clean up justfile recipes

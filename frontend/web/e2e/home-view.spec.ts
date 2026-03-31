@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Home view', () => {
+test.describe('AFL Home view', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/afl')
   })
 
   test('displays season and round name', async ({ page }) => {
@@ -33,7 +33,8 @@ test.describe('Home view', () => {
     await expect(page.getByRole('link', { name: 'Round 13' })).toBeVisible()
   })
 
-  test('navbar has Home link', async ({ page }) => {
-    await expect(page.getByRole('navigation').getByRole('link', { name: 'Home' })).toBeVisible()
+  test('navbar has FFL and AFL links', async ({ page }) => {
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'FFL', exact: true })).toBeVisible()
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'AFL', exact: true })).toBeVisible()
   })
 })
