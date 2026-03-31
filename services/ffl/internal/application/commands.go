@@ -84,6 +84,40 @@ func (c *Commands) RemovePlayerFromSeason(ctx context.Context, playerSeasonID in
 	})
 }
 
+// SetLineupEntry represents a single player assignment in a lineup.
+type SetLineupEntry struct {
+	PlayerSeasonID      int
+	Position            string
+	BackupPositions     *string
+	InterchangePosition *string
+}
+
+// SetLineup upserts all player match entries for a club match (the weekly lineup).
+func (c *Commands) SetLineup(ctx context.Context, clubMatchID int, entries []SetLineupEntry) ([]domain.PlayerMatch, error) {
+	var result []domain.PlayerMatch
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		result = make([]domain.PlayerMatch, len(entries))
+		for i, e := range entries {
+			pos := domain.Position(e.Position)
+			status := domain.PlayerMatchStatusNamed
+			pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
+				ClubMatchID:         clubMatchID,
+				PlayerSeasonID:      e.PlayerSeasonID,
+				Position:            &pos,
+				Status:              &status,
+				BackupPositions:     e.BackupPositions,
+				InterchangePosition: e.InterchangePosition,
+			})
+			if err != nil {
+				return err
+			}
+			result[i] = pm
+		}
+		return nil
+	})
+	return result, err
+}
+
 // CalculateFantasyScore calculates and stores the fantasy score for a player match
 // based on AFL stats, then recalculates the club match total.
 func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int, stats domain.AFLStats) (domain.PlayerMatch, error) {

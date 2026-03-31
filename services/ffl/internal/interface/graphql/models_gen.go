@@ -34,15 +34,23 @@ type FFLClubMatch struct {
 }
 
 type FFLClubSeason struct {
-	ID         string   `json:"id"`
-	Club       *FFLClub `json:"club"`
-	Played     int      `json:"played"`
-	Won        int      `json:"won"`
-	Lost       int      `json:"lost"`
-	Drawn      int      `json:"drawn"`
-	For        int      `json:"for"`
-	Against    int      `json:"against"`
-	Percentage float64  `json:"percentage"`
+	ID         string            `json:"id"`
+	Club       *FFLClub          `json:"club"`
+	Played     int               `json:"played"`
+	Won        int               `json:"won"`
+	Lost       int               `json:"lost"`
+	Drawn      int               `json:"drawn"`
+	For        int               `json:"for"`
+	Against    int               `json:"against"`
+	Percentage float64           `json:"percentage"`
+	Roster     []*FFLRosterEntry `json:"roster"`
+}
+
+type FFLLineupPlayerInput struct {
+	PlayerSeasonID      string  `json:"playerSeasonId"`
+	Position            string  `json:"position"`
+	BackupPositions     *string `json:"backupPositions,omitempty"`
+	InterchangePosition *string `json:"interchangePosition,omitempty"`
 }
 
 type FFLMatch struct {
@@ -77,6 +85,11 @@ type FFLPlayerSeason struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 }
 
+type FFLRosterEntry struct {
+	PlayerSeasonID string     `json:"playerSeasonId"`
+	Player         *FFLPlayer `json:"player"`
+}
+
 type FFLRound struct {
 	ID      string      `json:"id"`
 	Name    string      `json:"name"`
@@ -95,6 +108,11 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+type SetFFLLineupInput struct {
+	ClubMatchID string                  `json:"clubMatchId"`
+	Players     []*FFLLineupPlayerInput `json:"players"`
 }
 
 type UpdateFFLPlayerInput struct {

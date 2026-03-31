@@ -7,6 +7,8 @@ package graphql
 
 import (
 	"context"
+
+	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 )
 
@@ -96,6 +98,40 @@ func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input C
 		return nil, err
 	}
 	return convertPlayerMatch(pm, player), nil
+}
+
+// SetFFLLineup is the resolver for the setFFLLineup field.
+func (r *mutationResolver) SetFFLLineup(ctx context.Context, input SetFFLLineupInput) ([]*FFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]application.SetLineupEntry, len(input.Players))
+	for i, p := range input.Players {
+		psID, err := fromID(p.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		entries[i] = application.SetLineupEntry{
+			PlayerSeasonID:      psID,
+			Position:            p.Position,
+			BackupPositions:     p.BackupPositions,
+			InterchangePosition: p.InterchangePosition,
+		}
+	}
+	pms, err := r.Commands.SetLineup(ctx, clubMatchID, entries)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
 }
 
 // Mutation returns MutationResolver implementation.

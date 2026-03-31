@@ -15,3 +15,16 @@ export const REMOVE_FFL_PLAYER_FROM_SEASON = gql`
     removeFFLPlayerFromSeason(id: $id)
   }
 `
+
+export const SET_FFL_LINEUP = gql`
+  mutation SetFFLLineup($input: SetFFLLineupInput!) {
+    setFFLLineup(input: $input) {
+      id
+      playerSeasonId
+      player { id name }
+      position
+      status
+      score
+    }
+  }
+`
