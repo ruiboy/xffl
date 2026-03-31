@@ -3,7 +3,7 @@
     <router-link
       v-for="round in rounds"
       :key="round.id"
-      :to="{ name: 'round', params: { seasonId, roundId: round.id } }"
+      :to="{ name: 'afl-round', params: { seasonId, roundId: round.id } }"
       class="rounded px-3 py-1 text-sm transition-colors"
       :class="round.id === currentRoundId
         ? 'bg-active text-active-text'

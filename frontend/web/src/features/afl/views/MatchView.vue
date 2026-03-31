@@ -16,7 +16,7 @@
           {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
         </p>
         <router-link
-          :to="{ name: 'admin-match', params: { seasonId: props.seasonId, matchId: props.matchId } }"
+          :to="{ name: 'afl-admin-match', params: { seasonId: props.seasonId, matchId: props.matchId } }"
           class="inline-block mt-3 text-sm text-text-faint hover:text-text-heading transition-colors"
         >
           Edit stats
