@@ -108,6 +108,16 @@ INSERT INTO ffl.player (name, club_id) VALUES
     ('Robbie Gray', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
     ('Joel Selwood', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows'));
 
+-- Link matching FFL players to AFL players
+UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Lachie Neale')
+WHERE name = 'Lachie Neale';
+UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Hugh McCluggage')
+WHERE name = 'Hugh McCluggage';
+UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Rory Laird')
+WHERE name = 'Rory Laird';
+UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Jordan Dawson')
+WHERE name = 'Jordan Dawson';
+
 -- Player season records for all players
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
 SELECT
@@ -120,6 +130,23 @@ JOIN ffl.club_season cs ON cs.club_id = c.id
 JOIN ffl.season s ON cs.season_id = s.id
 JOIN ffl.round r ON r.season_id = s.id
 WHERE s.name = '2024 Season' AND r.name = 'Round 1';
+
+-- Link matching FFL player seasons to AFL player seasons
+UPDATE ffl.player_season SET afl_player_season_id = (
+    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Lachie Neale' LIMIT 1
+) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Lachie Neale');
+
+UPDATE ffl.player_season SET afl_player_season_id = (
+    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Hugh McCluggage' LIMIT 1
+) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Hugh McCluggage');
+
+UPDATE ffl.player_season SET afl_player_season_id = (
+    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Rory Laird' LIMIT 1
+) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Rory Laird');
+
+UPDATE ffl.player_season SET afl_player_season_id = (
+    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Jordan Dawson' LIMIT 1
+) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Jordan Dawson');
 
 -- Player match records for Ruiboys (7 starters + 2 bench)
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)

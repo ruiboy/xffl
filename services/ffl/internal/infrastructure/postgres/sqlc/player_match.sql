@@ -1,12 +1,12 @@
 -- name: FindPlayerMatchesByClubMatchID :many
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, score
+       position, status, backup_positions, interchange_position, score, afl_player_match_id
 FROM ffl.player_match
 WHERE club_match_id = $1 AND deleted_at IS NULL;
 
 -- name: FindPlayerMatchByID :one
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, score
+       position, status, backup_positions, interchange_position, score, afl_player_match_id
 FROM ffl.player_match
 WHERE id = $1 AND deleted_at IS NULL;
 
@@ -22,4 +22,4 @@ DO UPDATE SET
     score = COALESCE($7, ffl.player_match.score),
     updated_at = CURRENT_TIMESTAMP
 WHERE ffl.player_match.deleted_at IS NULL
-RETURNING id, club_match_id, player_season_id, position, status, backup_positions, interchange_position, score;
+RETURNING id, club_match_id, player_season_id, position, status, backup_positions, interchange_position, score, afl_player_match_id;

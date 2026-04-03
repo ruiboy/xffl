@@ -97,8 +97,9 @@ type ComplexityRoot struct {
 	}
 
 	FFLRosterEntry struct {
-		Player         func(childComplexity int) int
-		PlayerSeasonID func(childComplexity int) int
+		AflPlayerSeasonID func(childComplexity int) int
+		Player            func(childComplexity int) int
+		PlayerSeasonID    func(childComplexity int) int
 	}
 
 	FFLRound struct {
@@ -410,6 +411,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.FFLPlayerSeason.PlayerID(childComplexity), true
 
+	case "FFLRosterEntry.aflPlayerSeasonId":
+		if e.ComplexityRoot.FFLRosterEntry.AflPlayerSeasonID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLRosterEntry.AflPlayerSeasonID(childComplexity), true
 	case "FFLRosterEntry.player":
 		if e.ComplexityRoot.FFLRosterEntry.Player == nil {
 			break
@@ -817,6 +824,7 @@ type FFLClubSeason {
 type FFLRosterEntry {
   playerSeasonId: ID!
   player: FFLPlayer!
+  aflPlayerSeasonId: ID
 }
 
 type FFLPlayerMatch {
@@ -1503,6 +1511,8 @@ func (ec *executionContext) fieldContext_FFLClubSeason_roster(_ context.Context,
 				return ec.fieldContext_FFLRosterEntry_playerSeasonId(ctx, field)
 			case "player":
 				return ec.fieldContext_FFLRosterEntry_player(ctx, field)
+			case "aflPlayerSeasonId":
+				return ec.fieldContext_FFLRosterEntry_aflPlayerSeasonId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLRosterEntry", field.Name)
 		},
@@ -2179,6 +2189,35 @@ func (ec *executionContext) fieldContext_FFLRosterEntry_player(_ context.Context
 				return ec.fieldContext_FFLPlayer_aflPlayerId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLPlayer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLRosterEntry_aflPlayerSeasonId(ctx context.Context, field graphql.CollectedField, obj *FFLRosterEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLRosterEntry_aflPlayerSeasonId,
+		func(ctx context.Context) (any, error) {
+			return obj.AflPlayerSeasonID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLRosterEntry_aflPlayerSeasonId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLRosterEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5475,6 +5514,8 @@ func (ec *executionContext) _FFLRosterEntry(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "aflPlayerSeasonId":
+			out.Values[i] = ec._FFLRosterEntry_aflPlayerSeasonId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -4,6 +4,19 @@ type Query {
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
   aflLatestRound: AFLRound!
+  aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
+}
+
+type AFLPlayerSeasonStats {
+  playerSeasonId: ID!
+  gamesPlayed: Int!
+  avgKicks: Float!
+  avgHandballs: Float!
+  avgMarks: Float!
+  avgHitouts: Float!
+  avgTackles: Float!
+  avgGoals: Float!
+  avgBehinds: Float!
 }
 
 type AFLClub {

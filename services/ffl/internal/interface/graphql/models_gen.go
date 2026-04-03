@@ -86,8 +86,9 @@ type FFLPlayerSeason struct {
 }
 
 type FFLRosterEntry struct {
-	PlayerSeasonID string     `json:"playerSeasonId"`
-	Player         *FFLPlayer `json:"player"`
+	PlayerSeasonID    string     `json:"playerSeasonId"`
+	Player            *FFLPlayer `json:"player"`
+	AflPlayerSeasonID *string    `json:"aflPlayerSeasonId,omitempty"`
 }
 
 type FFLRound struct {

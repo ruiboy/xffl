@@ -8,12 +8,20 @@
           <h1 class="text-2xl font-bold">{{ data.season.name }}</h1>
           <p class="text-text-muted">{{ data.round.name }}</p>
         </div>
-        <router-link
-          :to="{ name: 'ffl-team-builder', params: { seasonId: data.season.id, roundId: data.round.id } }"
-          class="rounded-lg bg-active px-4 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity"
-        >
-          Build Team
-        </router-link>
+        <div class="flex items-center gap-2">
+          <router-link
+            :to="{ name: 'ffl-roster', params: { seasonId: data.season.id } }"
+            class="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+          >
+            Roster
+          </router-link>
+          <router-link
+            :to="{ name: 'ffl-team-builder', params: { seasonId: data.season.id, roundId: data.round.id } }"
+            class="rounded-lg bg-active px-4 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity"
+          >
+            Build Team
+          </router-link>
+        </div>
       </div>
 
       <section class="mb-8">

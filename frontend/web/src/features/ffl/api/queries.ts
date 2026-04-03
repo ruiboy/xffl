@@ -52,6 +52,40 @@ export const GET_FFL_TEAM_BUILDER = gql`
   }
 `
 
+export const GET_FFL_ROSTER = gql`
+  query GetFFLRoster($seasonId: ID!) {
+    fflSeason(id: $seasonId) {
+      id
+      name
+      ladder {
+        id
+        club { id name }
+        roster {
+          playerSeasonId
+          player { id name aflPlayerId }
+          aflPlayerSeasonId
+        }
+      }
+    }
+  }
+`
+
+export const GET_AFL_PLAYER_SEASON_STATS = gql`
+  query GetAFLPlayerSeasonStats($ids: [ID!]!) {
+    aflPlayerSeasonStats(ids: $ids) {
+      playerSeasonId
+      gamesPlayed
+      avgKicks
+      avgHandballs
+      avgMarks
+      avgHitouts
+      avgTackles
+      avgGoals
+      avgBehinds
+    }
+  }
+`
+
 export const GET_FFL_LATEST_ROUND = gql`
   query GetFFLLatestRound {
     fflLatestRound {

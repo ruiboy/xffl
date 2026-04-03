@@ -65,6 +65,7 @@ type FFLClubSeason {
 type FFLRosterEntry {
   playerSeasonId: ID!
   player: FFLPlayer!
+  aflPlayerSeasonId: ID
 }
 
 type FFLPlayerMatch {

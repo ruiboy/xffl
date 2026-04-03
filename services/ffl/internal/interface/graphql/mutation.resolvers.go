@@ -7,7 +7,6 @@ package graphql
 
 import (
 	"context"
-
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 )

@@ -94,6 +94,18 @@ type ComplexityRoot struct {
 		Tackles        func(childComplexity int) int
 	}
 
+	AFLPlayerSeasonStats struct {
+		AvgBehinds     func(childComplexity int) int
+		AvgGoals       func(childComplexity int) int
+		AvgHandballs   func(childComplexity int) int
+		AvgHitouts     func(childComplexity int) int
+		AvgKicks       func(childComplexity int) int
+		AvgMarks       func(childComplexity int) int
+		AvgTackles     func(childComplexity int) int
+		GamesPlayed    func(childComplexity int) int
+		PlayerSeasonID func(childComplexity int) int
+	}
+
 	AFLRound struct {
 		ID      func(childComplexity int) int
 		Matches func(childComplexity int) int
@@ -113,11 +125,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AflClub        func(childComplexity int, id string) int
-		AflClubs       func(childComplexity int) int
-		AflLatestRound func(childComplexity int) int
-		AflSeason      func(childComplexity int, id string) int
-		AflSeasons     func(childComplexity int) int
+		AflClub              func(childComplexity int, id string) int
+		AflClubs             func(childComplexity int) int
+		AflLatestRound       func(childComplexity int) int
+		AflPlayerSeasonStats func(childComplexity int, ids []string) int
+		AflSeason            func(childComplexity int, id string) int
+		AflSeasons           func(childComplexity int) int
 	}
 }
 
@@ -148,6 +161,7 @@ type QueryResolver interface {
 	AflSeasons(ctx context.Context) ([]*AFLSeason, error)
 	AflSeason(ctx context.Context, id string) (*AFLSeason, error)
 	AflLatestRound(ctx context.Context) (*AFLRound, error)
+	AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -392,6 +406,61 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AFLPlayerMatch.Tackles(childComplexity), true
 
+	case "AFLPlayerSeasonStats.avgBehinds":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgBehinds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgBehinds(childComplexity), true
+	case "AFLPlayerSeasonStats.avgGoals":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgGoals == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgGoals(childComplexity), true
+	case "AFLPlayerSeasonStats.avgHandballs":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgHandballs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgHandballs(childComplexity), true
+	case "AFLPlayerSeasonStats.avgHitouts":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgHitouts == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgHitouts(childComplexity), true
+	case "AFLPlayerSeasonStats.avgKicks":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgKicks == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgKicks(childComplexity), true
+	case "AFLPlayerSeasonStats.avgMarks":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgMarks == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgMarks(childComplexity), true
+	case "AFLPlayerSeasonStats.avgTackles":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.AvgTackles == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.AvgTackles(childComplexity), true
+	case "AFLPlayerSeasonStats.gamesPlayed":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.GamesPlayed == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.GamesPlayed(childComplexity), true
+	case "AFLPlayerSeasonStats.playerSeasonId":
+		if e.ComplexityRoot.AFLPlayerSeasonStats.PlayerSeasonID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerSeasonStats.PlayerSeasonID(childComplexity), true
+
 	case "AFLRound.id":
 		if e.ComplexityRoot.AFLRound.ID == nil {
 			break
@@ -477,6 +546,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AflLatestRound(childComplexity), true
+	case "Query.aflPlayerSeasonStats":
+		if e.ComplexityRoot.Query.AflPlayerSeasonStats == nil {
+			break
+		}
+
+		args, err := ec.field_Query_aflPlayerSeasonStats_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AflPlayerSeasonStats(childComplexity, args["ids"].([]string)), true
 	case "Query.aflSeason":
 		if e.ComplexityRoot.Query.AflSeason == nil {
 			break
@@ -601,6 +681,19 @@ input UpdateAFLPlayerMatchInput {
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
   aflLatestRound: AFLRound!
+  aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
+}
+
+type AFLPlayerSeasonStats {
+  playerSeasonId: ID!
+  gamesPlayed: Int!
+  avgKicks: Float!
+  avgHandballs: Float!
+  avgMarks: Float!
+  avgHitouts: Float!
+  avgTackles: Float!
+  avgGoals: Float!
+  avgBehinds: Float!
 }
 
 type AFLClub {
@@ -709,6 +802,17 @@ func (ec *executionContext) field_Query_aflClub_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_aflPlayerSeasonStats_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ids", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["ids"] = arg0
 	return args, nil
 }
 
@@ -1926,6 +2030,267 @@ func (ec *executionContext) fieldContext_AFLPlayerMatch_score(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AFLPlayerSeasonStats_playerSeasonId(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_playerSeasonId,
+		func(ctx context.Context) (any, error) {
+			return obj.PlayerSeasonID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_playerSeasonId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_gamesPlayed(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_gamesPlayed,
+		func(ctx context.Context) (any, error) {
+			return obj.GamesPlayed, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_gamesPlayed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgKicks(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgKicks,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgKicks, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgKicks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgHandballs(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgHandballs,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgHandballs, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgHandballs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgMarks(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgMarks,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgMarks, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgMarks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgHitouts(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgHitouts,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgHitouts, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgHitouts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgTackles(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgTackles,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgTackles, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgTackles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgGoals(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgGoals,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgGoals, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgGoals(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerSeasonStats_avgBehinds(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeasonStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerSeasonStats_avgBehinds,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgBehinds, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerSeasonStats_avgBehinds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerSeasonStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AFLRound_id(ctx context.Context, field graphql.CollectedField, obj *AFLRound) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2490,6 +2855,67 @@ func (ec *executionContext) fieldContext_Query_aflLatestRound(_ context.Context,
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLRound", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_aflPlayerSeasonStats(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_aflPlayerSeasonStats,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AflPlayerSeasonStats(ctx, fc.Args["ids"].([]string))
+		},
+		nil,
+		ec.marshalNAFLPlayerSeasonStats2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerSeasonStatsᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_aflPlayerSeasonStats(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "playerSeasonId":
+				return ec.fieldContext_AFLPlayerSeasonStats_playerSeasonId(ctx, field)
+			case "gamesPlayed":
+				return ec.fieldContext_AFLPlayerSeasonStats_gamesPlayed(ctx, field)
+			case "avgKicks":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgKicks(ctx, field)
+			case "avgHandballs":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgHandballs(ctx, field)
+			case "avgMarks":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgMarks(ctx, field)
+			case "avgHitouts":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgHitouts(ctx, field)
+			case "avgTackles":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgTackles(ctx, field)
+			case "avgGoals":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgGoals(ctx, field)
+			case "avgBehinds":
+				return ec.fieldContext_AFLPlayerSeasonStats_avgBehinds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerSeasonStats", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_aflPlayerSeasonStats_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -4640,6 +5066,85 @@ func (ec *executionContext) _AFLPlayerMatch(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var aFLPlayerSeasonStatsImplementors = []string{"AFLPlayerSeasonStats"}
+
+func (ec *executionContext) _AFLPlayerSeasonStats(ctx context.Context, sel ast.SelectionSet, obj *AFLPlayerSeasonStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aFLPlayerSeasonStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AFLPlayerSeasonStats")
+		case "playerSeasonId":
+			out.Values[i] = ec._AFLPlayerSeasonStats_playerSeasonId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gamesPlayed":
+			out.Values[i] = ec._AFLPlayerSeasonStats_gamesPlayed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgKicks":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgKicks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgHandballs":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgHandballs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgMarks":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgMarks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgHitouts":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgHitouts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgTackles":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgTackles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgGoals":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgGoals(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgBehinds":
+			out.Values[i] = ec._AFLPlayerSeasonStats_avgBehinds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var aFLRoundImplementors = []string{"AFLRound"}
 
 func (ec *executionContext) _AFLRound(ctx context.Context, sel ast.SelectionSet, obj *AFLRound) graphql.Marshaler {
@@ -5038,6 +5543,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_aflLatestRound(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "aflPlayerSeasonStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_aflPlayerSeasonStats(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -5554,6 +6081,32 @@ func (ec *executionContext) marshalNAFLPlayerMatch2ᚖxfflᚋservicesᚋaflᚋin
 	return ec._AFLPlayerMatch(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAFLPlayerSeasonStats2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerSeasonStatsᚄ(ctx context.Context, sel ast.SelectionSet, v []*AFLPlayerSeasonStats) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAFLPlayerSeasonStats2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerSeasonStats(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAFLPlayerSeasonStats2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerSeasonStats(ctx context.Context, sel ast.SelectionSet, v *AFLPlayerSeasonStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AFLPlayerSeasonStats(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAFLRound2xfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRound(ctx context.Context, sel ast.SelectionSet, v AFLRound) graphql.Marshaler {
 	return ec._AFLRound(ctx, sel, &v)
 }
@@ -5630,6 +6183,22 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5644,6 +6213,36 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {

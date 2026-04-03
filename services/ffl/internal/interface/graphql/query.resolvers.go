@@ -46,10 +46,15 @@ func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) 
 		if err != nil {
 			return nil, err
 		}
-		result[i] = &FFLRosterEntry{
+		entry := &FFLRosterEntry{
 			PlayerSeasonID: toID(ps.ID),
 			Player:         convertPlayer(player),
 		}
+		if ps.AFLPlayerSeasonID != nil {
+			id := toID(*ps.AFLPlayerSeasonID)
+			entry.AflPlayerSeasonID = &id
+		}
+		result[i] = entry
 	}
 	return result, nil
 }
