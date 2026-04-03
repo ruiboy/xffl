@@ -7,7 +7,7 @@ xffl/
 ├── go.work                → Go workspace referencing all modules
 │
 ├── ai/                    → AI control plane (read-only for agents)
-│   ├── architecture/      → principles.md, service-map.md, domain.md
+│   ├── architecture/      → principles.md, service-map.md, domain.md, cookbook.md
 │   ├── decisions/         → ADR index (decisions.md) + individual ADRs
 │   └── prompts/           → Development workflow
 │

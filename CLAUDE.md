@@ -48,6 +48,7 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 **Always before coding:**
 - `plans/current-sprint.md` — what to work on now
 - `ai/architecture/principles.md` — architecture rules and service layout
+- `ai/architecture/cookbook.md` — implementation recipes, file paths, code generation commands
 
 **Before architecture changes:**
 - `ai/decisions/decisions.md` — ADR index with summary table
