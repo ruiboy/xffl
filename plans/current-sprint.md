@@ -22,46 +22,46 @@ Clean up AFL/FFL data models so relationships are correct, then propagate change
 ## Tasks
 
 ### 1. AFL schema changes
-- [ ] Remove `club_id` from `afl.player`
-- [ ] Add `from_round_id` and `to_round_id` to `afl.player_season` (nullable FK → `afl.round`)
-- [ ] Add `status` to `afl.player_match` (varchar)
-- [ ] Drop index `idx_afl_player_club_id`
-- [ ] Add indexes for new columns
+- [x] Remove `club_id` from `afl.player`
+- [x] Add `from_round_id` and `to_round_id` to `afl.player_season` (nullable FK → `afl.round`)
+- [x] Add `status` to `afl.player_match` (varchar)
+- [x] Drop index `idx_afl_player_club_id`
+- [x] Add indexes for new columns
 
 ### 2. FFL schema changes
-- [ ] Remove `club_id` from `ffl.player`
-- [ ] Rename `ffl.player.name` → `drv_name`
-- [ ] Rename `ffl.player_match.score` → `drv_score`
-- [ ] Add unique constraint `(club_season_id, match_id)` on `ffl.club_match`
-- [ ] Drop index `idx_player_club_id`
+- [x] Remove `club_id` from `ffl.player`
+- [x] Rename `ffl.player.name` → `drv_name`
+- [x] Rename `ffl.player_match.score` → `drv_score`
+- [x] Add unique constraint `(club_season_id, match_id)` on `ffl.club_match`
+- [x] Drop index `idx_player_club_id`
 
 ### 3. Seed data
-- [ ] Update AFL seed to remove player `club_id` values, add `status` to player_match rows
-- [ ] Update FFL seed to match renamed columns
+- [x] Update AFL seed to remove player `club_id` values, add `status` to player_match rows
+- [x] Update FFL seed to match renamed columns
 
 ### 4. AFL domain + infrastructure
-- [ ] Remove `ClubID` from `Player` entity
-- [ ] Add `FromRoundID` / `ToRoundID` to `PlayerSeason` entity
-- [ ] Add `Status` to `PlayerMatch` entity
-- [ ] Update sqlc queries
-- [ ] Update repository implementations
+- [x] Remove `ClubID` from `Player` entity
+- [x] Add `FromRoundID` / `ToRoundID` to `PlayerSeason` entity
+- [x] Add `Status` to `PlayerMatch` entity
+- [x] Update sqlc queries
+- [x] Update repository implementations
 
 ### 5. FFL domain + infrastructure
-- [ ] Remove `ClubID` from `Player` entity (if present)
-- [ ] Keep `Name` on `Player` entity (DB column is `drv_name` but domain field stays `Name`)
-- [ ] Keep `Score` on `PlayerMatch` entity (DB column is `drv_score` but domain field stays `Score`)
-- [ ] Update sqlc queries
-- [ ] Update repository implementations
+- [x] Remove `ClubID` from `Player` entity (if present)
+- [x] Keep `Name` on `Player` entity (DB column is `drv_name` but domain field stays `Name`)
+- [x] Keep `Score` on `PlayerMatch` entity (DB column is `drv_score` but domain field stays `Score`)
+- [x] Update sqlc queries
+- [x] Update repository implementations
 
 ### 6. AFL GraphQL
-- [ ] Drop `AFLClub.players` field and resolver
-- [ ] Add `status` to `AFLPlayerMatch` type
-- [ ] Update `updateAFLPlayerMatch` mutation input to include status
-- [ ] Regenerate + fix resolvers
+- [x] Drop `AFLClub.players` field and resolver
+- [x] Add `status` to `AFLPlayerMatch` type
+- [x] Update `updateAFLPlayerMatch` mutation input to include status
+- [x] Regenerate + fix resolvers
 
 ### 7. FFL GraphQL
-- [ ] Update types if any field names changed (DB renames are transparent to GraphQL)
-- [ ] Regenerate + fix resolvers
+- [x] Update types if any field names changed (DB renames are transparent to GraphQL)
+- [x] Regenerate + fix resolvers
 
 ### 8. Frontend
 - [ ] Remove any references to AFL player → club direct relationship

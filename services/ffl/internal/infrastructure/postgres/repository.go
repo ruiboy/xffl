@@ -194,7 +194,7 @@ func (r *MatchRepository) hydrateClubMatch(ctx context.Context, cm *domain.ClubM
 	cm.PlayerMatches = make([]domain.PlayerMatch, len(pmRows))
 	for i, pmRow := range pmRows {
 		cm.PlayerMatches[i] = toPlayerMatch(pmRow.ID, pmRow.ClubMatchID, pmRow.PlayerSeasonID,
-			pmRow.Position, pmRow.Status, pmRow.BackupPositions, pmRow.InterchangePosition, pmRow.Score, pmRow.AflPlayerMatchID)
+			pmRow.Position, pmRow.Status, pmRow.BackupPositions, pmRow.InterchangePosition, pmRow.DrvScore, pmRow.AflPlayerMatchID)
 	}
 	return nil
 }
@@ -317,8 +317,8 @@ func intPtrToInt32Ptr(v *int) *int32 {
 	return &i
 }
 
-func playerFromRow(id int32, name string, aflPlayerID *int32) domain.Player {
-	return domain.Player{ID: int(id), Name: name, AFLPlayerID: int32PtrToIntPtr(aflPlayerID)}
+func playerFromRow(id int32, name string, aflPlayerID int32) domain.Player {
+	return domain.Player{ID: int(id), Name: name, AFLPlayerID: int(aflPlayerID)}
 }
 
 func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error) {
@@ -328,7 +328,7 @@ func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error)
 	}
 	out := make([]domain.Player, len(rows))
 	for i, row := range rows {
-		out[i] = playerFromRow(row.ID, row.Name, row.AflPlayerID)
+		out[i] = playerFromRow(row.ID, row.DrvName, row.AflPlayerID)
 	}
 	return out, nil
 }
@@ -338,38 +338,37 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) FindByAFLPlayerID(ctx context.Context, aflPlayerID int) (domain.Player, error) {
-	row, err := r.q.FindPlayerByAFLPlayerID(ctx, intPtrToInt32Ptr(&aflPlayerID))
+	row, err := r.q.FindPlayerByAFLPlayerID(ctx, int32(aflPlayerID))
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
 }
 
-func (r *PlayerRepository) Create(ctx context.Context, name string, aflPlayerID *int) (domain.Player, error) {
+func (r *PlayerRepository) Create(ctx context.Context, name string, aflPlayerID int) (domain.Player, error) {
 	row, err := r.q.CreatePlayer(ctx, sqlcgen.CreatePlayerParams{
-		Name:        name,
-		AflPlayerID: intPtrToInt32Ptr(aflPlayerID),
+		DrvName:     name,
+		AflPlayerID: int32(aflPlayerID),
 	})
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) Update(ctx context.Context, id int, name string) (domain.Player, error) {
 	row, err := r.q.UpdatePlayer(ctx, sqlcgen.UpdatePlayerParams{
-		ID:          int32(id),
-		Name:        name,
-		AflPlayerID: nil,
+		ID:      int32(id),
+		DrvName: name,
 	})
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) Delete(ctx context.Context, id int) error {
@@ -422,7 +421,7 @@ func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatch
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-			row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.Score, row.AflPlayerMatchID)
+			row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID)
 	}
 	return out, nil
 }
@@ -433,7 +432,7 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		return domain.PlayerMatch{}, err
 	}
 	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.Score, row.AflPlayerMatchID), nil
+		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
 func posToStringPtr(p *domain.Position) *string {
@@ -460,13 +459,13 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		Status:              statusToStringPtr(params.Status),
 		BackupPositions:     params.BackupPositions,
 		InterchangePosition: params.InterchangePosition,
-		Score:               intToInt32Ptr(params.Score),
+		DrvScore:            intToInt32Ptr(params.Score),
 	})
 	if err != nil {
 		return domain.PlayerMatch{}, err
 	}
 	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.Score, row.AflPlayerMatchID), nil
+		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
 // --- PlayerSeason ---

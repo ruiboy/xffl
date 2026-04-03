@@ -10,19 +10,6 @@ import (
 	"fmt"
 )
 
-// Players is the resolver for the players field.
-func (r *aFLClubResolver) Players(ctx context.Context, obj *AFLClub) ([]*AFLPlayer, error) {
-	clubID, err := fromID(obj.ID)
-	if err != nil {
-		return nil, err
-	}
-	players, err := r.Queries.GetPlayers(ctx, clubID)
-	if err != nil {
-		return nil, err
-	}
-	return convertPlayers(players), nil
-}
-
 // PlayerMatches is the resolver for the playerMatches field.
 func (r *aFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *AFLClubMatch) ([]*AFLPlayerMatch, error) {
 	cmID, err := fromID(obj.ID)
@@ -249,9 +236,6 @@ func (r *queryResolver) AflPlayerSearch(ctx context.Context, query string) ([]*A
 	return convertPlayers(players), nil
 }
 
-// AFLClub returns AFLClubResolver implementation.
-func (r *Resolver) AFLClub() AFLClubResolver { return &aFLClubResolver{r} }
-
 // AFLClubMatch returns AFLClubMatchResolver implementation.
 func (r *Resolver) AFLClubMatch() AFLClubMatchResolver { return &aFLClubMatchResolver{r} }
 
@@ -267,9 +251,9 @@ func (r *Resolver) AFLSeason() AFLSeasonResolver { return &aFLSeasonResolver{r} 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-type aFLClubResolver struct{ *Resolver }
 type aFLClubMatchResolver struct{ *Resolver }
 type aFLMatchResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+

@@ -28,11 +28,11 @@ func NewCommands(tx TxManager) *Commands {
 	return &Commands{tx: tx}
 }
 
-// CreatePlayer creates a new player.
-func (c *Commands) CreatePlayer(ctx context.Context, name string) (domain.Player, error) {
+// CreatePlayer creates a new player linked to an AFL player.
+func (c *Commands) CreatePlayer(ctx context.Context, name string, aflPlayerID int) (domain.Player, error) {
 	var result domain.Player
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		p, err := repos.Players.Create(ctx, name, nil)
+		p, err := repos.Players.Create(ctx, name, aflPlayerID)
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func (c *Commands) AddAFLPlayerToRoster(ctx context.Context, aflPlayerID int, af
 		player, err := repos.Players.FindByAFLPlayerID(ctx, aflPlayerID)
 		if err != nil {
 			// Not found — create a new FFL player linked to the AFL player
-			player, err = repos.Players.Create(ctx, aflPlayerName, &aflPlayerID)
+			player, err = repos.Players.Create(ctx, aflPlayerName, aflPlayerID)
 			if err != nil {
 				return err
 			}

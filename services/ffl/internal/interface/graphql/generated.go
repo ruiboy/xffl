@@ -738,6 +738,7 @@ input AddFFLRosterPlayerInput {
 
 input CreateFFLPlayerInput {
   name: String!
+  aflPlayerId: ID!
 }
 
 input UpdateFFLPlayerInput {
@@ -796,7 +797,7 @@ type FFLClub {
 type FFLPlayer {
   id: ID!
   name: String!
-  aflPlayerId: ID
+  aflPlayerId: ID!
 }
 
 type FFLSeason {
@@ -1814,9 +1815,9 @@ func (ec *executionContext) _FFLPlayer_aflPlayerId(ctx context.Context, field gr
 			return obj.AflPlayerID, nil
 		},
 		nil,
-		ec.marshalOID2ᚖstring,
+		ec.marshalNID2string,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -4954,7 +4955,7 @@ func (ec *executionContext) unmarshalInputCreateFFLPlayerInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name"}
+	fieldsInOrder := [...]string{"name", "aflPlayerId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4968,6 +4969,13 @@ func (ec *executionContext) unmarshalInputCreateFFLPlayerInput(ctx context.Conte
 				return it, err
 			}
 			it.Name = data
+		case "aflPlayerId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflPlayerId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AflPlayerID = data
 		}
 	}
 	return it, nil
@@ -5484,6 +5492,9 @@ func (ec *executionContext) _FFLPlayer(ctx context.Context, sel ast.SelectionSet
 			}
 		case "aflPlayerId":
 			out.Values[i] = ec._FFLPlayer_aflPlayerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

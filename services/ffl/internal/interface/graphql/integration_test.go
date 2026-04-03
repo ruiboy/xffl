@@ -31,6 +31,7 @@ type testIDs struct {
 	matchID         int
 	homeClubMatchID int
 	awayClubMatchID int
+	aflPlayerID     int
 	playerID        int
 	playerSeasonID  int
 	playerMatchID   int
@@ -67,6 +68,7 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		"ffl.player_match", "ffl.player_season", "ffl.player",
 		"ffl.club_match", "ffl.match", "ffl.club_season",
 		"ffl.club", "ffl.round", "ffl.season", "ffl.league",
+		"afl.player",
 	}
 	for _, table := range tables {
 		if _, err := pool.Exec(ctx, fmt.Sprintf("TRUNCATE %s CASCADE", table)); err != nil {
@@ -155,10 +157,17 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		t.Fatalf("failed to link match to club matches: %v", err)
 	}
 
-	// Player (associated with home club)
+	// AFL player reference (needed for FFL player FK)
 	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.player (name, club_id) VALUES ('Test Player', $1) RETURNING id",
-		ids.homeClubID).Scan(&ids.playerID)
+		"INSERT INTO afl.player (name) VALUES ('Test AFL Player') RETURNING id").Scan(&ids.aflPlayerID)
+	if err != nil {
+		t.Fatalf("failed to insert afl player: %v", err)
+	}
+
+	// Player (linked to AFL player)
+	err = pool.QueryRow(ctx,
+		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Test Player', $1) RETURNING id",
+		ids.aflPlayerID).Scan(&ids.playerID)
 	if err != nil {
 		t.Fatalf("failed to insert player: %v", err)
 	}
@@ -173,7 +182,7 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Player match: goals position, played status, score 15
 	err = pool.QueryRow(ctx,
-		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
+		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
 		 VALUES ($1, $2, 'goals', 'played', 15) RETURNING id`,
 		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID)
 	if err != nil {
@@ -532,12 +541,21 @@ func TestFflLatestRound(t *testing.T) {
 
 func TestCreateFFLPlayer(t *testing.T) {
 	pool := connectDB(t)
-	seedTestData(t, pool)
+	ids := seedTestData(t, pool)
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
+	// Create a second AFL player for the new FFL player to reference
+	ctx := context.Background()
+	var aflPlayerID2 int
+	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('New AFL Player') RETURNING id").Scan(&aflPlayerID2); err != nil {
+		t.Fatalf("failed to insert afl player: %v", err)
+	}
+	_ = ids
+
+	aflPID := fmt.Sprintf("%d", aflPlayerID2)
 	result := execQuery(t, server, `mutation {
-		createFFLPlayer(input: { name: "New Player" }) {
+		createFFLPlayer(input: { name: "New Player", aflPlayerId: "`+aflPID+`" }) {
 			id
 			name
 		}
@@ -604,9 +622,17 @@ func TestDeleteFFLPlayer(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
+	// Create an AFL player for the temp FFL player
+	ctx := context.Background()
+	var aflPID int
+	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Temp AFL') RETURNING id").Scan(&aflPID); err != nil {
+		t.Fatalf("failed to insert afl player: %v", err)
+	}
+
 	// Create a player to delete (not the seeded one, which has FKs)
+	aflPIDStr := fmt.Sprintf("%d", aflPID)
 	createResult := execQuery(t, server, `mutation {
-		createFFLPlayer(input: { name: "Temp Player" }) { id }
+		createFFLPlayer(input: { name: "Temp Player", aflPlayerId: "`+aflPIDStr+`" }) { id }
 	}`)
 	var created struct {
 		CreateFFLPlayer struct {
@@ -632,9 +658,17 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
+	// Create an AFL player for the new FFL player
+	ctx := context.Background()
+	var aflPID int
+	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Season AFL') RETURNING id").Scan(&aflPID); err != nil {
+		t.Fatalf("failed to insert afl player: %v", err)
+	}
+
 	// Create a new player and add them to the away club season
+	aflPIDStr := fmt.Sprintf("%d", aflPID)
 	createResult := execQuery(t, server, `mutation {
-		createFFLPlayer(input: { name: "Season Player" }) { id }
+		createFFLPlayer(input: { name: "Season Player", aflPlayerId: "`+aflPIDStr+`" }) { id }
 	}`)
 	var created struct {
 		CreateFFLPlayer struct {

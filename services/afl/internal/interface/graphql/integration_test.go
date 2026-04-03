@@ -488,42 +488,6 @@ func TestAflSeasonGraphTraversal(t *testing.T) {
 	}
 }
 
-func TestAflClubWithPlayers(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	clubID := fmt.Sprintf("%d", ids.homeClubID)
-	result := execQuery(t, server, `{ aflClub(id: "`+clubID+`") { name players { name } } }`)
-
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
-
-	var data struct {
-		AflClub struct {
-			Name    string `json:"name"`
-			Players []struct {
-				Name string `json:"name"`
-			} `json:"players"`
-		} `json:"aflClub"`
-	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
-
-	if data.AflClub.Name != "Test Hawks" {
-		t.Errorf("expected Test Hawks, got %s", data.AflClub.Name)
-	}
-
-	if len(data.AflClub.Players) != 1 {
-		t.Fatalf("expected 1 player, got %d", len(data.AflClub.Players))
-	}
-	if data.AflClub.Players[0].Name != "Test Player" {
-		t.Errorf("expected Test Player, got %s", data.AflClub.Players[0].Name)
-	}
-}
 
 func TestUpdatePlayerMatch_Update(t *testing.T) {
 	pool := connectDB(t)

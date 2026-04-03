@@ -9,6 +9,7 @@ type PlayerMatch struct {
 	ID             int
 	ClubMatchID    int
 	PlayerSeasonID int
+	Status         string
 	Kicks          int
 	Handballs      int
 	Marks          int
@@ -33,6 +34,7 @@ func (pm PlayerMatch) Score() int {
 type UpsertPlayerMatchParams struct {
 	ClubMatchID    int
 	PlayerSeasonID int
+	Status         *string
 	Kicks          *int
 	Handballs      *int
 	Marks          *int

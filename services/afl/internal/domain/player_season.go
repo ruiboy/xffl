@@ -6,6 +6,8 @@ type PlayerSeason struct {
 	ID           int
 	PlayerID     int
 	ClubSeasonID int
+	FromRoundID  *int
+	ToRoundID    *int
 }
 
 type PlayerSeasonRepository interface {

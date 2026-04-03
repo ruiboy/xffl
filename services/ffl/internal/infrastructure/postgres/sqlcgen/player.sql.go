@@ -10,26 +10,26 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO ffl.player (name, afl_player_id)
+INSERT INTO ffl.player (drv_name, afl_player_id)
 VALUES ($1, $2)
-RETURNING id, name, afl_player_id
+RETURNING id, drv_name, afl_player_id
 `
 
 type CreatePlayerParams struct {
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
 type CreatePlayerRow struct {
 	ID          int32
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (CreatePlayerRow, error) {
-	row := q.db.QueryRow(ctx, createPlayer, arg.Name, arg.AflPlayerID)
+	row := q.db.QueryRow(ctx, createPlayer, arg.DrvName, arg.AflPlayerID)
 	var i CreatePlayerRow
-	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
+	err := row.Scan(&i.ID, &i.DrvName, &i.AflPlayerID)
 	return i, err
 }
 
@@ -46,16 +46,16 @@ func (q *Queries) DeletePlayer(ctx context.Context, id int32) error {
 }
 
 const findAllPlayers = `-- name: FindAllPlayers :many
-SELECT id, name, afl_player_id
+SELECT id, drv_name, afl_player_id
 FROM ffl.player
 WHERE deleted_at IS NULL
-ORDER BY name
+ORDER BY drv_name
 `
 
 type FindAllPlayersRow struct {
 	ID          int32
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
 func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, error) {
@@ -67,7 +67,7 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 	items := []FindAllPlayersRow{}
 	for rows.Next() {
 		var i FindAllPlayersRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.AflPlayerID); err != nil {
+		if err := rows.Scan(&i.ID, &i.DrvName, &i.AflPlayerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -79,67 +79,65 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 }
 
 const findPlayerByAFLPlayerID = `-- name: FindPlayerByAFLPlayerID :one
-SELECT id, name, afl_player_id
+SELECT id, drv_name, afl_player_id
 FROM ffl.player
 WHERE afl_player_id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerByAFLPlayerIDRow struct {
 	ID          int32
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
-func (q *Queries) FindPlayerByAFLPlayerID(ctx context.Context, aflPlayerID *int32) (FindPlayerByAFLPlayerIDRow, error) {
+func (q *Queries) FindPlayerByAFLPlayerID(ctx context.Context, aflPlayerID int32) (FindPlayerByAFLPlayerIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerByAFLPlayerID, aflPlayerID)
 	var i FindPlayerByAFLPlayerIDRow
-	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
+	err := row.Scan(&i.ID, &i.DrvName, &i.AflPlayerID)
 	return i, err
 }
 
 const findPlayerByID = `-- name: FindPlayerByID :one
-SELECT id, name, afl_player_id
+SELECT id, drv_name, afl_player_id
 FROM ffl.player
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerByIDRow struct {
 	ID          int32
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
 func (q *Queries) FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerByID, id)
 	var i FindPlayerByIDRow
-	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
+	err := row.Scan(&i.ID, &i.DrvName, &i.AflPlayerID)
 	return i, err
 }
 
 const updatePlayer = `-- name: UpdatePlayer :one
 UPDATE ffl.player
-SET name = $2,
-    afl_player_id = $3,
+SET drv_name = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, name, afl_player_id
+RETURNING id, drv_name, afl_player_id
 `
 
 type UpdatePlayerParams struct {
-	ID          int32
-	Name        string
-	AflPlayerID *int32
+	ID      int32
+	DrvName string
 }
 
 type UpdatePlayerRow struct {
 	ID          int32
-	Name        string
-	AflPlayerID *int32
+	DrvName     string
+	AflPlayerID int32
 }
 
 func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (UpdatePlayerRow, error) {
-	row := q.db.QueryRow(ctx, updatePlayer, arg.ID, arg.Name, arg.AflPlayerID)
+	row := q.db.QueryRow(ctx, updatePlayer, arg.ID, arg.DrvName)
 	var i UpdatePlayerRow
-	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
+	err := row.Scan(&i.ID, &i.DrvName, &i.AflPlayerID)
 	return i, err
 }

@@ -99,10 +99,6 @@ func (q *Queries) GetPlayerMatches(ctx context.Context, clubMatchID int) ([]doma
 	return q.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 }
 
-func (q *Queries) GetPlayers(ctx context.Context, clubID int) ([]domain.Player, error) {
-	return q.players.FindByClubID(ctx, clubID)
-}
-
 func (q *Queries) GetPlayer(ctx context.Context, id int) (domain.Player, error) {
 	return q.players.FindByID(ctx, id)
 }

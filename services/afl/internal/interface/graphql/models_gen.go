@@ -3,9 +3,8 @@
 package graphql
 
 type AFLClub struct {
-	ID      string       `json:"id"`
-	Name    string       `json:"name"`
-	Players []*AFLPlayer `json:"players"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type AFLClubMatch struct {
@@ -46,6 +45,7 @@ type AFLPlayerMatch struct {
 	ID             string     `json:"id"`
 	PlayerSeasonID string     `json:"playerSeasonId"`
 	Player         *AFLPlayer `json:"player"`
+	Status         string     `json:"status"`
 	Kicks          int        `json:"kicks"`
 	Handballs      int        `json:"handballs"`
 	Marks          int        `json:"marks"`
@@ -90,13 +90,14 @@ type Query struct {
 }
 
 type UpdateAFLPlayerMatchInput struct {
-	PlayerSeasonID string `json:"playerSeasonId"`
-	ClubMatchID    string `json:"clubMatchId"`
-	Kicks          *int   `json:"kicks,omitempty"`
-	Handballs      *int   `json:"handballs,omitempty"`
-	Marks          *int   `json:"marks,omitempty"`
-	Hitouts        *int   `json:"hitouts,omitempty"`
-	Tackles        *int   `json:"tackles,omitempty"`
-	Goals          *int   `json:"goals,omitempty"`
-	Behinds        *int   `json:"behinds,omitempty"`
+	PlayerSeasonID string  `json:"playerSeasonId"`
+	ClubMatchID    string  `json:"clubMatchId"`
+	Status         *string `json:"status,omitempty"`
+	Kicks          *int    `json:"kicks,omitempty"`
+	Handballs      *int    `json:"handballs,omitempty"`
+	Marks          *int    `json:"marks,omitempty"`
+	Hitouts        *int    `json:"hitouts,omitempty"`
+	Tackles        *int    `json:"tackles,omitempty"`
+	Goals          *int    `json:"goals,omitempty"`
+	Behinds        *int    `json:"behinds,omitempty"`
 }

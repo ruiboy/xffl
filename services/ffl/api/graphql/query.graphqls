@@ -16,7 +16,7 @@ type FFLClub {
 type FFLPlayer {
   id: ID!
   name: String!
-  aflPlayerId: ID
+  aflPlayerId: ID!
 }
 
 type FFLSeason {

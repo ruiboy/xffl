@@ -11,7 +11,7 @@ import (
 
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, score, afl_player_match_id
+       position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
 FROM ffl.player_match
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -24,7 +24,7 @@ type FindPlayerMatchByIDRow struct {
 	Status              *string
 	BackupPositions     *string
 	InterchangePosition *string
-	Score               *int32
+	DrvScore            *int32
 	AflPlayerMatchID    *int32
 }
 
@@ -39,7 +39,7 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 		&i.Status,
 		&i.BackupPositions,
 		&i.InterchangePosition,
-		&i.Score,
+		&i.DrvScore,
 		&i.AflPlayerMatchID,
 	)
 	return i, err
@@ -47,7 +47,7 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 
 const findPlayerMatchesByClubMatchID = `-- name: FindPlayerMatchesByClubMatchID :many
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, score, afl_player_match_id
+       position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
 FROM ffl.player_match
 WHERE club_match_id = $1 AND deleted_at IS NULL
 `
@@ -60,7 +60,7 @@ type FindPlayerMatchesByClubMatchIDRow struct {
 	Status              *string
 	BackupPositions     *string
 	InterchangePosition *string
-	Score               *int32
+	DrvScore            *int32
 	AflPlayerMatchID    *int32
 }
 
@@ -81,7 +81,7 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 			&i.Status,
 			&i.BackupPositions,
 			&i.InterchangePosition,
-			&i.Score,
+			&i.DrvScore,
 			&i.AflPlayerMatchID,
 		); err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 }
 
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, score)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (player_season_id, club_match_id)
 DO UPDATE SET
@@ -103,10 +103,10 @@ DO UPDATE SET
     status = COALESCE($4, ffl.player_match.status),
     backup_positions = $5,
     interchange_position = $6,
-    score = COALESCE($7, ffl.player_match.score),
+    drv_score = COALESCE($7, ffl.player_match.drv_score),
     updated_at = CURRENT_TIMESTAMP
 WHERE ffl.player_match.deleted_at IS NULL
-RETURNING id, club_match_id, player_season_id, position, status, backup_positions, interchange_position, score, afl_player_match_id
+RETURNING id, club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
 `
 
 type UpsertPlayerMatchParams struct {
@@ -116,7 +116,7 @@ type UpsertPlayerMatchParams struct {
 	Status              *string
 	BackupPositions     *string
 	InterchangePosition *string
-	Score               *int32
+	DrvScore            *int32
 }
 
 type UpsertPlayerMatchRow struct {
@@ -127,7 +127,7 @@ type UpsertPlayerMatchRow struct {
 	Status              *string
 	BackupPositions     *string
 	InterchangePosition *string
-	Score               *int32
+	DrvScore            *int32
 	AflPlayerMatchID    *int32
 }
 
@@ -139,7 +139,7 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 		arg.Status,
 		arg.BackupPositions,
 		arg.InterchangePosition,
-		arg.Score,
+		arg.DrvScore,
 	)
 	var i UpsertPlayerMatchRow
 	err := row.Scan(
@@ -150,7 +150,7 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 		&i.Status,
 		&i.BackupPositions,
 		&i.InterchangePosition,
-		&i.Score,
+		&i.DrvScore,
 		&i.AflPlayerMatchID,
 	)
 	return i, err

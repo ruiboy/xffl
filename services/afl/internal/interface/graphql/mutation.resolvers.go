@@ -24,6 +24,7 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input Updat
 	pm, err := r.Commands.UpdatePlayerMatch(ctx, domain.UpsertPlayerMatchParams{
 		ClubMatchID:    clubMatchID,
 		PlayerSeasonID: playerSeasonID,
+		Status:         input.Status,
 		Kicks:          input.Kicks,
 		Handballs:      input.Handballs,
 		Marks:          input.Marks,
