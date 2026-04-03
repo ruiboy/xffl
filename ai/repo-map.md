@@ -7,13 +7,14 @@ xffl/
 ├── go.work                → Go workspace referencing all modules
 │
 ├── ai/                    → AI control plane (read-only for agents)
-│   ├── architecture/      → principles.md, service-map.md, domain.md
+│   ├── architecture/      → principles.md, service-map.md, domain.md, cookbook.md
 │   ├── decisions/         → ADR index (decisions.md) + individual ADRs
 │   └── prompts/           → Development workflow
 │
 ├── plans/                 → Project plans
 │   ├── roadmap.md         → Full project phases
-│   └── current-sprint.md  → Active sprint tasks
+│   ├── current-sprint.md  → Active sprint tasks
+│   └── revisit.md         → Ideas to reconsider later (not roadmap)
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)

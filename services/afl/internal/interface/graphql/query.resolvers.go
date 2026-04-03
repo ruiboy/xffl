@@ -209,6 +209,46 @@ func (r *queryResolver) AflLatestRound(ctx context.Context) (*AFLRound, error) {
 	return convertRound(round), nil
 }
 
+// AflPlayerSeasonStats is the resolver for the aflPlayerSeasonStats field.
+func (r *queryResolver) AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error) {
+	intIDs := make([]int, len(ids))
+	for i, id := range ids {
+		parsed, err := fromID(id)
+		if err != nil {
+			return nil, fmt.Errorf("invalid id %q: %w", id, err)
+		}
+		intIDs[i] = parsed
+	}
+	stats, err := r.Queries.GetPlayerSeasonStats(ctx, intIDs)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*AFLPlayerSeasonStats, len(stats))
+	for i, s := range stats {
+		result[i] = &AFLPlayerSeasonStats{
+			PlayerSeasonID: toID(s.PlayerSeasonID),
+			GamesPlayed:    s.GamesPlayed,
+			AvgKicks:       s.AvgKicks,
+			AvgHandballs:   s.AvgHandballs,
+			AvgMarks:       s.AvgMarks,
+			AvgHitouts:     s.AvgHitouts,
+			AvgTackles:     s.AvgTackles,
+			AvgGoals:       s.AvgGoals,
+			AvgBehinds:     s.AvgBehinds,
+		}
+	}
+	return result, nil
+}
+
+// AflPlayerSearch is the resolver for the aflPlayerSearch field.
+func (r *queryResolver) AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error) {
+	players, err := r.Queries.SearchPlayers(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayers(players), nil
+}
+
 // AFLClub returns AFLClubResolver implementation.
 func (r *Resolver) AFLClub() AFLClubResolver { return &aFLClubResolver{r} }
 

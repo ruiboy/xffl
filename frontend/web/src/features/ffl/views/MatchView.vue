@@ -1,0 +1,58 @@
+<template>
+  <div>
+    <div v-if="loading" class="text-text-faint">Loading match…</div>
+    <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <template v-else-if="match">
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold">
+          {{ match.homeClubMatch?.club.name ?? '—' }}
+          <span class="text-text-faint mx-2">v</span>
+          {{ match.awayClubMatch?.club.name ?? '—' }}
+        </h1>
+        <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
+        <p v-if="match.result" class="text-lg font-semibold mt-2">
+          {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div v-for="side in sides" :key="side.label">
+          <h2 class="text-lg font-semibold mb-1">{{ side.label }}</h2>
+          <p class="text-sm text-text-muted mb-3">
+            Fantasy score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
+          </p>
+          <RosterTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useQuery } from '@vue/apollo-composable'
+import { GET_FFL_SEASON } from '../api/queries'
+import RosterTable from '../components/RosterTable.vue'
+
+const props = defineProps<{ seasonId: string; matchId: string }>()
+
+const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
+
+const match = computed(() => {
+  const season = result.value?.fflSeason
+  if (!season) return null
+  for (const round of season.rounds) {
+    const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
+    if (found) return found
+  }
+  return null
+})
+
+const sides = computed(() => {
+  if (!match.value) return []
+  return [
+    { label: match.value.homeClubMatch?.club.name ?? 'Home', clubMatch: match.value.homeClubMatch },
+    { label: match.value.awayClubMatch?.club.name ?? 'Away', clubMatch: match.value.awayClubMatch },
+  ]
+})
+</script>

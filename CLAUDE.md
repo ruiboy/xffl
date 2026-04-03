@@ -26,6 +26,8 @@ first-cut/       → Legacy prototype (reference only)
 4. **TDD** — write failing tests first, then minimal implementation.
 5. **No new dependencies/services/infra without an ADR.**
 6. **When unclear, ask** — propose options, wait for confirmation.
+7. **Never commit or push without permission** — do not run `git commit` or `git push` unless the user explicitly asks. Each commit requires separate, explicit approval. "Move on" or "next task" does not mean "commit".
+8. **Update sprint doc immediately** — check off items in `plans/current-sprint.md` as soon as each task or sub-task is completed. Do not batch updates.
 
 ## Common Commands
 
@@ -46,6 +48,7 @@ just test-e2e        # Playwright e2e tests (requires run-all)
 **Always before coding:**
 - `plans/current-sprint.md` — what to work on now
 - `ai/architecture/principles.md` — architecture rules and service layout
+- `ai/architecture/cookbook.md` — implementation recipes, file paths, code generation commands
 
 **Before architecture changes:**
 - `ai/decisions/decisions.md` — ADR index with summary table

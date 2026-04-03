@@ -7,6 +7,12 @@ type AddFFLPlayerToSeasonInput struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 }
 
+type AddFFLRosterPlayerInput struct {
+	AflPlayerID   string `json:"aflPlayerId"`
+	AflPlayerName string `json:"aflPlayerName"`
+	ClubSeasonID  string `json:"clubSeasonId"`
+}
+
 type CalculateFFLFantasyScoreInput struct {
 	PlayerMatchID string `json:"playerMatchId"`
 	Goals         int    `json:"goals"`
@@ -34,15 +40,23 @@ type FFLClubMatch struct {
 }
 
 type FFLClubSeason struct {
-	ID         string   `json:"id"`
-	Club       *FFLClub `json:"club"`
-	Played     int      `json:"played"`
-	Won        int      `json:"won"`
-	Lost       int      `json:"lost"`
-	Drawn      int      `json:"drawn"`
-	For        int      `json:"for"`
-	Against    int      `json:"against"`
-	Percentage float64  `json:"percentage"`
+	ID         string            `json:"id"`
+	Club       *FFLClub          `json:"club"`
+	Played     int               `json:"played"`
+	Won        int               `json:"won"`
+	Lost       int               `json:"lost"`
+	Drawn      int               `json:"drawn"`
+	For        int               `json:"for"`
+	Against    int               `json:"against"`
+	Percentage float64           `json:"percentage"`
+	Roster     []*FFLRosterEntry `json:"roster"`
+}
+
+type FFLLineupPlayerInput struct {
+	PlayerSeasonID      string  `json:"playerSeasonId"`
+	Position            string  `json:"position"`
+	BackupPositions     *string `json:"backupPositions,omitempty"`
+	InterchangePosition *string `json:"interchangePosition,omitempty"`
 }
 
 type FFLMatch struct {
@@ -55,8 +69,9 @@ type FFLMatch struct {
 }
 
 type FFLPlayer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	AflPlayerID *string `json:"aflPlayerId,omitempty"`
 }
 
 type FFLPlayerMatch struct {
@@ -74,6 +89,12 @@ type FFLPlayerSeason struct {
 	ID           string `json:"id"`
 	PlayerID     string `json:"playerId"`
 	ClubSeasonID string `json:"clubSeasonId"`
+}
+
+type FFLRosterEntry struct {
+	PlayerSeasonID    string     `json:"playerSeasonId"`
+	Player            *FFLPlayer `json:"player"`
+	AflPlayerSeasonID *string    `json:"aflPlayerSeasonId,omitempty"`
 }
 
 type FFLRound struct {
@@ -94,6 +115,11 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+type SetFFLLineupInput struct {
+	ClubMatchID string                  `json:"clubMatchId"`
+	Players     []*FFLLineupPlayerInput `json:"players"`
 }
 
 type UpdateFFLPlayerInput struct {

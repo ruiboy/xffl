@@ -337,6 +337,18 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	return domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}, nil
 }
 
+func (r *PlayerRepository) Search(ctx context.Context, query string) ([]domain.Player, error) {
+	rows, err := r.q.SearchPlayersByName(ctx, &query)
+	if err != nil {
+		return nil, err
+	}
+	players := make([]domain.Player, len(rows))
+	for i, row := range rows {
+		players[i] = domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}
+	}
+	return players, nil
+}
+
 // --- PlayerMatch ---
 
 type PlayerMatchRepository struct{ q *sqlcgen.Queries }
@@ -414,6 +426,32 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		Goals:          derefOr(row.Goals),
 		Behinds:        derefOr(row.Behinds),
 	}, nil
+}
+
+func (r *PlayerMatchRepository) FindStatsByPlayerSeasonIDs(ctx context.Context, ids []int) ([]domain.PlayerSeasonStats, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayerMatchStatsByPlayerSeasonIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonStats, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonStats{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			GamesPlayed:    int(row.GamesPlayed),
+			AvgKicks:       row.AvgKicks,
+			AvgHandballs:   row.AvgHandballs,
+			AvgMarks:       row.AvgMarks,
+			AvgHitouts:     row.AvgHitouts,
+			AvgTackles:     row.AvgTackles,
+			AvgGoals:       row.AvgGoals,
+			AvgBehinds:     row.AvgBehinds,
+		}
+	}
+	return out, nil
 }
 
 // --- PlayerSeason ---

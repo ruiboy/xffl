@@ -7,7 +7,7 @@ package graphql
 
 import (
 	"context"
-
+	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 )
 
@@ -81,12 +81,12 @@ func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input C
 		return nil, err
 	}
 	stats := domain.AFLStats{
-		Goals:    input.Goals,
-		Kicks:    input.Kicks,
+		Goals:     input.Goals,
+		Kicks:     input.Kicks,
 		Handballs: input.Handballs,
-		Marks:    input.Marks,
-		Tackles:  input.Tackles,
-		Hitouts:  input.Hitouts,
+		Marks:     input.Marks,
+		Tackles:   input.Tackles,
+		Hitouts:   input.Hitouts,
 	}
 	pm, err := r.Commands.CalculateFantasyScore(ctx, pmID, stats)
 	if err != nil {
@@ -97,6 +97,57 @@ func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input C
 		return nil, err
 	}
 	return convertPlayerMatch(pm, player), nil
+}
+
+// SetFFLLineup is the resolver for the setFFLLineup field.
+func (r *mutationResolver) SetFFLLineup(ctx context.Context, input SetFFLLineupInput) ([]*FFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]application.SetLineupEntry, len(input.Players))
+	for i, p := range input.Players {
+		psID, err := fromID(p.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		entries[i] = application.SetLineupEntry{
+			PlayerSeasonID:      psID,
+			Position:            p.Position,
+			BackupPositions:     p.BackupPositions,
+			InterchangePosition: p.InterchangePosition,
+		}
+	}
+	pms, err := r.Commands.SetLineup(ctx, clubMatchID, entries)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
+}
+
+// AddFFLRosterPlayer is the resolver for the addFFLRosterPlayer field.
+func (r *mutationResolver) AddFFLRosterPlayer(ctx context.Context, input AddFFLRosterPlayerInput) (*FFLPlayerSeason, error) {
+	aflPlayerID, err := fromID(input.AflPlayerID)
+	if err != nil {
+		return nil, err
+	}
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.Commands.AddAFLPlayerToRoster(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps), nil
 }
 
 // Mutation returns MutationResolver implementation.

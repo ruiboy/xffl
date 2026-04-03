@@ -6,23 +6,23 @@ import "context"
 type Position string
 
 const (
-	PositionGoals    Position = "goals"
-	PositionKicks    Position = "kicks"
+	PositionGoals     Position = "goals"
+	PositionKicks     Position = "kicks"
 	PositionHandballs Position = "handballs"
-	PositionMarks    Position = "marks"
-	PositionTackles  Position = "tackles"
-	PositionHitouts  Position = "hitouts"
-	PositionStar     Position = "star"
+	PositionMarks     Position = "marks"
+	PositionTackles   Position = "tackles"
+	PositionHitouts   Position = "hitouts"
+	PositionStar      Position = "star"
 )
 
 // Scoring multipliers per position.
 const (
-	GoalsMultiplier    = 5
-	KicksMultiplier    = 1
+	GoalsMultiplier     = 5
+	KicksMultiplier     = 1
 	HandballsMultiplier = 1
-	MarksMultiplier    = 2
-	TacklesMultiplier  = 4
-	HitoutsMultiplier  = 1
+	MarksMultiplier     = 2
+	TacklesMultiplier   = 4
+	HitoutsMultiplier   = 1
 )
 
 // PlayerMatchStatus reflects the player's AFL match status (denormalised from AFL data).
@@ -36,12 +36,12 @@ const (
 
 // AFLStats holds the AFL performance statistics used to calculate fantasy scores.
 type AFLStats struct {
-	Goals    int
-	Kicks    int
+	Goals     int
+	Kicks     int
 	Handballs int
-	Marks    int
-	Tackles  int
-	Hitouts  int
+	Marks     int
+	Tackles   int
+	Hitouts   int
 }
 
 type PlayerMatch struct {
@@ -53,6 +53,7 @@ type PlayerMatch struct {
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               int
+	AFLPlayerMatchID    *int
 }
 
 // isBench returns true if this player is on the bench (has backup or interchange positions).
@@ -91,7 +92,7 @@ func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
 }
 
 // Ptr helpers for use in struct literals.
-func PositionPtr(p Position) *Position                { return &p }
+func PositionPtr(p Position) *Position                            { return &p }
 func PlayerMatchStatusPtr(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
 
 type PlayerMatchRepository interface {

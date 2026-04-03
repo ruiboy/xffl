@@ -6,7 +6,10 @@
           xFFL
         </router-link>
         <router-link to="/" class="text-sm text-text-muted hover:text-text transition-colors">
-          Home
+          FFL
+        </router-link>
+<router-link to="/afl" class="text-sm text-text-muted hover:text-text transition-colors">
+          AFL
         </router-link>
         <button
           class="ml-auto text-sm text-text-muted hover:text-text transition-colors"

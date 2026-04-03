@@ -12,7 +12,7 @@ import (
 const createPlayerSeason = `-- name: CreatePlayerSeason :one
 INSERT INTO ffl.player_season (player_id, club_season_id)
 VALUES ($1, $2)
-RETURNING id, player_id, club_season_id
+RETURNING id, player_id, club_season_id, afl_player_season_id
 `
 
 type CreatePlayerSeasonParams struct {
@@ -21,15 +21,21 @@ type CreatePlayerSeasonParams struct {
 }
 
 type CreatePlayerSeasonRow struct {
-	ID           int32
-	PlayerID     int32
-	ClubSeasonID int32
+	ID                int32
+	PlayerID          int32
+	ClubSeasonID      int32
+	AflPlayerSeasonID *int32
 }
 
 func (q *Queries) CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error) {
 	row := q.db.QueryRow(ctx, createPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
 	var i CreatePlayerSeasonRow
-	err := row.Scan(&i.ID, &i.PlayerID, &i.ClubSeasonID)
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.AflPlayerSeasonID,
+	)
 	return i, err
 }
 
@@ -46,34 +52,41 @@ func (q *Queries) DeletePlayerSeason(ctx context.Context, id int32) error {
 }
 
 const findPlayerSeasonByID = `-- name: FindPlayerSeasonByID :one
-SELECT id, player_id, club_season_id
+SELECT id, player_id, club_season_id, afl_player_season_id
 FROM ffl.player_season
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerSeasonByIDRow struct {
-	ID           int32
-	PlayerID     int32
-	ClubSeasonID int32
+	ID                int32
+	PlayerID          int32
+	ClubSeasonID      int32
+	AflPlayerSeasonID *int32
 }
 
 func (q *Queries) FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerSeasonByID, id)
 	var i FindPlayerSeasonByIDRow
-	err := row.Scan(&i.ID, &i.PlayerID, &i.ClubSeasonID)
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.AflPlayerSeasonID,
+	)
 	return i, err
 }
 
 const findPlayerSeasonsByClubSeasonID = `-- name: FindPlayerSeasonsByClubSeasonID :many
-SELECT id, player_id, club_season_id
+SELECT id, player_id, club_season_id, afl_player_season_id
 FROM ffl.player_season
 WHERE club_season_id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerSeasonsByClubSeasonIDRow struct {
-	ID           int32
-	PlayerID     int32
-	ClubSeasonID int32
+	ID                int32
+	PlayerID          int32
+	ClubSeasonID      int32
+	AflPlayerSeasonID *int32
 }
 
 func (q *Queries) FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error) {
@@ -85,7 +98,12 @@ func (q *Queries) FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeaso
 	items := []FindPlayerSeasonsByClubSeasonIDRow{}
 	for rows.Next() {
 		var i FindPlayerSeasonsByClubSeasonIDRow
-		if err := rows.Scan(&i.ID, &i.PlayerID, &i.ClubSeasonID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlayerID,
+			&i.ClubSeasonID,
+			&i.AflPlayerSeasonID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

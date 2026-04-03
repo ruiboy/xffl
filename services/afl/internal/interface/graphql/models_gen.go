@@ -57,6 +57,18 @@ type AFLPlayerMatch struct {
 	Score          int        `json:"score"`
 }
 
+type AFLPlayerSeasonStats struct {
+	PlayerSeasonID string  `json:"playerSeasonId"`
+	GamesPlayed    int     `json:"gamesPlayed"`
+	AvgKicks       float64 `json:"avgKicks"`
+	AvgHandballs   float64 `json:"avgHandballs"`
+	AvgMarks       float64 `json:"avgMarks"`
+	AvgHitouts     float64 `json:"avgHitouts"`
+	AvgTackles     float64 `json:"avgTackles"`
+	AvgGoals       float64 `json:"avgGoals"`
+	AvgBehinds     float64 `json:"avgBehinds"`
+}
+
 type AFLRound struct {
 	ID      string      `json:"id"`
 	Name    string      `json:"name"`

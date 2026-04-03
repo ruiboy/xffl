@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	CreatePlayer(ctx context.Context, name string) (CreatePlayerRow, error)
+	CreatePlayer(ctx context.Context, arg CreatePlayerParams) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerSeason(ctx context.Context, id int32) error
@@ -24,6 +24,7 @@ type Querier interface {
 	FindLatestRound(ctx context.Context) (FindLatestRoundRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
+	FindPlayerByAFLPlayerID(ctx context.Context, aflPlayerID *int32) (FindPlayerByAFLPlayerIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)
 	FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayerMatchByIDRow, error)
 	FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error)

@@ -1,64 +1,60 @@
 # Current Sprint
 
-**Sprint goal:** Phase 5 — FFL Service (Fantasy Football League backend)
+**Sprint goal:** Phase 6 — FFL Frontend
 
-Build the FFL service following the same clean architecture patterns as the AFL service: domain entities with business logic, sqlc for data access, gqlgen for GraphQL, and integration tests against a real database. The FFL service mirrors the AFL service's structure (league/season/round/match/club/player hierarchy) but adds fantasy scoring. Event subscription (AFL→FFL) is deferred to a later task.
+Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry point. Primary audience is FFL team managers (club owners). Two money-shot views: Match (watching scores roll in) and Team Builder (building weekly lineup). See `plans/ffl-frontend-pages.md` for full page inventory.
 
 ## Tasks
 
-### 1. Domain layer
-- [x] Core entities: League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch
-- [x] Position-based scoring: goals(5/goal), kicks(1/kick), handballs(1/handball), marks(2/mark), tackles(4/tackle), hitouts(1/hitout), star(5/goal+1/kick+1/handball+2/mark+4/tackle)
-- [x] PlayerMatch fields: position, status, backup_positions (nullable string), interchange_position (nullable string), score
-- [x] Domain methods: PlayerMatch.CalculateScore(aflStats), ClubMatch.Score(), ClubSeason.Percentage()
-- [x] Bench/sub logic: sub only when starter DNPs, interchange auto-swaps if bench outscores starter
-- [x] Repository interfaces on each entity
-- [x] Unit tests for scoring by position, percentage, bench substitution rules
+### 1. Routing restructure
+- [x] FFL Home becomes `/` (app front door)
+- [x] AFL views move under `/afl/...`
+- [x] Navigation updated (FFL primary, AFL linked)
 
-### 2. Application layer
-- [x] Queries: clubs, players, seasons, rounds, matches, ladder, player matches
-- [x] Commands: ManagePlayers (CRUD), CalculateFantasyScore
-- [x] TxManager interface (same pattern as AFL)
+### 2. FFL Home page
+- [x] FFL ladder for current season
+- [x] Current round's matches with fantasy scores
+- [x] Round navigation
+- [x] Link to AFL section
 
-### 3. Infrastructure — sqlc + Postgres
-- [x] SQL query files for all entities (ffl schema)
-- [x] sqlc config and code generation
-- [x] Repository implementations mapping sqlcgen → domain
-- [x] Transaction manager implementation
+### 3. FFL Round page
+- [x] All matches in round with scores
+- [x] Top fantasy scorers across the round
+- [x] Round navigation
 
-### 4. Interface — GraphQL
-- [x] Schema: queries (clubs, players, seasons, ladder, matches) + mutations (CRUD players, update player match)
-- [x] gqlgen config and code generation
-- [x] Query/mutation resolvers + field resolvers for nested types
-- [x] Converter layer (domain ↔ GraphQL)
+### 4. FFL Match page (money shot)
+- [x] Head-to-head: two club rosters side by side
+- [x] Player details: name, FFL position, status, fantasy score
+- [x] Bench/sub/interchange indicators
+- [x] Club fantasy score totals
 
-### 5. Service wiring
-- [x] cmd/main.go: DB pool → repos → queries/commands → resolver → HTTP server (port 8081)
-- [x] go.mod with pgx, gqlgen dependencies
-- [x] Health endpoint
+### 5. FFL Team Builder (money shot — stubbed)
+- [x] Layout with position slots and roster panel
+- [x] Display roster (30 players)
+- [x] Assign players to positions (local state only)
+- [x] Compare lineup arrangements
+- [x] No persistence yet — stub UI only
 
-### 6. Gateway routing
-- [x] Add FFL service proxy to gateway (route FFL queries to :8081)
-- [x] Update run-all in justfile to include FFL service
+### 6. FFL Players / Roster management
+- [x] ~~Player CRUD~~ — scrapped, FFL players are AFL players
+- [x] Roster query on FFLClubSeason (via backend roster field)
+- [x] Roster management UI (add/remove AFL players to club season)
 
-### 7. Integration tests
-- [x] GraphQL integration tests (queries + mutations) against real DB
-- [x] Test helpers: seed data, server setup, query execution
-- [x] Fantasy score calculation test
+### 7. Backend wiring (end of sprint)
+- [x] Add `aflPlayerId` to FFL Player (domain + schema + migration)
+- [x] `setFFLLineup` mutation (batch upsert PlayerMatch)
+- [x] Roster query via GraphQL
+- [x] Wire Team Builder UI to real data
 
-### 8. Validate end-to-end
-- [x] `just dev-up && just dev-seed` loads FFL data
-- [x] `just run-ffl` starts and serves GraphQL playground
-- [x] Gateway proxies FFL queries correctly
-- [x] All tests pass
+### 8. Playwright tests
+- [x] FFL Home tests (9 tests)
+- [x] FFL Round tests (5 tests)
+- [x] FFL Match tests (8 tests)
+- [x] FFL Team Builder tests (7 tests)
+- [x] AFL tests updated for new routing
+- [ ] ~~FFL Players tests~~ — no Players page
 
-## Design constraint: event integration is next
-The AFL service already publishes `AFL.PlayerMatchUpdated` events. The next sprint will wire up the FFL service to subscribe to these events and auto-calculate fantasy scores. This sprint should ensure:
-- `PlayerMatch.CalculateScore(aflStats)` is a pure domain function, callable from a future event handler
-- The application layer command for calculating scores doesn't assume where the AFL stats come from
-
-## Out of scope (deferred)
-- Event subscription (AFL.PlayerMatchUpdated → FFL.FantasyScoreCalculated) — Phase 7
-- Event publishing (FFL.FantasyScoreCalculated) — Phase 7
-- Frontend FFL views — Phase 6
+## Out of scope
+- Event subscription (AFL→FFL) — Phase 7
 - Draft/trade mechanics — future phase
+- Pulling AFL stats from external source — future phase

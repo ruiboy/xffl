@@ -16,6 +16,7 @@ type FFLClub {
 type FFLPlayer {
   id: ID!
   name: String!
+  aflPlayerId: ID
 }
 
 type FFLSeason {
@@ -58,6 +59,13 @@ type FFLClubSeason {
   for: Int!
   against: Int!
   percentage: Float!
+  roster: [FFLRosterEntry!]!
+}
+
+type FFLRosterEntry {
+  playerSeasonId: ID!
+  player: FFLPlayer!
+  aflPlayerSeasonId: ID
 }
 
 type FFLPlayerMatch {

@@ -1,4 +1,4 @@
-# XFFL — Fantasy Football League
+# xFFL — Fantasy Football League
 
 Multi-service fantasy football application bridging real AFL statistics with fantasy league scoring and search.
 
@@ -27,7 +27,7 @@ See `ai/architecture/` for bounded contexts, service map, and principles.
 
 Vue 3 + TypeScript SPA served by Vite (port 3000). Apollo Client manages server state via the GraphQL gateway — no separate state store. Tailwind CSS for styling (see ADR-011).
 
-Structure mirrors backend bounded contexts:
+Frontend features follow user workflows, not backend services. The initial structure mirrors bounded contexts, but features may span services as the UI evolves.
 
     frontend/web/src/
     ├── features/afl/    → AFL views, components, GraphQL queries
@@ -36,11 +36,11 @@ Structure mirrors backend bounded contexts:
 
 ### Architecture Decisions
 
-This project demonstrates a modular microservices architecture that balances learning, experimentation, and future scalability. The choices made are deliberate for a hobby project that might grow.
+This project uses a **service-oriented modular monolith** architecture. Services are logically separated and independently evolvable, but currently run in a single environment with a shared database. This is a deliberate choice — the boundaries are real, but the infrastructure complexity of true microservices is deferred until needed.
 
 The architecture supports multiple evolution paths:
 
-- **Monolith Consolidation:** Merge services into single binary if complexity isn't needed
+- **Stay Here:** The modular monolith may be all this project ever needs
 - **True Microservices:** Separate databases, independent deployment, service mesh
 - **Event-Driven Scale:** Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
 - **Event Sourcing:** Add event store, replay capabilities, full audit trails

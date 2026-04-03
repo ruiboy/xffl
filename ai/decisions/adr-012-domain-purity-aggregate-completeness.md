@@ -44,11 +44,17 @@ Additionally, partially-loaded aggregates (missing required data) lead to unclea
 - Do not return partially-loaded aggregates that require further data fetching.
 - Repository methods may be use-case-specific (e.g. `GetMatchWithDetails`). Use-case-specific repository methods are preferred over generic methods that over-fetch.
 
+### Time and Randomness
+
+- Domain entities must not access system time or randomness directly.
+- Time, IDs, and ordering decisions are provided by the application layer.
+
 ### Application Responsibility
 
 - Application use cases orchestrate data loading via repositories.
 - Use cases construct or retrieve fully-initialized aggregates.
 - Use cases invoke domain logic and handle side effects (persistence, events).
+- Use cases provide time, IDs, and any non-deterministic inputs to domain logic.
 
 ## Consequences
 
@@ -69,6 +75,7 @@ Additionally, partially-loaded aggregates (missing required data) lead to unclea
 
 - Domain packages must not import infrastructure, database, or network libraries.
 - Domain entities must not accept repository or service interfaces as dependencies.
+- Domain entities must not call `time.Now()`, `rand.*`, or UUID generators directly.
 - All repository implementations must reside in the infrastructure layer.
 - Application layer is responsible for coordinating repository calls before invoking domain logic.
 

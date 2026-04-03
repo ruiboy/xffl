@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Match view', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: Home → first match
-    await page.goto('/')
+    // Navigate: AFL Home → first match
+    await page.goto('/afl')
     await page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ }).first().click()
   })
 

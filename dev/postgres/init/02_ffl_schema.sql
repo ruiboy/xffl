@@ -104,7 +104,8 @@ CREATE TABLE IF NOT EXISTS ffl.player (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     name VARCHAR(255) NOT NULL,
-    club_id INTEGER REFERENCES ffl.club(id) ON DELETE CASCADE
+    club_id INTEGER REFERENCES ffl.club(id) ON DELETE CASCADE,
+    afl_player_id INTEGER
 );
 
 -- Create player_season table
@@ -117,6 +118,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_season (
     club_season_id INTEGER NOT NULL REFERENCES ffl.club_season(id) ON DELETE CASCADE,
     from_round_id INTEGER REFERENCES ffl.round(id),
     to_round_id INTEGER REFERENCES ffl.round(id),
+    afl_player_season_id INTEGER,
     CONSTRAINT uni_player_season UNIQUE (player_id, club_season_id)
 );
 
@@ -133,6 +135,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     backup_positions TEXT,
     interchange_position VARCHAR(255),
     score INTEGER DEFAULT 0,
+    afl_player_match_id INTEGER,
     CONSTRAINT uni_ffl_player_match UNIQUE (player_season_id, club_match_id)
 );
 

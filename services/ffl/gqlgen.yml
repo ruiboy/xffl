@@ -37,6 +37,10 @@ models:
       homeClubMatch: { resolver: true }
       awayClubMatch: { resolver: true }
 
+  FFLClubSeason:
+    fields:
+      roster: { resolver: true }
+
   FFLClubMatch:
     fields:
       playerMatches: { resolver: true }

@@ -11,4 +11,5 @@ type Player struct {
 type PlayerRepository interface {
 	FindByClubID(ctx context.Context, clubID int) ([]Player, error)
 	FindByID(ctx context.Context, id int) (Player, error)
+	Search(ctx context.Context, query string) ([]Player, error)
 }

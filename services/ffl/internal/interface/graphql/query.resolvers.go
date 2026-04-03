@@ -30,6 +30,35 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	return result, nil
 }
 
+// Roster is the resolver for the roster field.
+func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) ([]*FFLRosterEntry, error) {
+	csID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	playerSeasons, err := r.Queries.GetPlayerSeasons(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLRosterEntry, len(playerSeasons))
+	for i, ps := range playerSeasons {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+		if err != nil {
+			return nil, err
+		}
+		entry := &FFLRosterEntry{
+			PlayerSeasonID: toID(ps.ID),
+			Player:         convertPlayer(player),
+		}
+		if ps.AFLPlayerSeasonID != nil {
+			id := toID(*ps.AFLPlayerSeasonID)
+			entry.AflPlayerSeasonID = &id
+		}
+		result[i] = entry
+	}
+	return result, nil
+}
+
 // HomeClubMatch is the resolver for the homeClubMatch field.
 func (r *fFLMatchResolver) HomeClubMatch(ctx context.Context, obj *FFLMatch) (*FFLClubMatch, error) {
 	matchID, err := fromID(obj.ID)
@@ -220,6 +249,9 @@ func (r *queryResolver) FflLatestRound(ctx context.Context) (*FFLRound, error) {
 // FFLClubMatch returns FFLClubMatchResolver implementation.
 func (r *Resolver) FFLClubMatch() FFLClubMatchResolver { return &fFLClubMatchResolver{r} }
 
+// FFLClubSeason returns FFLClubSeasonResolver implementation.
+func (r *Resolver) FFLClubSeason() FFLClubSeasonResolver { return &fFLClubSeasonResolver{r} }
+
 // FFLMatch returns FFLMatchResolver implementation.
 func (r *Resolver) FFLMatch() FFLMatchResolver { return &fFLMatchResolver{r} }
 
@@ -233,6 +265,7 @@ func (r *Resolver) FFLSeason() FFLSeasonResolver { return &fFLSeasonResolver{r} 
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type fFLClubMatchResolver struct{ *Resolver }
+type fFLClubSeasonResolver struct{ *Resolver }
 type fFLMatchResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }
 type fFLSeasonResolver struct{ *Resolver }

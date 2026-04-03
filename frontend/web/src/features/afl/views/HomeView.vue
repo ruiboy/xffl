@@ -18,7 +18,7 @@
             v-for="match in data.round.matches"
             :key="match.id"
             :match="match"
-            :to="{ name: 'match', params: { seasonId: data.season.id, matchId: match.id } }"
+            :to="{ name: 'afl-match', params: { seasonId: data.season.id, matchId: match.id } }"
           />
         </div>
       </section>

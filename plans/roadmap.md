@@ -53,20 +53,19 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 **Goal:** FFL service as standalone CRUD with position-based fantasy scoring
 
-- [ ] Domain layer — League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch entities; position-based scoring (goals/kicks/handballs/marks/tackles/hitouts/star); bench + interchange substitution logic; repository interfaces
-- [ ] Application layer — ManagePlayers (CRUD), QueryLadder, CalculateFantasyScore use cases
-- [ ] Infrastructure layer — sqlc queries, DB repositories, transaction manager
-- [ ] Interface layer — GraphQL schema + resolvers
-- [ ] Add FFL routing to gateway
-- [ ] Tests — unit (scoring by position, percentage, substitution) + integration (GraphQL with real DB)
+- [x] Domain layer — League, Season, Round, Match, ClubSeason, ClubMatch, Player, PlayerSeason, PlayerMatch entities; position-based scoring (goals/kicks/handballs/marks/tackles/hitouts/star); bench + interchange substitution logic; repository interfaces
+- [x] Application layer — ManagePlayers (CRUD), QueryLadder, CalculateFantasyScore use cases
+- [x] Infrastructure layer — sqlc queries, DB repositories, transaction manager
+- [x] Interface layer — GraphQL schema + resolvers
+- [x] Add FFL routing to gateway
+- [x] Tests — unit (scoring by position, percentage, substitution) + integration (GraphQL with real DB)
 
 ## Phase 6: FFL Frontend
 
 **Goal:** FFL views added to existing frontend
 
-- [ ] FFL Players view — full CRUD
-- [ ] FFL Ladder view — standings table
-- [ ] Playwright tests
+- [x] FFL Players view
+- [x] Playwright tests
 
 ## Phase 7: FFL Event Integration
 

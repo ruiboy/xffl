@@ -64,6 +64,16 @@ run-all:
     just run-frontend &
     wait
 
+# Stop all running services (AFL, FFL, gateway, frontend)
+stop-all:
+    #!/usr/bin/env bash
+    for port in 8080 8081 8090 3000; do
+        pid=$(lsof -ti :$port 2>/dev/null)
+        if [ -n "$pid" ]; then
+            kill $pid 2>/dev/null && echo "Stopped process on :$port (PID $pid)"
+        fi
+    done
+
 # Run AFL service tests
 test-afl:
     cd services/afl && go test ./...

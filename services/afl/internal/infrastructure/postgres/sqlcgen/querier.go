@@ -21,12 +21,14 @@ type Querier interface {
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)
 	FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayerMatchByIDRow, error)
+	FindPlayerMatchStatsByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayerMatchStatsByPlayerSeasonIDsRow, error)
 	FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error)
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
 	FindPlayersByClubID(ctx context.Context, clubID *int32) ([]FindPlayersByClubIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }

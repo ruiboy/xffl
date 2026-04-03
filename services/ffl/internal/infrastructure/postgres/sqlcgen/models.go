@@ -68,12 +68,13 @@ type FflMatch struct {
 }
 
 type FflPlayer struct {
-	ID        int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
-	Name      string
-	ClubID    *int32
+	ID          int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Name        string
+	ClubID      *int32
+	AflPlayerID *int32
 }
 
 type FflPlayerMatch struct {
@@ -88,17 +89,19 @@ type FflPlayerMatch struct {
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               *int32
+	AflPlayerMatchID    *int32
 }
 
 type FflPlayerSeason struct {
-	ID           int32
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	DeletedAt    pgtype.Timestamptz
-	PlayerID     int32
-	ClubSeasonID int32
-	FromRoundID  *int32
-	ToRoundID    *int32
+	ID                int32
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
+	DeletedAt         pgtype.Timestamptz
+	PlayerID          int32
+	ClubSeasonID      int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	AflPlayerSeasonID *int32
 }
 
 type FflRound struct {
