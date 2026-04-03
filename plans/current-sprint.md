@@ -1,60 +1,80 @@
 # Current Sprint
 
-**Sprint goal:** Phase 6 — FFL Frontend
+**Sprint goal:** Phase 7 — Data Model Refinements
 
-Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry point. Primary audience is FFL team managers (club owners). Two money-shot views: Match (watching scores roll in) and Team Builder (building weekly lineup). See `plans/ffl-frontend-pages.md` for full page inventory.
+Clean up AFL/FFL data models so relationships are correct, then propagate changes through domain entities, GraphQL schemas, frontend, seed data, and tests.
+
+## Key decisions
+
+- `afl.player.club_id` removed — players exist independently; attached to clubs via `player_season → club_season`
+- `ffl.player.club_id` removed — same logic
+- `afl.player_season` gains `from_round_id` / `to_round_id` (nullable; null = start/end of season)
+- `afl.player_match` gains `status` (named/played/dnp)
+- `ffl.player.name` → `drv_name` (every FFL player has an AFL player; name is derived)
+- `ffl.player_match.score` → `drv_score`
+- `ffl.player_match.status` stays underived (may be initialised from AFL, but takes its own values)
+- `ffl.club_match` gets unique constraint `(club_season_id, match_id)`
+- `ffl.match`: `home_club_match_id`/`away_club_match_id` nullable — versus: both set, bye: home only, else: `clubs` JSONB used
+- `ffl.match.clubs` JSONB stores club_season_ids: `{"A": {"club_season_id": 2}, "B": {"club_season_id": 1}}`
+- `AFLClub.players` GraphQL field dropped entirely
+- No migration scripts — just update init SQL + seed data
 
 ## Tasks
 
-### 1. Routing restructure
-- [x] FFL Home becomes `/` (app front door)
-- [x] AFL views move under `/afl/...`
-- [x] Navigation updated (FFL primary, AFL linked)
+### 1. AFL schema changes
+- [ ] Remove `club_id` from `afl.player`
+- [ ] Add `from_round_id` and `to_round_id` to `afl.player_season` (nullable FK → `afl.round`)
+- [ ] Add `status` to `afl.player_match` (varchar)
+- [ ] Drop index `idx_afl_player_club_id`
+- [ ] Add indexes for new columns
 
-### 2. FFL Home page
-- [x] FFL ladder for current season
-- [x] Current round's matches with fantasy scores
-- [x] Round navigation
-- [x] Link to AFL section
+### 2. FFL schema changes
+- [ ] Remove `club_id` from `ffl.player`
+- [ ] Rename `ffl.player.name` → `drv_name`
+- [ ] Rename `ffl.player_match.score` → `drv_score`
+- [ ] Add unique constraint `(club_season_id, match_id)` on `ffl.club_match`
+- [ ] Drop index `idx_player_club_id`
 
-### 3. FFL Round page
-- [x] All matches in round with scores
-- [x] Top fantasy scorers across the round
-- [x] Round navigation
+### 3. Seed data
+- [ ] Update AFL seed to remove player `club_id` values, add `status` to player_match rows
+- [ ] Update FFL seed to match renamed columns
 
-### 4. FFL Match page (money shot)
-- [x] Head-to-head: two club rosters side by side
-- [x] Player details: name, FFL position, status, fantasy score
-- [x] Bench/sub/interchange indicators
-- [x] Club fantasy score totals
+### 4. AFL domain + infrastructure
+- [ ] Remove `ClubID` from `Player` entity
+- [ ] Add `FromRoundID` / `ToRoundID` to `PlayerSeason` entity
+- [ ] Add `Status` to `PlayerMatch` entity
+- [ ] Update sqlc queries
+- [ ] Update repository implementations
 
-### 5. FFL Team Builder (money shot — stubbed)
-- [x] Layout with position slots and roster panel
-- [x] Display roster (30 players)
-- [x] Assign players to positions (local state only)
-- [x] Compare lineup arrangements
-- [x] No persistence yet — stub UI only
+### 5. FFL domain + infrastructure
+- [ ] Remove `ClubID` from `Player` entity (if present)
+- [ ] Keep `Name` on `Player` entity (DB column is `drv_name` but domain field stays `Name`)
+- [ ] Keep `Score` on `PlayerMatch` entity (DB column is `drv_score` but domain field stays `Score`)
+- [ ] Update sqlc queries
+- [ ] Update repository implementations
 
-### 6. FFL Players / Roster management
-- [x] ~~Player CRUD~~ — scrapped, FFL players are AFL players
-- [x] Roster query on FFLClubSeason (via backend roster field)
-- [x] Roster management UI (add/remove AFL players to club season)
+### 6. AFL GraphQL
+- [ ] Drop `AFLClub.players` field and resolver
+- [ ] Add `status` to `AFLPlayerMatch` type
+- [ ] Update `updateAFLPlayerMatch` mutation input to include status
+- [ ] Regenerate + fix resolvers
 
-### 7. Backend wiring (end of sprint)
-- [x] Add `aflPlayerId` to FFL Player (domain + schema + migration)
-- [x] `setFFLLineup` mutation (batch upsert PlayerMatch)
-- [x] Roster query via GraphQL
-- [x] Wire Team Builder UI to real data
+### 7. FFL GraphQL
+- [ ] Update types if any field names changed (DB renames are transparent to GraphQL)
+- [ ] Regenerate + fix resolvers
 
-### 8. Playwright tests
-- [x] FFL Home tests (9 tests)
-- [x] FFL Round tests (5 tests)
-- [x] FFL Match tests (8 tests)
-- [x] FFL Team Builder tests (7 tests)
-- [x] AFL tests updated for new routing
-- [ ] ~~FFL Players tests~~ — no Players page
+### 8. Frontend
+- [ ] Remove any references to AFL player → club direct relationship
+- [ ] Update queries/components if field names changed
+- [ ] Verify all views still render correctly
+
+### 9. Tests
+- [ ] Update AFL integration tests (remove club_id from player fixtures, add status)
+- [ ] Update FFL integration tests (renamed columns)
+- [ ] Run full test suite green
+- [ ] Run Playwright e2e tests green
 
 ## Out of scope
-- Event subscription (AFL→FFL) — Phase 7
-- Draft/trade mechanics — future phase
-- Pulling AFL stats from external source — future phase
+- FFL UX changes (nav bar, pages) — Phase 8
+- Team composition rules — Phase 9
+- Event integration (AFL→FFL) — Phase 11
