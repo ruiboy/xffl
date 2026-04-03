@@ -54,9 +54,6 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 - [x] AFL tests updated for new routing
 - [ ] ~~FFL Players tests~~ — no Players page
 
-### 9. Justfile tidy-up
-- [ ] Review and clean up justfile recipes
-
 ## Out of scope
 - Event subscription (AFL→FFL) — Phase 7
 - Draft/trade mechanics — future phase
