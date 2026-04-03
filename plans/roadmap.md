@@ -67,7 +67,44 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] FFL Players view
 - [x] Playwright tests
 
-## Phase 7: FFL Event Integration
+## Phase 7: Data Model Refinements
+
+**Goal:** Clean up AFL/FFL data models and propagate changes through the stack
+
+- [ ] Remove `afl.player.club_id` — players exist independently; they attach to clubs for a season (or part thereof) via `player_season → club_season`
+- [ ] Align FFL table FKs to mirror AFL table relationships (the 10 FFL tables should reflect the same structural patterns as the 10 AFL tables)
+- [ ] FFL player tables (`player`, `player_season`, `player_match`) store the ID of the corresponding AFL table row (`afl_player_id`, `afl_player_season_id`, `afl_player_match_id`) — stored as plain integers, not foreign keys (no cross-schema joins)
+- [ ] Update domain entities (AFL + FFL) to reflect new relationships
+- [ ] Update GraphQL schemas and resolvers
+- [ ] Update frontend views/queries as needed
+- [ ] Update seed data
+- [ ] Update tests
+
+## Phase 8: FFL UX Refinements
+
+**Goal:** Minor FFL frontend improvements
+
+- [ ] **Roster naming** — decide whether "roster" is the right term or if it should be squad/list/pool; apply rename if needed
+- [ ] Nav bar reorganisation
+- [ ] Minor page layout changes
+- [ ] Details TBD — will plan when we get here
+
+## Phase 9: FFL Team Composition Rules
+
+**Goal:** Define and enforce rules for how an FFL team is structured each round
+
+- [ ] Clarify team composition rules (positions, required structure, bench/interchange constraints)
+- [ ] Domain logic + validation
+- [ ] Details TBD — will plan when we get here
+
+## Phase 10: Revisit Items
+
+**Goal:** Resolve deferred technical topics from `plans/revisit.md`
+
+- [ ] **Apollo client routing** — the regex-based AFL/FFL routing is fragile; consider a more explicit approach
+- [ ] **Graph federation** — evaluate whether Apollo Federation (or similar) is worth the complexity vs. the current dual-query approach
+
+## Phase 11: FFL Event Integration
 
 **Goal:** Wire up cross-service event flow between AFL and FFL
 
@@ -75,7 +112,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] FFL publishes `FFL.FantasyScoreCalculated`
 - [ ] Tests — integration (event flow end-to-end)
 
-## Phase 8: Search Service
+## Phase 12: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -86,14 +123,14 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 9: Search Frontend
+## Phase 13: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
 
-## Phase 10: Deployment
+## Phase 14: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR - Consider deployment options - AWS, GCP, etc
