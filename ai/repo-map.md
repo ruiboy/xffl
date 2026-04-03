@@ -13,7 +13,8 @@ xffl/
 │
 ├── plans/                 → Project plans
 │   ├── roadmap.md         → Full project phases
-│   └── current-sprint.md  → Active sprint tasks
+│   ├── current-sprint.md  → Active sprint tasks
+│   └── revisit.md         → Ideas to reconsider later (not roadmap)
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)
