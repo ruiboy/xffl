@@ -38,7 +38,7 @@ Build FFL views in the existing Vue 3 frontend. FFL becomes the app's main entry
 ### 6. FFL Players / Roster management
 - [x] ~~Player CRUD~~ — scrapped, FFL players are AFL players
 - [x] Roster query on FFLClubSeason (via backend roster field)
-- [ ] Roster management UI (add/remove AFL players to club season)
+- [x] Roster management UI (add/remove AFL players to club season)
 
 ### 7. Backend wiring (end of sprint)
 - [x] Add `aflPlayerId` to FFL Player (domain + schema + migration)

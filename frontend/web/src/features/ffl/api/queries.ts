@@ -70,6 +70,15 @@ export const GET_FFL_ROSTER = gql`
   }
 `
 
+export const SEARCH_AFL_PLAYERS = gql`
+  query SearchAFLPlayers($query: String!) {
+    aflPlayerSearch(query: $query) {
+      id
+      name
+    }
+  }
+`
+
 export const GET_AFL_PLAYER_SEASON_STATS = gql`
   query GetAFLPlayerSeasonStats($ids: [ID!]!) {
     aflPlayerSeasonStats(ids: $ids) {

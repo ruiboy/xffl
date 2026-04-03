@@ -22,6 +22,11 @@ SET name = $2,
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, name, afl_player_id;
 
+-- name: FindPlayerByAFLPlayerID :one
+SELECT id, name, afl_player_id
+FROM ffl.player
+WHERE afl_player_id = $1 AND deleted_at IS NULL;
+
 -- name: DeletePlayer :exec
 UPDATE ffl.player
 SET deleted_at = CURRENT_TIMESTAMP,

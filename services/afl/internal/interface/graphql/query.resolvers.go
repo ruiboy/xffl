@@ -240,6 +240,15 @@ func (r *queryResolver) AflPlayerSeasonStats(ctx context.Context, ids []string) 
 	return result, nil
 }
 
+// AflPlayerSearch is the resolver for the aflPlayerSearch field.
+func (r *queryResolver) AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error) {
+	players, err := r.Queries.SearchPlayers(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayers(players), nil
+}
+
 // AFLClub returns AFLClubResolver implementation.
 func (r *Resolver) AFLClub() AFLClubResolver { return &aFLClubResolver{r} }
 

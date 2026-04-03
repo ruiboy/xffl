@@ -7,7 +7,7 @@ const routingLink = new ApolloLink((operation, forward) => {
   const isFFL = operation.query.definitions.some(
     def => def.kind === 'OperationDefinition' &&
       def.selectionSet.selections.some(
-        sel => sel.kind === 'Field' && sel.name.value.startsWith('ffl')
+        sel => sel.kind === 'Field' && /^ffl|FFL/.test(sel.name.value)
       )
   )
   return isFFL ? fflLink.request(operation, forward) : aflLink.request(operation, forward)

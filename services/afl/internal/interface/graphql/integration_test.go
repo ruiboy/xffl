@@ -846,6 +846,55 @@ func TestAflLatestRound_MultipleSeasons(t *testing.T) {
 	}
 }
 
+func TestAflPlayerSearch(t *testing.T) {
+	pool := connectDB(t)
+	seedTestData(t, pool) // seeds "Test Player"
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Search matching
+	result := execQuery(t, server, `{ aflPlayerSearch(query: "Test") { id name } }`)
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		AflPlayerSearch []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"aflPlayerSearch"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	if len(data.AflPlayerSearch) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(data.AflPlayerSearch))
+	}
+	if data.AflPlayerSearch[0].Name != "Test Player" {
+		t.Errorf("expected 'Test Player', got %s", data.AflPlayerSearch[0].Name)
+	}
+
+	// Search not matching
+	result2 := execQuery(t, server, `{ aflPlayerSearch(query: "Nonexistent") { id name } }`)
+	if len(result2.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result2.Errors)
+	}
+
+	var data2 struct {
+		AflPlayerSearch []struct {
+			ID string `json:"id"`
+		} `json:"aflPlayerSearch"`
+	}
+	if err := json.Unmarshal(result2.Data, &data2); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	if len(data2.AflPlayerSearch) != 0 {
+		t.Errorf("expected 0 results for non-matching search, got %d", len(data2.AflPlayerSearch))
+	}
+}
+
 func TestUpdatePlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)

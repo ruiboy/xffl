@@ -78,6 +78,25 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 	return items, nil
 }
 
+const findPlayerByAFLPlayerID = `-- name: FindPlayerByAFLPlayerID :one
+SELECT id, name, afl_player_id
+FROM ffl.player
+WHERE afl_player_id = $1 AND deleted_at IS NULL
+`
+
+type FindPlayerByAFLPlayerIDRow struct {
+	ID          int32
+	Name        string
+	AflPlayerID *int32
+}
+
+func (q *Queries) FindPlayerByAFLPlayerID(ctx context.Context, aflPlayerID *int32) (FindPlayerByAFLPlayerIDRow, error) {
+	row := q.db.QueryRow(ctx, findPlayerByAFLPlayerID, aflPlayerID)
+	var i FindPlayerByAFLPlayerIDRow
+	err := row.Scan(&i.ID, &i.Name, &i.AflPlayerID)
+	return i, err
+}
+
 const findPlayerByID = `-- name: FindPlayerByID :one
 SELECT id, name, afl_player_id
 FROM ffl.player

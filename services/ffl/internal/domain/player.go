@@ -11,7 +11,8 @@ type Player struct {
 type PlayerRepository interface {
 	FindAll(ctx context.Context) ([]Player, error)
 	FindByID(ctx context.Context, id int) (Player, error)
-	Create(ctx context.Context, name string) (Player, error)
+	FindByAFLPlayerID(ctx context.Context, aflPlayerID int) (Player, error)
+	Create(ctx context.Context, name string, aflPlayerID *int) (Player, error)
 	Update(ctx context.Context, id int, name string) (Player, error)
 	Delete(ctx context.Context, id int) error
 }

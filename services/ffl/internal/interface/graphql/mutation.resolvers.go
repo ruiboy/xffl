@@ -133,6 +133,23 @@ func (r *mutationResolver) SetFFLLineup(ctx context.Context, input SetFFLLineupI
 	return result, nil
 }
 
+// AddFFLRosterPlayer is the resolver for the addFFLRosterPlayer field.
+func (r *mutationResolver) AddFFLRosterPlayer(ctx context.Context, input AddFFLRosterPlayerInput) (*FFLPlayerSeason, error) {
+	aflPlayerID, err := fromID(input.AflPlayerID)
+	if err != nil {
+		return nil, err
+	}
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.Commands.AddAFLPlayerToRoster(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps), nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

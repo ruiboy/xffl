@@ -128,6 +128,7 @@ type ComplexityRoot struct {
 		AflClub              func(childComplexity int, id string) int
 		AflClubs             func(childComplexity int) int
 		AflLatestRound       func(childComplexity int) int
+		AflPlayerSearch      func(childComplexity int, query string) int
 		AflPlayerSeasonStats func(childComplexity int, ids []string) int
 		AflSeason            func(childComplexity int, id string) int
 		AflSeasons           func(childComplexity int) int
@@ -162,6 +163,7 @@ type QueryResolver interface {
 	AflSeason(ctx context.Context, id string) (*AFLSeason, error)
 	AflLatestRound(ctx context.Context) (*AFLRound, error)
 	AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error)
+	AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -546,6 +548,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AflLatestRound(childComplexity), true
+	case "Query.aflPlayerSearch":
+		if e.ComplexityRoot.Query.AflPlayerSearch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_aflPlayerSearch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AflPlayerSearch(childComplexity, args["query"].(string)), true
 	case "Query.aflPlayerSeasonStats":
 		if e.ComplexityRoot.Query.AflPlayerSeasonStats == nil {
 			break
@@ -682,6 +695,7 @@ input UpdateAFLPlayerMatchInput {
   aflSeason(id: ID!): AFLSeason!
   aflLatestRound: AFLRound!
   aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
+  aflPlayerSearch(query: String!): [AFLPlayer!]!
 }
 
 type AFLPlayerSeasonStats {
@@ -802,6 +816,17 @@ func (ec *executionContext) field_Query_aflClub_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_aflPlayerSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "query", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["query"] = arg0
 	return args, nil
 }
 
@@ -2914,6 +2939,53 @@ func (ec *executionContext) fieldContext_Query_aflPlayerSeasonStats(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_aflPlayerSeasonStats_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_aflPlayerSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_aflPlayerSearch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AflPlayerSearch(ctx, fc.Args["query"].(string))
+		},
+		nil,
+		ec.marshalNAFLPlayer2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_aflPlayerSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLPlayer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AFLPlayer_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLPlayer", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_aflPlayerSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5565,6 +5637,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_aflPlayerSeasonStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "aflPlayerSearch":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_aflPlayerSearch(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

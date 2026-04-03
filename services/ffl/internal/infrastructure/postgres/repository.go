@@ -341,10 +341,18 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
 }
 
-func (r *PlayerRepository) Create(ctx context.Context, name string) (domain.Player, error) {
+func (r *PlayerRepository) FindByAFLPlayerID(ctx context.Context, aflPlayerID int) (domain.Player, error) {
+	row, err := r.q.FindPlayerByAFLPlayerID(ctx, intPtrToInt32Ptr(&aflPlayerID))
+	if err != nil {
+		return domain.Player{}, err
+	}
+	return playerFromRow(row.ID, row.Name, row.AflPlayerID), nil
+}
+
+func (r *PlayerRepository) Create(ctx context.Context, name string, aflPlayerID *int) (domain.Player, error) {
 	row, err := r.q.CreatePlayer(ctx, sqlcgen.CreatePlayerParams{
 		Name:        name,
-		AflPlayerID: nil,
+		AflPlayerID: intPtrToInt32Ptr(aflPlayerID),
 	})
 	if err != nil {
 		return domain.Player{}, err

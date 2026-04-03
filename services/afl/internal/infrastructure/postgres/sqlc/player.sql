@@ -10,3 +10,10 @@ ORDER BY p.name;
 SELECT id, name, COALESCE(club_id, 0) AS club_id
 FROM afl.player
 WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: SearchPlayersByName :many
+SELECT id, name, COALESCE(club_id, 0) AS club_id
+FROM afl.player
+WHERE name ILIKE '%' || @query || '%' AND deleted_at IS NULL
+ORDER BY name
+LIMIT 20;

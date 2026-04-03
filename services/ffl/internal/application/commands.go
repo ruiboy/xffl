@@ -32,11 +32,35 @@ func NewCommands(tx TxManager) *Commands {
 func (c *Commands) CreatePlayer(ctx context.Context, name string) (domain.Player, error) {
 	var result domain.Player
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		p, err := repos.Players.Create(ctx, name)
+		p, err := repos.Players.Create(ctx, name, nil)
 		if err != nil {
 			return err
 		}
 		result = p
+		return nil
+	})
+	return result, err
+}
+
+// AddAFLPlayerToRoster finds or creates an FFL player linked to an AFL player, then adds them to a club season.
+func (c *Commands) AddAFLPlayerToRoster(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int) (domain.PlayerSeason, error) {
+	var result domain.PlayerSeason
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		// Find existing FFL player by AFL player ID
+		player, err := repos.Players.FindByAFLPlayerID(ctx, aflPlayerID)
+		if err != nil {
+			// Not found — create a new FFL player linked to the AFL player
+			player, err = repos.Players.Create(ctx, aflPlayerName, &aflPlayerID)
+			if err != nil {
+				return err
+			}
+		}
+
+		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID)
+		if err != nil {
+			return err
+		}
+		result = ps
 		return nil
 	})
 	return result, err

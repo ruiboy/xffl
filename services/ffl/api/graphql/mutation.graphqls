@@ -6,6 +6,13 @@ type Mutation {
   removeFFLPlayerFromSeason(id: ID!): Boolean!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLLineup(input: SetFFLLineupInput!): [FFLPlayerMatch!]!
+  addFFLRosterPlayer(input: AddFFLRosterPlayerInput!): FFLPlayerSeason!
+}
+
+input AddFFLRosterPlayerInput {
+  aflPlayerId: ID!
+  aflPlayerName: String!
+  clubSeasonId: ID!
 }
 
 input CreateFFLPlayerInput {

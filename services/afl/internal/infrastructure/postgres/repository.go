@@ -337,6 +337,18 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	return domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}, nil
 }
 
+func (r *PlayerRepository) Search(ctx context.Context, query string) ([]domain.Player, error) {
+	rows, err := r.q.SearchPlayersByName(ctx, &query)
+	if err != nil {
+		return nil, err
+	}
+	players := make([]domain.Player, len(rows))
+	for i, row := range rows {
+		players[i] = domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}
+	}
+	return players, nil
+}
+
 // --- PlayerMatch ---
 
 type PlayerMatchRepository struct{ q *sqlcgen.Queries }

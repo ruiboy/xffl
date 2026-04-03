@@ -62,3 +62,37 @@ func (q *Queries) FindPlayersByClubID(ctx context.Context, clubID *int32) ([]Fin
 	}
 	return items, nil
 }
+
+const searchPlayersByName = `-- name: SearchPlayersByName :many
+SELECT id, name, COALESCE(club_id, 0) AS club_id
+FROM afl.player
+WHERE name ILIKE '%' || $1 || '%' AND deleted_at IS NULL
+ORDER BY name
+LIMIT 20
+`
+
+type SearchPlayersByNameRow struct {
+	ID     int32
+	Name   string
+	ClubID int32
+}
+
+func (q *Queries) SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error) {
+	rows, err := q.db.Query(ctx, searchPlayersByName, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchPlayersByNameRow{}
+	for rows.Next() {
+		var i SearchPlayersByNameRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.ClubID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
