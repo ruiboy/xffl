@@ -93,10 +93,11 @@ func convertMatches(matches []domain.Match) []*FFLMatch {
 	return out
 }
 
-func convertClubSeason(cs domain.ClubSeason, club domain.Club) *FFLClubSeason {
+func convertClubSeason(cs domain.ClubSeason, club domain.Club, season domain.Season) *FFLClubSeason {
 	return &FFLClubSeason{
 		ID:         toID(cs.ID),
 		Club:       convertClub(club),
+		Season:     convertSeason(season),
 		Played:     cs.Played,
 		Won:        cs.Won,
 		Lost:       cs.Lost,

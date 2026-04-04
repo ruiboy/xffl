@@ -43,6 +43,7 @@ type FFLClubMatch struct {
 type FFLClubSeason struct {
 	ID         string                     `json:"id"`
 	Club       *FFLClub                   `json:"club"`
+	Season     *FFLSeason                 `json:"season"`
 	Played     int                        `json:"played"`
 	Won        int                        `json:"won"`
 	Lost       int                        `json:"lost"`

@@ -1,7 +1,9 @@
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-1">Squad</h1>
-    <p class="text-text-muted mb-6">Season squad</p>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold mb-1">{{ clubSeason?.club.name ?? '' }}</h1>
+      <p class="text-text-muted">{{ clubSeason?.season.name ? clubSeason.season.name + ' Squad' : 'Squad' }}</p>
+    </div>
 
     <!-- Manage toggle -->
     <div class="mb-6 flex items-center gap-4">

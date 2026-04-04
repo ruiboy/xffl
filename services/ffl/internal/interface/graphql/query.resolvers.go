@@ -143,13 +143,17 @@ func (r *fFLSeasonResolver) Ladder(ctx context.Context, obj *FFLSeason) ([]*FFLC
 	if err != nil {
 		return nil, err
 	}
+	season, err := r.Queries.GetSeason(ctx, seasonID)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*FFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
 		club, err := r.Queries.GetClubForClubSeason(ctx, cs.ID)
 		if err != nil {
 			return nil, err
 		}
-		result[i] = convertClubSeason(cs, club)
+		result[i] = convertClubSeason(cs, club, season)
 	}
 	return result, nil
 }
@@ -251,7 +255,11 @@ func (r *queryResolver) FflClubSeason(ctx context.Context, seasonID string, club
 	if err != nil {
 		return nil, err
 	}
-	return convertClubSeason(cs, club), nil
+	season, err := r.Queries.GetSeason(ctx, sID)
+	if err != nil {
+		return nil, err
+	}
+	return convertClubSeason(cs, club, season), nil
 }
 
 // FflLatestRound is the resolver for the fflLatestRound field.

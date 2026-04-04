@@ -53,6 +53,7 @@ type FFLClubMatch {
 type FFLClubSeason {
   id: ID!
   club: FFLClub!
+  season: FFLSeason!
   played: Int!
   won: Int!
   lost: Int!

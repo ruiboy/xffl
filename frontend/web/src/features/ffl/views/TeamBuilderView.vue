@@ -1,11 +1,13 @@
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-1">Team Builder</h1>
-    <p class="text-text-muted mb-6">Build your lineup for the round</p>
-
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold mb-1">{{ selectedClubSeason?.club.name ?? '' }}</h1>
+        <p class="text-text-muted">Build your team for the round</p>
+      </div>
+
       <template v-if="selectedClubSeason && clubMatch">
         <!-- Score projection -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
