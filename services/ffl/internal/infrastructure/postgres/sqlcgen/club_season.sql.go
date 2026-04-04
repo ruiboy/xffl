@@ -9,6 +9,50 @@ import (
 	"context"
 )
 
+const findClubSeasonByClubAndSeason = `-- name: FindClubSeasonByClubAndSeason :one
+SELECT id, club_id, season_id,
+       drv_played, drv_won, drv_lost, drv_drawn,
+       drv_for, drv_against, drv_premiership_points
+FROM ffl.club_season
+WHERE club_id = $1 AND season_id = $2 AND deleted_at IS NULL
+`
+
+type FindClubSeasonByClubAndSeasonParams struct {
+	ClubID   int32
+	SeasonID int32
+}
+
+type FindClubSeasonByClubAndSeasonRow struct {
+	ID                   int32
+	ClubID               int32
+	SeasonID             int32
+	DrvPlayed            *int32
+	DrvWon               *int32
+	DrvLost              *int32
+	DrvDrawn             *int32
+	DrvFor               *int32
+	DrvAgainst           *int32
+	DrvPremiershipPoints *int32
+}
+
+func (q *Queries) FindClubSeasonByClubAndSeason(ctx context.Context, arg FindClubSeasonByClubAndSeasonParams) (FindClubSeasonByClubAndSeasonRow, error) {
+	row := q.db.QueryRow(ctx, findClubSeasonByClubAndSeason, arg.ClubID, arg.SeasonID)
+	var i FindClubSeasonByClubAndSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.ClubID,
+		&i.SeasonID,
+		&i.DrvPlayed,
+		&i.DrvWon,
+		&i.DrvLost,
+		&i.DrvDrawn,
+		&i.DrvFor,
+		&i.DrvAgainst,
+		&i.DrvPremiershipPoints,
+	)
+	return i, err
+}
+
 const findClubSeasonByID = `-- name: FindClubSeasonByID :one
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,

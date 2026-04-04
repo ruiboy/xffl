@@ -247,6 +247,27 @@ func (r *ClubSeasonRepository) FindByID(ctx context.Context, id int) (domain.Clu
 	}, nil
 }
 
+func (r *ClubSeasonRepository) FindByClubAndSeason(ctx context.Context, clubID int, seasonID int) (domain.ClubSeason, error) {
+	row, err := r.q.FindClubSeasonByClubAndSeason(ctx, sqlcgen.FindClubSeasonByClubAndSeasonParams{
+		ClubID:   int32(clubID),
+		SeasonID: int32(seasonID),
+	})
+	if err != nil {
+		return domain.ClubSeason{}, err
+	}
+	return domain.ClubSeason{
+		ID:       int(row.ID),
+		ClubID:   int(row.ClubID),
+		SeasonID: int(row.SeasonID),
+		Played:   derefOr(row.DrvPlayed),
+		Won:      derefOr(row.DrvWon),
+		Lost:     derefOr(row.DrvLost),
+		Drawn:    derefOr(row.DrvDrawn),
+		For:      derefOr(row.DrvFor),
+		Against:  derefOr(row.DrvAgainst),
+	}, nil
+}
+
 // --- ClubMatch ---
 
 type ClubMatchRepository struct{ q *sqlcgen.Queries }

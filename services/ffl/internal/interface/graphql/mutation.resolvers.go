@@ -63,7 +63,11 @@ func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFF
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayerSeason(ps), nil
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, player), nil
 }
 
 // RemoveFFLPlayerFromSeason is the resolver for the removeFFLPlayerFromSeason field.
@@ -137,8 +141,8 @@ func (r *mutationResolver) SetFFLLineup(ctx context.Context, input SetFFLLineupI
 	return result, nil
 }
 
-// AddFFLRosterPlayer is the resolver for the addFFLRosterPlayer field.
-func (r *mutationResolver) AddFFLRosterPlayer(ctx context.Context, input AddFFLRosterPlayerInput) (*FFLPlayerSeason, error) {
+// AddFFLSquadPlayer is the resolver for the addFFLSquadPlayer field.
+func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error) {
 	aflPlayerID, err := fromID(input.AflPlayerID)
 	if err != nil {
 		return nil, err
@@ -147,11 +151,15 @@ func (r *mutationResolver) AddFFLRosterPlayer(ctx context.Context, input AddFFLR
 	if err != nil {
 		return nil, err
 	}
-	ps, err := r.Commands.AddAFLPlayerToRoster(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID)
+	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID)
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayerSeason(ps), nil
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, player), nil
 }
 
 // Mutation returns MutationResolver implementation.

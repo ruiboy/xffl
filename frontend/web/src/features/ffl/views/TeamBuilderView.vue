@@ -1,25 +1,28 @@
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-1">Team Builder</h1>
-    <p class="text-text-muted mb-6">Build your lineup for the round</p>
-
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
-      <!-- Club selector -->
       <div class="mb-6">
-        <label class="text-sm font-medium text-text-muted mr-2">My club:</label>
-        <select
-          v-model="selectedClubSeasonId"
-          class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-active focus:outline-none"
-        >
-          <option v-for="cs in season.ladder" :key="cs.id" :value="cs.id">
-            {{ cs.club.name }}
-          </option>
-        </select>
+        <h1 class="text-2xl font-bold mb-1">{{ selectedClubSeason?.club.name ?? '' }}</h1>
+        <p class="text-text-muted">Build your team for the round</p>
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
+        <div class="mb-6 flex items-center gap-4">
+          <button
+            @click="onManageToggle"
+            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="managing
+              ? 'border-active bg-active text-active-text'
+              : 'border-border bg-surface text-text hover:bg-surface-hover'"
+            :disabled="submitting"
+          >
+            {{ submitting ? 'Saving…' : managing ? 'Done' : 'Manage' }}
+          </button>
+          <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+        </div>
+
         <!-- Score projection -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
           <div class="flex items-center justify-between mb-2">
@@ -28,7 +31,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'">
           <!-- Lineup (left 2 cols) -->
           <div class="lg:col-span-2">
             <div v-for="pos in positions" :key="pos.key" class="mb-6">
@@ -46,7 +49,7 @@
                     <span class="font-medium">{{ slot.player.name }}</span>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
-                  <div v-if="slot.player" class="flex items-center gap-2">
+                  <div v-if="slot.player && managing" class="flex items-center gap-2">
                     <button
                       v-for="target in positions.filter(p => p.key !== pos.key)"
                       :key="target.key"
@@ -85,7 +88,7 @@
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty bench slot</span>
                   <button
-                    v-if="slot.player"
+                    v-if="slot.player && managing"
                     class="text-xs text-red-400 hover:text-red-300 transition-colors"
                     @click="removeFromBench(index)"
                   >
@@ -95,24 +98,15 @@
               </div>
             </div>
 
-            <!-- Submit -->
-            <button
-              class="rounded-lg bg-active px-6 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="submitting || starterCount === 0"
-              @click="submitLineup"
-            >
-              {{ submitting ? 'Saving…' : 'Save Lineup' }}
-            </button>
-            <span v-if="submitMessage" class="ml-3 text-sm text-green-500">{{ submitMessage }}</span>
           </div>
 
-          <!-- Roster panel (right col) -->
-          <div>
-            <h2 class="text-lg font-semibold text-text-heading mb-3">Roster ({{ availablePlayers.length }})</h2>
+          <!-- Squad panel (right col, manage mode only) -->
+          <div v-if="managing">
+            <h2 class="text-lg font-semibold text-text-heading mb-3">Squad ({{ availablePlayers.length }})</h2>
             <div class="space-y-1">
               <div
                 v-for="player in availablePlayers"
-                :key="player.playerSeasonId"
+                :key="player.id"
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
                 <span class="font-medium text-sm">{{ player.name }}</span>
@@ -142,7 +136,7 @@
           </div>
         </div>
       </template>
-      <p v-else class="text-text-faint">Select a club to build your lineup.</p>
+      <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
     </template>
   </div>
 </template>
@@ -152,6 +146,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_TEAM_BUILDER } from '../api/queries'
 import { SET_FFL_LINEUP } from '../api/mutations'
+import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
@@ -167,31 +162,25 @@ const positions = [
 
 type PositionKey = typeof positions[number]['key']
 
-interface RosterPlayer {
-  playerSeasonId: string
+interface SquadPlayer {
+  id: string
   name: string
 }
 
 interface Slot {
-  player: RosterPlayer | null
+  player: SquadPlayer | null
 }
+
+const { selectedClubId } = useFflState()
+const managing = ref(false)
 
 // Data loading
 const { result, loading, error } = useQuery(GET_FFL_TEAM_BUILDER, () => ({ seasonId: props.seasonId }))
 
 const season = computed(() => result.value?.fflSeason ?? null)
 
-const selectedClubSeasonId = ref<string>('')
-
-// Auto-select first club when data loads
-watch(season, (s) => {
-  if (s && s.ladder.length > 0 && !selectedClubSeasonId.value) {
-    selectedClubSeasonId.value = s.ladder[0].id
-  }
-})
-
 const selectedClubSeason = computed(() =>
-  season.value?.ladder.find((cs: { id: string }) => cs.id === selectedClubSeasonId.value) ?? null
+  season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
 )
 
 // Find the club match for the selected club in the current round
@@ -207,11 +196,11 @@ const clubMatch = computed(() => {
   return null
 })
 
-// Roster from club season
-const roster = computed<RosterPlayer[]>(() => {
+// Squad from club season
+const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.roster.map((r: { playerSeasonId: string; player: { name: string } }) => ({
-    playerSeasonId: r.playerSeasonId,
+  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string } }) => ({
+    id: r.id,
     name: r.player.name,
   }))
 })
@@ -236,7 +225,7 @@ watch(clubMatch, (cm) => {
   if (!cm?.playerMatches) return
 
   for (const pm of cm.playerMatches) {
-    const player: RosterPlayer = { playerSeasonId: pm.playerSeasonId, name: pm.player.name }
+    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (isBench) {
@@ -256,17 +245,17 @@ const assignedPlayerSeasonIds = computed(() => {
   const ids = new Set<string>()
   for (const pos of positions) {
     for (const slot of lineupSlots.value[pos.key]) {
-      if (slot.player) ids.add(slot.player.playerSeasonId)
+      if (slot.player) ids.add(slot.player.id)
     }
   }
   for (const slot of benchSlots.value) {
-    if (slot.player) ids.add(slot.player.playerSeasonId)
+    if (slot.player) ids.add(slot.player.id)
   }
   return ids
 })
 
 const availablePlayers = computed(() =>
-  roster.value.filter(p => !assignedPlayerSeasonIds.value.has(p.playerSeasonId))
+  squad.value.filter(p => !assignedPlayerSeasonIds.value.has(p.id))
 )
 
 const starterCount = computed(() => {
@@ -283,7 +272,7 @@ const isPositionFull = (key: PositionKey) =>
   lineupSlots.value[key].every(s => s.player !== null)
 
 // Lineup management
-function addToLineup(key: PositionKey, player: RosterPlayer) {
+function addToLineup(key: PositionKey, player: SquadPlayer) {
   const slot = lineupSlots.value[key].find(s => !s.player)
   if (slot) slot.player = player
 }
@@ -301,7 +290,7 @@ function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: Position
   toSlot.player = player
 }
 
-function addToBench(player: RosterPlayer) {
+function addToBench(player: SquadPlayer) {
   const slot = benchSlots.value.find(s => !s.player)
   if (slot) slot.player = player
 }
@@ -315,6 +304,13 @@ const { mutate: setLineup } = useMutation(SET_FFL_LINEUP)
 const submitting = ref(false)
 const submitMessage = ref('')
 
+async function onManageToggle() {
+  if (managing.value) {
+    await submitLineup()
+  }
+  managing.value = !managing.value
+}
+
 async function submitLineup() {
   if (!clubMatch.value) return
   submitting.value = true
@@ -325,7 +321,7 @@ async function submitLineup() {
   for (const pos of positions) {
     for (const slot of lineupSlots.value[pos.key]) {
       if (slot.player) {
-        players.push({ playerSeasonId: slot.player.playerSeasonId, position: pos.key })
+        players.push({ playerSeasonId: slot.player.id, position: pos.key })
       }
     }
   }
@@ -333,7 +329,7 @@ async function submitLineup() {
   for (const slot of benchSlots.value) {
     if (slot.player) {
       // Bench players get first available position as backup
-      players.push({ playerSeasonId: slot.player.playerSeasonId, position: 'kicks', backupPositions: 'kicks' })
+      players.push({ playerSeasonId: slot.player.id, position: 'kicks', backupPositions: 'kicks' })
     }
   }
 

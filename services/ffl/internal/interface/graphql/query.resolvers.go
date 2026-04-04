@@ -30,8 +30,8 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	return result, nil
 }
 
-// Roster is the resolver for the roster field.
-func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) ([]*FFLRosterEntry, error) {
+// Players is the resolver for the players field.
+func (r *fFLClubSeasonResolver) Players(ctx context.Context, obj *FFLClubSeason, first *int, after *string, filter *FFLPlayerSeasonFilter) (*FFLPlayerSeasonConnection, error) {
 	csID, err := fromID(obj.ID)
 	if err != nil {
 		return nil, err
@@ -40,23 +40,19 @@ func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) 
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*FFLRosterEntry, len(playerSeasons))
+	nodes := make([]*FFLPlayerSeason, len(playerSeasons))
 	for i, ps := range playerSeasons {
 		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
 		if err != nil {
 			return nil, err
 		}
-		entry := &FFLRosterEntry{
-			PlayerSeasonID: toID(ps.ID),
-			Player:         convertPlayer(player),
-		}
-		if ps.AFLPlayerSeasonID != nil {
-			id := toID(*ps.AFLPlayerSeasonID)
-			entry.AflPlayerSeasonID = &id
-		}
-		result[i] = entry
+		nodes[i] = convertPlayerSeason(ps, player)
 	}
-	return result, nil
+	return &FFLPlayerSeasonConnection{
+		Nodes:      nodes,
+		PageInfo:   &PageInfo{HasNextPage: false},
+		TotalCount: len(nodes),
+	}, nil
 }
 
 // HomeClubMatch is the resolver for the homeClubMatch field.
@@ -147,13 +143,17 @@ func (r *fFLSeasonResolver) Ladder(ctx context.Context, obj *FFLSeason) ([]*FFLC
 	if err != nil {
 		return nil, err
 	}
+	season, err := r.Queries.GetSeason(ctx, seasonID)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*FFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
 		club, err := r.Queries.GetClubForClubSeason(ctx, cs.ID)
 		if err != nil {
 			return nil, err
 		}
-		result[i] = convertClubSeason(cs, club)
+		result[i] = convertClubSeason(cs, club, season)
 	}
 	return result, nil
 }
@@ -235,6 +235,31 @@ func (r *queryResolver) FflSeason(ctx context.Context, id string) (*FFLSeason, e
 		return nil, err
 	}
 	return convertSeason(season), nil
+}
+
+// FflClubSeason is the resolver for the fflClubSeason field.
+func (r *queryResolver) FflClubSeason(ctx context.Context, seasonID string, clubID string) (*FFLClubSeason, error) {
+	sID, err := fromID(seasonID)
+	if err != nil {
+		return nil, err
+	}
+	cID, err := fromID(clubID)
+	if err != nil {
+		return nil, err
+	}
+	cs, err := r.Queries.GetClubSeasonByClubAndSeason(ctx, cID, sID)
+	if err != nil {
+		return nil, err
+	}
+	club, err := r.Queries.GetClubForClubSeason(ctx, cs.ID)
+	if err != nil {
+		return nil, err
+	}
+	season, err := r.Queries.GetSeason(ctx, sID)
+	if err != nil {
+		return nil, err
+	}
+	return convertClubSeason(cs, club, season), nil
 }
 
 // FflLatestRound is the resolver for the fflLatestRound field.

@@ -330,7 +330,7 @@ func TestFflSeasonWithLadder(t *testing.T) {
 	defer server.Close()
 
 	seasonID := fmt.Sprintf("%d", ids.seasonID)
-	result := execQuery(t, server, `{ fflSeason(id: "`+seasonID+`") { name ladder { club { name } played won lost percentage } } }`)
+	result := execQuery(t, server, `{ fflSeason(id: "`+seasonID+`") { name ladder { club { name } season { name } played won lost percentage } } }`)
 
 	if len(result.Errors) > 0 {
 		t.Fatalf("unexpected errors: %v", result.Errors)
@@ -343,6 +343,9 @@ func TestFflSeasonWithLadder(t *testing.T) {
 				Club struct {
 					Name string `json:"name"`
 				} `json:"club"`
+				Season struct {
+					Name string `json:"name"`
+				} `json:"season"`
 				Played     int     `json:"played"`
 				Won        int     `json:"won"`
 				Lost       int     `json:"lost"`
@@ -367,6 +370,10 @@ func TestFflSeasonWithLadder(t *testing.T) {
 	}
 	if data.FflSeason.Ladder[1].Club.Name != "Test Lions" {
 		t.Errorf("expected Test Lions second on ladder, got %s", data.FflSeason.Ladder[1].Club.Name)
+	}
+	// Verify season is populated on ladder entries
+	if data.FflSeason.Ladder[0].Season.Name != "Test 2025" {
+		t.Errorf("expected ladder entry season 'Test 2025', got %s", data.FflSeason.Ladder[0].Season.Name)
 	}
 }
 
@@ -540,6 +547,62 @@ func TestFflLatestRound(t *testing.T) {
 	}
 }
 
+func TestFflClubSeason(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+	clubID := fmt.Sprintf("%d", ids.homeClubID)
+	result := execQuery(t, server, `{
+		fflClubSeason(seasonId: "`+seasonID+`", clubId: "`+clubID+`") {
+			id
+			club { name }
+			season { id name }
+			played
+			won
+		}
+	}`)
+
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+
+	var data struct {
+		FflClubSeason struct {
+			ID     string `json:"id"`
+			Club   struct{ Name string } `json:"club"`
+			Season struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"season"`
+			Played int `json:"played"`
+			Won    int `json:"won"`
+		} `json:"fflClubSeason"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		t.Fatalf("failed to unmarshal data: %v", err)
+	}
+
+	cs := data.FflClubSeason
+	if cs.Club.Name != "Test Eagles" {
+		t.Errorf("expected club 'Test Eagles', got %s", cs.Club.Name)
+	}
+	if cs.Season.Name != "Test 2025" {
+		t.Errorf("expected season 'Test 2025', got %s", cs.Season.Name)
+	}
+	if cs.Season.ID != seasonID {
+		t.Errorf("expected season id %s, got %s", seasonID, cs.Season.ID)
+	}
+	if cs.Played != 5 {
+		t.Errorf("expected played 5, got %d", cs.Played)
+	}
+	if cs.Won != 4 {
+		t.Errorf("expected won 4, got %d", cs.Won)
+	}
+}
+
 func TestCreateFFLPlayer(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
@@ -684,7 +747,7 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	addResult := execQuery(t, server, `mutation {
 		addFFLPlayerToSeason(input: { playerId: "`+created.CreateFFLPlayer.ID+`", clubSeasonId: "`+clubSeasonID+`" }) {
 			id
-			playerId
+			player { id }
 			clubSeasonId
 		}
 	}`)
@@ -696,7 +759,9 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	var addData struct {
 		AddFFLPlayerToSeason struct {
 			ID           string `json:"id"`
-			PlayerID     string `json:"playerId"`
+			Player       struct {
+				ID string `json:"id"`
+			} `json:"player"`
 			ClubSeasonID string `json:"clubSeasonId"`
 		} `json:"addFFLPlayerToSeason"`
 	}
@@ -704,8 +769,8 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	if addData.AddFFLPlayerToSeason.PlayerID != created.CreateFFLPlayer.ID {
-		t.Errorf("expected player ID %s, got %s", created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.PlayerID)
+	if addData.AddFFLPlayerToSeason.Player.ID != created.CreateFFLPlayer.ID {
+		t.Errorf("expected player ID %s, got %s", created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.Player.ID)
 	}
 	if addData.AddFFLPlayerToSeason.ClubSeasonID != clubSeasonID {
 		t.Errorf("expected club season ID %s, got %s", clubSeasonID, addData.AddFFLPlayerToSeason.ClubSeasonID)

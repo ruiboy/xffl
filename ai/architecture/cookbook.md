@@ -73,17 +73,58 @@ Always run `sqlc generate` before `gqlgen generate` if both schema SQL and Graph
 
 ## Cross-service queries (frontend)
 
-The Apollo client (`frontend/web/src/app/apollo.ts`) routes by field prefix:
-- Root fields starting with `ffl` → FFL service (`/ffl/query`)
-- Everything else → AFL service (`/afl/query`)
+The Apollo client (`frontend/web/src/app/apollo.ts`) routes by **operation name** using an explicit set `FFL_OPERATIONS`. Operations in the set go to FFL (`/ffl/query`); everything else goes to AFL (`/afl/query`).
 
-**A single GraphQL operation cannot span both services.** For cross-service data (e.g. FFL roster + AFL stats), issue two separate queries and join in the component. Pattern:
+**When adding a new FFL operation**, add its name to `FFL_OPERATIONS` in `apollo.ts`. Do not rely on naming conventions — the set is the source of truth (see ADR-008).
+
+**A single GraphQL operation cannot span both services.** For cross-service data (e.g. FFL squad + AFL stats), issue two separate queries and join in the component. Pattern:
 
 ```ts
 const { result: fflResult } = useQuery(FFL_QUERY, ...)
 const ids = computed(() => /* extract AFL IDs from fflResult */)
 const { result: aflResult } = useQuery(AFL_QUERY, () => ({ ids: ids.value }), () => ({ enabled: ids.value.length > 0 }))
 // join in a computed
+```
+
+## Recipe: Add a paginated list field (Connection pattern)
+
+See ADR-014. Use this for any list that may grow beyond ~50 items.
+
+1. **Schema** — define the connection and filter types in `query.graphqls`:
+```graphql
+type <Resource>Connection {
+  nodes: [<Resource>!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input <Resource>Filter {
+  # add filter fields as needed
+}
+```
+`PageInfo` is already defined in `api/graphql/common.graphqls` — do not redefine it.
+
+2. **Field declaration** — add to the parent type:
+```graphql
+items(first: Int, after: String, filter: <Resource>Filter): <Resource>Connection!
+```
+
+3. **gqlgen.yml** — mark the field as a resolver:
+```yaml
+ParentType:
+  fields:
+    items: { resolver: true }
+```
+
+4. **Generate** — `go run github.com/99designs/gqlgen generate`
+
+5. **Implement resolver** — until real pagination is needed, return all items with `hasNextPage: false`:
+```go
+return &ResourceConnection{
+  Nodes:      nodes,
+  PageInfo:   &PageInfo{HasNextPage: false},
+  TotalCount: len(nodes),
+}, nil
 ```
 
 ## Repository type mapping helpers

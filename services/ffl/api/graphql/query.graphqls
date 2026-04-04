@@ -5,6 +5,7 @@ type Query {
   fflPlayer(id: ID!): FFLPlayer!
   fflSeasons: [FFLSeason!]!
   fflSeason(id: ID!): FFLSeason!
+  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
   fflLatestRound: FFLRound!
 }
 
@@ -52,6 +53,7 @@ type FFLClubMatch {
 type FFLClubSeason {
   id: ID!
   club: FFLClub!
+  season: FFLSeason!
   played: Int!
   won: Int!
   lost: Int!
@@ -59,13 +61,24 @@ type FFLClubSeason {
   for: Int!
   against: Int!
   percentage: Float!
-  roster: [FFLRosterEntry!]!
+  players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
-type FFLRosterEntry {
-  playerSeasonId: ID!
+type FFLPlayerSeason {
+  id: ID!
   player: FFLPlayer!
+  clubSeasonId: ID!
   aflPlayerSeasonId: ID
+}
+
+type FFLPlayerSeasonConnection {
+  nodes: [FFLPlayerSeason!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input FFLPlayerSeasonFilter {
+  active: Boolean
 }
 
 type FFLPlayerMatch {

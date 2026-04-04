@@ -2,42 +2,52 @@ import { test, expect } from '@playwright/test'
 
 test.describe('FFL Team Builder', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: Home → Build Team
+    // Navigate via navbar Team Builder link (requires home to load first so state is set)
     await page.goto('/')
-    await page.getByRole('link', { name: 'Build Team' }).click()
+    await page.getByRole('link', { name: 'Team Builder' }).click()
   })
 
-  test('displays Team Builder heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Team Builder')
+  test('displays club name as heading', async ({ page }) => {
+    // Heading should be the selected club name, not "Team Builder"
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 
-  test('displays club selector', async ({ page }) => {
-    await expect(page.getByRole('combobox')).toBeVisible()
+  test('loads in read-only mode with Manage button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
   })
 
-  test('displays position groups', async ({ page }) => {
+  test('read-only mode shows lineup without edit controls', async ({ page }) => {
+    // Starters visible from seed data
+    await expect(page.getByText('Christian Petracca')).toBeVisible()
+    // No position action buttons or Remove buttons visible
+    await expect(page.getByRole('button', { name: 'Remove' })).not.toBeVisible()
+  })
+
+  test('read-only mode does not show squad panel', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Squad/ })).not.toBeVisible()
+  })
+
+  test('clicking Manage reveals edit controls and squad panel', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Squad/ })).toBeVisible()
+  })
+
+  test('clicking Manage shows position groups with action buttons', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
     for (const position of ['Goals', 'Kicks', 'Handballs', 'Marks', 'Tackles', 'Hitouts', 'Star']) {
       await expect(page.getByRole('heading', { name: position })).toBeVisible()
     }
-  })
-
-  test('displays bench section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Bench/ })).toBeVisible()
   })
 
-  test('displays roster panel with players', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Roster/ })).toBeVisible()
-    // Ruiboys has 30 players, some already assigned in seed data
-    await expect(page.getByText('Marcus Bontempelli')).toBeVisible()
-  })
-
-  test('displays Save Lineup button', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Save Lineup' })).toBeVisible()
-  })
-
-  test('loads existing lineup from seed data', async ({ page }) => {
-    // Seed data has 7 starters + 2 bench for Ruiboys
-    // Starters should appear in position slots (not in roster panel as available)
-    await expect(page.getByText('Christian Petracca')).toBeVisible()
+  test('clicking Done saves and returns to read-only mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+    await page.getByRole('button', { name: 'Done' }).click()
+    // Returns to Manage state (Done triggers save then exits)
+    await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
   })
 })

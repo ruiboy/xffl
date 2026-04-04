@@ -3,9 +3,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // FFL routes
+    // Redirect root to FFL
     {
       path: '/',
+      redirect: '/ffl',
+    },
+
+    // FFL routes
+    {
+      path: '/ffl',
       name: 'home',
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },
@@ -22,9 +28,9 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/ffl/seasons/:seasonId/roster',
-      name: 'ffl-roster',
-      component: () => import('@/features/ffl/views/RosterView.vue'),
+      path: '/ffl/seasons/:seasonId/squad',
+      name: 'ffl-squad',
+      component: () => import('@/features/ffl/views/SquadView.vue'),
       props: true,
     },
     {

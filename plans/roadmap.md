@@ -82,12 +82,20 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 ## Phase 8: FFL UX Refinements
 
-**Goal:** Minor FFL frontend improvements
+**Goal:** Iterative FFL frontend improvements, driven by user requests each session
 
-- [ ] **Roster naming** — decide whether "roster" is the right term or if it should be squad/list/pool; apply rename if needed
-- [ ] Nav bar reorganisation
-- [ ] Minor page layout changes
-- [ ] Details TBD — will plan when we get here
+- [x] Rename Roster → Squad throughout
+- [x] FFL pages routed under `/ffl`; nav + home link updated; `/` redirects to `/ffl`
+- [x] Architecture: no graph federation; CQRS read/write split decided (ADR-013); gateway routing clarified (ADR-008)
+- [x] Fix wasteful squad query — `fflClubSeason(seasonId, clubId)` resolver; connection pagination
+- [x] Fix fragile Apollo routing link — explicit operation-name map replaces regex
+- [x] Global FFL club state (`useFflState`) + unified nav with club selector
+- [x] Home/round page layout: circle round selector (filled/ring/ladder icon), inline headings, no matches on home
+- [x] FFL eagle logo in nav (hover scales 3×)
+- [x] Settings cog dropdown with dark mode toggle (cookie-persisted)
+- [x] Squad page: club name heading, search panel alongside player list, Manage/Done pattern
+- [x] Team Builder: club name heading, Manage/Done pattern (Done saves lineup)
+- [x] `FFLClubSeason.season` field added to GraphQL schema and resolver
 
 ## Phase 9: FFL Team Composition Rules
 
@@ -97,14 +105,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Domain logic + validation
 - [ ] Details TBD — will plan when we get here
 
-## Phase 10: Revisit Items
-
-**Goal:** Resolve deferred technical topics from `plans/revisit.md`
-
-- [ ] **Apollo client routing** — the regex-based AFL/FFL routing is fragile; consider a more explicit approach
-- [ ] **Graph federation** — evaluate whether Apollo Federation (or similar) is worth the complexity vs. the current dual-query approach
-
-## Phase 11: FFL Event Integration
+## Phase 10: FFL Event Integration
 
 **Goal:** Wire up cross-service event flow between AFL and FFL
 
@@ -112,7 +113,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] FFL publishes `FFL.FantasyScoreCalculated`
 - [ ] Tests — integration (event flow end-to-end)
 
-## Phase 12: Search Service
+## Phase 11: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -123,17 +124,25 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 13: Search Frontend
+## Phase 12: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
 
+## Phase 13: CQRS Player Stats Read Model
+
+**Goal:** Move player stats reads to the search index (ADR-013)
+
+- [ ] Expand Zinc indexing to include AFL player match stats (per-round and aggregated)
+- [ ] SquadView: replace AFL GraphQL stats query with search index query
+- [ ] Apply pattern to other stat-heavy views as they are built
+
 ## Phase 14: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
-- [ ] ADR - Consider deployment options - AWS, GCP, etc
+- [ ] ADR — Consider deployment options (AWS, GCP, etc)
 
 ## Future Ideas
 

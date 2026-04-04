@@ -22,6 +22,10 @@ Phase 3 brings the gateway forward to provide a single entry point for the Vue f
 
 ## Decision
 
-Option 1: simple reverse proxy. Only AFL exists today — no routing decision required. When FFL arrives (Phase 5), upgrade to option 2 or 3 based on real query patterns.
+**Phase 3:** Option 1 — simple reverse proxy to AFL only.
 
-Gateway runs on `:8090`, proxies `/query` to AFL (`:8080`), handles CORS, and exposes `/health`.
+**Phase 5 (current):** Option 2 — path-based routing. Gateway exposes `/afl/query` → AFL (`:8080`) and `/ffl/query` → FFL (`:8081`). Frontend Apollo client uses a custom link that inspects operation field names to pick the correct endpoint.
+
+**Going forward:** Stay on path-based routing. Federation (option 4) was evaluated and rejected — see ADR-013. The frontend routing link should migrate from regex-based field name matching to an explicit operation-name map to eliminate fragility.
+
+Gateway runs on `:8090`, handles CORS, and exposes `/health`.

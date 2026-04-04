@@ -339,13 +339,13 @@ func TestRemovePlayerFromSeason(t *testing.T) {
 	}
 }
 
-func TestAddAFLPlayerToRoster_CreatesNewPlayer(t *testing.T) {
+func TestAddAFLPlayerToSquad_CreatesNewPlayer(t *testing.T) {
 	cmds, playerRepo, psRepo, _, _ := setupCommands()
 	ctx := context.Background()
 
-	ps, err := cmds.AddAFLPlayerToRoster(ctx, 42, "Lachie Neale", 1)
+	ps, err := cmds.AddAFLPlayerToSquad(ctx, 42, "Lachie Neale", 1)
 	if err != nil {
-		t.Fatalf("AddAFLPlayerToRoster: %v", err)
+		t.Fatalf("AddAFLPlayerToSquad: %v", err)
 	}
 
 	// Should have created a new FFL player linked to AFL player 42
@@ -370,16 +370,16 @@ func TestAddAFLPlayerToRoster_CreatesNewPlayer(t *testing.T) {
 	}
 }
 
-func TestAddAFLPlayerToRoster_ReusesExistingPlayer(t *testing.T) {
+func TestAddAFLPlayerToSquad_ReusesExistingPlayer(t *testing.T) {
 	cmds, playerRepo, _, _, _ := setupCommands()
 	ctx := context.Background()
 
 	// Pre-create an FFL player linked to AFL player 42
 	existing, _ := playerRepo.Create(ctx, "Lachie Neale", 42)
 
-	ps, err := cmds.AddAFLPlayerToRoster(ctx, 42, "Lachie Neale", 1)
+	ps, err := cmds.AddAFLPlayerToSquad(ctx, 42, "Lachie Neale", 1)
 	if err != nil {
-		t.Fatalf("AddAFLPlayerToRoster: %v", err)
+		t.Fatalf("AddAFLPlayerToSquad: %v", err)
 	}
 
 	// Should reuse the existing player, not create a new one

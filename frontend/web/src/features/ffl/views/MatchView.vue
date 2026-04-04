@@ -23,7 +23,7 @@
           <p class="text-sm text-text-muted mb-3">
             Fantasy score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
-          <RosterTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
+          <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
       </div>
     </template>
@@ -34,7 +34,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
-import RosterTable from '../components/RosterTable.vue'
+import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()

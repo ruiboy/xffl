@@ -3,8 +3,16 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <h1 class="text-2xl font-bold mb-1">{{ data.round.name }}</h1>
-      <p class="text-text-muted mb-6">{{ data.season.name }}</p>
+      <h1 class="text-2xl font-bold mb-4">
+        {{ data.round.name }}<span class="font-normal text-text-muted"> · {{ data.season.name }}</span>
+      </h1>
+
+      <RoundNav
+        class="mb-8"
+        :rounds="data.season.rounds"
+        :live-round-id="liveRoundId"
+        :season-id="props.seasonId"
+      />
 
       <section class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
@@ -30,14 +38,6 @@
         </div>
       </section>
 
-      <section>
-        <h2 class="text-lg font-semibold text-text-heading mb-3">Rounds</h2>
-        <RoundNav
-          :rounds="data.season.rounds"
-          :current-round-id="data.round.id"
-          :season-id="props.seasonId"
-        />
-      </section>
     </template>
   </div>
 </template>
@@ -61,6 +61,8 @@ const data = computed(() => {
   if (!round) return null
   return { season, round }
 })
+
+const liveRoundId = computed(() => data.value?.season.rounds.at(-1)?.id ?? '')
 
 const statCategories = [
   { key: 'kicks', label: 'Kicks' },
