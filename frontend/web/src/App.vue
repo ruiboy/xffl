@@ -3,8 +3,8 @@
     <nav class="border-b border-border bg-surface-raised px-6 py-4">
       <div class="max-w-5xl mx-auto flex items-center gap-6">
         <!-- Left: brand + service links -->
-        <router-link to="/ffl" class="text-lg font-semibold tracking-tight text-text hover:text-text-muted transition-colors">
-          xFFL
+        <router-link to="/ffl" class="flex items-center">
+          <img src="/images/ffl-eagle-logo.png" alt="FFL" class="h-10 w-auto transition-transform duration-200 hover:scale-[3] origin-top-left" />
         </router-link>
         <router-link to="/ffl" class="text-sm text-text-muted hover:text-text transition-colors">
           FFL
