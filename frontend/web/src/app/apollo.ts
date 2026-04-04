@@ -5,7 +5,8 @@ const fflLink = createHttpLink({ uri: 'http://localhost:8090/ffl/query' })
 
 const FFL_OPERATIONS = new Set([
   'GetFFLTeamBuilder',
-  'GetFFLSquad',
+  'GetFFLSeasonClubs',
+  'GetFFLClubSeason',
   'GetFFLLatestRound',
   'GetFFLSeason',
   'AddFFLPlayerToSeason',

@@ -99,6 +99,10 @@ func (q *Queries) GetClubSeason(ctx context.Context, id int) (domain.ClubSeason,
 	return q.clubSeasons.FindByID(ctx, id)
 }
 
+func (q *Queries) GetClubSeasonByClubAndSeason(ctx context.Context, clubID int, seasonID int) (domain.ClubSeason, error) {
+	return q.clubSeasons.FindByClubAndSeason(ctx, clubID, seasonID)
+}
+
 func (q *Queries) GetClubMatch(ctx context.Context, id int) (domain.ClubMatch, error) {
 	return q.clubMatches.FindByID(ctx, id)
 }

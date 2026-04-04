@@ -39,7 +39,7 @@ models:
 
   FFLClubSeason:
     fields:
-      squad: { resolver: true }
+      players: { resolver: true }
 
   FFLClubMatch:
     fields:

@@ -1,20 +1,20 @@
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-1">Squad</h1>
-    <p class="text-text-muted mb-6">Season squad and AFL stat averages</p>
+    <p class="text-text-muted mb-6">Season squad</p>
 
-    <div v-if="fflLoading" class="text-text-faint">Loading…</div>
-    <div v-else-if="fflError" class="text-red-400">{{ fflError.message }}</div>
-    <template v-else-if="season">
+    <div v-if="clubsLoading" class="text-text-faint">Loading…</div>
+    <div v-else-if="clubsError" class="text-red-400">{{ clubsError.message }}</div>
+    <template v-else-if="clubs.length > 0">
       <!-- Club selector + Manage toggle -->
       <div class="mb-6 flex items-center gap-4">
         <div>
           <label class="text-sm font-medium text-text-muted mr-2">Club:</label>
           <select
-            v-model="selectedClubSeasonId"
+            v-model="selectedClubId"
             class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-active focus:outline-none"
           >
-            <option v-for="cs in season.ladder" :key="cs.id" :value="cs.id">
+            <option v-for="cs in clubs" :key="cs.club.id" :value="cs.club.id">
               {{ cs.club.name }}
             </option>
           </select>
@@ -30,59 +30,31 @@
         </button>
       </div>
 
-      <template v-if="squadRows.length > 0">
+      <div v-if="squadLoading" class="text-text-faint">Loading squad…</div>
+      <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
+      <template v-else-if="players.length > 0">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-border text-left text-text-muted">
                 <th class="py-2 pr-4 font-medium">Player</th>
-                <th class="py-2 px-2 font-medium text-right">GP</th>
-                <th class="py-2 px-2 font-medium text-right">G</th>
-                <th class="py-2 px-2 font-medium text-right">K</th>
-                <th class="py-2 px-2 font-medium text-right">HB</th>
-                <th class="py-2 px-2 font-medium text-right">M</th>
-                <th class="py-2 px-2 font-medium text-right">T</th>
-                <th class="py-2 px-2 font-medium text-right">HO</th>
-                <th class="py-2 px-2 font-medium text-right">B</th>
                 <th v-if="managing" class="py-2 px-2 font-medium text-right"></th>
               </tr>
             </thead>
             <tbody>
               <tr
-                v-for="row in squadRows"
-                :key="row.playerSeasonId"
+                v-for="row in players"
+                :key="row.id"
                 class="border-b border-border-subtle hover:bg-surface-hover"
               >
-                <td class="py-2 pr-4 font-medium">{{ row.name }}</td>
-                <td class="py-2 px-2 text-right tabular-nums">{{ row.gamesPlayed ?? '—' }}</td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgGoals != null ? '' : 'text-text-faint'">
-                  {{ row.avgGoals ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgKicks != null ? '' : 'text-text-faint'">
-                  {{ row.avgKicks ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgHandballs != null ? '' : 'text-text-faint'">
-                  {{ row.avgHandballs ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgMarks != null ? '' : 'text-text-faint'">
-                  {{ row.avgMarks ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgTackles != null ? '' : 'text-text-faint'">
-                  {{ row.avgTackles ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgHitouts != null ? '' : 'text-text-faint'">
-                  {{ row.avgHitouts ?? '—' }}
-                </td>
-                <td class="py-2 px-2 text-right tabular-nums" :class="row.avgBehinds != null ? '' : 'text-text-faint'">
-                  {{ row.avgBehinds ?? '—' }}
-                </td>
+                <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
                 <td v-if="managing" class="py-2 px-2 text-right">
                   <button
-                    @click="removePlayer(row.playerSeasonId)"
+                    @click="removePlayer(row.id)"
                     class="text-red-400 hover:text-red-300 text-xs font-medium"
-                    :disabled="removingId === row.playerSeasonId"
+                    :disabled="removingId === row.id"
                   >
-                    {{ removingId === row.playerSeasonId ? 'Removing…' : 'Remove' }}
+                    {{ removingId === row.id ? 'Removing…' : 'Remove' }}
                   </button>
                 </td>
               </tr>
@@ -90,7 +62,7 @@
           </table>
         </div>
       </template>
-      <p v-else class="text-text-faint">No players on squad.</p>
+      <p v-else-if="!squadLoading" class="text-text-faint">No players on squad.</p>
 
       <!-- Add player search (manage mode only) -->
       <div v-if="managing" class="mt-6">
@@ -129,109 +101,45 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_SQUAD, GET_AFL_PLAYER_SEASON_STATS, SEARCH_AFL_PLAYERS } from '../api/queries'
+import { GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 
 const props = defineProps<{ seasonId: string }>()
 
 const managing = ref(false)
+const selectedClubId = ref<string>('')
 
-// Query 1: FFL squad
-const { result: fflResult, loading: fflLoading, error: fflError, refetch: refetchSquad } = useQuery(GET_FFL_SQUAD, () => ({ seasonId: props.seasonId }))
+// Query 1: clubs in this season (for the dropdown)
+const { result: clubsResult, loading: clubsLoading, error: clubsError } = useQuery(
+  GET_FFL_SEASON_CLUBS,
+  () => ({ seasonId: props.seasonId })
+)
 
-const season = computed(() => fflResult.value?.fflSeason ?? null)
+const clubs = computed(() => clubsResult.value?.fflSeason?.ladder ?? [])
 
-const selectedClubSeasonId = ref<string>('')
-
-watch(season, (s) => {
-  if (s && s.ladder.length > 0 && !selectedClubSeasonId.value) {
-    selectedClubSeasonId.value = s.ladder[0].id
+watch(clubs, (list) => {
+  if (list.length > 0 && !selectedClubId.value) {
+    selectedClubId.value = list[0].club.id
   }
 })
 
-const selectedClubSeason = computed(() =>
-  season.value?.ladder.find((cs: { id: string }) => cs.id === selectedClubSeasonId.value) ?? null
+// Query 2: selected club's squad
+const { result: squadResult, loading: squadLoading, error: squadError, refetch: refetchSquad } = useQuery(
+  GET_FFL_CLUB_SEASON,
+  () => ({ seasonId: props.seasonId, clubId: selectedClubId.value }),
+  () => ({ enabled: !!selectedClubId.value })
 )
 
-// Collect AFL player season IDs from the selected club's squad
-const aflPlayerSeasonIds = computed<string[]>(() => {
-  if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.squad
-    .map((r: { aflPlayerSeasonId?: string }) => r.aflPlayerSeasonId)
-    .filter((id: string | undefined): id is string => id != null)
-})
+const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
+const clubSeasonId = computed(() => clubSeason.value?.id ?? '')
 
-// Query 2: AFL stats (only when we have IDs)
-const { result: aflResult } = useQuery(
-  GET_AFL_PLAYER_SEASON_STATS,
-  () => ({ ids: aflPlayerSeasonIds.value }),
-  () => ({ enabled: aflPlayerSeasonIds.value.length > 0 })
-)
-
-// Build a map of AFL player season ID → stats
-const statsMap = computed(() => {
-  const map = new Map<string, {
-    gamesPlayed: number
-    avgGoals: number
-    avgKicks: number
-    avgHandballs: number
-    avgMarks: number
-    avgTackles: number
-    avgHitouts: number
-    avgBehinds: number
-  }>()
-  const stats = aflResult.value?.aflPlayerSeasonStats
-  if (!stats) return map
-  for (const s of stats) {
-    map.set(s.playerSeasonId, s)
-  }
-  return map
-})
-
-interface SquadRow {
-  playerSeasonId: string
-  name: string
-  aflPlayerId: string | null
-  gamesPlayed: number | null
-  avgGoals: string | null
-  avgKicks: string | null
-  avgHandballs: string | null
-  avgMarks: string | null
-  avgTackles: string | null
-  avgHitouts: string | null
-  avgBehinds: string | null
-}
-
-const squadRows = computed<SquadRow[]>(() => {
-  if (!selectedClubSeason.value) return []
-
-  const rows: SquadRow[] = selectedClubSeason.value.squad.map(
-    (r: { playerSeasonId: string; player: { name: string; aflPlayerId?: string }; aflPlayerSeasonId?: string }) => {
-      const stats = r.aflPlayerSeasonId ? statsMap.value.get(r.aflPlayerSeasonId) : undefined
-      return {
-        playerSeasonId: r.playerSeasonId,
-        name: r.player.name,
-        aflPlayerId: r.player.aflPlayerId ?? null,
-        gamesPlayed: stats?.gamesPlayed ?? null,
-        avgGoals: stats ? stats.avgGoals.toFixed(1) : null,
-        avgKicks: stats ? stats.avgKicks.toFixed(1) : null,
-        avgHandballs: stats ? stats.avgHandballs.toFixed(1) : null,
-        avgMarks: stats ? stats.avgMarks.toFixed(1) : null,
-        avgTackles: stats ? stats.avgTackles.toFixed(1) : null,
-        avgHitouts: stats ? stats.avgHitouts.toFixed(1) : null,
-        avgBehinds: stats ? stats.avgBehinds.toFixed(1) : null,
-      }
-    }
-  )
-
-  // Sort by last name
-  rows.sort((a, b) => {
-    const lastA = a.name.split(' ').pop()?.toLowerCase() ?? ''
-    const lastB = b.name.split(' ').pop()?.toLowerCase() ?? ''
+const players = computed(() => {
+  const nodes = clubSeason.value?.players?.nodes ?? []
+  return [...nodes].sort((a, b) => {
+    const lastA = a.player.name.split(' ').pop()?.toLowerCase() ?? ''
+    const lastB = b.player.name.split(' ').pop()?.toLowerCase() ?? ''
     return lastA.localeCompare(lastB)
   })
-
-  return rows
 })
 
 // --- Manage mode: search + add/remove ---
@@ -257,18 +165,17 @@ const { result: searchResult, loading: searchLoading } = useQuery(
   () => ({ enabled: debouncedQuery.value.length >= 2 })
 )
 
-// Filter out players already on the squad (by AFL player ID)
 const squadAflPlayerIds = computed(() => {
   const ids = new Set<string>()
-  for (const row of squadRows.value) {
-    if (row.aflPlayerId) ids.add(row.aflPlayerId)
+  for (const row of players.value) {
+    if (row.player.aflPlayerId) ids.add(row.player.aflPlayerId)
   }
   return ids
 })
 
 const searchResults = computed(() => {
-  const players = searchResult.value?.aflPlayerSearch ?? []
-  return players.filter((p: { id: string }) => !squadAflPlayerIds.value.has(p.id))
+  const results = searchResult.value?.aflPlayerSearch ?? []
+  return results.filter((p: { id: string }) => !squadAflPlayerIds.value.has(p.id))
 })
 
 // Remove player
@@ -290,14 +197,14 @@ const addingId = ref<string | null>(null)
 const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
 
 async function addPlayer(player: { id: string; name: string }) {
-  if (!selectedClubSeasonId.value) return
+  if (!clubSeasonId.value) return
   addingId.value = player.id
   try {
     await addPlayerMutation({
       input: {
         aflPlayerId: player.id,
         aflPlayerName: player.name,
-        clubSeasonId: selectedClubSeasonId.value,
+        clubSeasonId: clubSeasonId.value,
       },
     })
     await refetchSquad()
@@ -306,7 +213,6 @@ async function addPlayer(player: { id: string; name: string }) {
   }
 }
 
-// Reset search when exiting manage mode
 watch(managing, (val) => {
   if (!val) {
     searchQuery.value = ''

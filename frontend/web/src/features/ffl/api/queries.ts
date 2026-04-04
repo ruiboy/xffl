@@ -8,9 +8,11 @@ export const GET_FFL_TEAM_BUILDER = gql`
       ladder {
         id
         club { id name }
-        squad {
-          playerSeasonId
-          player { id name aflPlayerId }
+        players {
+          nodes {
+            id
+            player { id name }
+          }
         }
       }
       rounds {
@@ -52,19 +54,29 @@ export const GET_FFL_TEAM_BUILDER = gql`
   }
 `
 
-export const GET_FFL_SQUAD = gql`
-  query GetFFLSquad($seasonId: ID!) {
+export const GET_FFL_SEASON_CLUBS = gql`
+  query GetFFLSeasonClubs($seasonId: ID!) {
     fflSeason(id: $seasonId) {
       id
-      name
       ladder {
         id
         club { id name }
-        squad {
-          playerSeasonId
+      }
+    }
+  }
+`
+
+export const GET_FFL_CLUB_SEASON = gql`
+  query GetFFLClubSeason($seasonId: ID!, $clubId: ID!) {
+    fflClubSeason(seasonId: $seasonId, clubId: $clubId) {
+      id
+      club { id name }
+      players {
+        nodes {
+          id
           player { id name aflPlayerId }
-          aflPlayerSeasonId
         }
+        totalCount
       }
     }
   }
@@ -79,21 +91,6 @@ export const SEARCH_AFL_PLAYERS = gql`
   }
 `
 
-export const GET_AFL_PLAYER_SEASON_STATS = gql`
-  query GetAFLPlayerSeasonStats($ids: [ID!]!) {
-    aflPlayerSeasonStats(ids: $ids) {
-      playerSeasonId
-      gamesPlayed
-      avgKicks
-      avgHandballs
-      avgMarks
-      avgHitouts
-      avgTackles
-      avgGoals
-      avgBehinds
-    }
-  }
-`
 
 export const GET_FFL_LATEST_ROUND = gql`
   query GetFFLLatestRound {

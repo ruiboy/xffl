@@ -30,12 +30,6 @@ input AddFFLPlayerToSeasonInput {
   clubSeasonId: ID!
 }
 
-type FFLPlayerSeason {
-  id: ID!
-  playerId: ID!
-  clubSeasonId: ID!
-}
-
 input CalculateFFLFantasyScoreInput {
   playerMatchId: ID!
   goals: Int!

@@ -112,7 +112,7 @@
             <div class="space-y-1">
               <div
                 v-for="player in availablePlayers"
-                :key="player.playerSeasonId"
+                :key="player.id"
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
                 <span class="font-medium text-sm">{{ player.name }}</span>
@@ -168,7 +168,7 @@ const positions = [
 type PositionKey = typeof positions[number]['key']
 
 interface SquadPlayer {
-  playerSeasonId: string
+  id: string
   name: string
 }
 
@@ -210,8 +210,8 @@ const clubMatch = computed(() => {
 // Squad from club season
 const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.squad.map((r: { playerSeasonId: string; player: { name: string } }) => ({
-    playerSeasonId: r.playerSeasonId,
+  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string } }) => ({
+    id: r.id,
     name: r.player.name,
   }))
 })
@@ -236,7 +236,7 @@ watch(clubMatch, (cm) => {
   if (!cm?.playerMatches) return
 
   for (const pm of cm.playerMatches) {
-    const player: SquadPlayer = { playerSeasonId: pm.playerSeasonId, name: pm.player.name }
+    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (isBench) {
@@ -256,17 +256,17 @@ const assignedPlayerSeasonIds = computed(() => {
   const ids = new Set<string>()
   for (const pos of positions) {
     for (const slot of lineupSlots.value[pos.key]) {
-      if (slot.player) ids.add(slot.player.playerSeasonId)
+      if (slot.player) ids.add(slot.player.id)
     }
   }
   for (const slot of benchSlots.value) {
-    if (slot.player) ids.add(slot.player.playerSeasonId)
+    if (slot.player) ids.add(slot.player.id)
   }
   return ids
 })
 
 const availablePlayers = computed(() =>
-  squad.value.filter(p => !assignedPlayerSeasonIds.value.has(p.playerSeasonId))
+  squad.value.filter(p => !assignedPlayerSeasonIds.value.has(p.id))
 )
 
 const starterCount = computed(() => {
@@ -325,7 +325,7 @@ async function submitLineup() {
   for (const pos of positions) {
     for (const slot of lineupSlots.value[pos.key]) {
       if (slot.player) {
-        players.push({ playerSeasonId: slot.player.playerSeasonId, position: pos.key })
+        players.push({ playerSeasonId: slot.player.id, position: pos.key })
       }
     }
   }
@@ -333,7 +333,7 @@ async function submitLineup() {
   for (const slot of benchSlots.value) {
     if (slot.player) {
       // Bench players get first available position as backup
-      players.push({ playerSeasonId: slot.player.playerSeasonId, position: 'kicks', backupPositions: 'kicks' })
+      players.push({ playerSeasonId: slot.player.id, position: 'kicks', backupPositions: 'kicks' })
     }
   }
 

@@ -12,7 +12,7 @@ User describes what they want → build it. Changes are largely frontend/UX.
 
 ### UX refinements (iterative, user-driven)
 - [x] Fix fragile Apollo routing link — replace regex field-name matching with explicit operation-name map (see ADR-008)
-- [ ] Fix wasteful squad query — add `fflClubSeason(id: ID!)` resolver so SquadView doesn't load the full ladder
+- [x] Fix wasteful squad query — add `fflClubSeason(seasonId, clubId)` resolver; rename `FFLSquadEntry` → `FFLPlayerSeason`; `squad` → `players` with connection pagination shape
 - [ ] _(further UX items added each session)_
 
  Completed

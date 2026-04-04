@@ -41,16 +41,16 @@ type FFLClubMatch struct {
 }
 
 type FFLClubSeason struct {
-	ID         string           `json:"id"`
-	Club       *FFLClub         `json:"club"`
-	Played     int              `json:"played"`
-	Won        int              `json:"won"`
-	Lost       int              `json:"lost"`
-	Drawn      int              `json:"drawn"`
-	For        int              `json:"for"`
-	Against    int              `json:"against"`
-	Percentage float64          `json:"percentage"`
-	Squad      []*FFLSquadEntry `json:"squad"`
+	ID         string                     `json:"id"`
+	Club       *FFLClub                   `json:"club"`
+	Played     int                        `json:"played"`
+	Won        int                        `json:"won"`
+	Lost       int                        `json:"lost"`
+	Drawn      int                        `json:"drawn"`
+	For        int                        `json:"for"`
+	Against    int                        `json:"against"`
+	Percentage float64                    `json:"percentage"`
+	Players    *FFLPlayerSeasonConnection `json:"players"`
 }
 
 type FFLLineupPlayerInput struct {
@@ -87,9 +87,20 @@ type FFLPlayerMatch struct {
 }
 
 type FFLPlayerSeason struct {
-	ID           string `json:"id"`
-	PlayerID     string `json:"playerId"`
-	ClubSeasonID string `json:"clubSeasonId"`
+	ID                string     `json:"id"`
+	Player            *FFLPlayer `json:"player"`
+	ClubSeasonID      string     `json:"clubSeasonId"`
+	AflPlayerSeasonID *string    `json:"aflPlayerSeasonId,omitempty"`
+}
+
+type FFLPlayerSeasonConnection struct {
+	Nodes      []*FFLPlayerSeason `json:"nodes"`
+	PageInfo   *PageInfo          `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+type FFLPlayerSeasonFilter struct {
+	Active *bool `json:"active,omitempty"`
 }
 
 type FFLRound struct {
@@ -106,13 +117,12 @@ type FFLSeason struct {
 	Rounds []*FFLRound      `json:"rounds"`
 }
 
-type FFLSquadEntry struct {
-	PlayerSeasonID    string     `json:"playerSeasonId"`
-	Player            *FFLPlayer `json:"player"`
-	AflPlayerSeasonID *string    `json:"aflPlayerSeasonId,omitempty"`
+type Mutation struct {
 }
 
-type Mutation struct {
+type PageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor,omitempty"`
 }
 
 type Query struct {

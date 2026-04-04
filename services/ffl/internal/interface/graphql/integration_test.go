@@ -684,7 +684,7 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	addResult := execQuery(t, server, `mutation {
 		addFFLPlayerToSeason(input: { playerId: "`+created.CreateFFLPlayer.ID+`", clubSeasonId: "`+clubSeasonID+`" }) {
 			id
-			playerId
+			player { id }
 			clubSeasonId
 		}
 	}`)
@@ -696,7 +696,9 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	var addData struct {
 		AddFFLPlayerToSeason struct {
 			ID           string `json:"id"`
-			PlayerID     string `json:"playerId"`
+			Player       struct {
+				ID string `json:"id"`
+			} `json:"player"`
 			ClubSeasonID string `json:"clubSeasonId"`
 		} `json:"addFFLPlayerToSeason"`
 	}
@@ -704,8 +706,8 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	if addData.AddFFLPlayerToSeason.PlayerID != created.CreateFFLPlayer.ID {
-		t.Errorf("expected player ID %s, got %s", created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.PlayerID)
+	if addData.AddFFLPlayerToSeason.Player.ID != created.CreateFFLPlayer.ID {
+		t.Errorf("expected player ID %s, got %s", created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.Player.ID)
 	}
 	if addData.AddFFLPlayerToSeason.ClubSeasonID != clubSeasonID {
 		t.Errorf("expected club season ID %s, got %s", clubSeasonID, addData.AddFFLPlayerToSeason.ClubSeasonID)

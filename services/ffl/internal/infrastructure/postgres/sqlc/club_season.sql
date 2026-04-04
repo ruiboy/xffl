@@ -12,3 +12,10 @@ SELECT id, club_id, season_id,
        drv_for, drv_against, drv_premiership_points
 FROM ffl.club_season
 WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: FindClubSeasonByClubAndSeason :one
+SELECT id, club_id, season_id,
+       drv_played, drv_won, drv_lost, drv_drawn,
+       drv_for, drv_against, drv_premiership_points
+FROM ffl.club_season
+WHERE club_id = $1 AND season_id = $2 AND deleted_at IS NULL;

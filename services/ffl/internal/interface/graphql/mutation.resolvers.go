@@ -63,7 +63,11 @@ func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFF
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayerSeason(ps), nil
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, player), nil
 }
 
 // RemoveFFLPlayerFromSeason is the resolver for the removeFFLPlayerFromSeason field.
@@ -151,7 +155,11 @@ func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSq
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayerSeason(ps), nil
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, player), nil
 }
 
 // Mutation returns MutationResolver implementation.
