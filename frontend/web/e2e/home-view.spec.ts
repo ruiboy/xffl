@@ -7,7 +7,7 @@ test.describe('AFL Home view', () => {
 
   test('displays season and round name', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('AFL 2025')
-    await expect(page.getByRole('paragraph')).toContainText('Round 13')
+    await expect(page.getByRole('paragraph')).toContainText('Round 15')
   })
 
   test('displays ladder', async ({ page }) => {

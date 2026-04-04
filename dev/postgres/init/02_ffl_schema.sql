@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS ffl.season (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    league_id INTEGER NOT NULL REFERENCES ffl.league(id) ON DELETE CASCADE
+    league_id INTEGER NOT NULL REFERENCES ffl.league(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL
 );
 
 -- Create round table
@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS ffl.round (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    season_id INTEGER NOT NULL REFERENCES ffl.season(id) ON DELETE CASCADE
+    season_id INTEGER NOT NULL REFERENCES ffl.season(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL
 );
 
 -- Create match table
@@ -38,13 +38,13 @@ CREATE TABLE IF NOT EXISTS ffl.match (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     round_id INTEGER NOT NULL REFERENCES ffl.round(id) ON DELETE CASCADE,
-    match_style VARCHAR(50) NOT NULL CHECK (match_style IN ('versus', 'bye', 'super_bye')),
-    clubs JSONB,
+    match_style VARCHAR(50),
     home_club_match_id INTEGER,
     away_club_match_id INTEGER,
+    clubs JSONB,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
-    drv_result TEXT
+    drv_result VARCHAR(50)
 );
 
 -- Create club table
@@ -85,7 +85,8 @@ CREATE TABLE IF NOT EXISTS ffl.club_match (
     match_id INTEGER NOT NULL REFERENCES ffl.match(id) ON DELETE CASCADE,
     club_season_id INTEGER NOT NULL REFERENCES ffl.club_season(id) ON DELETE CASCADE,
     drv_score INTEGER DEFAULT 0,
-    drv_premiership_points INTEGER DEFAULT 0
+    drv_premiership_points INTEGER DEFAULT 0,
+    CONSTRAINT uni_ffl_club_match UNIQUE (club_season_id, match_id)
 );
 
 -- Add foreign key constraints for match table references to club_match
@@ -103,9 +104,8 @@ CREATE TABLE IF NOT EXISTS ffl.player (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    club_id INTEGER REFERENCES ffl.club(id) ON DELETE CASCADE,
-    afl_player_id INTEGER
+    afl_player_id INTEGER NOT NULL,
+    drv_name VARCHAR(255) NOT NULL
 );
 
 -- Create player_season table
@@ -130,12 +130,12 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     club_match_id INTEGER NOT NULL REFERENCES ffl.club_match(id) ON DELETE CASCADE,
     player_season_id INTEGER NOT NULL REFERENCES ffl.player_season(id) ON DELETE CASCADE,
-    position VARCHAR(255),
-    status VARCHAR(50),
-    backup_positions TEXT,
-    interchange_position VARCHAR(255),
-    score INTEGER DEFAULT 0,
     afl_player_match_id INTEGER,
+    status VARCHAR(50),
+    position VARCHAR(255),
+    backup_positions VARCHAR(255),
+    interchange_position VARCHAR(255),
+    drv_score INTEGER DEFAULT 0,
     CONSTRAINT uni_ffl_player_match UNIQUE (player_season_id, club_match_id)
 );
 
@@ -149,7 +149,6 @@ CREATE INDEX IF NOT EXISTS idx_club_season_club_id ON ffl.club_season(club_id);
 CREATE INDEX IF NOT EXISTS idx_club_season_season_id ON ffl.club_season(season_id);
 CREATE INDEX IF NOT EXISTS idx_club_match_match_id ON ffl.club_match(match_id);
 CREATE INDEX IF NOT EXISTS idx_club_match_club_season_id ON ffl.club_match(club_season_id);
-CREATE INDEX IF NOT EXISTS idx_player_club_id ON ffl.player(club_id);
 CREATE INDEX IF NOT EXISTS idx_player_season_player_id ON ffl.player_season(player_id);
 CREATE INDEX IF NOT EXISTS idx_player_season_club_season_id ON ffl.player_season(club_season_id);
 CREATE INDEX IF NOT EXISTS idx_player_season_from_round_id ON ffl.player_season(from_round_id);

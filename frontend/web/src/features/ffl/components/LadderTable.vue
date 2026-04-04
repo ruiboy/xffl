@@ -21,7 +21,12 @@
           class="border-b border-border-subtle hover:bg-surface-hover"
         >
           <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
-          <td class="py-2 pr-4 font-medium">{{ entry.club.name }}</td>
+          <td class="py-2 pr-4 font-medium">
+            <div class="flex items-center gap-2">
+              <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />
+              {{ entry.club.name }}
+            </div>
+          </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.played }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.won }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.lost }}</td>
@@ -36,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { clubLogoUrl } from '../utils/clubLogos'
+
 interface LadderEntry {
   id: string
   club: { id: string; name: string }

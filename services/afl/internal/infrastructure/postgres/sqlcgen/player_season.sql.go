@@ -10,7 +10,7 @@ import (
 )
 
 const findPlayerSeasonByID = `-- name: FindPlayerSeasonByID :one
-SELECT id, player_id, club_season_id
+SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -19,11 +19,19 @@ type FindPlayerSeasonByIDRow struct {
 	ID           int32
 	PlayerID     int32
 	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
 }
 
 func (q *Queries) FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerSeasonByID, id)
 	var i FindPlayerSeasonByIDRow
-	err := row.Scan(&i.ID, &i.PlayerID, &i.ClubSeasonID)
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+	)
 	return i, err
 }

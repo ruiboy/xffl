@@ -4,10 +4,12 @@
     class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors"
   >
     <div class="flex items-center gap-3 font-medium">
+      <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain" />
       <span :class="{ 'font-bold': winner === 'home' }">
         {{ match.homeClubMatch?.club.name ?? '—' }}
       </span>
       <span class="text-text-faint">v</span>
+      <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain" />
       <span :class="{ 'font-bold': winner === 'away' }">
         {{ match.awayClubMatch?.club.name ?? '—' }}
       </span>
@@ -20,6 +22,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 
 interface ClubMatch {
   id: string
@@ -38,6 +41,9 @@ const props = defineProps<{
   match: Match
   to: { name: string; params: Record<string, string> }
 }>()
+
+const homeLogo = computed(() => props.match.homeClubMatch ? clubLogoUrl(props.match.homeClubMatch.club.name) : '')
+const awayLogo = computed(() => props.match.awayClubMatch ? clubLogoUrl(props.match.awayClubMatch.club.name) : '')
 
 const winner = computed(() => {
   if (!props.match.result) return null

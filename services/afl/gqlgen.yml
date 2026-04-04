@@ -21,10 +21,6 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID
-  AFLClub:
-    fields:
-      players:
-        resolver: true
   AFLSeason:
     fields:
       ladder:

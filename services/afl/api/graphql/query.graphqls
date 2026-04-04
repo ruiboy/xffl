@@ -23,7 +23,6 @@ type AFLPlayerSeasonStats {
 type AFLClub {
   id: ID!
   name: String!
-  players: [AFLPlayer!]!
 }
 
 type AFLPlayer {
@@ -78,6 +77,7 @@ type AFLPlayerMatch {
   id: ID!
   playerSeasonId: ID!
   player: AFLPlayer!
+  status: String!
   kicks: Int!
   handballs: Int!
   marks: Int!

@@ -71,7 +71,6 @@ type AflPlayer struct {
 	UpdatedAt pgtype.Timestamptz
 	DeletedAt pgtype.Timestamptz
 	Name      string
-	ClubID    *int32
 }
 
 type AflPlayerMatch struct {
@@ -81,6 +80,7 @@ type AflPlayerMatch struct {
 	DeletedAt      pgtype.Timestamptz
 	ClubMatchID    int32
 	PlayerSeasonID int32
+	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -97,6 +97,8 @@ type AflPlayerSeason struct {
 	DeletedAt    pgtype.Timestamptz
 	PlayerID     int32
 	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
 }
 
 type AflRound struct {
@@ -104,8 +106,8 @@ type AflRound struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	DeletedAt pgtype.Timestamptz
-	Name      string
 	SeasonID  int32
+	Name      string
 }
 
 type AflSeason struct {
@@ -113,6 +115,6 @@ type AflSeason struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	DeletedAt pgtype.Timestamptz
-	Name      string
 	LeagueID  int32
+	Name      string
 }

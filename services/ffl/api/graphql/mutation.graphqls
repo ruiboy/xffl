@@ -17,6 +17,7 @@ input AddFFLRosterPlayerInput {
 
 input CreateFFLPlayerInput {
   name: String!
+  aflPlayerId: ID!
 }
 
 input UpdateFFLPlayerInput {

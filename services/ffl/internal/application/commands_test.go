@@ -48,14 +48,14 @@ func (r *mockPlayerRepo) FindByID(_ context.Context, id int) (domain.Player, err
 
 func (r *mockPlayerRepo) FindByAFLPlayerID(_ context.Context, aflPlayerID int) (domain.Player, error) {
 	for _, p := range r.players {
-		if p.AFLPlayerID != nil && *p.AFLPlayerID == aflPlayerID {
+		if p.AFLPlayerID == aflPlayerID {
 			return p, nil
 		}
 	}
 	return domain.Player{}, errors.New("not found")
 }
 
-func (r *mockPlayerRepo) Create(_ context.Context, name string, aflPlayerID *int) (domain.Player, error) {
+func (r *mockPlayerRepo) Create(_ context.Context, name string, aflPlayerID int) (domain.Player, error) {
 	p := domain.Player{ID: r.nextID, Name: name, AFLPlayerID: aflPlayerID}
 	r.players[r.nextID] = p
 	r.nextID++
@@ -248,12 +248,15 @@ func TestCreatePlayer(t *testing.T) {
 	cmds, playerRepo, _, _, _ := setupCommands()
 	ctx := context.Background()
 
-	p, err := cmds.CreatePlayer(ctx, "Alice")
+	p, err := cmds.CreatePlayer(ctx, "Alice", 100)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
 	if p.Name != "Alice" {
 		t.Errorf("got name %q, want %q", p.Name, "Alice")
+	}
+	if p.AFLPlayerID != 100 {
+		t.Errorf("got AFLPlayerID %d, want 100", p.AFLPlayerID)
 	}
 	if p.ID == 0 {
 		t.Error("expected non-zero ID")
@@ -273,7 +276,7 @@ func TestUpdatePlayer(t *testing.T) {
 	cmds, playerRepo, _, _, _ := setupCommands()
 	ctx := context.Background()
 
-	p, _ := cmds.CreatePlayer(ctx, "Alice")
+	p, _ := cmds.CreatePlayer(ctx, "Alice", 100)
 	updated, err := cmds.UpdatePlayer(ctx, p.ID, "Bob")
 	if err != nil {
 		t.Fatalf("UpdatePlayer: %v", err)
@@ -292,7 +295,7 @@ func TestDeletePlayer(t *testing.T) {
 	cmds, playerRepo, _, _, _ := setupCommands()
 	ctx := context.Background()
 
-	p, _ := cmds.CreatePlayer(ctx, "Alice")
+	p, _ := cmds.CreatePlayer(ctx, "Alice", 100)
 	if err := cmds.DeletePlayer(ctx, p.ID); err != nil {
 		t.Fatalf("DeletePlayer: %v", err)
 	}
@@ -353,8 +356,8 @@ func TestAddAFLPlayerToRoster_CreatesNewPlayer(t *testing.T) {
 	if player.Name != "Lachie Neale" {
 		t.Errorf("player name = %q, want %q", player.Name, "Lachie Neale")
 	}
-	if player.AFLPlayerID == nil || *player.AFLPlayerID != 42 {
-		t.Errorf("player AFLPlayerID = %v, want 42", player.AFLPlayerID)
+	if player.AFLPlayerID != 42 {
+		t.Errorf("player AFLPlayerID = %d, want 42", player.AFLPlayerID)
 	}
 
 	// Should have created a player season
@@ -372,8 +375,7 @@ func TestAddAFLPlayerToRoster_ReusesExistingPlayer(t *testing.T) {
 	ctx := context.Background()
 
 	// Pre-create an FFL player linked to AFL player 42
-	aflID := 42
-	existing, _ := playerRepo.Create(ctx, "Lachie Neale", &aflID)
+	existing, _ := playerRepo.Create(ctx, "Lachie Neale", 42)
 
 	ps, err := cmds.AddAFLPlayerToRoster(ctx, 42, "Lachie Neale", 1)
 	if err != nil {
@@ -388,7 +390,7 @@ func TestAddAFLPlayerToRoster_ReusesExistingPlayer(t *testing.T) {
 	// Should still only have one player with that AFL ID
 	count := 0
 	for _, p := range playerRepo.players {
-		if p.AFLPlayerID != nil && *p.AFLPlayerID == 42 {
+		if p.AFLPlayerID == 42 {
 			count++
 		}
 	}

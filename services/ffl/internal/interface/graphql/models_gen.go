@@ -24,7 +24,8 @@ type CalculateFFLFantasyScoreInput struct {
 }
 
 type CreateFFLPlayerInput struct {
-	Name string `json:"name"`
+	Name        string `json:"name"`
+	AflPlayerID string `json:"aflPlayerId"`
 }
 
 type FFLClub struct {
@@ -69,9 +70,9 @@ type FFLMatch struct {
 }
 
 type FFLPlayer struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	AflPlayerID *string `json:"aflPlayerId,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	AflPlayerID string `json:"aflPlayerId"`
 }
 
 type FFLPlayerMatch struct {

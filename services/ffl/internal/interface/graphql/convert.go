@@ -34,12 +34,7 @@ func convertClubs(clubs []domain.Club) []*FFLClub {
 }
 
 func convertPlayer(p domain.Player) *FFLPlayer {
-	player := &FFLPlayer{ID: toID(p.ID), Name: p.Name}
-	if p.AFLPlayerID != nil {
-		id := toID(*p.AFLPlayerID)
-		player.AflPlayerID = &id
-	}
-	return player
+	return &FFLPlayer{ID: toID(p.ID), Name: p.Name, AflPlayerID: toID(p.AFLPlayerID)}
 }
 
 func convertPlayers(players []domain.Player) []*FFLPlayer {

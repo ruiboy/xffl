@@ -10,7 +10,7 @@ test.describe('Match view', () => {
   test('displays match header with teams and venue', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Adelaide Crows')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Brisbane Lions')
-    await expect(page.getByText('Adelaide Oval')).toBeVisible()
+    await expect(page.getByText('MCG')).toBeVisible()
   })
 
   test('displays home team player stats', async ({ page }) => {

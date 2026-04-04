@@ -10,7 +10,7 @@ import (
 )
 
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
-SELECT id, club_match_id, player_season_id,
+SELECT id, club_match_id, player_season_id, status,
        kicks, handballs, marks, hitouts, tackles, goals, behinds
 FROM afl.player_match
 WHERE id = $1 AND deleted_at IS NULL
@@ -20,6 +20,7 @@ type FindPlayerMatchByIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
+	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -36,6 +37,7 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 		&i.ID,
 		&i.ClubMatchID,
 		&i.PlayerSeasonID,
+		&i.Status,
 		&i.Kicks,
 		&i.Handballs,
 		&i.Marks,
@@ -105,7 +107,7 @@ func (q *Queries) FindPlayerMatchStatsByPlayerSeasonIDs(ctx context.Context, pla
 }
 
 const findPlayerMatchesByClubMatchID = `-- name: FindPlayerMatchesByClubMatchID :many
-SELECT id, club_match_id, player_season_id,
+SELECT id, club_match_id, player_season_id, status,
        kicks, handballs, marks, hitouts, tackles, goals, behinds
 FROM afl.player_match
 WHERE club_match_id = $1 AND deleted_at IS NULL
@@ -115,6 +117,7 @@ type FindPlayerMatchesByClubMatchIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
+	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -137,6 +140,7 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 			&i.ID,
 			&i.ClubMatchID,
 			&i.PlayerSeasonID,
+			&i.Status,
 			&i.Kicks,
 			&i.Handballs,
 			&i.Marks,
@@ -156,25 +160,27 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 }
 
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
-INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (player_season_id, club_match_id)
 DO UPDATE SET
-    kicks = COALESCE($3, afl.player_match.kicks),
-    handballs = COALESCE($4, afl.player_match.handballs),
-    marks = COALESCE($5, afl.player_match.marks),
-    hitouts = COALESCE($6, afl.player_match.hitouts),
-    tackles = COALESCE($7, afl.player_match.tackles),
-    goals = COALESCE($8, afl.player_match.goals),
-    behinds = COALESCE($9, afl.player_match.behinds),
+    status = COALESCE($3, afl.player_match.status),
+    kicks = COALESCE($4, afl.player_match.kicks),
+    handballs = COALESCE($5, afl.player_match.handballs),
+    marks = COALESCE($6, afl.player_match.marks),
+    hitouts = COALESCE($7, afl.player_match.hitouts),
+    tackles = COALESCE($8, afl.player_match.tackles),
+    goals = COALESCE($9, afl.player_match.goals),
+    behinds = COALESCE($10, afl.player_match.behinds),
     updated_at = CURRENT_TIMESTAMP
 WHERE afl.player_match.deleted_at IS NULL
-RETURNING id, club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds
+RETURNING id, club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds
 `
 
 type UpsertPlayerMatchParams struct {
 	ClubMatchID    int32
 	PlayerSeasonID int32
+	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -188,6 +194,7 @@ type UpsertPlayerMatchRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
+	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -201,6 +208,7 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 	row := q.db.QueryRow(ctx, upsertPlayerMatch,
 		arg.ClubMatchID,
 		arg.PlayerSeasonID,
+		arg.Status,
 		arg.Kicks,
 		arg.Handballs,
 		arg.Marks,
@@ -214,6 +222,7 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 		&i.ID,
 		&i.ClubMatchID,
 		&i.PlayerSeasonID,
+		&i.Status,
 		&i.Kicks,
 		&i.Handballs,
 		&i.Marks,

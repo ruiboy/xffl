@@ -10,61 +10,25 @@ import (
 )
 
 const findPlayerByID = `-- name: FindPlayerByID :one
-SELECT id, name, COALESCE(club_id, 0) AS club_id
+SELECT id, name
 FROM afl.player
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindPlayerByIDRow struct {
-	ID     int32
-	Name   string
-	ClubID int32
+	ID   int32
+	Name string
 }
 
 func (q *Queries) FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerByID, id)
 	var i FindPlayerByIDRow
-	err := row.Scan(&i.ID, &i.Name, &i.ClubID)
+	err := row.Scan(&i.ID, &i.Name)
 	return i, err
 }
 
-const findPlayersByClubID = `-- name: FindPlayersByClubID :many
-SELECT DISTINCT p.id, p.name, COALESCE(p.club_id, 0) AS club_id
-FROM afl.player p
-LEFT JOIN afl.player_season ps ON ps.player_id = p.id AND ps.deleted_at IS NULL
-LEFT JOIN afl.club_season cs ON ps.club_season_id = cs.id AND cs.deleted_at IS NULL
-WHERE (p.club_id = $1 OR cs.club_id = $1) AND p.deleted_at IS NULL
-ORDER BY p.name
-`
-
-type FindPlayersByClubIDRow struct {
-	ID     int32
-	Name   string
-	ClubID int32
-}
-
-func (q *Queries) FindPlayersByClubID(ctx context.Context, clubID *int32) ([]FindPlayersByClubIDRow, error) {
-	rows, err := q.db.Query(ctx, findPlayersByClubID, clubID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindPlayersByClubIDRow{}
-	for rows.Next() {
-		var i FindPlayersByClubIDRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.ClubID); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const searchPlayersByName = `-- name: SearchPlayersByName :many
-SELECT id, name, COALESCE(club_id, 0) AS club_id
+SELECT id, name
 FROM afl.player
 WHERE name ILIKE '%' || $1 || '%' AND deleted_at IS NULL
 ORDER BY name
@@ -72,9 +36,8 @@ LIMIT 20
 `
 
 type SearchPlayersByNameRow struct {
-	ID     int32
-	Name   string
-	ClubID int32
+	ID   int32
+	Name string
 }
 
 func (q *Queries) SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error) {
@@ -86,7 +49,7 @@ func (q *Queries) SearchPlayersByName(ctx context.Context, query *string) ([]Sea
 	items := []SearchPlayersByNameRow{}
 	for rows.Next() {
 		var i SearchPlayersByNameRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.ClubID); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -15,12 +15,29 @@ func derefOr(p *int32) int {
 	return int(*p)
 }
 
+// derefOrStr returns the value pointed to by p, or empty string if p is nil.
+func derefOrStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
 // intToInt32Ptr converts *int to *int32 for sqlc params.
 func intToInt32Ptr(p *int) *int32 {
 	if p == nil {
 		return nil
 	}
 	v := int32(*p)
+	return &v
+}
+
+// int32PtrToIntPtr converts *int32 to *int for domain mapping.
+func int32PtrToIntPtr(p *int32) *int {
+	if p == nil {
+		return nil
+	}
+	v := int(*p)
 	return &v
 }
 
@@ -316,25 +333,12 @@ func NewPlayerRepository(q *sqlcgen.Queries) *PlayerRepository {
 	return &PlayerRepository{q: q}
 }
 
-func (r *PlayerRepository) FindByClubID(ctx context.Context, clubID int) ([]domain.Player, error) {
-	id := int32(clubID)
-	rows, err := r.q.FindPlayersByClubID(ctx, &id)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]domain.Player, len(rows))
-	for i, row := range rows {
-		out[i] = domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}
-	}
-	return out, nil
-}
-
 func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player, error) {
 	row, err := r.q.FindPlayerByID(ctx, int32(id))
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}, nil
+	return domain.Player{ID: int(row.ID), Name: row.Name}, nil
 }
 
 func (r *PlayerRepository) Search(ctx context.Context, query string) ([]domain.Player, error) {
@@ -344,7 +348,7 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]domain.P
 	}
 	players := make([]domain.Player, len(rows))
 	for i, row := range rows {
-		players[i] = domain.Player{ID: int(row.ID), Name: row.Name, ClubID: int(row.ClubID)}
+		players[i] = domain.Player{ID: int(row.ID), Name: row.Name}
 	}
 	return players, nil
 }
@@ -368,6 +372,7 @@ func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatch
 			ID:             int(row.ID),
 			ClubMatchID:    int(row.ClubMatchID),
 			PlayerSeasonID: int(row.PlayerSeasonID),
+			Status:         derefOrStr(row.Status),
 			Kicks:          derefOr(row.Kicks),
 			Handballs:      derefOr(row.Handballs),
 			Marks:          derefOr(row.Marks),
@@ -389,6 +394,7 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		ID:             int(row.ID),
 		ClubMatchID:    int(row.ClubMatchID),
 		PlayerSeasonID: int(row.PlayerSeasonID),
+		Status:         derefOrStr(row.Status),
 		Kicks:          derefOr(row.Kicks),
 		Handballs:      derefOr(row.Handballs),
 		Marks:          derefOr(row.Marks),
@@ -403,6 +409,7 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),
 		PlayerSeasonID: int32(params.PlayerSeasonID),
+		Status:         params.Status,
 		Kicks:          intToInt32Ptr(params.Kicks),
 		Handballs:      intToInt32Ptr(params.Handballs),
 		Marks:          intToInt32Ptr(params.Marks),
@@ -418,6 +425,7 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		ID:             int(row.ID),
 		ClubMatchID:    int(row.ClubMatchID),
 		PlayerSeasonID: int(row.PlayerSeasonID),
+		Status:         derefOrStr(row.Status),
 		Kicks:          derefOr(row.Kicks),
 		Handballs:      derefOr(row.Handballs),
 		Marks:          derefOr(row.Marks),
@@ -471,5 +479,7 @@ func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.P
 		ID:           int(row.ID),
 		PlayerID:     int(row.PlayerID),
 		ClubSeasonID: int(row.ClubSeasonID),
+		FromRoundID:  int32PtrToIntPtr(row.FromRoundID),
+		ToRoundID:    int32PtrToIntPtr(row.ToRoundID),
 	}, nil
 }

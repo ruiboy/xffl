@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS afl.season (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    league_id INTEGER NOT NULL REFERENCES afl.league(id) ON DELETE CASCADE
+    league_id INTEGER NOT NULL REFERENCES afl.league(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL
 );
 
 -- Create round table
@@ -27,9 +27,9 @@ CREATE TABLE IF NOT EXISTS afl.round (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    season_id INTEGER NOT NULL REFERENCES afl.season(id) ON DELETE CASCADE
-);
+    season_id INTEGER NOT NULL REFERENCES afl.season(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL
+    );
 
 -- Create match table
 CREATE TABLE IF NOT EXISTS afl.match (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS afl.match (
     away_club_match_id INTEGER,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
-    drv_result VARCHAR(50) CHECK (drv_result IN ('home_win', 'away_win', 'draw', 'no_result'))
+    drv_result VARCHAR(50)
 );
 
 -- Create club table
@@ -102,8 +102,7 @@ CREATE TABLE IF NOT EXISTS afl.player (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    name VARCHAR(255) NOT NULL,
-    club_id INTEGER REFERENCES afl.club(id) ON DELETE CASCADE
+    name VARCHAR(255) NOT NULL
 );
 
 -- Create player_season table
@@ -114,6 +113,8 @@ CREATE TABLE IF NOT EXISTS afl.player_season (
     deleted_at TIMESTAMP WITH TIME ZONE,
     player_id INTEGER NOT NULL REFERENCES afl.player(id) ON DELETE CASCADE,
     club_season_id INTEGER NOT NULL REFERENCES afl.club_season(id) ON DELETE CASCADE,
+    from_round_id INTEGER REFERENCES afl.round(id),
+    to_round_id INTEGER REFERENCES afl.round(id),
     CONSTRAINT uni_afl_player_season UNIQUE (player_id, club_season_id)
 );
 
@@ -125,6 +126,7 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     club_match_id INTEGER NOT NULL REFERENCES afl.club_match(id) ON DELETE CASCADE,
     player_season_id INTEGER NOT NULL REFERENCES afl.player_season(id) ON DELETE CASCADE,
+    status VARCHAR(50),
     kicks INTEGER DEFAULT 0,
     handballs INTEGER DEFAULT 0,
     marks INTEGER DEFAULT 0,
@@ -145,9 +147,10 @@ CREATE INDEX IF NOT EXISTS idx_afl_club_season_club_id ON afl.club_season(club_i
 CREATE INDEX IF NOT EXISTS idx_afl_club_season_season_id ON afl.club_season(season_id);
 CREATE INDEX IF NOT EXISTS idx_afl_club_match_match_id ON afl.club_match(match_id);
 CREATE INDEX IF NOT EXISTS idx_afl_club_match_club_season_id ON afl.club_match(club_season_id);
-CREATE INDEX IF NOT EXISTS idx_afl_player_club_id ON afl.player(club_id);
 CREATE INDEX IF NOT EXISTS idx_afl_player_season_player_id ON afl.player_season(player_id);
 CREATE INDEX IF NOT EXISTS idx_afl_player_season_club_season_id ON afl.player_season(club_season_id);
+CREATE INDEX IF NOT EXISTS idx_afl_player_season_from_round_id ON afl.player_season(from_round_id);
+CREATE INDEX IF NOT EXISTS idx_afl_player_season_to_round_id ON afl.player_season(to_round_id);
 CREATE INDEX IF NOT EXISTS idx_afl_player_match_club_match_id ON afl.player_match(club_match_id);
 CREATE INDEX IF NOT EXISTS idx_afl_player_match_player_season_id ON afl.player_match(player_season_id);
 

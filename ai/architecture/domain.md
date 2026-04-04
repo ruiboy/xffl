@@ -16,7 +16,7 @@ These entities appear in both AFL and FFL bounded contexts. They share the same 
 | **ClubSeason** | A club's record for one season (played, won, lost, drawn, for, against). Used to build the ladder. |
 | **ClubMatch** | One side of a match — a club's performance in that game. |
 | **Player** | An individual athlete. Exists independently — club association is through PlayerSeason. |
-| **PlayerSeason** | A player's registration with a club for a season (via ClubSeason). This is where the player–club relationship lives. |
+| **PlayerSeason** | A player's registration with a club for a season (via ClubSeason). This is where the player–club relationship lives. Includes `from_round_id` / `to_round_id` to track when a player joined or left a club during the season (null = start/end of season). |
 | **PlayerMatch** | A player's involvement in a single match. Fields differ by context (see below). |
 
 ### Derived fields
@@ -60,6 +60,18 @@ Real-world Australian Football League data.
 | **For / Against** | Total points scored / conceded across the season. |
 | **Percentage** | `For ÷ Against × 100`. Tiebreaker on the ladder. |
 
+### Player match status
+
+| Status | Meaning |
+|--------|---------|
+| `named` | Selected in the AFL team sheet. Match has not been played yet. |
+| `played` | Played in the AFL match. |
+| `dnp` | Did not play — was in the squad but did not take the field. |
+
+### Player tenure
+
+`PlayerSeason` includes `from_round_id` and `to_round_id` to track when a player joined or left a club during the season (trades, delistings). Null means start/end of season respectively.
+
 ### Match result
 
 One of: `home_win`, `away_win`, `draw`, `no_result`.
@@ -102,9 +114,13 @@ A fantasy club fields **starters** and **bench** players each round. This distin
 - **BackupPositions** — comma-separated list of positions a bench player can substitute into.
 - **InterchangePosition** — the single position a bench player competes against for an interchange swap.
 
-### Status (AFL match outcome)
+### FFL Player and AFL linkage
 
-`PlayerMatchStatus` is **denormalised from AFL data**. It reflects what happened in the real AFL match, not the player's fantasy lineup role.
+Every FFL player corresponds to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and `PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys (no cross-schema joins). `Player.name` is derived from the AFL player (`drv_name` in DB).
+
+### Status
+
+FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL status but takes its own values.
 
 | Status | Meaning |
 |--------|---------|
@@ -130,17 +146,15 @@ FFL matches have a `match_style`:
 
 | Style | Meaning |
 |-------|---------|
-| `versus` | Normal head-to-head match between two clubs. |
-| `bye` | Club does not play this round. |
-| `super_bye` | All clubs still field a team, but premiership points are awarded by a yet-to-be-defined process. |
+| `versus` | Normal head-to-head match between two clubs. `home_club_match_id` and `away_club_match_id` are both set. |
+| `bye` | Club does not play this round. Only `home_club_match_id` is set. |
+| `super_bye` | All clubs still field a team, but premiership points are awarded by a yet-to-be-defined process. Uses `clubs` JSONB. |
+
+For non-versus styles, `clubs` stores club_season_ids: `{"A": {"club_season_id": 2}, "B": {"club_season_id": 1}}`. `home_club_match_id` / `away_club_match_id` are nullable.
 
 ### Ladder
 
 Same structure as AFL (played, won, lost, drawn, for, against, premiership points) with an additional **extra points** field for bonus/penalty adjustments.
-
-### Player tenure
-
-`PlayerSeason` includes `from_round_id` and `to_round_id` to track when a player joined or left a club during the season (trades, injuries).
 
 ### Events
 

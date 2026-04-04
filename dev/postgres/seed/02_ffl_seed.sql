@@ -56,100 +56,72 @@ UPDATE ffl.match
 SET home_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
     away_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
     clubs = jsonb_build_object(
-        'home', jsonb_build_object('id', (SELECT c.id FROM ffl.club c WHERE c.name = 'Ruiboys'), 'name', 'Ruiboys'),
-        'away', jsonb_build_object('id', (SELECT c.id FROM ffl.club c WHERE c.name = 'The Howling Cows'), 'name', 'The Howling Cows')
+        'home', jsonb_build_object('club_season_id', (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys')),
+        'away', jsonb_build_object('club_season_id', (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'))
     ),
     drv_result = 'Ruiboys defeated The Howling Cows 85-72'
 WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1');
 
--- 30 players for Ruiboys
-INSERT INTO ffl.player (name, club_id) VALUES
-    ('Marcus Bontempelli', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Christian Petracca', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Lachie Neale', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Clayton Oliver', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Max Gawn', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Touk Miller', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jack Steele', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Rory Laird', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Tim English', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Sam Walsh', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jack Macrae', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jeremy Cameron', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Tom Mitchell', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Darcy Parish', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Josh Dunkley', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Luke Ryan', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Nick Daicos', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jordan Dawson', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jayden Short', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Andrew Brayshaw', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Bailey Smith', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Zach Merrett', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jake Lloyd', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Brodie Grundy', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Jack Crisp', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Hugh McCluggage', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Caleb Serong', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Errol Gulden', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Connor Rozee', (SELECT id FROM ffl.club WHERE name = 'Ruiboys')),
-    ('Isaac Heeney', (SELECT id FROM ffl.club WHERE name = 'Ruiboys'));
+-- 30 players for Ruiboys (afl_player_id looked up by name, drv_name derived)
+INSERT INTO ffl.player (afl_player_id, drv_name)
+SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
+    'Marcus Bontempelli', 'Christian Petracca', 'Lachie Neale', 'Clayton Oliver',
+    'Max Gawn', 'Touk Miller', 'Jack Steele', 'Rory Laird', 'Tim English',
+    'Sam Walsh', 'Jack Macrae', 'Jeremy Cameron', 'Tom Mitchell', 'Darcy Parish',
+    'Josh Dunkley', 'Luke Ryan', 'Nick Daicos', 'Jordan Dawson', 'Jayden Short',
+    'Andrew Brayshaw', 'Bailey Smith', 'Zach Merrett', 'Jake Lloyd', 'Brodie Grundy',
+    'Jack Crisp', 'Hugh McCluggage', 'Caleb Serong', 'Errol Gulden', 'Connor Rozee',
+    'Isaac Heeney'
+);
 
 -- 10 players for The Howling Cows
-INSERT INTO ffl.player (name, club_id) VALUES
-    ('Dustin Martin', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Patrick Cripps', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Lance Franklin', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Travis Boak', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Nat Fyfe', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Tom Hawkins', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Elliot Yeo', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Scott Pendlebury', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Robbie Gray', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')),
-    ('Joel Selwood', (SELECT id FROM ffl.club WHERE name = 'The Howling Cows'));
+INSERT INTO ffl.player (afl_player_id, drv_name)
+SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
+    'Dustin Martin', 'Patrick Cripps', 'Lance Franklin', 'Travis Boak', 'Nat Fyfe',
+    'Tom Hawkins', 'Elliot Yeo', 'Scott Pendlebury', 'Robbie Gray', 'Joel Selwood'
+);
 
--- Link matching FFL players to AFL players
-UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Lachie Neale')
-WHERE name = 'Lachie Neale';
-UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Hugh McCluggage')
-WHERE name = 'Hugh McCluggage';
-UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Rory Laird')
-WHERE name = 'Rory Laird';
-UPDATE ffl.player SET afl_player_id = (SELECT id FROM afl.player WHERE name = 'Jordan Dawson')
-WHERE name = 'Jordan Dawson';
-
--- Player season records for all players
+-- Player season records — Ruiboys
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
 SELECT
     p.id,
     cs.id,
     r.id
 FROM ffl.player p
-JOIN ffl.club c ON p.club_id = c.id
-JOIN ffl.club_season cs ON cs.club_id = c.id
+JOIN afl.player ap ON p.afl_player_id = ap.id
+JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'Ruiboys')
 JOIN ffl.season s ON cs.season_id = s.id
 JOIN ffl.round r ON r.season_id = s.id
-WHERE s.name = '2024 Season' AND r.name = 'Round 1';
+WHERE s.name = '2024 Season' AND r.name = 'Round 1'
+  AND ap.name IN (
+    'Marcus Bontempelli', 'Christian Petracca', 'Lachie Neale', 'Clayton Oliver',
+    'Max Gawn', 'Touk Miller', 'Jack Steele', 'Rory Laird', 'Tim English',
+    'Sam Walsh', 'Jack Macrae', 'Jeremy Cameron', 'Tom Mitchell', 'Darcy Parish',
+    'Josh Dunkley', 'Luke Ryan', 'Nick Daicos', 'Jordan Dawson', 'Jayden Short',
+    'Andrew Brayshaw', 'Bailey Smith', 'Zach Merrett', 'Jake Lloyd', 'Brodie Grundy',
+    'Jack Crisp', 'Hugh McCluggage', 'Caleb Serong', 'Errol Gulden', 'Connor Rozee',
+    'Isaac Heeney'
+  );
 
--- Link matching FFL player seasons to AFL player seasons
-UPDATE ffl.player_season SET afl_player_season_id = (
-    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Lachie Neale' LIMIT 1
-) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Lachie Neale');
-
-UPDATE ffl.player_season SET afl_player_season_id = (
-    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Hugh McCluggage' LIMIT 1
-) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Hugh McCluggage');
-
-UPDATE ffl.player_season SET afl_player_season_id = (
-    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Rory Laird' LIMIT 1
-) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Rory Laird');
-
-UPDATE ffl.player_season SET afl_player_season_id = (
-    SELECT ps.id FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id WHERE p.name = 'Jordan Dawson' LIMIT 1
-) WHERE player_id = (SELECT id FROM ffl.player WHERE name = 'Jordan Dawson');
+-- Player season records — The Howling Cows
+INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
+SELECT
+    p.id,
+    cs.id,
+    r.id
+FROM ffl.player p
+JOIN afl.player ap ON p.afl_player_id = ap.id
+JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
+JOIN ffl.season s ON cs.season_id = s.id
+JOIN ffl.round r ON r.season_id = s.id
+WHERE s.name = '2024 Season' AND r.name = 'Round 1'
+  AND ap.name IN (
+    'Dustin Martin', 'Patrick Cripps', 'Lance Franklin', 'Travis Boak', 'Nat Fyfe',
+    'Tom Hawkins', 'Elliot Yeo', 'Scott Pendlebury', 'Robbie Gray', 'Joel Selwood'
+  );
 
 -- Player match records for Ruiboys (7 starters + 2 bench)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
 SELECT
     cm.id,
     ps.id,
@@ -173,7 +145,7 @@ ORDER BY ps.id
 LIMIT 7;
 
 -- Bench players for Ruiboys
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, score)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 SELECT
     cm.id,
     ps.id,
@@ -200,7 +172,7 @@ ORDER BY ps.id
 OFFSET 7 LIMIT 2;
 
 -- Player match records for The Howling Cows (7 starters)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, score)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
 SELECT
     cm.id,
     ps.id,

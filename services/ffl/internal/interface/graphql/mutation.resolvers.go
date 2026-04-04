@@ -13,7 +13,11 @@ import (
 
 // CreateFFLPlayer is the resolver for the createFFLPlayer field.
 func (r *mutationResolver) CreateFFLPlayer(ctx context.Context, input CreateFFLPlayerInput) (*FFLPlayer, error) {
-	p, err := r.Commands.CreatePlayer(ctx, input.Name)
+	aflPlayerID, err := fromID(input.AflPlayerID)
+	if err != nil {
+		return nil, err
+	}
+	p, err := r.Commands.CreatePlayer(ctx, input.Name, aflPlayerID)
 	if err != nil {
 		return nil, err
 	}
