@@ -67,18 +67,18 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] FFL Players view
 - [x] Playwright tests
 
-## Phase 7: Data Model Refinements
+## Phase 7: Data Model Refinements ✅
 
 **Goal:** Clean up AFL/FFL data models and propagate changes through the stack
 
-- [ ] Remove `afl.player.club_id` — players exist independently; they attach to clubs for a season (or part thereof) via `player_season → club_season`
-- [ ] Align FFL table FKs to mirror AFL table relationships (the 10 FFL tables should reflect the same structural patterns as the 10 AFL tables)
-- [ ] FFL player tables (`player`, `player_season`, `player_match`) store the ID of the corresponding AFL table row (`afl_player_id`, `afl_player_season_id`, `afl_player_match_id`) — stored as plain integers, not foreign keys (no cross-schema joins)
-- [ ] Update domain entities (AFL + FFL) to reflect new relationships
-- [ ] Update GraphQL schemas and resolvers
-- [ ] Update frontend views/queries as needed
-- [ ] Update seed data
-- [ ] Update tests
+- [x] Remove `afl.player.club_id` and `ffl.player.club_id` — players exist independently; they attach to clubs for a season via `player_season → club_season`
+- [x] Add `from_round_id`/`to_round_id` to `afl.player_season` for mid-season transfers
+- [x] Add `status` (named/played/dnp) to `afl.player_match`
+- [x] Rename `ffl.player.name → drv_name`, `ffl.player_match.score → drv_score`; domain entities keep clean names
+- [x] Add unique constraint on `ffl.club_match(club_season_id, match_id)`
+- [x] Drop `AFLClub.players` GraphQL field
+- [x] Update domain entities, GraphQL schemas/resolvers, frontend, seed data, and tests
+- [x] All 43 Playwright e2e tests green; full Go test suite green
 
 ## Phase 8: FFL UX Refinements
 
