@@ -158,8 +158,9 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 	}
 
 	// AFL player reference (needed for FFL player FK)
+	// Name deliberately does not contain "Test" to avoid polluting AFL player search tests
 	err = pool.QueryRow(ctx,
-		"INSERT INTO afl.player (name) VALUES ('Test AFL Player') RETURNING id").Scan(&ids.aflPlayerID)
+		"INSERT INTO afl.player (name) VALUES ('Seeded AFL Player') RETURNING id").Scan(&ids.aflPlayerID)
 	if err != nil {
 		t.Fatalf("failed to insert afl player: %v", err)
 	}

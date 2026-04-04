@@ -172,8 +172,8 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Player match (10 kicks, 5 handballs, 3 marks, 0 hitouts, 2 tackles, 2 goals, 1 behind)
 	err = pool.QueryRow(ctx,
-		`INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-		 VALUES ($1, $2, 10, 5, 3, 0, 2, 2, 1) RETURNING id`,
+		`INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+		 VALUES ($1, $2, 'played', 10, 5, 3, 0, 2, 2, 1) RETURNING id`,
 		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID)
 	if err != nil {
 		t.Fatalf("failed to insert player match: %v", err)
@@ -378,6 +378,7 @@ func TestAflSeasonGraphTraversal(t *testing.T) {
 						score
 						playerMatches {
 							player { name }
+							status
 							kicks
 							handballs
 							disposals
@@ -413,10 +414,11 @@ func TestAflSeasonGraphTraversal(t *testing.T) {
 							Player struct {
 								Name string `json:"name"`
 							} `json:"player"`
-							Kicks     int `json:"kicks"`
-							Handballs int `json:"handballs"`
-							Disposals int `json:"disposals"`
-							Score     int `json:"score"`
+							Status    *string `json:"status"`
+							Kicks     int     `json:"kicks"`
+							Handballs int     `json:"handballs"`
+							Disposals int     `json:"disposals"`
+							Score     int     `json:"score"`
 						} `json:"playerMatches"`
 					} `json:"homeClubMatch"`
 					AwayClubMatch *struct {
@@ -482,6 +484,9 @@ func TestAflSeasonGraphTraversal(t *testing.T) {
 	}
 	if pm.Disposals != 15 {
 		t.Errorf("expected 15 disposals, got %d", pm.Disposals)
+	}
+	if pm.Status == nil || *pm.Status != "played" {
+		t.Errorf("expected status played, got %v", pm.Status)
 	}
 	if pm.Score != 13 {
 		t.Errorf("expected score 13, got %d", pm.Score)

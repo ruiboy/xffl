@@ -54,6 +54,7 @@ interface PlayerMatch {
   id: string
   playerSeasonId: string
   player: { id: string; name: string }
+  status: string
   kicks: number
   handballs: number
   marks: number

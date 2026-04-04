@@ -5,6 +5,7 @@ export const UPDATE_PLAYER_MATCH = gql`
     updateAFLPlayerMatch(input: $input) {
       id
       player { id name }
+      status
       kicks
       handballs
       marks

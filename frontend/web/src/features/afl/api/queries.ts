@@ -103,6 +103,7 @@ export const GET_ROUND = gql`
               id
               playerSeasonId
               player { id name }
+              status
               kicks
               handballs
               marks
@@ -122,6 +123,7 @@ export const GET_ROUND = gql`
               id
               playerSeasonId
               player { id name }
+              status
               kicks
               handballs
               marks
@@ -160,6 +162,7 @@ export const GET_MATCH = gql`
               id
               playerSeasonId
               player { id name }
+              status
               kicks
               handballs
               marks
@@ -180,6 +183,7 @@ export const GET_MATCH = gql`
               id
               playerSeasonId
               player { id name }
+              status
               kicks
               handballs
               marks

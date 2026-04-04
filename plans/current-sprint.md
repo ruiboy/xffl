@@ -64,15 +64,15 @@ Clean up AFL/FFL data models so relationships are correct, then propagate change
 - [x] Regenerate + fix resolvers
 
 ### 8. Frontend
-- [ ] Remove any references to AFL player → club direct relationship
-- [ ] Update queries/components if field names changed
-- [ ] Verify all views still render correctly
+- [x] Remove any references to AFL player → club direct relationship
+- [x] Update queries/components if field names changed
+- [x] Verify all views still render correctly
 
 ### 9. Tests
-- [ ] Update AFL integration tests (remove club_id from player fixtures, add status)
-- [ ] Update FFL integration tests (renamed columns)
-- [ ] Run full test suite green
-- [ ] Run Playwright e2e tests green
+- [x] Update AFL integration tests (remove club_id from player fixtures, add status)
+- [x] Update FFL integration tests (renamed columns)
+- [x] Run full test suite green
+- [x] Run Playwright e2e tests green
 
 ## Out of scope
 - FFL UX changes (nav bar, pages) — Phase 8
