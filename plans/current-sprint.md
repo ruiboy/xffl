@@ -54,7 +54,7 @@ Clean up AFL/FFL data models so relationships are correct, then propagate change
 - [x] Update repository implementations
 
 ### 6. AFL GraphQL
-- [x] Drop `AFLClub.players` field and resolver
+- [x] Drop `AFLClub.play/mers` field and resolver
 - [x] Add `status` to `AFLPlayerMatch` type
 - [x] Update `updateAFLPlayerMatch` mutation input to include status
 - [x] Regenerate + fix resolvers
