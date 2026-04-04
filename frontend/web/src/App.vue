@@ -33,16 +33,12 @@
             </router-link>
 
             <!-- Club selector -->
-            <select
+            <ClubSelector
               v-if="clubs.length > 0"
-              :value="selectedClubId"
-              @change="onClubChange"
-              class="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:border-active focus:outline-none"
-            >
-              <option v-for="cs in clubs" :key="cs.club.id" :value="cs.club.id">
-                {{ cs.club.name }}
-              </option>
-            </select>
+              :model-value="selectedClubId"
+              :clubs="clubs"
+              @update:model-value="setClub"
+            />
           </template>
 
           <button
@@ -66,6 +62,7 @@ import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
+import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 
 const route = useRoute()
 const { selectedClubId, currentSeasonId, currentRoundId, setClub } = useFflState()
@@ -87,10 +84,6 @@ watch(clubs, (list) => {
     setClub(list[0].club.id)
   }
 })
-
-function onClubChange(event: Event) {
-  setClub((event.target as HTMLSelectElement).value)
-}
 
 // Theme
 const isDark = ref(false)

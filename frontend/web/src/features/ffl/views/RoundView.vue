@@ -3,18 +3,16 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-bold">{{ data.round.name }}</h1>
-          <p class="text-text-muted">{{ data.season.name }}</p>
-        </div>
-        <router-link
-          :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } }"
-          class="rounded-lg bg-active px-4 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity"
-        >
-          Build Team
-        </router-link>
-      </div>
+      <h1 class="text-2xl font-bold mb-4">
+        {{ data.round.name }}<span class="font-normal text-text-muted"> · {{ data.season.name }}</span>
+      </h1>
+
+      <RoundNav
+        class="mb-8"
+        :rounds="data.season.rounds"
+        :live-round-id="liveRoundId"
+        :season-id="props.seasonId"
+      />
 
       <section class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
@@ -58,14 +56,6 @@
         </div>
       </section>
 
-      <section>
-        <h2 class="text-lg font-semibold text-text-heading mb-3">Rounds</h2>
-        <RoundNav
-          :rounds="data.season.rounds"
-          :current-round-id="data.round.id"
-          :season-id="props.seasonId"
-        />
-      </section>
     </template>
   </div>
 </template>
@@ -74,11 +64,13 @@
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
+import { useFflState } from '../composables/useFflState'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
+const { currentRoundId: liveRoundId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const data = computed(() => {
