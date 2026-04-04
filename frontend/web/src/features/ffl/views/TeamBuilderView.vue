@@ -6,19 +6,6 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
-      <!-- Club selector -->
-      <div class="mb-6">
-        <label class="text-sm font-medium text-text-muted mr-2">My club:</label>
-        <select
-          v-model="selectedClubSeasonId"
-          class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-active focus:outline-none"
-        >
-          <option v-for="cs in season.ladder" :key="cs.id" :value="cs.id">
-            {{ cs.club.name }}
-          </option>
-        </select>
-      </div>
-
       <template v-if="selectedClubSeason && clubMatch">
         <!-- Score projection -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
@@ -142,7 +129,7 @@
           </div>
         </div>
       </template>
-      <p v-else class="text-text-faint">Select a club to build your lineup.</p>
+      <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
     </template>
   </div>
 </template>
@@ -152,6 +139,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_TEAM_BUILDER } from '../api/queries'
 import { SET_FFL_LINEUP } from '../api/mutations'
+import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
@@ -176,22 +164,15 @@ interface Slot {
   player: SquadPlayer | null
 }
 
+const { selectedClubId } = useFflState()
+
 // Data loading
 const { result, loading, error } = useQuery(GET_FFL_TEAM_BUILDER, () => ({ seasonId: props.seasonId }))
 
 const season = computed(() => result.value?.fflSeason ?? null)
 
-const selectedClubSeasonId = ref<string>('')
-
-// Auto-select first club when data loads
-watch(season, (s) => {
-  if (s && s.ladder.length > 0 && !selectedClubSeasonId.value) {
-    selectedClubSeasonId.value = s.ladder[0].id
-  }
-})
-
 const selectedClubSeason = computed(() =>
-  season.value?.ladder.find((cs: { id: string }) => cs.id === selectedClubSeasonId.value) ?? null
+  season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
 )
 
 // Find the club match for the selected club in the current round

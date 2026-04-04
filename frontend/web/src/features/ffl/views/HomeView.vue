@@ -3,25 +3,9 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-bold">{{ data.season.name }}</h1>
-          <p class="text-text-muted">{{ data.round.name }}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <router-link
-            :to="{ name: 'ffl-squad', params: { seasonId: data.season.id } }"
-            class="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-          >
-            Squad
-          </router-link>
-          <router-link
-            :to="{ name: 'ffl-team-builder', params: { seasonId: data.season.id, roundId: data.round.id } }"
-            class="rounded-lg bg-active px-4 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity"
-          >
-            Build Team
-          </router-link>
-        </div>
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold">{{ data.season.name }}</h1>
+        <p class="text-text-muted">{{ data.round.name }}</p>
       </div>
 
       <section class="mb-8">
@@ -54,13 +38,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_LATEST_ROUND } from '../api/queries'
+import { useFflState } from '../composables/useFflState'
 import LadderTable from '../components/LadderTable.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 
+const { setCurrentSeason } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_LATEST_ROUND)
 
 const data = computed(() => {
@@ -70,5 +56,9 @@ const data = computed(() => {
     round: { id: round.id, name: round.name, matches: round.matches },
     season: round.season,
   }
+})
+
+watch(data, (d) => {
+  if (d) setCurrentSeason(d.season.id, d.round.id)
 })
 </script>
