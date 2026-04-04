@@ -102,17 +102,48 @@ A **position** is a scoring slot in a fantasy lineup. It determines *which* AFL 
 
 `PlayerMatch.CalculateScore(aflStats)` is a pure domain function that applies the position multiplier to AFL statistics.
 
-### Lineup: starters and bench
+### Team composition
 
-A fantasy club fields **starters** and **bench** players each round. This distinction is structural, not stored in a status field:
+A fantasy club submits a team each round. Teams need not be full.
+
+#### Starter slots
+
+| Position | Slots |
+|----------|-------|
+| `goals` | 3 |
+| `kicks` | 4 |
+| `handballs` | 4 |
+| `marks` | 2 |
+| `tackles` | 2 |
+| `hitouts` | 2 |
+| `star` | 1 |
+| **Total** | **18** |
+
+#### Bench (up to 4 players)
+
+| Bench role | Backup positions | Limit |
+|------------|-----------------|-------|
+| **Backup star** | `"star"` | at most 1 |
+| **Dual-position** | exactly 2 non-star positions | at most 3 |
+
+Hard rules enforced by `domain.ValidateLineup()`:
+1. Starter count per position ≤ `PositionSlots[pos]`
+2. Total bench players ≤ 4
+3. At most 1 backup star (`BackupPositions` contains `"star"`)
+4. Non-star bench players have **exactly 2** backup positions, neither of which is `"star"`
+5. Each non-star position appears in **at most one** bench player's backup pair
+6. At most 1 `InterchangePosition` set across all players in the lineup
+7. `InterchangePosition` (if set) must be a recognised `Position` value
+
+#### Bench player identification
 
 | Role | How to identify |
 |------|----------------|
-| **Starter** | Occupies a position slot. Has neither `BackupPositions` nor `InterchangePosition` set. |
-| **Bench** | Has `BackupPositions` and/or `InterchangePosition` set. Sits out unless substitution or interchange applies. |
+| **Starter** | `BackupPositions == nil && InterchangePosition == nil` |
+| **Bench** | `BackupPositions != nil \|\| InterchangePosition != nil` |
 
-- **BackupPositions** — comma-separated list of positions a bench player can substitute into.
-- **InterchangePosition** — the single position a bench player competes against for an interchange swap.
+- **BackupPositions** — comma-separated list of positions this bench player can substitute into (`"star"` for backup star; two non-star positions for dual-position bench).
+- **InterchangePosition** — the single position this bench player can freely interchange with their starter (see interchange rules below).
 
 ### FFL Player and AFL linkage
 
@@ -130,15 +161,16 @@ FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL s
 
 ### Substitution and interchange
 
-`ClubMatch.Score()` aggregates fantasy scores with two replacement rules:
+`ClubMatch.Score()` aggregates fantasy scores with two replacement rules, applied per starter slot:
 
-1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills in. A bench player may cover multiple positions but only subs into one.
-2. **Interchange** — if a bench player's `InterchangePosition` targets a starter *and* the bench player's score strictly exceeds the starter's, they swap.
+1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one substitution.
+2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score strictly exceeds the starter's, they swap. Applies per individual starter slot within the position group.
 
 Constraints:
 - A bench player can only be used **once** (sub or interchange, not both).
-- Interchange requires the bench player to **strictly outscore** the starter (ties stay).
-- The **order** of substitution vs interchange, and which position a multi-position bench player fills, is decided by the team owner after AFL stats are in. The exact mechanism for this is TBD.
+- Substitution is evaluated before interchange.
+- Interchange requires the bench player to **strictly outscore** the starter (ties keep the starter).
+- Where multiple players are eligible for substitution into a DNP slot, the team owner chooses which bench player fills which position.
 
 ### Match style
 
