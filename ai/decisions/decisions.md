@@ -17,3 +17,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 011 | Accepted | ✅ | Vue 3 + TypeScript (strict) + Vite + Tailwind; Apollo for server state; PrimeVue unstyled for behaviour; SPA only |
 | 012 | Accepted | ✅ | Domain entities are pure and side-effect-free; repositories return fully-loaded aggregates; use cases orchestrate data loading |
 | 013 | Accepted | — | No graph federation; CQRS split: GraphQL for writes/structure, search index for player stats reads |
+| 014 | Accepted | ✅ | Cursor-based Connection pagination for list fields; PageInfo in common.graphqls; no offset/limit |
