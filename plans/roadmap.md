@@ -87,9 +87,15 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Rename Roster → Squad throughout
 - [x] FFL pages routed under `/ffl`; nav + home link updated; `/` redirects to `/ffl`
 - [x] Architecture: no graph federation; CQRS read/write split decided (ADR-013); gateway routing clarified (ADR-008)
-- [ ] Fix wasteful squad query — add `fflClubSeason(id: ID!)` resolver
-- [ ] Fix fragile Apollo routing link — replace regex with explicit operation-name map
-- [ ] _(further UX items TBD each session)_
+- [x] Fix wasteful squad query — `fflClubSeason(seasonId, clubId)` resolver; connection pagination
+- [x] Fix fragile Apollo routing link — explicit operation-name map replaces regex
+- [x] Global FFL club state (`useFflState`) + unified nav with club selector
+- [x] Home/round page layout: circle round selector (filled/ring/ladder icon), inline headings, no matches on home
+- [x] FFL eagle logo in nav (hover scales 3×)
+- [x] Settings cog dropdown with dark mode toggle (cookie-persisted)
+- [x] Squad page: club name heading, search panel alongside player list, Manage/Done pattern
+- [x] Team Builder: club name heading, Manage/Done pattern (Done saves lineup)
+- [x] `FFLClubSeason.season` field added to GraphQL schema and resolver
 
 ## Phase 9: FFL Team Composition Rules
 
