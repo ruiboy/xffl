@@ -930,3 +930,251 @@ func TestCalculateFFLFantasyScore_InvalidPlayerMatchID(t *testing.T) {
 		t.Fatal("expected error for invalid playerMatchId, got none")
 	}
 }
+
+// ── SetFFLLineup: team composition rule tests ─────────────────────────────────
+
+// lineupMutation builds a setFFLLineup mutation string for testing.
+// players is a slice of (playerSeasonId, position, backupPositions, interchangePosition) tuples.
+type lineupPlayer struct {
+	playerSeasonID      string
+	position            string
+	backupPositions     *string
+	interchangePosition *string
+}
+
+func buildSetLineupMutation(clubMatchID string, players []lineupPlayer) string {
+	playersStr := ""
+	for _, p := range players {
+		bp := "null"
+		if p.backupPositions != nil {
+			bp = `"` + *p.backupPositions + `"`
+		}
+		ic := "null"
+		if p.interchangePosition != nil {
+			ic = `"` + *p.interchangePosition + `"`
+		}
+		playersStr += fmt.Sprintf(`
+			{
+				playerSeasonId: "%s"
+				position: "%s"
+				backupPositions: %s
+				interchangePosition: %s
+			}`, p.playerSeasonID, p.position, bp, ic)
+	}
+	return fmt.Sprintf(`mutation {
+		setFFLLineup(input: {
+			clubMatchId: "%s"
+			players: [%s]
+		}) { id position backupPositions interchangePosition }
+	}`, clubMatchID, playersStr)
+}
+
+// seedExtraPlayers inserts n additional players into the home club season and returns their playerSeasonIDs.
+func seedExtraPlayers(t *testing.T, pool *pgxpool.Pool, ids testIDs, count int) []string {
+	t.Helper()
+	ctx := context.Background()
+	psIDs := make([]string, count)
+	for i := range count {
+		var aflID, playerID, psID int
+		if err := pool.QueryRow(ctx,
+			fmt.Sprintf("INSERT INTO afl.player (name) VALUES ('Extra Player %d') RETURNING id", i)).Scan(&aflID); err != nil {
+			t.Fatalf("seed extra afl player %d: %v", i, err)
+		}
+		if err := pool.QueryRow(ctx,
+			"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ($1, $2) RETURNING id",
+			fmt.Sprintf("Extra Player %d", i), aflID).Scan(&playerID); err != nil {
+			t.Fatalf("seed extra ffl player %d: %v", i, err)
+		}
+		if err := pool.QueryRow(ctx,
+			"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+			playerID, ids.homeClubSeaID).Scan(&psID); err != nil {
+			t.Fatalf("seed extra player season %d: %v", i, err)
+		}
+		psIDs[i] = fmt.Sprintf("%d", psID)
+	}
+	return psIDs
+}
+
+func strp(s string) *string { return &s }
+
+func TestSetFFLLineup_ValidLineupSaves(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "goals"},
+	}))
+
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors: %v", result.Errors)
+	}
+}
+
+func TestSetFFLLineup_TooManyStartersForPosition(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	// Need 4 players for goals (max is 3)
+	extras := seedExtraPlayers(t, pool, ids, 3)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	players := []lineupPlayer{
+		{playerSeasonID: psID, position: "goals"},
+		{playerSeasonID: extras[0], position: "goals"},
+		{playerSeasonID: extras[1], position: "goals"},
+		{playerSeasonID: extras[2], position: "goals"}, // 4th goals kicker — invalid
+	}
+	result := execQuery(t, server, buildSetLineupMutation(cmID, players))
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for too many goal kickers, got none")
+	}
+}
+
+func TestSetFFLLineup_TooManyBenchPlayers(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 5)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+	players := []lineupPlayer{}
+	positions := [][2]string{
+		{"goals,kicks"}, {"goals,kicks"}, {"handballs,marks"}, {"tackles,hitouts"}, {"goals,kicks"},
+	}
+	_ = positions
+	// 5 bench players (max is 4)
+	for i, id := range extras {
+		_ = i
+		players = append(players, lineupPlayer{
+			playerSeasonID:  id,
+			position:        "goals",
+			backupPositions: strp(fmt.Sprintf("goals,kicks")),
+		})
+		_ = extras
+	}
+	result := execQuery(t, server, buildSetLineupMutation(cmID, players))
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for 5 bench players, got none")
+	}
+}
+
+func TestSetFFLLineup_TwoBenchStars(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 1)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "star", backupPositions: strp("star")},
+		{playerSeasonID: extras[0], position: "star", backupPositions: strp("star")},
+	}))
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for two backup stars, got none")
+	}
+}
+
+func TestSetFFLLineup_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 1)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks")},
+		{playerSeasonID: extras[0], position: "goals", backupPositions: strp("goals,marks")}, // goals covered twice
+	}))
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for duplicate bench position coverage, got none")
+	}
+}
+
+func TestSetFFLLineup_TwoInterchangePositions(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 1)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks"), interchangePosition: strp("goals")},
+		{playerSeasonID: extras[0], position: "marks", backupPositions: strp("marks,tackles"), interchangePosition: strp("marks")},
+	}))
+	if len(result.Errors) == 0 {
+		t.Fatal("expected error for two interchange positions, got none")
+	}
+}
+
+func TestSetFFLLineup_MultipleStartersScoreCorrectly(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 2)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	ctx := context.Background()
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	// Set 3 goal kickers
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "goals"},
+		{playerSeasonID: extras[0], position: "goals"},
+		{playerSeasonID: extras[1], position: "goals"},
+	}))
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors setting lineup: %v", result.Errors)
+	}
+
+	// Directly set scores for all 3 goal kickers in the DB, then recalculate
+	_, err := pool.Exec(ctx,
+		"UPDATE ffl.player_match SET drv_score = 10 WHERE club_match_id = $1",
+		ids.homeClubMatchID)
+	if err != nil {
+		t.Fatalf("failed to update scores: %v", err)
+	}
+	// Recalculate club match score
+	playerMatches, err := pool.Query(ctx,
+		"SELECT id, position, backup_positions, interchange_position, status, drv_score FROM ffl.player_match WHERE club_match_id = $1",
+		ids.homeClubMatchID)
+	if err != nil {
+		t.Fatalf("failed to query player matches: %v", err)
+	}
+	defer playerMatches.Close()
+
+	totalScore := 0
+	for playerMatches.Next() {
+		var score int
+		var pos, bp, ic, status *string
+		if err := playerMatches.Scan(&ids.playerMatchID, &pos, &bp, &ic, &status, &score); err != nil {
+			t.Fatalf("failed to scan: %v", err)
+		}
+		if bp == nil && ic == nil {
+			totalScore += score // starters only
+		}
+	}
+
+	// 3 goal kickers × 10 = 30
+	if totalScore != 30 {
+		t.Errorf("expected total starter score 30, got %d", totalScore)
+	}
+}

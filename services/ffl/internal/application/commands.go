@@ -117,7 +117,22 @@ type SetLineupEntry struct {
 }
 
 // SetLineup upserts all player match entries for a club match (the weekly lineup).
+// Returns an error if the lineup violates team composition rules.
 func (c *Commands) SetLineup(ctx context.Context, clubMatchID int, entries []SetLineupEntry) ([]domain.PlayerMatch, error) {
+	// Validate composition rules before touching the database.
+	params := make([]domain.UpsertPlayerMatchParams, len(entries))
+	for i, e := range entries {
+		pos := domain.Position(e.Position)
+		params[i] = domain.UpsertPlayerMatchParams{
+			Position:            &pos,
+			BackupPositions:     e.BackupPositions,
+			InterchangePosition: e.InterchangePosition,
+		}
+	}
+	if err := domain.ValidateLineup(params); err != nil {
+		return nil, err
+	}
+
 	var result []domain.PlayerMatch
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		result = make([]domain.PlayerMatch, len(entries))

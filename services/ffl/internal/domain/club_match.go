@@ -16,19 +16,23 @@ type ClubMatch struct {
 // Score computes the total fantasy score for this club match.
 //
 // A player is a starter if they occupy a position slot (no BackupPositions or
-// InterchangePosition). A player is on the bench if they have either field set.
+// InterchangePosition). Multiple players can occupy the same position (e.g. 3
+// goal kickers). Each starter slot is scored independently.
 //
-// Rules:
-//  1. Start with the sum of all starters' scores.
-//  2. Substitution: if a starter has status DNP, a bench player whose
-//     BackupPositions includes the starter's position fills in.
-//  3. Interchange: if a bench player's InterchangePosition targets a starter
-//     and the bench player's score exceeds the starter's, swap them.
+// Rules applied in order:
+//  1. Substitution: if a starter's status is DNP, the first eligible bench player
+//     whose BackupPositions includes that position fills the slot. A player who
+//     played but scored 0 is NOT eligible for substitution.
+//  2. Interchange: if a bench player's InterchangePosition targets a starter slot
+//     and the bench player's score strictly exceeds that starter's, they swap.
+//     For multi-slot positions, the bench player replaces the lowest-scoring
+//     starter they can beat.
 //
 // A bench player can only be used once (sub or interchange, not both).
 // Substitution is evaluated before interchange.
 func (cm ClubMatch) Score() int {
-	starters := make(map[Position]*PlayerMatch)
+	// starters holds all starter slots per position (multiple per position allowed).
+	starters := make(map[Position][]*PlayerMatch)
 	var bench []*PlayerMatch
 
 	for i := range cm.PlayerMatches {
@@ -36,48 +40,61 @@ func (cm ClubMatch) Score() int {
 		if pm.isBench() {
 			bench = append(bench, pm)
 		} else if pm.Position != nil {
-			starters[*pm.Position] = pm
+			starters[*pm.Position] = append(starters[*pm.Position], pm)
 		}
 	}
 
-	used := make(map[int]bool) // bench player indices already consumed
+	used := make(map[int]bool) // bench indices already consumed
 
-	// Substitution: bench replaces DNP starters.
-	for pos, starter := range starters {
-		if starter.Status == nil || *starter.Status != PlayerMatchStatusDNP {
-			continue
-		}
-		for i, bp := range bench {
-			if used[i] || bp.BackupPositions == nil {
+	// Substitution: replace each DNP starter slot with the first eligible bench player.
+	for pos, slots := range starters {
+		for si, starter := range slots {
+			if starter.Status == nil || *starter.Status != PlayerMatchStatusDNP {
 				continue
 			}
-			if containsPosition(*bp.BackupPositions, pos) {
-				starters[pos] = bp
-				used[i] = true
-				break
+			for i, bp := range bench {
+				if used[i] || bp.BackupPositions == nil {
+					continue
+				}
+				if containsPosition(*bp.BackupPositions, pos) {
+					starters[pos][si] = bp
+					used[i] = true
+					break
+				}
 			}
 		}
 	}
 
-	// Interchange: bench outscores starter at the interchange position.
+	// Interchange: bench player beats a starter at their designated interchange position.
 	for i, bp := range bench {
 		if used[i] || bp.InterchangePosition == nil {
 			continue
 		}
 		targetPos := Position(*bp.InterchangePosition)
-		starter, ok := starters[targetPos]
+		slots, ok := starters[targetPos]
 		if !ok {
 			continue
 		}
-		if bp.Score > starter.Score {
-			starters[targetPos] = bp
+		// Replace the slot where the bench player produces the greatest gain.
+		bestSlot := -1
+		bestGain := 0
+		for si, starter := range slots {
+			if gain := bp.Score - starter.Score; gain > bestGain {
+				bestGain = gain
+				bestSlot = si
+			}
+		}
+		if bestSlot >= 0 {
+			starters[targetPos][bestSlot] = bp
 			used[i] = true
 		}
 	}
 
 	total := 0
-	for _, pm := range starters {
-		total += pm.Score
+	for _, slots := range starters {
+		for _, pm := range slots {
+			total += pm.Score
+		}
 	}
 	return total
 }

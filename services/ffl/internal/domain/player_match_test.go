@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCalculateScore(t *testing.T) {
 	stats := AFLStats{
@@ -39,6 +42,197 @@ func TestCalculateScore_NilPosition(t *testing.T) {
 	pm := PlayerMatch{}
 	if got := pm.CalculateScore(AFLStats{Goals: 5}); got != 0 {
 		t.Errorf("CalculateScore() with nil position = %d, want 0", got)
+	}
+}
+
+func bpPtr(s string) *string { return &s }
+func ipPtr(s string) *string { return &s }
+
+// validFullLineup builds a complete 18-starter lineup with no bench.
+func validFullLineup() []UpsertPlayerMatchParams {
+	entries := []UpsertPlayerMatchParams{}
+	for pos, count := range PositionSlots {
+		p := pos
+		for range count {
+			entries = append(entries, UpsertPlayerMatchParams{Position: &p})
+		}
+	}
+	return entries
+}
+
+func TestValidateLineup_ValidCases(t *testing.T) {
+	t.Run("empty lineup is valid", func(t *testing.T) {
+		if err := ValidateLineup(nil); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("full 18-starter lineup is valid", func(t *testing.T) {
+		if err := ValidateLineup(validFullLineup()); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("starters with backup star and 3 dual-position bench", func(t *testing.T) {
+		entries := validFullLineup()
+		// Backup star
+		star := PositionStar
+		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star")})
+		// Dual-position bench (each covers 2 unique non-star positions)
+		goals := PositionGoals
+		entries = append(entries, UpsertPlayerMatchParams{Position: &goals, BackupPositions: bpPtr("goals,kicks")})
+		handballs := PositionHandballs
+		entries = append(entries, UpsertPlayerMatchParams{Position: &handballs, BackupPositions: bpPtr("handballs,marks")})
+		tackles := PositionTackles
+		entries = append(entries, UpsertPlayerMatchParams{Position: &tackles, BackupPositions: bpPtr("tackles,hitouts")})
+		if err := ValidateLineup(entries); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("interchange on bench star is valid", func(t *testing.T) {
+		entries := validFullLineup()
+		star := PositionStar
+		ic := "star"
+		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star"), InterchangePosition: &ic})
+		if err := ValidateLineup(entries); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("partial lineup is valid", func(t *testing.T) {
+		goals := PositionGoals
+		entries := []UpsertPlayerMatchParams{
+			{Position: &goals},
+			{Position: &goals},
+		}
+		if err := ValidateLineup(entries); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestValidateLineup_InvalidCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		entries     []UpsertPlayerMatchParams
+		errContains string
+	}{
+		{
+			name: "too many goal kickers",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				return []UpsertPlayerMatchParams{{Position: &p}, {Position: &p}, {Position: &p}, {Position: &p}}
+			}(),
+			errContains: "goals",
+		},
+		{
+			name: "too many star starters",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionStar
+				return []UpsertPlayerMatchParams{{Position: &p}, {Position: &p}}
+			}(),
+			errContains: "star",
+		},
+		{
+			name: "5 bench players",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				entries := []UpsertPlayerMatchParams{}
+				for range 5 {
+					entries = append(entries, UpsertPlayerMatchParams{Position: &p, BackupPositions: bpPtr("goals,kicks")})
+				}
+				return entries
+			}(),
+			errContains: "bench has 5",
+		},
+		{
+			name: "two backup stars",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionStar
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("star")},
+					{Position: &p, BackupPositions: bpPtr("star")},
+				}
+			}(),
+			errContains: "backup star",
+		},
+		{
+			name: "non-star bench with only 1 backup position",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals")},
+				}
+			}(),
+			errContains: "exactly 2",
+		},
+		{
+			name: "non-star bench with 3 backup positions",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks,handballs")},
+				}
+			}(),
+			errContains: "exactly 2",
+		},
+		{
+			name: "non-star bench with star in backup positions",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals,star")},
+				}
+			}(),
+			errContains: "star",
+		},
+		{
+			name: "same position covered by two bench players",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks")},
+					{Position: &p, BackupPositions: bpPtr("goals,marks")},
+				}
+			}(),
+			errContains: "goals",
+		},
+		{
+			name: "two interchange positions",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				ic := "goals"
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks"), InterchangePosition: &ic},
+					{Position: &p, BackupPositions: bpPtr("marks,tackles"), InterchangePosition: &ic},
+				}
+			}(),
+			errContains: "interchange",
+		},
+		{
+			name: "unknown interchange position",
+			entries: func() []UpsertPlayerMatchParams {
+				p := PositionGoals
+				ic := "unknown"
+				return []UpsertPlayerMatchParams{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks"), InterchangePosition: &ic},
+				}
+			}(),
+			errContains: "interchange position",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateLineup(tt.entries)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.errContains) {
+				t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
+			}
+		})
 	}
 }
 
