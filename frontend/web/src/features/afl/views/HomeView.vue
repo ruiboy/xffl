@@ -3,7 +3,7 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <h1 class="text-2xl font-bold mb-4">{{ data.season.name }}</h1>
+      <h1 class="text-2xl font-bold mb-4">Home<span class="font-normal text-text-muted"> · {{ data.season.name }}</span></h1>
 
       <RoundNav
         class="mb-8"
