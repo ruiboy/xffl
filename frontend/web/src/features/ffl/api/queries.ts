@@ -8,7 +8,7 @@ export const GET_FFL_TEAM_BUILDER = gql`
       ladder {
         id
         club { id name }
-        roster {
+        squad {
           playerSeasonId
           player { id name aflPlayerId }
         }
@@ -52,15 +52,15 @@ export const GET_FFL_TEAM_BUILDER = gql`
   }
 `
 
-export const GET_FFL_ROSTER = gql`
-  query GetFFLRoster($seasonId: ID!) {
+export const GET_FFL_SQUAD = gql`
+  query GetFFLSquad($seasonId: ID!) {
     fflSeason(id: $seasonId) {
       id
       name
       ladder {
         id
         club { id name }
-        roster {
+        squad {
           playerSeasonId
           player { id name aflPlayerId }
           aflPlayerSeasonId

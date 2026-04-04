@@ -84,7 +84,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 **Goal:** Minor FFL frontend improvements
 
-- [ ] **Roster naming** — decide whether "roster" is the right term or if it should be squad/list/pool; apply rename if needed
+- [x] **Roster naming** — decide whether "roster" is the right term or if it should be squad/list/pool; apply rename if needed
 - [ ] Nav bar reorganisation
 - [ ] Minor page layout changes
 - [ ] Details TBD — will plan when we get here

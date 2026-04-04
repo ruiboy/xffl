@@ -16,9 +16,9 @@ export const REMOVE_FFL_PLAYER_FROM_SEASON = gql`
   }
 `
 
-export const ADD_FFL_ROSTER_PLAYER = gql`
-  mutation AddFFLRosterPlayer($input: AddFFLRosterPlayerInput!) {
-    addFFLRosterPlayer(input: $input) {
+export const ADD_FFL_SQUAD_PLAYER = gql`
+  mutation AddFFLSquadPlayer($input: AddFFLSquadPlayerInput!) {
+    addFFLSquadPlayer(input: $input) {
       id
       playerId
       clubSeasonId

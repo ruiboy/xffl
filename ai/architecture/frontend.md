@@ -51,7 +51,7 @@ frontend/web/src/
       views/        — HomeView, RoundView, MatchView, AdminMatchView
     ffl/
       api/          — GraphQL queries + mutations
-      components/   — MatchSummary, LadderTable, RosterTable, RoundNav, StatusBadge
+      components/   — MatchSummary, LadderTable, SquadTable, RoundNav, StatusBadge
       utils/        — clubLogos.ts
       views/        — HomeView, RoundView, MatchView, TeamBuilderView, PlayersView
   components/       — NavBar (shared)

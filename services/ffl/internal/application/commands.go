@@ -42,8 +42,8 @@ func (c *Commands) CreatePlayer(ctx context.Context, name string, aflPlayerID in
 	return result, err
 }
 
-// AddAFLPlayerToRoster finds or creates an FFL player linked to an AFL player, then adds them to a club season.
-func (c *Commands) AddAFLPlayerToRoster(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int) (domain.PlayerSeason, error) {
+// AddAFLPlayerToSquad finds or creates an FFL player linked to an AFL player, then adds them to a club season.
+func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		// Find existing FFL player by AFL player ID
@@ -87,7 +87,7 @@ func (c *Commands) DeletePlayer(ctx context.Context, id int) error {
 	})
 }
 
-// AddPlayerToSeason assigns a player to a club season roster.
+// AddPlayerToSeason assigns a player to a club season squad.
 func (c *Commands) AddPlayerToSeason(ctx context.Context, playerID int, clubSeasonID int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
@@ -101,7 +101,7 @@ func (c *Commands) AddPlayerToSeason(ctx context.Context, playerID int, clubSeas
 	return result, err
 }
 
-// RemovePlayerFromSeason removes a player from a club season roster.
+// RemovePlayerFromSeason removes a player from a club season squad.
 func (c *Commands) RemovePlayerFromSeason(ctx context.Context, playerSeasonID int) error {
 	return c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		return repos.PlayerSeasons.Delete(ctx, playerSeasonID)

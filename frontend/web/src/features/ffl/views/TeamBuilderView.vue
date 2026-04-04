@@ -106,9 +106,9 @@
             <span v-if="submitMessage" class="ml-3 text-sm text-green-500">{{ submitMessage }}</span>
           </div>
 
-          <!-- Roster panel (right col) -->
+          <!-- Squad panel (right col) -->
           <div>
-            <h2 class="text-lg font-semibold text-text-heading mb-3">Roster ({{ availablePlayers.length }})</h2>
+            <h2 class="text-lg font-semibold text-text-heading mb-3">Squad ({{ availablePlayers.length }})</h2>
             <div class="space-y-1">
               <div
                 v-for="player in availablePlayers"
@@ -167,13 +167,13 @@ const positions = [
 
 type PositionKey = typeof positions[number]['key']
 
-interface RosterPlayer {
+interface SquadPlayer {
   playerSeasonId: string
   name: string
 }
 
 interface Slot {
-  player: RosterPlayer | null
+  player: SquadPlayer | null
 }
 
 // Data loading
@@ -207,10 +207,10 @@ const clubMatch = computed(() => {
   return null
 })
 
-// Roster from club season
-const roster = computed<RosterPlayer[]>(() => {
+// Squad from club season
+const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.roster.map((r: { playerSeasonId: string; player: { name: string } }) => ({
+  return selectedClubSeason.value.squad.map((r: { playerSeasonId: string; player: { name: string } }) => ({
     playerSeasonId: r.playerSeasonId,
     name: r.player.name,
   }))
@@ -236,7 +236,7 @@ watch(clubMatch, (cm) => {
   if (!cm?.playerMatches) return
 
   for (const pm of cm.playerMatches) {
-    const player: RosterPlayer = { playerSeasonId: pm.playerSeasonId, name: pm.player.name }
+    const player: SquadPlayer = { playerSeasonId: pm.playerSeasonId, name: pm.player.name }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (isBench) {
@@ -266,7 +266,7 @@ const assignedPlayerSeasonIds = computed(() => {
 })
 
 const availablePlayers = computed(() =>
-  roster.value.filter(p => !assignedPlayerSeasonIds.value.has(p.playerSeasonId))
+  squad.value.filter(p => !assignedPlayerSeasonIds.value.has(p.playerSeasonId))
 )
 
 const starterCount = computed(() => {
@@ -283,7 +283,7 @@ const isPositionFull = (key: PositionKey) =>
   lineupSlots.value[key].every(s => s.player !== null)
 
 // Lineup management
-function addToLineup(key: PositionKey, player: RosterPlayer) {
+function addToLineup(key: PositionKey, player: SquadPlayer) {
   const slot = lineupSlots.value[key].find(s => !s.player)
   if (slot) slot.player = player
 }
@@ -301,7 +301,7 @@ function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: Position
   toSlot.player = player
 }
 
-function addToBench(player: RosterPlayer) {
+function addToBench(player: SquadPlayer) {
   const slot = benchSlots.value.find(s => !s.player)
   if (slot) slot.player = player
 }

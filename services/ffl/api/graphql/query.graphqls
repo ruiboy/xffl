@@ -59,10 +59,10 @@ type FFLClubSeason {
   for: Int!
   against: Int!
   percentage: Float!
-  roster: [FFLRosterEntry!]!
+  squad: [FFLSquadEntry!]!
 }
 
-type FFLRosterEntry {
+type FFLSquadEntry {
   playerSeasonId: ID!
   player: FFLPlayer!
   aflPlayerSeasonId: ID

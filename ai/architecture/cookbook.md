@@ -77,7 +77,7 @@ The Apollo client (`frontend/web/src/app/apollo.ts`) routes by field prefix:
 - Root fields starting with `ffl` → FFL service (`/ffl/query`)
 - Everything else → AFL service (`/afl/query`)
 
-**A single GraphQL operation cannot span both services.** For cross-service data (e.g. FFL roster + AFL stats), issue two separate queries and join in the component. Pattern:
+**A single GraphQL operation cannot span both services.** For cross-service data (e.g. FFL squad + AFL stats), issue two separate queries and join in the component. Pattern:
 
 ```ts
 const { result: fflResult } = useQuery(FFL_QUERY, ...)

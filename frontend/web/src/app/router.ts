@@ -22,9 +22,9 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/ffl/seasons/:seasonId/roster',
-      name: 'ffl-roster',
-      component: () => import('@/features/ffl/views/RosterView.vue'),
+      path: '/ffl/seasons/:seasonId/squad',
+      name: 'ffl-squad',
+      component: () => import('@/features/ffl/views/SquadView.vue'),
       props: true,
     },
     {

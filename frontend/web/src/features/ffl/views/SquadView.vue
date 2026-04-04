@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-1">Roster</h1>
-    <p class="text-text-muted mb-6">Season roster and AFL stat averages</p>
+    <h1 class="text-2xl font-bold mb-1">Squad</h1>
+    <p class="text-text-muted mb-6">Season squad and AFL stat averages</p>
 
     <div v-if="fflLoading" class="text-text-faint">Loading…</div>
     <div v-else-if="fflError" class="text-red-400">{{ fflError.message }}</div>
@@ -30,7 +30,7 @@
         </button>
       </div>
 
-      <template v-if="rosterRows.length > 0">
+      <template v-if="squadRows.length > 0">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -49,7 +49,7 @@
             </thead>
             <tbody>
               <tr
-                v-for="row in rosterRows"
+                v-for="row in squadRows"
                 :key="row.playerSeasonId"
                 class="border-b border-border-subtle hover:bg-surface-hover"
               >
@@ -90,7 +90,7 @@
           </table>
         </div>
       </template>
-      <p v-else class="text-text-faint">No players on roster.</p>
+      <p v-else class="text-text-faint">No players on squad.</p>
 
       <!-- Add player search (manage mode only) -->
       <div v-if="managing" class="mt-6">
@@ -129,15 +129,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_ROSTER, GET_AFL_PLAYER_SEASON_STATS, SEARCH_AFL_PLAYERS } from '../api/queries'
-import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_ROSTER_PLAYER } from '../api/mutations'
+import { GET_FFL_SQUAD, GET_AFL_PLAYER_SEASON_STATS, SEARCH_AFL_PLAYERS } from '../api/queries'
+import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 
 const props = defineProps<{ seasonId: string }>()
 
 const managing = ref(false)
 
-// Query 1: FFL roster
-const { result: fflResult, loading: fflLoading, error: fflError, refetch: refetchRoster } = useQuery(GET_FFL_ROSTER, () => ({ seasonId: props.seasonId }))
+// Query 1: FFL squad
+const { result: fflResult, loading: fflLoading, error: fflError, refetch: refetchSquad } = useQuery(GET_FFL_SQUAD, () => ({ seasonId: props.seasonId }))
 
 const season = computed(() => fflResult.value?.fflSeason ?? null)
 
@@ -153,10 +153,10 @@ const selectedClubSeason = computed(() =>
   season.value?.ladder.find((cs: { id: string }) => cs.id === selectedClubSeasonId.value) ?? null
 )
 
-// Collect AFL player season IDs from the selected club's roster
+// Collect AFL player season IDs from the selected club's squad
 const aflPlayerSeasonIds = computed<string[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.roster
+  return selectedClubSeason.value.squad
     .map((r: { aflPlayerSeasonId?: string }) => r.aflPlayerSeasonId)
     .filter((id: string | undefined): id is string => id != null)
 })
@@ -188,7 +188,7 @@ const statsMap = computed(() => {
   return map
 })
 
-interface RosterRow {
+interface SquadRow {
   playerSeasonId: string
   name: string
   aflPlayerId: string | null
@@ -202,10 +202,10 @@ interface RosterRow {
   avgBehinds: string | null
 }
 
-const rosterRows = computed<RosterRow[]>(() => {
+const squadRows = computed<SquadRow[]>(() => {
   if (!selectedClubSeason.value) return []
 
-  const rows: RosterRow[] = selectedClubSeason.value.roster.map(
+  const rows: SquadRow[] = selectedClubSeason.value.squad.map(
     (r: { playerSeasonId: string; player: { name: string; aflPlayerId?: string }; aflPlayerSeasonId?: string }) => {
       const stats = r.aflPlayerSeasonId ? statsMap.value.get(r.aflPlayerSeasonId) : undefined
       return {
@@ -257,10 +257,10 @@ const { result: searchResult, loading: searchLoading } = useQuery(
   () => ({ enabled: debouncedQuery.value.length >= 2 })
 )
 
-// Filter out players already on the roster (by AFL player ID)
-const rosterAflPlayerIds = computed(() => {
+// Filter out players already on the squad (by AFL player ID)
+const squadAflPlayerIds = computed(() => {
   const ids = new Set<string>()
-  for (const row of rosterRows.value) {
+  for (const row of squadRows.value) {
     if (row.aflPlayerId) ids.add(row.aflPlayerId)
   }
   return ids
@@ -268,7 +268,7 @@ const rosterAflPlayerIds = computed(() => {
 
 const searchResults = computed(() => {
   const players = searchResult.value?.aflPlayerSearch ?? []
-  return players.filter((p: { id: string }) => !rosterAflPlayerIds.value.has(p.id))
+  return players.filter((p: { id: string }) => !squadAflPlayerIds.value.has(p.id))
 })
 
 // Remove player
@@ -279,7 +279,7 @@ async function removePlayer(playerSeasonId: string) {
   removingId.value = playerSeasonId
   try {
     await removePlayerMutation({ id: playerSeasonId })
-    await refetchRoster()
+    await refetchSquad()
   } finally {
     removingId.value = null
   }
@@ -287,7 +287,7 @@ async function removePlayer(playerSeasonId: string) {
 
 // Add player
 const addingId = ref<string | null>(null)
-const { mutate: addPlayerMutation } = useMutation(ADD_FFL_ROSTER_PLAYER)
+const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
 
 async function addPlayer(player: { id: string; name: string }) {
   if (!selectedClubSeasonId.value) return
@@ -300,7 +300,7 @@ async function addPlayer(player: { id: string; name: string }) {
         clubSeasonId: selectedClubSeasonId.value,
       },
     })
-    await refetchRoster()
+    await refetchSquad()
   } finally {
     addingId.value = null
   }

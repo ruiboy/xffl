@@ -25,8 +25,8 @@ test.describe('FFL Team Builder', () => {
     await expect(page.getByRole('heading', { name: /Bench/ })).toBeVisible()
   })
 
-  test('displays roster panel with players', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Roster/ })).toBeVisible()
+  test('displays squad panel with players', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Squad/ })).toBeVisible()
     // Ruiboys has 30 players, some already assigned in seed data
     await expect(page.getByText('Marcus Bontempelli')).toBeVisible()
   })
@@ -37,7 +37,7 @@ test.describe('FFL Team Builder', () => {
 
   test('loads existing lineup from seed data', async ({ page }) => {
     // Seed data has 7 starters + 2 bench for Ruiboys
-    // Starters should appear in position slots (not in roster panel as available)
+    // Starters should appear in position slots (not in squad panel as available)
     await expect(page.getByText('Christian Petracca')).toBeVisible()
   })
 })

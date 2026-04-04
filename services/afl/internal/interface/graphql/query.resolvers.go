@@ -256,4 +256,3 @@ type aFLMatchResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-

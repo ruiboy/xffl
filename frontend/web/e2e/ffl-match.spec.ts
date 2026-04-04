@@ -20,7 +20,7 @@ test.describe('FFL Match', () => {
     await expect(page.getByText('Fantasy score:')).toHaveCount(2)
   })
 
-  test('displays roster table with player columns', async ({ page }) => {
+  test('displays squad table with player columns', async ({ page }) => {
     await expect(page.getByRole('columnheader', { name: 'Player' }).first()).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Position' }).first()).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Status' }).first()).toBeVisible()

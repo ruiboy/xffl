@@ -10,10 +10,10 @@
         </div>
         <div class="flex items-center gap-2">
           <router-link
-            :to="{ name: 'ffl-roster', params: { seasonId: data.season.id } }"
+            :to="{ name: 'ffl-squad', params: { seasonId: data.season.id } }"
             class="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
           >
-            Roster
+            Squad
           </router-link>
           <router-link
             :to="{ name: 'ffl-team-builder', params: { seasonId: data.season.id, roundId: data.round.id } }"

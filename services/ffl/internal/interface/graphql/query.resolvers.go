@@ -30,8 +30,8 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	return result, nil
 }
 
-// Roster is the resolver for the roster field.
-func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) ([]*FFLRosterEntry, error) {
+// Squad is the resolver for the squad field.
+func (r *fFLClubSeasonResolver) Squad(ctx context.Context, obj *FFLClubSeason) ([]*FFLSquadEntry, error) {
 	csID, err := fromID(obj.ID)
 	if err != nil {
 		return nil, err
@@ -40,13 +40,13 @@ func (r *fFLClubSeasonResolver) Roster(ctx context.Context, obj *FFLClubSeason) 
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*FFLRosterEntry, len(playerSeasons))
+	result := make([]*FFLSquadEntry, len(playerSeasons))
 	for i, ps := range playerSeasons {
 		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
 		if err != nil {
 			return nil, err
 		}
-		entry := &FFLRosterEntry{
+		entry := &FFLSquadEntry{
 			PlayerSeasonID: toID(ps.ID),
 			Player:         convertPlayer(player),
 		}
