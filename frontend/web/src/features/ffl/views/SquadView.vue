@@ -20,68 +20,73 @@
 
     <div v-if="squadLoading" class="text-text-faint">Loading…</div>
     <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
-    <template v-else-if="players.length > 0">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border text-left text-text-muted">
-              <th class="py-2 pr-4 font-medium">Player</th>
-              <th v-if="managing" class="py-2 px-2 font-medium text-right"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="row in players"
-              :key="row.id"
-              class="border-b border-border-subtle hover:bg-surface-hover"
-            >
-              <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
-              <td v-if="managing" class="py-2 px-2 text-right">
-                <button
-                  @click="removePlayer(row.id)"
-                  class="text-red-400 hover:text-red-300 text-xs font-medium"
-                  :disabled="removingId === row.id"
+    <template v-else>
+      <div class="flex gap-8 items-start">
+        <!-- Player list -->
+        <div class="flex-1 min-w-0">
+          <div v-if="players.length > 0" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-border text-left text-text-muted">
+                  <th class="py-2 pr-4 font-medium">Player</th>
+                  <th v-if="managing" class="py-2 px-2 font-medium text-right"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in players"
+                  :key="row.id"
+                  class="border-b border-border-subtle hover:bg-surface-hover"
                 >
-                  {{ removingId === row.id ? 'Removing…' : 'Remove' }}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </template>
-    <p v-else-if="!squadLoading" class="text-text-faint">No players on squad.</p>
+                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                  <td v-if="managing" class="py-2 px-2 text-right">
+                    <button
+                      @click="removePlayer(row.id)"
+                      class="text-red-400 hover:text-red-300 text-xs font-medium"
+                      :disabled="removingId === row.id"
+                    >
+                      {{ removingId === row.id ? 'Removing…' : 'Remove' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else class="text-text-faint">No players on squad.</p>
+        </div>
 
-    <!-- Add player search (manage mode only) -->
-    <div v-if="managing" class="mt-6">
-      <h2 class="text-lg font-semibold mb-2">Add Player</h2>
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Search AFL players by name…"
-        class="w-full max-w-md rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
-      />
-      <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching…</div>
-      <div v-else-if="searchResults.length > 0" class="mt-2 max-w-md">
-        <div
-          v-for="player in searchResults"
-          :key="player.id"
-          class="flex items-center justify-between border-b border-border-subtle py-2"
-        >
-          <span class="text-sm">{{ player.name }}</span>
-          <button
-            @click="addPlayer(player)"
-            class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
-            :disabled="addingId === player.id"
-          >
-            {{ addingId === player.id ? 'Adding…' : 'Add' }}
-          </button>
+        <!-- Add player search (manage mode only) -->
+        <div v-if="managing" class="w-72 shrink-0">
+          <h2 class="text-lg font-semibold mb-2">Add Player</h2>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search AFL players by name…"
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
+          />
+          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching…</div>
+          <div v-else-if="searchResults.length > 0" class="mt-2">
+            <div
+              v-for="player in searchResults"
+              :key="player.id"
+              class="flex items-center justify-between border-b border-border-subtle py-2"
+            >
+              <span class="text-sm">{{ player.name }}</span>
+              <button
+                @click="addPlayer(player)"
+                class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
+                :disabled="addingId === player.id"
+              >
+                {{ addingId === player.id ? 'Adding…' : 'Add' }}
+              </button>
+            </div>
+          </div>
+          <div v-else-if="searchQuery.length >= 2 && !searchLoading" class="mt-2 text-text-faint text-sm">
+            No players found.
+          </div>
         </div>
       </div>
-      <div v-else-if="searchQuery.length >= 2 && !searchLoading" class="mt-2 text-text-faint text-sm">
-        No players found.
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 

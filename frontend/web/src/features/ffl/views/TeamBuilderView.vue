@@ -8,6 +8,20 @@
         <p class="text-text-muted">Build your team for the round</p>
       </div>
 
+      <div class="mb-6 flex items-center gap-4">
+        <button
+          @click="onManageToggle"
+          class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+          :class="managing
+            ? 'border-active bg-active text-active-text'
+            : 'border-border bg-surface text-text hover:bg-surface-hover'"
+          :disabled="submitting"
+        >
+          {{ submitting ? 'Saving…' : managing ? 'Done' : 'Manage' }}
+        </button>
+        <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+      </div>
+
       <template v-if="selectedClubSeason && clubMatch">
         <!-- Score projection -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
@@ -17,7 +31,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'">
           <!-- Lineup (left 2 cols) -->
           <div class="lg:col-span-2">
             <div v-for="pos in positions" :key="pos.key" class="mb-6">
@@ -35,7 +49,7 @@
                     <span class="font-medium">{{ slot.player.name }}</span>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
-                  <div v-if="slot.player" class="flex items-center gap-2">
+                  <div v-if="slot.player && managing" class="flex items-center gap-2">
                     <button
                       v-for="target in positions.filter(p => p.key !== pos.key)"
                       :key="target.key"
@@ -74,7 +88,7 @@
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty bench slot</span>
                   <button
-                    v-if="slot.player"
+                    v-if="slot.player && managing"
                     class="text-xs text-red-400 hover:text-red-300 transition-colors"
                     @click="removeFromBench(index)"
                   >
@@ -84,19 +98,10 @@
               </div>
             </div>
 
-            <!-- Submit -->
-            <button
-              class="rounded-lg bg-active px-6 py-2 text-sm font-medium text-active-text hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="submitting || starterCount === 0"
-              @click="submitLineup"
-            >
-              {{ submitting ? 'Saving…' : 'Save Lineup' }}
-            </button>
-            <span v-if="submitMessage" class="ml-3 text-sm text-green-500">{{ submitMessage }}</span>
           </div>
 
-          <!-- Squad panel (right col) -->
-          <div>
+          <!-- Squad panel (right col, manage mode only) -->
+          <div v-if="managing">
             <h2 class="text-lg font-semibold text-text-heading mb-3">Squad ({{ availablePlayers.length }})</h2>
             <div class="space-y-1">
               <div
@@ -167,6 +172,7 @@ interface Slot {
 }
 
 const { selectedClubId } = useFflState()
+const managing = ref(false)
 
 // Data loading
 const { result, loading, error } = useQuery(GET_FFL_TEAM_BUILDER, () => ({ seasonId: props.seasonId }))
@@ -297,6 +303,13 @@ function removeFromBench(index: number) {
 const { mutate: setLineup } = useMutation(SET_FFL_LINEUP)
 const submitting = ref(false)
 const submitMessage = ref('')
+
+async function onManageToggle() {
+  if (managing.value) {
+    await submitLineup()
+  }
+  managing.value = !managing.value
+}
 
 async function submitLineup() {
   if (!clubMatch.value) return

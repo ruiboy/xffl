@@ -13,7 +13,7 @@
           AFL
         </router-link>
 
-        <!-- Right: FFL nav + theme toggle -->
+        <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
           <!-- Squad + Team Builder (always visible on FFL pages once season is known) -->
           <template v-if="isFfl">
@@ -41,12 +41,37 @@
             />
           </template>
 
-          <button
-            class="text-sm text-text-muted hover:text-text transition-colors"
-            @click="toggleTheme"
-          >
-            {{ isDark ? 'Light' : 'Dark' }}
-          </button>
+          <!-- Settings cog -->
+          <div class="relative" ref="settingsContainer">
+            <button
+              @click="settingsOpen = !settingsOpen"
+              class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+              title="Settings"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <div
+              v-if="settingsOpen"
+              class="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-surface-raised shadow-lg py-2 z-50"
+            >
+              <div class="px-3 py-1.5 flex items-center justify-between">
+                <span class="text-sm text-text-muted">Dark mode</span>
+                <button
+                  @click="toggleTheme"
+                  class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                  :class="isDark ? 'bg-active' : 'bg-control-ring'"
+                >
+                  <span
+                    class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
+                    :class="isDark ? 'translate-x-4' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </nav>
@@ -57,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
@@ -85,12 +110,36 @@ watch(clubs, (list) => {
   }
 })
 
+// Settings dropdown
+const settingsOpen = ref(false)
+const settingsContainer = ref<HTMLElement | null>(null)
+
+function onClickOutside(e: MouseEvent) {
+  if (settingsContainer.value && !settingsContainer.value.contains(e.target as Node)) {
+    settingsOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', onClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
+
 // Theme
 const isDark = ref(false)
 
+function getThemeCookie(): string {
+  const match = document.cookie.match(/(^| )xffl_dark_mode=([^;]+)/)
+  return match ? match[2] : ''
+}
+
+function setThemeCookie(dark: boolean) {
+  const expires = new Date()
+  expires.setFullYear(expires.getFullYear() + 10)
+  document.cookie = `xffl_dark_mode=${dark ? '1' : '0'};expires=${expires.toUTCString()};path=/`
+}
+
 function applyTheme(dark: boolean) {
   document.documentElement.classList.toggle('dark', dark)
-  localStorage.setItem('theme', dark ? 'dark' : 'light')
+  setThemeCookie(dark)
   isDark.value = dark
 }
 
@@ -99,8 +148,8 @@ function toggleTheme() {
 }
 
 onMounted(() => {
-  const saved = localStorage.getItem('theme')
+  const saved = getThemeCookie()
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  applyTheme(saved ? saved === 'dark' : prefersDark)
+  applyTheme(saved !== '' ? saved === '1' : prefersDark)
 })
 </script>
