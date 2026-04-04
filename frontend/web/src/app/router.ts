@@ -3,9 +3,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // FFL routes
+    // Redirect root to FFL
     {
       path: '/',
+      redirect: '/ffl',
+    },
+
+    // FFL routes
+    {
+      path: '/ffl',
       name: 'home',
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },

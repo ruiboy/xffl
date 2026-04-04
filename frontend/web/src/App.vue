@@ -2,10 +2,10 @@
   <div class="min-h-screen bg-surface text-text">
     <nav class="border-b border-border bg-surface-raised px-6 py-4">
       <div class="max-w-5xl mx-auto flex items-center gap-6">
-        <router-link to="/" class="text-lg font-semibold tracking-tight text-text hover:text-text-muted transition-colors">
+        <router-link to="/ffl" class="text-lg font-semibold tracking-tight text-text hover:text-text-muted transition-colors">
           xFFL
         </router-link>
-        <router-link to="/" class="text-sm text-text-muted hover:text-text transition-colors">
+        <router-link to="/ffl" class="text-sm text-text-muted hover:text-text transition-colors">
           FFL
         </router-link>
 <router-link to="/afl" class="text-sm text-text-muted hover:text-text transition-colors">
