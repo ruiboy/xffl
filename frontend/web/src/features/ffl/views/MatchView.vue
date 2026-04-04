@@ -4,9 +4,11 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
       <div class="mb-8">
-        <h1 class="text-2xl font-bold">
+        <h1 class="text-2xl font-bold flex items-center gap-3">
+          <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
-          <span class="text-text-faint mx-2">v</span>
+          <span class="text-text-faint mx-1">v</span>
+          <img v-if="match.awayClubMatch" :src="clubLogoUrl(match.awayClubMatch.club.name)" :alt="match.awayClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.awayClubMatch?.club.name ?? '—' }}
         </h1>
         <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
@@ -33,6 +35,7 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
 import RosterTable from '../components/RosterTable.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
 
