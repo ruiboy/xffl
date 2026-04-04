@@ -5,9 +5,8 @@ test.describe('AFL Home view', () => {
     await page.goto('/afl')
   })
 
-  test('displays season and round name', async ({ page }) => {
+  test('displays season name in heading', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('AFL 2025')
-    await expect(page.getByRole('paragraph')).toContainText('Round 15')
   })
 
   test('displays ladder', async ({ page }) => {
@@ -15,26 +14,29 @@ test.describe('AFL Home view', () => {
     await expect(page.getByRole('cell', { name: 'Adelaide Crows' })).toBeVisible()
   })
 
-  test('displays match summary with teams', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Matches' })).toBeVisible()
-    const matchLink = page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ })
-    await expect(matchLink).toBeVisible()
+  test('does not display matches section', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Matches' })).not.toBeVisible()
   })
 
-  test('match summary links to match page', async ({ page }) => {
-    const matchLink = page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ })
-    await matchLink.click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Adelaide Crows')
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Brisbane Lions')
+  test('displays round selector with ladder icon and round circles', async ({ page }) => {
+    const roundNav = page.locator('main nav')
+    await expect(roundNav).toBeVisible()
+    await expect(roundNav.getByTitle('Ladder')).toBeVisible()
+    await expect(roundNav.getByRole('link', { name: '13', exact: true })).toBeVisible()
   })
 
-  test('displays round navigation', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Rounds' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Round 13' })).toBeVisible()
+  test('round circle navigates to round page', async ({ page }) => {
+    await page.locator('main nav').getByRole('link', { name: '13', exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 13')
   })
 
   test('navbar has FFL and AFL links', async ({ page }) => {
-    await expect(page.getByRole('navigation').getByRole('link', { name: 'FFL', exact: true })).toBeVisible()
-    await expect(page.getByRole('navigation').getByRole('link', { name: 'AFL', exact: true })).toBeVisible()
+    const topNav = page.getByRole('navigation').first()
+    await expect(topNav.getByRole('link', { name: 'FFL', exact: true }).filter({ hasText: 'FFL' })).toBeVisible()
+    await expect(topNav.getByRole('link', { name: 'AFL', exact: true })).toBeVisible()
+  })
+
+  test('navbar has settings cog', async ({ page }) => {
+    await expect(page.getByTitle('Settings')).toBeVisible()
   })
 })

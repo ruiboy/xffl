@@ -8,21 +8,21 @@
         <p class="text-text-muted">Build your team for the round</p>
       </div>
 
-      <div class="mb-6 flex items-center gap-4">
-        <button
-          @click="onManageToggle"
-          class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
-          :class="managing
-            ? 'border-active bg-active text-active-text'
-            : 'border-border bg-surface text-text hover:bg-surface-hover'"
-          :disabled="submitting"
-        >
-          {{ submitting ? 'Saving…' : managing ? 'Done' : 'Manage' }}
-        </button>
-        <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
-      </div>
-
       <template v-if="selectedClubSeason && clubMatch">
+        <div class="mb-6 flex items-center gap-4">
+          <button
+            @click="onManageToggle"
+            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="managing
+              ? 'border-active bg-active text-active-text'
+              : 'border-border bg-surface text-text hover:bg-surface-hover'"
+            :disabled="submitting"
+          >
+            {{ submitting ? 'Saving…' : managing ? 'Done' : 'Manage' }}
+          </button>
+          <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+        </div>
+
         <!-- Score projection -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
           <div class="flex items-center justify-between mb-2">

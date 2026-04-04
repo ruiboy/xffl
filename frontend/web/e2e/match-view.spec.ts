@@ -2,27 +2,30 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Match view', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: AFL Home → first match
+    // Navigate: AFL Home → Round 13 → first match
     await page.goto('/afl')
+    await page.locator('main nav').getByRole('link', { name: '13', exact: true }).click()
     await page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ }).first().click()
+    // Wait for navigation to match page to complete before assertions
+    await page.waitForURL(/\/matches\//)
   })
 
   test('displays match header with teams and venue', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Adelaide Crows')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Brisbane Lions')
-    await expect(page.getByText('MCG')).toBeVisible()
+    await expect(page.getByText('Adelaide Oval')).toBeVisible()
   })
 
   test('displays home team player stats', async ({ page }) => {
-    await expect(page.getByText('Jordan Dawson')).toBeVisible()
-    await expect(page.getByText('Rory Laird')).toBeVisible()
-    await expect(page.getByText('Ben Keays')).toBeVisible()
+    await expect(page.getByText('Jordan Dawson').first()).toBeVisible()
+    await expect(page.getByText('Rory Laird').first()).toBeVisible()
+    await expect(page.getByText('Ben Keays').first()).toBeVisible()
   })
 
   test('displays away team player stats', async ({ page }) => {
-    await expect(page.getByText('Lachie Neale')).toBeVisible()
-    await expect(page.getByText('Hugh McCluggage')).toBeVisible()
-    await expect(page.getByText('Dayne Zorko')).toBeVisible()
+    await expect(page.getByText('Lachie Neale').first()).toBeVisible()
+    await expect(page.getByText('Hugh McCluggage').first()).toBeVisible()
+    await expect(page.getByText('Dayne Zorko').first()).toBeVisible()
   })
 
   test('displays stat column headers', async ({ page }) => {

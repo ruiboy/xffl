@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('FFL Match', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: Home → match
-    await page.goto('/')
+    // Navigate: FFL Home → Round 1 → match
+    await page.goto('/ffl')
+    await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
     await page.getByRole('link', { name: /Ruiboys.+v.+The Howling Cows/ }).click()
   })
 
