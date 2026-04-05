@@ -143,7 +143,7 @@ Both services use these in `repository.go`:
 
 ## Testing
 
-- **Go unit tests**: `cd services/{svc} && go test ./...`
-- **Integration tests** use the local Postgres (must be running via `just dev-up`). Schema changes require `just dev-reset && just dev-up && just dev-seed`.
+See `ai/architecture/testing.md` for Go testing conventions (stack, patterns, naming).
+
 - **Frontend type check**: `cd frontend/web && npx vue-tsc --noEmit`
 - **E2E**: `just test-e2e` (requires `just run-all`)
