@@ -44,11 +44,11 @@ Teams need not be full.
 - [x] Update interchange loop
 - [x] Update total sum
 
-### B2 — Add PositionSlots constants + ValidateLineup() ✅
+### B2 — Add PositionSlots constants + ValidateTeam() ✅
 **File:** `services/ffl/internal/domain/player_match.go`
 
 - [x] Add `PositionSlots map[Position]int` (goals:3, kicks:4, handballs:4, marks:2, tackles:2, hitouts:2, star:1)
-- [x] Add `ValidateLineup(entries []UpsertPlayerMatchParams) error` enforcing:
+- [x] Add `ValidateTeam(entries []UpsertPlayerMatchParams) error` enforcing:
   1. Starter count per position ≤ PositionSlots[pos]
   2. Bench count ≤ 4
   3. At most 1 bench star (backupPositions contains "star")
@@ -57,15 +57,15 @@ Teams need not be full.
   6. At most 1 interchange position across all players
   7. Interchange position (if set) must be a recognised Position value
 
-### B3 — Enforce validation in SetLineup command ✅
+### B3 — Enforce validation in SetTeam command ✅
 **File:** `services/ffl/internal/application/commands.go`
 
-- [x] Call `domain.ValidateLineup(entries)` before opening the transaction; return error on failure
+- [x] Call `domain.ValidateTeam(entries)` before opening the transaction; return error on failure
 
 ### B4 — Integration tests for all composition rules ✅
 **File:** `services/ffl/internal/interface/graphql/integration_test.go`
 
-- [x] Valid 18-starter lineup saves successfully
+- [x] Valid 18-starter team saves successfully
 - [x] Too many starters for a position → error
 - [x] 5 bench players → error
 - [x] 2 bench stars → error
@@ -93,8 +93,8 @@ Teams need not be full.
 - [x] Render Bench 1/2/3 rows with dual position selectors and interchange toggle
 - [x] Disable position pills already used across other bench dual slots
 - [x] Allow at most 1 interchange active across all rows
-- [x] Load existing lineup data into new structure in the watch initialiser
-- [x] Update submitLineup() to serialise correctly
+- [x] Load existing team data into new structure in the watch initialiser
+- [x] Update submitTeam() to serialise correctly
 
 ### F3 — Squad panel bench actions ✅
 **File:** `frontend/web/src/features/ffl/views/TeamBuilderView.vue`
@@ -141,7 +141,7 @@ Teams need not be full.
 - [x] Enter Manage → player still in slot
 
 #### Continue building across multiple sessions
-- [x] Load page with partially-saved lineup → enter Manage → existing players present
+- [x] Load page with partially-saved team → enter Manage → existing players present
 - [x] Add more players → Done → all players (old + new) visible in read-only mode
 - [x] Enter Manage again → all players still present in correct slots
 

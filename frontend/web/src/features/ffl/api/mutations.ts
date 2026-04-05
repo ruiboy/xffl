@@ -26,9 +26,9 @@ export const ADD_FFL_SQUAD_PLAYER = gql`
   }
 `
 
-export const SET_FFL_LINEUP = gql`
-  mutation SetFFLLineup($input: SetFFLLineupInput!) {
-    setFFLLineup(input: $input) {
+export const SET_FFL_TEAM = gql`
+  mutation SetFFLTeam($input: SetFFLTeamInput!) {
+    setFFLTeam(input: $input) {
       id
       playerSeasonId
       player { id name }

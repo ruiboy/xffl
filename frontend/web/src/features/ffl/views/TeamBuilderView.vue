@@ -26,13 +26,13 @@
         <!-- Summary bar -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-text-heading">Lineup</h2>
+            <h2 class="text-sm font-semibold text-text-heading">Team</h2>
             <span class="text-sm tabular-nums">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
           </div>
         </div>
 
         <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'">
-          <!-- Lineup (left 2 cols) -->
+          <!-- Team (left 2 cols) -->
           <div class="lg:col-span-2">
 
             <!-- Starter position groups -->
@@ -42,7 +42,7 @@
               </div>
               <div class="space-y-1">
                 <div
-                  v-for="(slot, index) in lineupSlots[pos.key]"
+                  v-for="(slot, index) in teamSlots[pos.key]"
                   :key="index"
                   class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
                   :class="slot.player
@@ -67,7 +67,7 @@
                     </button>
                     <button
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                      @click="removeFromLineup(pos.key, index)"
+                      @click="removeFromTeam(pos.key, index)"
                     >
                       Remove
                     </button>
@@ -211,7 +211,7 @@
                     class="rounded px-2 py-0.5 text-xs text-text-muted hover:bg-control-hover hover:text-text transition-colors"
                     :disabled="isPositionFull(pos.key)"
                     :class="{ 'opacity-30 cursor-not-allowed': isPositionFull(pos.key) }"
-                    @click="addToLineup(pos.key, player)"
+                    @click="addToTeam(pos.key, player)"
                   >
                     {{ pos.short }}
                   </button>
@@ -251,7 +251,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_TEAM_BUILDER } from '../api/queries'
-import { SET_FFL_LINEUP } from '../api/mutations'
+import { SET_FFL_TEAM } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
@@ -325,11 +325,11 @@ const squad = computed<SquadPlayer[]>(() => {
   }))
 })
 
-// ── Lineup state ──────────────────────────────────────────────────────────────
+// ── Team state ──────────────────────────────────────────────────────────────
 
 const createSlots = (count: number): Slot[] => Array.from({ length: count }, () => ({ player: null }))
 
-const lineupSlots = ref<Record<PositionKey, Slot[]>>(
+const teamSlots = ref<Record<PositionKey, Slot[]>>(
   Object.fromEntries(positions.map(p => [p.key, createSlots(p.count)])) as Record<PositionKey, Slot[]>
 )
 
@@ -348,9 +348,9 @@ const interchangePosition = ref<string | null>(null)
 // Track the match ID we last loaded from to avoid Apollo cache updates wiping local edits.
 const initializedMatchId = ref<string | null>(null)
 
-function resetLineupState() {
+function resetTeamState() {
   for (const pos of positions) {
-    lineupSlots.value[pos.key] = createSlots(pos.count)
+    teamSlots.value[pos.key] = createSlots(pos.count)
   }
   benchStarSlot.value = { player: null }
   benchDualSlots.value = [
@@ -361,7 +361,7 @@ function resetLineupState() {
   interchangePosition.value = null
 }
 
-// Load existing lineup from server data — only when the match changes, not on every Apollo cache update.
+// Load existing team from server data — only when the match changes, not on every Apollo cache update.
 // { immediate: true } ensures this fires on component remount when Apollo cache already has data
 // (without it, watch only fires on changes — a cache hit on remount produces no change event).
 watch(clubMatch, (cm) => {
@@ -369,7 +369,7 @@ watch(clubMatch, (cm) => {
   if (cm.id === initializedMatchId.value) return  // already initialised for this match; don't reset local edits
   initializedMatchId.value = cm.id
 
-  resetLineupState()
+  resetTeamState()
   if (!cm.playerMatches) return
 
   let dualIndex = 0
@@ -379,7 +379,7 @@ watch(clubMatch, (cm) => {
 
     if (!isBench) {
       // Starter
-      const posSlots = lineupSlots.value[pm.position as PositionKey]
+      const posSlots = teamSlots.value[pm.position as PositionKey]
       if (posSlots) {
         const slot = posSlots.find((s: Slot) => !s.player)
         if (slot) slot.player = player
@@ -404,7 +404,7 @@ watch(clubMatch, (cm) => {
 const assignedPlayerIds = computed(() => {
   const ids = new Set<string>()
   for (const pos of positions) {
-    for (const slot of lineupSlots.value[pos.key]) {
+    for (const slot of teamSlots.value[pos.key]) {
       if (slot.player) ids.add(slot.player.id)
     }
   }
@@ -422,7 +422,7 @@ const availablePlayers = computed(() =>
 const starterCount = computed(() => {
   let count = 0
   for (const pos of positions) {
-    count += lineupSlots.value[pos.key].filter(s => s.player).length
+    count += teamSlots.value[pos.key].filter(s => s.player).length
   }
   return count
 })
@@ -436,7 +436,7 @@ const benchCount = computed(() => {
 const benchDualFull = computed(() => benchDualSlots.value.every(s => s.player !== null))
 
 const isPositionFull = (key: PositionKey) =>
-  lineupSlots.value[key].every(s => s.player !== null)
+  teamSlots.value[key].every(s => s.player !== null)
 
 // Returns all non-star positions already claimed by another bench dual slot (optionally excluding a specific slot+side).
 function isBenchPositionUsed(posKey: string, slotIndex: number, sideIndex: number): boolean {
@@ -456,23 +456,23 @@ function benchDualInterchangeKey(index: number): string | null {
   return slot.positions[0] ?? slot.positions[1] ?? null
 }
 
-// ── Lineup management ─────────────────────────────────────────────────────────
+// ── Team management ─────────────────────────────────────────────────────────
 
-function addToLineup(key: PositionKey, player: SquadPlayer) {
-  const slot = lineupSlots.value[key].find(s => !s.player)
+function addToTeam(key: PositionKey, player: SquadPlayer) {
+  const slot = teamSlots.value[key].find(s => !s.player)
   if (slot) slot.player = player
 }
 
-function removeFromLineup(key: PositionKey, index: number) {
-  lineupSlots.value[key][index].player = null
+function removeFromTeam(key: PositionKey, index: number) {
+  teamSlots.value[key][index].player = null
 }
 
 function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: PositionKey) {
-  const player = lineupSlots.value[fromKey][fromIndex].player
+  const player = teamSlots.value[fromKey][fromIndex].player
   if (!player) return
-  const toSlot = lineupSlots.value[toKey].find(s => !s.player)
+  const toSlot = teamSlots.value[toKey].find(s => !s.player)
   if (!toSlot) return
-  lineupSlots.value[fromKey][fromIndex].player = null
+  teamSlots.value[fromKey][fromIndex].player = null
   toSlot.player = player
 }
 
@@ -505,7 +505,7 @@ function toggleInterchange(key: string | null) {
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 
-const { mutate: setLineup } = useMutation(SET_FFL_LINEUP, () => ({
+const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
   refetchQueries: [{ query: GET_FFL_TEAM_BUILDER, variables: { seasonId: props.seasonId } }],
   awaitRefetchQueries: true,
 }))
@@ -514,12 +514,12 @@ const submitMessage = ref('')
 
 async function onManageToggle() {
   if (managing.value) {
-    await submitLineup()
+    await submitTeam()
   }
   managing.value = !managing.value
 }
 
-async function submitLineup() {
+async function submitTeam() {
   if (!clubMatch.value) return
   submitting.value = true
   submitMessage.value = ''
@@ -533,7 +533,7 @@ async function submitLineup() {
 
   // Starters
   for (const pos of positions) {
-    for (const slot of lineupSlots.value[pos.key]) {
+    for (const slot of teamSlots.value[pos.key]) {
       if (slot.player) {
         players.push({ playerSeasonId: slot.player.id, position: pos.key })
       }
@@ -570,11 +570,11 @@ async function submitLineup() {
   }
 
   try {
-    await setLineup({ input: { clubMatchId: clubMatch.value.id, players } })
-    submitMessage.value = 'Lineup saved!'
+    await setTeam({ input: { clubMatchId: clubMatch.value.id, players } })
+    submitMessage.value = 'Team saved!'
     setTimeout(() => { submitMessage.value = '' }, 3000)
   } catch (e) {
-    submitMessage.value = 'Failed to save lineup'
+    submitMessage.value = 'Failed to save team'
   } finally {
     submitting.value = false
   }

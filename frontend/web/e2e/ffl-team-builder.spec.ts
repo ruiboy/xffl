@@ -198,7 +198,7 @@ test.describe('FFL Team Builder', () => {
   // ── Navigate away and back (server persistence) ───────────────────────────
 
   test.describe('navigate away and back', () => {
-    test('lineup persists after navigating to Squad view and returning', async ({ page }) => {
+    test('team persists after navigating to Squad view and returning', async ({ page }) => {
       await goToTeamBuilder(page)
 
       // Add a player to Kicks and save (Goals is filled by state-retention tests)
@@ -226,11 +226,11 @@ test.describe('FFL Team Builder', () => {
 
   // ── Continue building across sessions ─────────────────────────────────────
 
-  test.describe('continue building on existing lineup', () => {
-    test('existing players present when entering manage mode on partial lineup', async ({ page }) => {
+  test.describe('continue building on existing team', () => {
+    test('existing players present when entering manage mode on partial team', async ({ page }) => {
       await goToTeamBuilder(page)
 
-      // Seed data has some players in the lineup already
+      // Seed data has some players in the team already
       // Verify they are present in read-only mode
       const goalsSection = positionSection(page, 'Goals')
       // Should have at least 1 filled slot (seed puts 1 starter per position)
@@ -243,7 +243,7 @@ test.describe('FFL Team Builder', () => {
       expect(stillEmpty).toBe(emptyCount)
     })
 
-    test('adding to existing lineup: all players visible after Done', async ({ page }) => {
+    test('adding to existing team: all players visible after Done', async ({ page }) => {
       await goToTeamBuilder(page)
 
       // Find players already in Handballs read-only (has capacity from prior tests in the run)

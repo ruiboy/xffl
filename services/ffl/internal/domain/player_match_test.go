@@ -7,12 +7,12 @@ import (
 
 func TestCalculateScore(t *testing.T) {
 	stats := AFLStats{
-		Goals:    3,
-		Kicks:    15,
+		Goals:     3,
+		Kicks:     15,
 		Handballs: 10,
-		Marks:    6,
-		Tackles:  4,
-		Hitouts:  2,
+		Marks:     6,
+		Tackles:   4,
+		Hitouts:   2,
 	}
 
 	tests := []struct {
@@ -20,13 +20,13 @@ func TestCalculateScore(t *testing.T) {
 		position Position
 		want     int
 	}{
-		{"goals position", PositionGoals, 15},      // 3 * 5
-		{"kicks position", PositionKicks, 15},       // 15 * 1
+		{"goals position", PositionGoals, 15},         // 3 * 5
+		{"kicks position", PositionKicks, 15},         // 15 * 1
 		{"handballs position", PositionHandballs, 10}, // 10 * 1
-		{"marks position", PositionMarks, 12},       // 6 * 2
-		{"tackles position", PositionTackles, 16},   // 4 * 4
-		{"hitouts position", PositionHitouts, 2},    // 2 * 1
-		{"star position", PositionStar, 68},         // 3*5 + 15*1 + 10*1 + 6*2 + 4*4
+		{"marks position", PositionMarks, 12},         // 6 * 2
+		{"tackles position", PositionTackles, 16},     // 4 * 4
+		{"hitouts position", PositionHitouts, 2},      // 2 * 1
+		{"star position", PositionStar, 68},           // 3*5 + 15*1 + 10*1 + 6*2 + 4*4
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,8 +48,8 @@ func TestCalculateScore_NilPosition(t *testing.T) {
 func bpPtr(s string) *string { return &s }
 func ipPtr(s string) *string { return &s }
 
-// validFullLineup builds a complete 18-starter lineup with no bench.
-func validFullLineup() []UpsertPlayerMatchParams {
+// validFullTeam builds a complete 18-starter team with no bench.
+func validFullTeam() []UpsertPlayerMatchParams {
 	entries := []UpsertPlayerMatchParams{}
 	for pos, count := range PositionSlots {
 		p := pos
@@ -60,21 +60,21 @@ func validFullLineup() []UpsertPlayerMatchParams {
 	return entries
 }
 
-func TestValidateLineup_ValidCases(t *testing.T) {
-	t.Run("empty lineup is valid", func(t *testing.T) {
-		if err := ValidateLineup(nil); err != nil {
+func TestValidateTeam_ValidCases(t *testing.T) {
+	t.Run("empty team is valid", func(t *testing.T) {
+		if err := ValidateTeam(nil); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
-	t.Run("full 18-starter lineup is valid", func(t *testing.T) {
-		if err := ValidateLineup(validFullLineup()); err != nil {
+	t.Run("full 18-starter team is valid", func(t *testing.T) {
+		if err := ValidateTeam(validFullTeam()); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("starters with backup star and 3 dual-position bench", func(t *testing.T) {
-		entries := validFullLineup()
+		entries := validFullTeam()
 		// Backup star
 		star := PositionStar
 		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star")})
@@ -85,34 +85,34 @@ func TestValidateLineup_ValidCases(t *testing.T) {
 		entries = append(entries, UpsertPlayerMatchParams{Position: &handballs, BackupPositions: bpPtr("handballs,marks")})
 		tackles := PositionTackles
 		entries = append(entries, UpsertPlayerMatchParams{Position: &tackles, BackupPositions: bpPtr("tackles,hitouts")})
-		if err := ValidateLineup(entries); err != nil {
+		if err := ValidateTeam(entries); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("interchange on bench star is valid", func(t *testing.T) {
-		entries := validFullLineup()
+		entries := validFullTeam()
 		star := PositionStar
 		ic := "star"
 		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star"), InterchangePosition: &ic})
-		if err := ValidateLineup(entries); err != nil {
+		if err := ValidateTeam(entries); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
-	t.Run("partial lineup is valid", func(t *testing.T) {
+	t.Run("partial team is valid", func(t *testing.T) {
 		goals := PositionGoals
 		entries := []UpsertPlayerMatchParams{
 			{Position: &goals},
 			{Position: &goals},
 		}
-		if err := ValidateLineup(entries); err != nil {
+		if err := ValidateTeam(entries); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 }
 
-func TestValidateLineup_InvalidCases(t *testing.T) {
+func TestValidateTeam_InvalidCases(t *testing.T) {
 	tests := []struct {
 		name        string
 		entries     []UpsertPlayerMatchParams
@@ -225,7 +225,7 @@ func TestValidateLineup_InvalidCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateLineup(tt.entries)
+			err := ValidateTeam(tt.entries)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}

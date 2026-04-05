@@ -572,7 +572,7 @@ func TestFflClubSeason(t *testing.T) {
 
 	var data struct {
 		FflClubSeason struct {
-			ID     string `json:"id"`
+			ID     string                `json:"id"`
 			Club   struct{ Name string } `json:"club"`
 			Season struct {
 				ID   string `json:"id"`
@@ -759,8 +759,8 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 
 	var addData struct {
 		AddFFLPlayerToSeason struct {
-			ID           string `json:"id"`
-			Player       struct {
+			ID     string `json:"id"`
+			Player struct {
 				ID string `json:"id"`
 			} `json:"player"`
 			ClubSeasonID string `json:"clubSeasonId"`
@@ -932,18 +932,18 @@ func TestCalculateFFLFantasyScore_InvalidPlayerMatchID(t *testing.T) {
 	}
 }
 
-// ── SetFFLLineup: team composition rule tests ─────────────────────────────────
+// ── SetFFLTeam: team composition rule tests ─────────────────────────────────
 
-// lineupMutation builds a setFFLLineup mutation string for testing.
+// teamMutation builds a setFFLTeam mutation string for testing.
 // players is a slice of (playerSeasonId, position, backupPositions, interchangePosition) tuples.
-type lineupPlayer struct {
+type teamPlayer struct {
 	playerSeasonID      string
 	position            string
 	backupPositions     *string
 	interchangePosition *string
 }
 
-func buildSetLineupMutation(clubMatchID string, players []lineupPlayer) string {
+func buildSetTeamMutation(clubMatchID string, players []teamPlayer) string {
 	playersStr := ""
 	for _, p := range players {
 		bp := "null"
@@ -963,7 +963,7 @@ func buildSetLineupMutation(clubMatchID string, players []lineupPlayer) string {
 			}`, p.playerSeasonID, p.position, bp, ic)
 	}
 	return fmt.Sprintf(`mutation {
-		setFFLLineup(input: {
+		setFFLTeam(input: {
 			clubMatchId: "%s"
 			players: [%s]
 		}) { id position backupPositions interchangePosition }
@@ -998,7 +998,7 @@ func seedExtraPlayers(t *testing.T, pool *pgxpool.Pool, ids testIDs, count int) 
 
 func strp(s string) *string { return &s }
 
-func TestSetFFLLineup_ValidLineupSaves(t *testing.T) {
+func TestSetFFLTeam_ValidTeamSaves(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	server := setupTestServer(t, pool)
@@ -1007,7 +1007,7 @@ func TestSetFFLLineup_ValidLineupSaves(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 	}))
 
@@ -1016,7 +1016,7 @@ func TestSetFFLLineup_ValidLineupSaves(t *testing.T) {
 	}
 }
 
-func TestSetFFLLineup_TooManyStartersForPosition(t *testing.T) {
+func TestSetFFLTeam_TooManyStartersForPosition(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	// Need 4 players for goals (max is 3)
@@ -1027,19 +1027,19 @@ func TestSetFFLLineup_TooManyStartersForPosition(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	players := []lineupPlayer{
+	players := []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 		{playerSeasonID: extras[0], position: "goals"},
 		{playerSeasonID: extras[1], position: "goals"},
 		{playerSeasonID: extras[2], position: "goals"}, // 4th goals kicker — invalid
 	}
-	result := execQuery(t, server, buildSetLineupMutation(cmID, players))
+	result := execQuery(t, server, buildSetTeamMutation(cmID, players))
 	if len(result.Errors) == 0 {
 		t.Fatal("expected error for too many goal kickers, got none")
 	}
 }
 
-func TestSetFFLLineup_TooManyBenchPlayers(t *testing.T) {
+func TestSetFFLTeam_TooManyBenchPlayers(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 5)
@@ -1047,7 +1047,7 @@ func TestSetFFLLineup_TooManyBenchPlayers(t *testing.T) {
 	defer server.Close()
 
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
-	players := []lineupPlayer{}
+	players := []teamPlayer{}
 	positions := [][2]string{
 		{"goals,kicks"}, {"goals,kicks"}, {"handballs,marks"}, {"tackles,hitouts"}, {"goals,kicks"},
 	}
@@ -1055,20 +1055,20 @@ func TestSetFFLLineup_TooManyBenchPlayers(t *testing.T) {
 	// 5 bench players (max is 4)
 	for i, id := range extras {
 		_ = i
-		players = append(players, lineupPlayer{
+		players = append(players, teamPlayer{
 			playerSeasonID:  id,
 			position:        "goals",
 			backupPositions: strp(fmt.Sprintf("goals,kicks")),
 		})
 		_ = extras
 	}
-	result := execQuery(t, server, buildSetLineupMutation(cmID, players))
+	result := execQuery(t, server, buildSetTeamMutation(cmID, players))
 	if len(result.Errors) == 0 {
 		t.Fatal("expected error for 5 bench players, got none")
 	}
 }
 
-func TestSetFFLLineup_TwoBenchStars(t *testing.T) {
+func TestSetFFLTeam_TwoBenchStars(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 1)
@@ -1078,7 +1078,7 @@ func TestSetFFLLineup_TwoBenchStars(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "star", backupPositions: strp("star")},
 		{playerSeasonID: extras[0], position: "star", backupPositions: strp("star")},
 	}))
@@ -1087,7 +1087,7 @@ func TestSetFFLLineup_TwoBenchStars(t *testing.T) {
 	}
 }
 
-func TestSetFFLLineup_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
+func TestSetFFLTeam_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 1)
@@ -1097,7 +1097,7 @@ func TestSetFFLLineup_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks")},
 		{playerSeasonID: extras[0], position: "goals", backupPositions: strp("goals,marks")}, // goals covered twice
 	}))
@@ -1106,7 +1106,7 @@ func TestSetFFLLineup_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
 	}
 }
 
-func TestSetFFLLineup_TwoInterchangePositions(t *testing.T) {
+func TestSetFFLTeam_TwoInterchangePositions(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 1)
@@ -1116,7 +1116,7 @@ func TestSetFFLLineup_TwoInterchangePositions(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks"), interchangePosition: strp("goals")},
 		{playerSeasonID: extras[0], position: "marks", backupPositions: strp("marks,tackles"), interchangePosition: strp("marks")},
 	}))
@@ -1125,7 +1125,7 @@ func TestSetFFLLineup_TwoInterchangePositions(t *testing.T) {
 	}
 }
 
-func TestSetFFLLineup_MultipleStartersScoreCorrectly(t *testing.T) {
+func TestSetFFLTeam_MultipleStartersScoreCorrectly(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 2)
@@ -1137,13 +1137,13 @@ func TestSetFFLLineup_MultipleStartersScoreCorrectly(t *testing.T) {
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
 	// Set 3 goal kickers
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 		{playerSeasonID: extras[0], position: "goals"},
 		{playerSeasonID: extras[1], position: "goals"},
 	}))
 	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting lineup: %v", result.Errors)
+		t.Fatalf("unexpected errors setting team: %v", result.Errors)
 	}
 
 	// Directly set scores for all 3 goal kickers in the DB, then recalculate
@@ -1180,7 +1180,7 @@ func TestSetFFLLineup_MultipleStartersScoreCorrectly(t *testing.T) {
 	}
 }
 
-func TestSetFFLLineup_ReplacesStaleEntries(t *testing.T) {
+func TestSetFFLTeam_ReplacesStaleEntries(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
 	extras := seedExtraPlayers(t, pool, ids, 1)
@@ -1192,20 +1192,20 @@ func TestSetFFLLineup_ReplacesStaleEntries(t *testing.T) {
 	extraID := extras[0]
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	// First lineup: original player at goals.
-	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	// First team: original player at goals.
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 	}))
 	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting first lineup: %v", result.Errors)
+		t.Fatalf("unexpected errors setting first team: %v", result.Errors)
 	}
 
-	// Second lineup: different player at kicks — replaces the first.
-	result = execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+	// Second team: different player at kicks — replaces the first.
+	result = execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: extraID, position: "kicks"},
 	}))
 	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting second lineup: %v", result.Errors)
+		t.Fatalf("unexpected errors setting second team: %v", result.Errors)
 	}
 
 	// Only the new player_match should exist in the DB.

@@ -88,7 +88,7 @@ Fantasy Football League — a fantasy competition built on AFL statistics.
 
 ### Positions (fantasy)
 
-A **position** is a scoring slot in a fantasy lineup. It determines *which* AFL stat earns fantasy points and at what rate. Positions are **not** field positions (forward, midfielder, etc.).
+A **position** is a scoring slot in a fantasy team. It determines *which* AFL stat earns fantasy points and at what rate. Positions are **not** field positions (forward, midfielder, etc.).
 
 | Position | Scores from | Multiplier |
 |----------|-------------|------------|
@@ -126,13 +126,13 @@ A fantasy club submits a team each round. Teams need not be full.
 | **Backup star** | `"star"` | at most 1 |
 | **Dual-position** | exactly 2 non-star positions | at most 3 |
 
-Hard rules enforced by `domain.ValidateLineup()`:
+Hard rules enforced by `domain.ValidateTeam()`:
 1. Starter count per position ≤ `PositionSlots[pos]`
 2. Total bench players ≤ 4
 3. At most 1 backup star (`BackupPositions` contains `"star"`)
 4. Non-star bench players have **exactly 2** backup positions, neither of which is `"star"`
 5. Each non-star position appears in **at most one** bench player's backup pair
-6. At most 1 `InterchangePosition` set across all players in the lineup
+6. At most 1 `InterchangePosition` set across all players in the team
 7. `InterchangePosition` (if set) must be a recognised `Position` value
 
 #### Bench player identification

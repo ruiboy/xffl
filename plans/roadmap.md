@@ -94,7 +94,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] FFL eagle logo in nav (hover scales 3×)
 - [x] Settings cog dropdown with dark mode toggle (cookie-persisted)
 - [x] Squad page: club name heading, search panel alongside player list, Manage/Done pattern
-- [x] Team Builder: club name heading, Manage/Done pattern (Done saves lineup)
+- [x] Team Builder: club name heading, Manage/Done pattern (Done saves team)
 - [x] `FFLClubSeason.season` field added to GraphQL schema and resolver
 
 ## Phase 9: FFL Team Composition Rules

@@ -5,7 +5,7 @@
 Single Vue 3 SPA (`frontend/web/`) connecting to the gateway at port 8090 via Apollo Client.
 
 **FFL is the app's front door** — the root route (`/`) is the FFL home. AFL lives under `/afl`.
-The primary audience is FFL team managers (club owners) who use the app to track fantasy scores and build lineups.
+The primary audience is FFL club managers who use the app to track fantasy scores and build teams.
 
 ## Page Hierarchy
 
@@ -19,7 +19,7 @@ The primary audience is FFL team managers (club owners) who use the app to track
 | Team Builder | `/ffl/seasons/:seasonId/rounds/:roundId/team-builder` |
 | Players (admin) | `/ffl/players` |
 
-**Money-shot views:** Match (head-to-head fantasy scores in real time) and Team Builder (weekly lineup selection).
+**Money-shot views:** Match (head-to-head fantasy scores in real time) and Team Builder (weekly team selection).
 
 ### AFL (supporting)
 

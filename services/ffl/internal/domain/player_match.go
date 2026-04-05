@@ -106,10 +106,10 @@ func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
 	}
 }
 
-// ValidateLineup enforces team composition rules against a set of lineup entries.
-// It returns a descriptive error if any rule is violated, or nil if the lineup is valid.
+// ValidateTeam enforces team composition rules against a set of team entries.
+// It returns a descriptive error if any rule is violated, or nil if the team is valid.
 // Teams need not be full — all constraints are upper bounds, not minimums.
-func ValidateLineup(entries []UpsertPlayerMatchParams) error {
+func ValidateTeam(entries []UpsertPlayerMatchParams) error {
 	starterCounts := make(map[Position]int)
 	var benchPlayers []UpsertPlayerMatchParams
 	interchangeCount := 0
@@ -123,7 +123,7 @@ func ValidateLineup(entries []UpsertPlayerMatchParams) error {
 			}
 		} else {
 			if e.Position == nil {
-				return fmt.Errorf("lineup: starter must have a position")
+				return fmt.Errorf("team: starter must have a position")
 			}
 			starterCounts[*e.Position]++
 		}
@@ -133,16 +133,16 @@ func ValidateLineup(entries []UpsertPlayerMatchParams) error {
 	for pos, count := range starterCounts {
 		max, ok := PositionSlots[pos]
 		if !ok {
-			return fmt.Errorf("lineup: unknown position %q", pos)
+			return fmt.Errorf("team: unknown position %q", pos)
 		}
 		if count > max {
-			return fmt.Errorf("lineup: position %q has %d players, maximum is %d", pos, count, max)
+			return fmt.Errorf("team: position %q has %d players, maximum is %d", pos, count, max)
 		}
 	}
 
 	// Rule 2: total bench ≤ 4.
 	if len(benchPlayers) > 4 {
-		return fmt.Errorf("lineup: bench has %d players, maximum is 4", len(benchPlayers))
+		return fmt.Errorf("team: bench has %d players, maximum is 4", len(benchPlayers))
 	}
 
 	benchStarCount := 0
@@ -160,23 +160,23 @@ func ValidateLineup(entries []UpsertPlayerMatchParams) error {
 			// Rule 3: at most 1 backup star.
 			benchStarCount++
 			if benchStarCount > 1 {
-				return fmt.Errorf("lineup: at most 1 backup star allowed on the bench")
+				return fmt.Errorf("team: at most 1 backup star allowed on the bench")
 			}
 		} else {
 			// Rule 4: non-star bench players have exactly 2 backup positions, none "star".
 			if len(positions) != 2 {
-				return fmt.Errorf("lineup: non-star bench player must have exactly 2 backup positions, got %d", len(positions))
+				return fmt.Errorf("team: non-star bench player must have exactly 2 backup positions, got %d", len(positions))
 			}
 			for _, pos := range positions {
 				if pos == PositionStar {
-					return fmt.Errorf("lineup: non-star bench player cannot list star as a backup position")
+					return fmt.Errorf("team: non-star bench player cannot list star as a backup position")
 				}
 				if _, ok := PositionSlots[pos]; !ok {
-					return fmt.Errorf("lineup: unknown backup position %q", pos)
+					return fmt.Errorf("team: unknown backup position %q", pos)
 				}
 				// Rule 5: each non-star position covered by at most one bench player.
 				if coveredPositions[pos] {
-					return fmt.Errorf("lineup: position %q is already covered by another bench player", pos)
+					return fmt.Errorf("team: position %q is already covered by another bench player", pos)
 				}
 				coveredPositions[pos] = true
 			}
@@ -185,7 +185,7 @@ func ValidateLineup(entries []UpsertPlayerMatchParams) error {
 
 	// Rule 6: at most 1 interchange position across all bench players.
 	if interchangeCount > 1 {
-		return fmt.Errorf("lineup: at most 1 interchange position allowed, got %d", interchangeCount)
+		return fmt.Errorf("team: at most 1 interchange position allowed, got %d", interchangeCount)
 	}
 
 	// Rule 7: interchange position must be a recognised Position.
@@ -193,7 +193,7 @@ func ValidateLineup(entries []UpsertPlayerMatchParams) error {
 		if bp.InterchangePosition != nil {
 			pos := Position(*bp.InterchangePosition)
 			if _, ok := PositionSlots[pos]; !ok {
-				return fmt.Errorf("lineup: interchange position %q is not a valid position", pos)
+				return fmt.Errorf("team: interchange position %q is not a valid position", pos)
 			}
 		}
 	}

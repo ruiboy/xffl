@@ -108,17 +108,17 @@ func (c *Commands) RemovePlayerFromSeason(ctx context.Context, playerSeasonID in
 	})
 }
 
-// SetLineupEntry represents a single player assignment in a lineup.
-type SetLineupEntry struct {
+// SetTeamEntry represents a single player assignment in a team.
+type SetTeamEntry struct {
 	PlayerSeasonID      int
 	Position            string
 	BackupPositions     *string
 	InterchangePosition *string
 }
 
-// SetLineup upserts all player match entries for a club match (the weekly lineup).
-// Returns an error if the lineup violates team composition rules.
-func (c *Commands) SetLineup(ctx context.Context, clubMatchID int, entries []SetLineupEntry) ([]domain.PlayerMatch, error) {
+// SetTeam upserts all player match entries for a club match (the weekly team).
+// Returns an error if the team violates team composition rules.
+func (c *Commands) SetTeam(ctx context.Context, clubMatchID int, entries []SetTeamEntry) ([]domain.PlayerMatch, error) {
 	// Validate composition rules before touching the database.
 	params := make([]domain.UpsertPlayerMatchParams, len(entries))
 	for i, e := range entries {
@@ -129,13 +129,13 @@ func (c *Commands) SetLineup(ctx context.Context, clubMatchID int, entries []Set
 			InterchangePosition: e.InterchangePosition,
 		}
 	}
-	if err := domain.ValidateLineup(params); err != nil {
+	if err := domain.ValidateTeam(params); err != nil {
 		return nil, err
 	}
 
 	var result []domain.PlayerMatch
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		// Replace the lineup: delete all existing entries first, then insert fresh.
+		// Replace the team: delete all existing entries first, then insert fresh.
 		if err := repos.PlayerMatches.DeleteByClubMatchID(ctx, clubMatchID); err != nil {
 			return err
 		}

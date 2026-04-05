@@ -54,7 +54,7 @@ type FFLClubSeason struct {
 	Players    *FFLPlayerSeasonConnection `json:"players"`
 }
 
-type FFLLineupPlayerInput struct {
+type FFLTeamPlayerInput struct {
 	PlayerSeasonID      string  `json:"playerSeasonId"`
 	Position            string  `json:"position"`
 	BackupPositions     *string `json:"backupPositions,omitempty"`
@@ -129,9 +129,9 @@ type PageInfo struct {
 type Query struct {
 }
 
-type SetFFLLineupInput struct {
-	ClubMatchID string                  `json:"clubMatchId"`
-	Players     []*FFLLineupPlayerInput `json:"players"`
+type SetFFLTeamInput struct {
+	ClubMatchID string                 `json:"clubMatchId"`
+	Players     []*FFLTeamPlayerInput  `json:"players"`
 }
 
 type UpdateFFLPlayerInput struct {

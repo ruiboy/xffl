@@ -408,28 +408,28 @@ func TestAddAFLPlayerToSquad_ReusesExistingPlayer(t *testing.T) {
 	}
 }
 
-func TestSetLineup_ReplacesExistingEntries(t *testing.T) {
+func TestSetTeam_ReplacesExistingEntries(t *testing.T) {
 	cmds, _, _, pmRepo, _ := setupCommands()
 	ctx := context.Background()
 
-	// First lineup: player season 1 at goals, player season 2 at kicks.
-	_, err := cmds.SetLineup(ctx, 1, []application.SetLineupEntry{
+	// First team: player season 1 at goals, player season 2 at kicks.
+	_, err := cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
 		{PlayerSeasonID: 1, Position: "goals"},
 		{PlayerSeasonID: 2, Position: "kicks"},
 	})
 	if err != nil {
-		t.Fatalf("SetLineup (first): %v", err)
+		t.Fatalf("SetTeam (first): %v", err)
 	}
 	if len(pmRepo.matches) != 2 {
-		t.Fatalf("expected 2 player matches after first lineup, got %d", len(pmRepo.matches))
+		t.Fatalf("expected 2 player matches after first team, got %d", len(pmRepo.matches))
 	}
 
-	// Second lineup: only player season 3 at marks.
-	_, err = cmds.SetLineup(ctx, 1, []application.SetLineupEntry{
+	// Second team: only player season 3 at marks.
+	_, err = cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
 		{PlayerSeasonID: 3, Position: "marks"},
 	})
 	if err != nil {
-		t.Fatalf("SetLineup (second): %v", err)
+		t.Fatalf("SetTeam (second): %v", err)
 	}
 
 	// Old entries must be gone; only the new one should exist.
@@ -446,24 +446,24 @@ func TestSetLineup_ReplacesExistingEntries(t *testing.T) {
 	}
 }
 
-func TestSetLineup_EmptyLineupClearsAll(t *testing.T) {
+func TestSetTeam_EmptyTeamClearsAll(t *testing.T) {
 	cmds, _, _, pmRepo, _ := setupCommands()
 	ctx := context.Background()
 
-	_, err := cmds.SetLineup(ctx, 1, []application.SetLineupEntry{
+	_, err := cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
 		{PlayerSeasonID: 1, Position: "goals"},
 	})
 	if err != nil {
-		t.Fatalf("SetLineup (seed): %v", err)
+		t.Fatalf("SetTeam (seed): %v", err)
 	}
 
-	_, err = cmds.SetLineup(ctx, 1, []application.SetLineupEntry{})
+	_, err = cmds.SetTeam(ctx, 1, []application.SetTeamEntry{})
 	if err != nil {
-		t.Fatalf("SetLineup (empty): %v", err)
+		t.Fatalf("SetTeam (empty): %v", err)
 	}
 
 	if len(pmRepo.matches) != 0 {
-		t.Errorf("expected 0 player matches after empty lineup, got %d", len(pmRepo.matches))
+		t.Errorf("expected 0 player matches after empty team, got %d", len(pmRepo.matches))
 	}
 }
 
