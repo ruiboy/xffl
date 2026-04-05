@@ -434,6 +434,10 @@ func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status *stri
 	}
 }
 
+func (r *PlayerMatchRepository) DeleteByClubMatchID(ctx context.Context, clubMatchID int) error {
+	return r.q.DeletePlayerMatchesByClubMatchID(ctx, int32(clubMatchID))
+}
+
 func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatchID int) ([]domain.PlayerMatch, error) {
 	rows, err := r.q.FindPlayerMatchesByClubMatchID(ctx, int32(clubMatchID))
 	if err != nil {

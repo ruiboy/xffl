@@ -34,6 +34,8 @@ export const SET_FFL_LINEUP = gql`
       player { id name }
       position
       status
+      backupPositions
+      interchangePosition
       score
     }
   }

@@ -293,7 +293,11 @@ const { selectedClubId } = useFflState()
 const managing = ref(false)
 
 // Data loading
-const { result, loading, error } = useQuery(GET_FFL_TEAM_BUILDER, () => ({ seasonId: props.seasonId }))
+const { result, loading, error } = useQuery(
+  GET_FFL_TEAM_BUILDER,
+  () => ({ seasonId: props.seasonId }),
+  { errorPolicy: 'all' },
+)
 
 const season = computed(() => result.value?.fflSeason ?? null)
 
@@ -358,6 +362,8 @@ function resetLineupState() {
 }
 
 // Load existing lineup from server data — only when the match changes, not on every Apollo cache update.
+// { immediate: true } ensures this fires on component remount when Apollo cache already has data
+// (without it, watch only fires on changes — a cache hit on remount produces no change event).
 watch(clubMatch, (cm) => {
   if (!cm) return
   if (cm.id === initializedMatchId.value) return  // already initialised for this match; don't reset local edits
@@ -391,7 +397,7 @@ watch(clubMatch, (cm) => {
       dualIndex++
     }
   }
-})
+}, { immediate: true })
 
 // ── Computed helpers ──────────────────────────────────────────────────────────
 
@@ -499,7 +505,10 @@ function toggleInterchange(key: string | null) {
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 
-const { mutate: setLineup } = useMutation(SET_FFL_LINEUP)
+const { mutate: setLineup } = useMutation(SET_FFL_LINEUP, () => ({
+  refetchQueries: [{ query: GET_FFL_TEAM_BUILDER, variables: { seasonId: props.seasonId } }],
+  awaitRefetchQueries: true,
+}))
 const submitting = ref(false)
 const submitMessage = ref('')
 

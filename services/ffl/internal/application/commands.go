@@ -135,6 +135,10 @@ func (c *Commands) SetLineup(ctx context.Context, clubMatchID int, entries []Set
 
 	var result []domain.PlayerMatch
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		// Replace the lineup: delete all existing entries first, then insert fresh.
+		if err := repos.PlayerMatches.DeleteByClubMatchID(ctx, clubMatchID); err != nil {
+			return err
+		}
 		result = make([]domain.PlayerMatch, len(entries))
 		for i, e := range entries {
 			pos := domain.Position(e.Position)

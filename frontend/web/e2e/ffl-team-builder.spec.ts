@@ -157,29 +157,29 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('local edits not reset when re-entering manage mode (state retention)', async ({ page }) => {
-      // Add a player to an available Goals slot
+      // Add a player to an available Kicks slot (Goals is used by other tests in this group)
       await page.getByRole('button', { name: 'Manage' }).click()
       const panel = squadPanel(page)
 
       // Note the player name about to be added
       const playerName = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'G' }).first().click()
+      await panel.getByRole('button', { name: 'K' }).first().click()
 
       // Save (Done fires the mutation)
       await page.getByRole('button', { name: 'Done' }).click()
 
-      // Immediately re-enter manage mode — player must still be in the Goals slot
+      // Immediately re-enter manage mode — player must still be in the Kicks slot
       await page.getByRole('button', { name: 'Manage' }).click()
-      const goalsSection = positionSection(page, 'Goals')
-      await expect(goalsSection.getByText(playerName!.trim())).toBeVisible()
+      const kicksSection = positionSection(page, 'Kicks')
+      await expect(kicksSection.getByText(playerName!.trim())).toBeVisible()
     })
 
     test('two rounds of editing accumulate correctly', async ({ page }) => {
-      // Round 1: add to Goals
+      // Round 1: add to Handballs (Goals/Kicks used by other tests in this group)
       await page.getByRole('button', { name: 'Manage' }).click()
       let panel = squadPanel(page)
       const player1 = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'G' }).first().click()
+      await panel.getByRole('button', { name: 'HB' }).first().click()
       await page.getByRole('button', { name: 'Done' }).click()
 
       // Round 2: add to Kicks
@@ -190,7 +190,7 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Done' }).click()
 
       // Both players visible in read-only mode
-      await expect(positionSection(page, 'Goals').getByText(player1!.trim())).toBeVisible()
+      await expect(positionSection(page, 'Handballs').getByText(player1!.trim())).toBeVisible()
       await expect(positionSection(page, 'Kicks').getByText(player2!.trim())).toBeVisible()
     })
   })
@@ -201,10 +201,10 @@ test.describe('FFL Team Builder', () => {
     test('lineup persists after navigating to Squad view and returning', async ({ page }) => {
       await goToTeamBuilder(page)
 
-      // Add a player to Goals and save
+      // Add a player to Kicks and save (Goals is filled by state-retention tests)
       await page.getByRole('button', { name: 'Manage' }).click()
       const playerName = await squadPanel(page).locator('.font-medium').first().textContent()
-      await squadPanel(page).getByRole('button', { name: 'G' }).first().click()
+      await squadPanel(page).getByRole('button', { name: 'K' }).first().click()
       await page.getByRole('button', { name: 'Done' }).click()
 
       // Navigate away to Squad page
@@ -215,12 +215,12 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('link', { name: 'Team Builder' }).click()
       await page.waitForURL(/\/ffl\/.*\/team-builder/)
 
-      // Player still in Goals (loaded from server)
-      await expect(positionSection(page, 'Goals').getByText(playerName!.trim())).toBeVisible()
+      // Player still in Kicks (loaded from server)
+      await expect(positionSection(page, 'Kicks').getByText(playerName!.trim())).toBeVisible()
 
       // And still there when entering manage mode
       await page.getByRole('button', { name: 'Manage' }).click()
-      await expect(positionSection(page, 'Goals').getByText(playerName!.trim())).toBeVisible()
+      await expect(positionSection(page, 'Kicks').getByText(playerName!.trim())).toBeVisible()
     })
   })
 
@@ -246,28 +246,28 @@ test.describe('FFL Team Builder', () => {
     test('adding to existing lineup: all players visible after Done', async ({ page }) => {
       await goToTeamBuilder(page)
 
-      // Find a player already in Goals read-only
-      const goalsSection = positionSection(page, 'Goals')
-      const existingNames = await goalsSection.locator('.font-medium').allTextContents()
+      // Find players already in Handballs read-only (has capacity from prior tests in the run)
+      const hbSection = positionSection(page, 'Handballs')
+      const existingNames = await hbSection.locator('.font-medium').allTextContents()
 
-      // Add one more
+      // Add one more to Handballs
       await page.getByRole('button', { name: 'Manage' }).click()
       const newPlayerName = await squadPanel(page).locator('.font-medium').first().textContent()
-      await squadPanel(page).getByRole('button', { name: 'G' }).first().click()
+      await squadPanel(page).getByRole('button', { name: 'HB' }).first().click()
       await page.getByRole('button', { name: 'Done' }).click()
 
       // All existing + new player visible
       for (const name of existingNames) {
-        await expect(goalsSection.getByText(name.trim())).toBeVisible()
+        await expect(hbSection.getByText(name.trim())).toBeVisible()
       }
-      await expect(goalsSection.getByText(newPlayerName!.trim())).toBeVisible()
+      await expect(hbSection.getByText(newPlayerName!.trim())).toBeVisible()
 
       // And re-entering manage mode retains all of them
       await page.getByRole('button', { name: 'Manage' }).click()
       for (const name of existingNames) {
-        await expect(goalsSection.getByText(name.trim())).toBeVisible()
+        await expect(hbSection.getByText(name.trim())).toBeVisible()
       }
-      await expect(goalsSection.getByText(newPlayerName!.trim())).toBeVisible()
+      await expect(hbSection.getByText(newPlayerName!.trim())).toBeVisible()
     })
   })
 

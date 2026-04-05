@@ -219,6 +219,7 @@ func PositionPtr(p Position) *Position                            { return &p }
 func PlayerMatchStatusPtr(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
 
 type PlayerMatchRepository interface {
+	DeleteByClubMatchID(ctx context.Context, clubMatchID int) error
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)

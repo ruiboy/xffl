@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	gqlhandler "github.com/99designs/gqlgen/graphql/handler"
@@ -1176,5 +1177,67 @@ func TestSetFFLLineup_MultipleStartersScoreCorrectly(t *testing.T) {
 	// 3 goal kickers × 10 = 30
 	if totalScore != 30 {
 		t.Errorf("expected total starter score 30, got %d", totalScore)
+	}
+}
+
+func TestSetFFLLineup_ReplacesStaleEntries(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	extras := seedExtraPlayers(t, pool, ids, 1)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	ctx := context.Background()
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	extraID := extras[0]
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	// First lineup: original player at goals.
+	result := execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: psID, position: "goals"},
+	}))
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors setting first lineup: %v", result.Errors)
+	}
+
+	// Second lineup: different player at kicks — replaces the first.
+	result = execQuery(t, server, buildSetLineupMutation(cmID, []lineupPlayer{
+		{playerSeasonID: extraID, position: "kicks"},
+	}))
+	if len(result.Errors) > 0 {
+		t.Fatalf("unexpected errors setting second lineup: %v", result.Errors)
+	}
+
+	// Only the new player_match should exist in the DB.
+	rows, err := pool.Query(ctx,
+		"SELECT player_season_id, position FROM ffl.player_match WHERE club_match_id = $1",
+		ids.homeClubMatchID)
+	if err != nil {
+		t.Fatalf("failed to query player_match: %v", err)
+	}
+	defer rows.Close()
+
+	type row struct {
+		playerSeasonID int
+		position       string
+	}
+	var found []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.playerSeasonID, &r.position); err != nil {
+			t.Fatalf("scan: %v", err)
+		}
+		found = append(found, r)
+	}
+
+	if len(found) != 1 {
+		t.Fatalf("expected 1 player_match after replacement, got %d", len(found))
+	}
+	extraIDInt, _ := strconv.Atoi(extraID)
+	if found[0].playerSeasonID != extraIDInt {
+		t.Errorf("expected player_season_id %d, got %d", extraIDInt, found[0].playerSeasonID)
+	}
+	if found[0].position != "kicks" {
+		t.Errorf("expected position %q, got %q", "kicks", found[0].position)
 	}
 }

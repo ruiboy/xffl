@@ -94,6 +94,16 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
+const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
+DELETE FROM ffl.player_match
+WHERE club_match_id = $1
+`
+
+func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error {
+	_, err := q.db.Exec(ctx, deletePlayerMatchesByClubMatchID, clubMatchID)
+	return err
+}
+
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
