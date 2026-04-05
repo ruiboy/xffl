@@ -56,13 +56,7 @@ INSERT INTO afl.player (name) VALUES
 ('Jordan Dawson'),
 ('Wayne Milera'),
 ('Henry Smith'),
-('Hugh McCluggage'),
-('Brock Thunder'),
-('Kai Fernsby'),
-('Lenny Voss'),
-('Dax Morrow'),
-('Theo Quillan'),
-('Reid Calloway')
+('Hugh McCluggage')
 ON CONFLICT DO NOTHING;
 
 -- Player seasons — Adelaide

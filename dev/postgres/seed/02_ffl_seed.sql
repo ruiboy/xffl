@@ -41,8 +41,7 @@ SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN ('Jordan Dawson', 'Way
 
 INSERT INTO ffl.player (afl_player_id, drv_name)
 SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
-    'Henry Smith', 'Hugh McCluggage',
-    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+    'Henry Smith', 'Hugh McCluggage'
 );
 
 -- Round 1
@@ -67,8 +66,7 @@ JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
 JOIN ffl.round r ON r.season_id = cs.season_id
 WHERE r.name = '1' AND ap.name IN (
-    'Henry Smith', 'Hugh McCluggage',
-    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+    'Henry Smith', 'Hugh McCluggage'
 );
 
 -- Rounds 2–23 fixture (DO block for compactness)
