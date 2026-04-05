@@ -10,7 +10,7 @@ test.describe('FFL Round', () => {
   test('displays round and season name inline in heading', async ({ page }) => {
     const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toContainText('Round 1')
-    await expect(heading).toContainText('2024 Season')
+    await expect(heading).toContainText('FFL 2026')
   })
 
   test('displays round selector above matches', async ({ page }) => {

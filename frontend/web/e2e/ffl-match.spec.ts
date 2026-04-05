@@ -29,7 +29,7 @@ test.describe('FFL Match', () => {
   })
 
   test('displays Ruiboys players', async ({ page }) => {
-    await expect(page.getByText('Marcus Bontempelli')).toBeVisible()
+    await expect(page.getByText('Jordan Dawson')).toBeVisible()
   })
 
   test('displays status badges', async ({ page }) => {

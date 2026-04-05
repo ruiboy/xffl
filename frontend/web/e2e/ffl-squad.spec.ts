@@ -8,16 +8,16 @@ test.describe('FFL Squad', () => {
   })
 
   test('displays club name as heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
   })
 
   test('displays season name in subheading', async ({ page }) => {
-    await expect(page.getByText(/2024 Season Squad/)).toBeVisible()
+    await expect(page.getByText(/FFL 2026 Squad/)).toBeVisible()
   })
 
   test('displays player list', async ({ page }) => {
     await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible()
-    await expect(page.getByRole('cell', { name: 'Marcus Bontempelli' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Henry Smith' })).toBeVisible()
   })
 
   test('shows Manage button initially', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('FFL Squad', () => {
 
   test('player search returns results', async ({ page }) => {
     await page.getByRole('button', { name: 'Manage' }).click()
-    await page.getByPlaceholder('Search AFL players by name…').fill('Patrick')
-    await expect(page.getByText('Patrick Cripps')).toBeVisible()
+    await page.getByPlaceholder('Search AFL players by name…').fill('Jordan')
+    await expect(page.getByText('Jordan Dawson')).toBeVisible()
   })
 })
