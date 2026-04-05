@@ -107,11 +107,15 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Team Builder UI rebuilt with structured position layout + bench/interchange management
 - [x] Domain unit tests + GraphQL integration tests
 
-## Phase 10: Test Stabilisation
+## Phase 10: Test Stabilisation ✅
 
 **Goal:** Refactor tests to be accurate, extensible, and grounded in minimal seed data
 
-- [ ] Details driven by interactive prompting each session
+- [x] Migrate AFL + FFL integration tests from dev Postgres to testcontainers (hermetic, no shared state)
+- [x] `TestMain` + shared container pool pattern; per-test `t.Cleanup` truncates
+- [x] Refactor all tests to testify (`require`/`assert`) with sentence-style `t.Run` names
+- [x] Add `ai/architecture/testing.md` conventions doc + `/write-tests` skill
+- [x] Delete mock-based `commands_test.go` — coverage consolidated into integration tests
 
 ## Phase 11: FFL Event Integration
 
