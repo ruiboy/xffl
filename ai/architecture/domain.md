@@ -90,34 +90,22 @@ Fantasy Football League — a fantasy competition built on AFL statistics.
 
 A **position** is a scoring slot in a fantasy team. It determines *which* AFL stat earns fantasy points and at what rate. Positions are **not** field positions (forward, midfielder, etc.).
 
-| Position | Scores from | Multiplier |
-|----------|-------------|------------|
-| `goals` | Goals | 5 per goal |
-| `kicks` | Kicks | 1 per kick |
-| `handballs` | Handballs | 1 per handball |
-| `marks` | Marks | 2 per mark |
-| `tackles` | Tackles | 4 per tackle |
-| `hitouts` | Hitouts | 1 per hitout |
-| `star` | Multiple | 5×goals + 1×kicks + 1×handballs + 2×marks + 4×tackles |
+| Position | Scores from | Multiplier | Starter slots |
+|----------|-------------|------------|---------------|
+| `goals` | Goals | 5 per goal | 3 |
+| `kicks` | Kicks | 1 per kick | 4 |
+| `handballs` | Handballs | 1 per handball | 4 |
+| `marks` | Marks | 2 per mark | 2 |
+| `tackles` | Tackles | 4 per tackle | 2 |
+| `hitouts` | Hitouts | 1 per hitout | 2 |
+| `star` | Goals + kicks + handballs + marks + tackles | 5×G + 1×K + 1×H + 2×M + 4×T | 1 |
+| **Total** | | | **18** |
 
 `PlayerMatch.CalculateScore(aflStats)` is a pure domain function that applies the position multiplier to AFL statistics.
 
 ### Team composition
 
 A fantasy club submits a team each round. Teams need not be full.
-
-#### Starter slots
-
-| Position | Slots |
-|----------|-------|
-| `goals` | 3 |
-| `kicks` | 4 |
-| `handballs` | 4 |
-| `marks` | 2 |
-| `tackles` | 2 |
-| `hitouts` | 2 |
-| `star` | 1 |
-| **Total** | **18** |
 
 #### Bench (up to 4 players)
 
