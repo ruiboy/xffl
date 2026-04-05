@@ -86,7 +86,7 @@ Or individually: `just run-afl`, `just run-gateway`, `just run-frontend`
 ### Testing
 
 ```sh
-just test-e2e      # Playwright e2e tests (requires run-all + dev-seed)
+just test-e2e      # Playwright e2e tests (self-contained, no dev stack required)
 ```
 
 ## Development Workflow

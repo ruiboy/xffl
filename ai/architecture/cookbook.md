@@ -146,4 +146,4 @@ Both services use these in `repository.go`:
 See `ai/architecture/testing.md` for Go testing conventions (stack, patterns, naming).
 
 - **Frontend type check**: `cd frontend/web && npx vue-tsc --noEmit`
-- **E2E**: `just test-e2e` (requires `just run-all`)
+- **E2E**: `just test-e2e` (self-contained — starts its own isolated stack)
