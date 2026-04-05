@@ -82,7 +82,23 @@ test-afl:
 test-ffl:
     cd services/ffl && go test ./...
 
-# Run frontend e2e tests (requires run-all to be running)
+# Run e2e tests in a fully isolated environment (dev stack may remain running)
 test-e2e:
-    cd frontend/web && npx playwright test
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Copy schemas into test-e2e (seed files live there permanently)
+    cp dev/postgres/init/01_afl_schema.sql dev/postgres/test-e2e/01_afl_schema.sql
+    cp dev/postgres/init/02_ffl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
+
+    docker compose -f dev/docker-compose.test.yml up -d
+    echo "Waiting for test Postgres on :5433..."
+    until docker exec xffl-postgres-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
+    echo "Test Postgres ready"
+
+    cd frontend/web && npx playwright test; STATUS=$?
+
+    docker compose -f dev/docker-compose.test.yml down
+    rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
+    exit $STATUS
 

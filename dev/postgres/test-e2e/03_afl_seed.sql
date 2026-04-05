@@ -1,4 +1,4 @@
--- AFL test data (idempotent — safe to re-run)
+-- AFL e2e test seed data (idempotent — safe to re-run)
 BEGIN;
 
 -- Clear existing data (nullify match FKs first to break circular ref)
@@ -56,7 +56,13 @@ INSERT INTO afl.player (name) VALUES
 ('Jordan Dawson'),
 ('Wayne Milera'),
 ('Henry Smith'),
-('Hugh McCluggage')
+('Hugh McCluggage'),
+('Brock Thunder'),
+('Kai Fernsby'),
+('Lenny Voss'),
+('Dax Morrow'),
+('Theo Quillan'),
+('Reid Calloway')
 ON CONFLICT DO NOTHING;
 
 -- Player seasons — Adelaide

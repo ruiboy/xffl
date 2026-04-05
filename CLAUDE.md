@@ -40,7 +40,7 @@ just run-all         # Run AFL service + gateway + frontend
 just run-afl         # AFL service only (port 8080)
 just run-gateway     # Gateway only (port 8090)
 just run-frontend    # Frontend only (port 3000)
-just test-e2e        # Playwright e2e tests (requires run-all)
+just test-e2e        # Playwright e2e tests (self-contained, no dev stack required)
 ```
 
 ## Before Coding — Read These (tiered)

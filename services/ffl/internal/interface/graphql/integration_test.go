@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"testing"
 
 	gqlhandler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"xffl/services/ffl/internal/application"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
@@ -20,184 +21,11 @@ import (
 	gql "xffl/services/ffl/internal/interface/graphql"
 )
 
-// testIDs holds IDs of rows inserted by seedTestData, used by tests to query known data.
-type testIDs struct {
-	leagueID        int
-	seasonID        int
-	roundID         int
-	homeClubID      int
-	awayClubID      int
-	homeClubSeaID   int
-	awayClubSeaID   int
-	matchID         int
-	homeClubMatchID int
-	awayClubMatchID int
-	aflPlayerID     int
-	playerID        int
-	playerSeasonID  int
-	playerMatchID   int
-}
+// db setup
 
 func connectDB(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/xffl?sslmode=disable"
-	}
-
-	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, dbURL)
-	if err != nil {
-		t.Skipf("skipping integration test: cannot connect to database: %v", err)
-	}
-	if err := pool.Ping(ctx); err != nil {
-		t.Skipf("skipping integration test: database not available: %v", err)
-	}
-
-	t.Cleanup(func() { pool.Close() })
-	return pool
-}
-
-func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
-	t.Helper()
-	ctx := context.Background()
-	var ids testIDs
-
-	// Truncate in reverse FK order
-	tables := []string{
-		"ffl.player_match", "ffl.player_season", "ffl.player",
-		"ffl.club_match", "ffl.match", "ffl.club_season",
-		"ffl.club", "ffl.round", "ffl.season", "ffl.league",
-		"afl.player",
-	}
-	for _, table := range tables {
-		if _, err := pool.Exec(ctx, fmt.Sprintf("TRUNCATE %s CASCADE", table)); err != nil {
-			t.Fatalf("failed to truncate %s: %v", table, err)
-		}
-	}
-
-	// League
-	err := pool.QueryRow(ctx,
-		"INSERT INTO ffl.league (name) VALUES ('Test FFL') RETURNING id").Scan(&ids.leagueID)
-	if err != nil {
-		t.Fatalf("failed to insert league: %v", err)
-	}
-
-	// Season
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.season (name, league_id) VALUES ('Test 2025', $1) RETURNING id",
-		ids.leagueID).Scan(&ids.seasonID)
-	if err != nil {
-		t.Fatalf("failed to insert season: %v", err)
-	}
-
-	// Round
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
-		ids.seasonID).Scan(&ids.roundID)
-	if err != nil {
-		t.Fatalf("failed to insert round: %v", err)
-	}
-
-	// Two clubs
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.club (name) VALUES ('Test Eagles') RETURNING id").Scan(&ids.homeClubID)
-	if err != nil {
-		t.Fatalf("failed to insert home club: %v", err)
-	}
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.club (name) VALUES ('Test Lions') RETURNING id").Scan(&ids.awayClubID)
-	if err != nil {
-		t.Fatalf("failed to insert away club: %v", err)
-	}
-
-	// Club seasons (home team higher on ladder)
-	err = pool.QueryRow(ctx,
-		`INSERT INTO ffl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
-		 VALUES ($1, $2, 5, 4, 1, 0, 500, 400, 16) RETURNING id`,
-		ids.homeClubID, ids.seasonID).Scan(&ids.homeClubSeaID)
-	if err != nil {
-		t.Fatalf("failed to insert home club season: %v", err)
-	}
-	err = pool.QueryRow(ctx,
-		`INSERT INTO ffl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
-		 VALUES ($1, $2, 5, 3, 2, 0, 450, 420, 12) RETURNING id`,
-		ids.awayClubID, ids.seasonID).Scan(&ids.awayClubSeaID)
-	if err != nil {
-		t.Fatalf("failed to insert away club season: %v", err)
-	}
-
-	// Match
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES ($1, 'versus', 'Test Ground', '2025-06-15 14:00:00') RETURNING id",
-		ids.roundID).Scan(&ids.matchID)
-	if err != nil {
-		t.Fatalf("failed to insert match: %v", err)
-	}
-
-	// Club matches
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 85) RETURNING id",
-		ids.matchID, ids.homeClubSeaID).Scan(&ids.homeClubMatchID)
-	if err != nil {
-		t.Fatalf("failed to insert home club match: %v", err)
-	}
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 72) RETURNING id",
-		ids.matchID, ids.awayClubSeaID).Scan(&ids.awayClubMatchID)
-	if err != nil {
-		t.Fatalf("failed to insert away club match: %v", err)
-	}
-
-	// Link match to club matches
-	_, err = pool.Exec(ctx,
-		"UPDATE ffl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
-		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
-	if err != nil {
-		t.Fatalf("failed to link match to club matches: %v", err)
-	}
-
-	// AFL player reference (needed for FFL player FK)
-	// Name deliberately does not contain "Test" to avoid polluting AFL player search tests
-	err = pool.QueryRow(ctx,
-		"INSERT INTO afl.player (name) VALUES ('Seeded AFL Player') RETURNING id").Scan(&ids.aflPlayerID)
-	if err != nil {
-		t.Fatalf("failed to insert afl player: %v", err)
-	}
-
-	// Player (linked to AFL player)
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Test Player', $1) RETURNING id",
-		ids.aflPlayerID).Scan(&ids.playerID)
-	if err != nil {
-		t.Fatalf("failed to insert player: %v", err)
-	}
-
-	// Player season
-	err = pool.QueryRow(ctx,
-		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
-		ids.playerID, ids.homeClubSeaID).Scan(&ids.playerSeasonID)
-	if err != nil {
-		t.Fatalf("failed to insert player season: %v", err)
-	}
-
-	// Player match: goals position, played status, score 15
-	err = pool.QueryRow(ctx,
-		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
-		 VALUES ($1, $2, 'goals', 'played', 15) RETURNING id`,
-		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID)
-	if err != nil {
-		t.Fatalf("failed to insert player match: %v", err)
-	}
-
-	t.Cleanup(func() {
-		for _, table := range tables {
-			pool.Exec(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE", table))
-		}
-	})
-
-	return ids
+	return testPool
 }
 
 func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
@@ -225,6 +53,125 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	return httptest.NewServer(srv)
 }
 
+// fixture
+
+// testIDs holds IDs of rows inserted by seedTestData, used by tests to query known data.
+type testIDs struct {
+	leagueID        int
+	seasonID        int
+	roundID         int
+	homeClubID      int
+	awayClubID      int
+	homeClubSeaID   int
+	awayClubSeaID   int
+	matchID         int
+	homeClubMatchID int
+	awayClubMatchID int
+	aflPlayerID     int
+	playerID        int
+	playerSeasonID  int
+	playerMatchID   int
+}
+
+func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
+	t.Helper()
+	ctx := context.Background()
+	var ids testIDs
+
+	cleanupTestData(ctx, t, pool)
+
+	// League
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.league (name) VALUES ('Test FFL') RETURNING id").Scan(&ids.leagueID))
+
+	// Season
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.season (name, league_id) VALUES ('Test 2025', $1) RETURNING id",
+		ids.leagueID).Scan(&ids.seasonID))
+
+	// Round
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		ids.seasonID).Scan(&ids.roundID))
+
+	// Two clubs
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.club (name) VALUES ('Test Eagles') RETURNING id").Scan(&ids.homeClubID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.club (name) VALUES ('Test Lions') RETURNING id").Scan(&ids.awayClubID))
+
+	// Club seasons (home team higher on ladder)
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO ffl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 5, 4, 1, 0, 500, 400, 16) RETURNING id`,
+		ids.homeClubID, ids.seasonID).Scan(&ids.homeClubSeaID))
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO ffl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 5, 3, 2, 0, 450, 420, 12) RETURNING id`,
+		ids.awayClubID, ids.seasonID).Scan(&ids.awayClubSeaID))
+
+	// Match
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES ($1, 'versus', 'Test Ground', '2025-06-15 14:00:00') RETURNING id",
+		ids.roundID).Scan(&ids.matchID))
+
+	// Club matches
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 85) RETURNING id",
+		ids.matchID, ids.homeClubSeaID).Scan(&ids.homeClubMatchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 72) RETURNING id",
+		ids.matchID, ids.awayClubSeaID).Scan(&ids.awayClubMatchID))
+
+	// Link match to club matches
+	_, err := pool.Exec(ctx,
+		"UPDATE ffl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
+		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
+	require.NoError(t, err)
+
+	// AFL player reference (needed for FFL player FK)
+	// Name deliberately does not contain "Test" to avoid polluting AFL player search tests
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Seeded AFL Player') RETURNING id").Scan(&ids.aflPlayerID))
+
+	// Player (linked to AFL player)
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Test Player', $1) RETURNING id",
+		ids.aflPlayerID).Scan(&ids.playerID))
+
+	// Player season
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		ids.playerID, ids.homeClubSeaID).Scan(&ids.playerSeasonID))
+
+	// Player match: goals position, played status, score 15
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
+		 VALUES ($1, $2, 'goals', 'played', 15) RETURNING id`,
+		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID))
+
+	t.Cleanup(func() { cleanupTestData(context.Background(), t, pool) })
+
+	return ids
+}
+
+func cleanupTestData(ctx context.Context, t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+	tables := []string{
+		"ffl.player_match",
+		"ffl.player_season", "ffl.player",
+		"ffl.club_match", "ffl.match", "ffl.club_season",
+		"ffl.club", "ffl.round", "ffl.season", "ffl.league",
+		"afl.player",
+	}
+	for _, table := range tables {
+		_, err := pool.Exec(ctx, fmt.Sprintf("TRUNCATE %s CASCADE", table))
+		require.NoError(t, err)
+	}
+}
+
+// graphql helpers
+
 type graphqlRequest struct {
 	Query string `json:"query"`
 }
@@ -241,21 +188,17 @@ func execQuery(t *testing.T, server *httptest.Server, query string) graphqlRespo
 
 	body, _ := json.Marshal(graphqlRequest{Query: query})
 	resp, err := http.Post(server.URL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("failed to send request: %v", err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	var result graphqlResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	return result
 }
+
+// tests
 
 func TestFflClubs(t *testing.T) {
 	pool := connectDB(t)
@@ -265,9 +208,7 @@ func TestFflClubs(t *testing.T) {
 
 	result := execQuery(t, server, `{ fflClubs { id name } }`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflClubs []struct {
@@ -275,23 +216,16 @@ func TestFflClubs(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"fflClubs"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if len(data.FflClubs) != 2 {
-		t.Errorf("expected 2 clubs, got %d", len(data.FflClubs))
-	}
-
-	// Clubs ordered by name: Test Eagles before Test Lions
-	if len(data.FflClubs) == 2 {
-		if data.FflClubs[0].Name != "Test Eagles" {
-			t.Errorf("expected first club Test Eagles, got %s", data.FflClubs[0].Name)
-		}
-		if data.FflClubs[1].Name != "Test Lions" {
-			t.Errorf("expected second club Test Lions, got %s", data.FflClubs[1].Name)
-		}
-	}
+	t.Run("returns both seeded clubs", func(t *testing.T) {
+		assert.Len(t, data.FflClubs, 2)
+	})
+	t.Run("clubs ordered alphabetically", func(t *testing.T) {
+		require.Len(t, data.FflClubs, 2)
+		assert.Equal(t, "Test Eagles", data.FflClubs[0].Name)
+		assert.Equal(t, "Test Lions", data.FflClubs[1].Name)
+	})
 }
 
 func TestFflSeasons(t *testing.T) {
@@ -302,9 +236,7 @@ func TestFflSeasons(t *testing.T) {
 
 	result := execQuery(t, server, `{ fflSeasons { id name } }`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflSeasons []struct {
@@ -312,16 +244,12 @@ func TestFflSeasons(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"fflSeasons"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if len(data.FflSeasons) != 1 {
-		t.Errorf("expected 1 season, got %d", len(data.FflSeasons))
-	}
-	if len(data.FflSeasons) > 0 && data.FflSeasons[0].Name != "Test 2025" {
-		t.Errorf("expected season name Test 2025, got %s", data.FflSeasons[0].Name)
-	}
+	t.Run("returns the seeded season", func(t *testing.T) {
+		require.Len(t, data.FflSeasons, 1)
+		assert.Equal(t, "Test 2025", data.FflSeasons[0].Name)
+	})
 }
 
 func TestFflSeasonWithLadder(t *testing.T) {
@@ -333,9 +261,7 @@ func TestFflSeasonWithLadder(t *testing.T) {
 	seasonID := fmt.Sprintf("%d", ids.seasonID)
 	result := execQuery(t, server, `{ fflSeason(id: "`+seasonID+`") { name ladder { club { name } season { name } played won lost percentage } } }`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflSeason struct {
@@ -354,28 +280,19 @@ func TestFflSeasonWithLadder(t *testing.T) {
 			} `json:"ladder"`
 		} `json:"fflSeason"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.FflSeason.Ladder, 2)
 
-	if len(data.FflSeason.Ladder) != 2 {
-		t.Fatalf("expected 2 ladder entries, got %d", len(data.FflSeason.Ladder))
-	}
-
-	// Eagles: 500 for / 400 against = 125.0%
-	if data.FflSeason.Ladder[0].Club.Name != "Test Eagles" {
-		t.Errorf("expected Test Eagles first on ladder, got %s", data.FflSeason.Ladder[0].Club.Name)
-	}
-	if data.FflSeason.Ladder[0].Percentage != 125.0 {
-		t.Errorf("expected 125.0 percentage, got %f", data.FflSeason.Ladder[0].Percentage)
-	}
-	if data.FflSeason.Ladder[1].Club.Name != "Test Lions" {
-		t.Errorf("expected Test Lions second on ladder, got %s", data.FflSeason.Ladder[1].Club.Name)
-	}
-	// Verify season is populated on ladder entries
-	if data.FflSeason.Ladder[0].Season.Name != "Test 2025" {
-		t.Errorf("expected ladder entry season 'Test 2025', got %s", data.FflSeason.Ladder[0].Season.Name)
-	}
+	t.Run("home team is first on ladder with correct percentage", func(t *testing.T) {
+		assert.Equal(t, "Test Eagles", data.FflSeason.Ladder[0].Club.Name)
+		assert.Equal(t, 125.0, data.FflSeason.Ladder[0].Percentage)
+	})
+	t.Run("away team is second on ladder", func(t *testing.T) {
+		assert.Equal(t, "Test Lions", data.FflSeason.Ladder[1].Club.Name)
+	})
+	t.Run("season is populated on ladder entries", func(t *testing.T) {
+		assert.Equal(t, "Test 2025", data.FflSeason.Ladder[0].Season.Name)
+	})
 }
 
 func TestFflSeasonGraphTraversal(t *testing.T) {
@@ -411,9 +328,7 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflSeason struct {
@@ -446,59 +361,36 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 			} `json:"rounds"`
 		} `json:"fflSeason"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
-
-	if len(data.FflSeason.Rounds) != 1 {
-		t.Fatalf("expected 1 round, got %d", len(data.FflSeason.Rounds))
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.FflSeason.Rounds, 1)
 
 	round := data.FflSeason.Rounds[0]
-	if round.Name != "Round 1" {
-		t.Errorf("expected Round 1, got %s", round.Name)
-	}
-	if len(round.Matches) != 1 {
-		t.Fatalf("expected 1 match, got %d", len(round.Matches))
-	}
+	require.Len(t, round.Matches, 1)
 
 	match := round.Matches[0]
-	if match.Venue != "Test Ground" {
-		t.Errorf("expected venue Test Ground, got %s", match.Venue)
-	}
-	if match.HomeClubMatch == nil {
-		t.Fatal("expected home club match")
-	}
-	if match.HomeClubMatch.Club.Name != "Test Eagles" {
-		t.Errorf("expected home club Test Eagles, got %s", match.HomeClubMatch.Club.Name)
-	}
-	if match.HomeClubMatch.Score != 85 {
-		t.Errorf("expected home score 85, got %d", match.HomeClubMatch.Score)
-	}
-	if match.AwayClubMatch == nil {
-		t.Fatal("expected away club match")
-	}
-	if match.AwayClubMatch.Club.Name != "Test Lions" {
-		t.Errorf("expected away club Test Lions, got %s", match.AwayClubMatch.Club.Name)
-	}
-	if match.AwayClubMatch.Score != 72 {
-		t.Errorf("expected away score 72, got %d", match.AwayClubMatch.Score)
-	}
+	require.NotNil(t, match.HomeClubMatch)
+	require.NotNil(t, match.AwayClubMatch)
 
-	// Player match: goals position, played status, score 15
-	if len(match.HomeClubMatch.PlayerMatches) != 1 {
-		t.Fatalf("expected 1 player match, got %d", len(match.HomeClubMatch.PlayerMatches))
-	}
-	pm := match.HomeClubMatch.PlayerMatches[0]
-	if pm.Player.Name != "Test Player" {
-		t.Errorf("expected Test Player, got %s", pm.Player.Name)
-	}
-	if pm.Position == nil || *pm.Position != "goals" {
-		t.Errorf("expected position goals, got %v", pm.Position)
-	}
-	if pm.Score != 15 {
-		t.Errorf("expected score 15, got %d", pm.Score)
-	}
+	t.Run("round and venue are correct", func(t *testing.T) {
+		assert.Equal(t, "Round 1", round.Name)
+		assert.Equal(t, "Test Ground", match.Venue)
+	})
+	t.Run("home club match has correct club and score", func(t *testing.T) {
+		assert.Equal(t, "Test Eagles", match.HomeClubMatch.Club.Name)
+		assert.Equal(t, 85, match.HomeClubMatch.Score)
+	})
+	t.Run("away club match has correct club and score", func(t *testing.T) {
+		assert.Equal(t, "Test Lions", match.AwayClubMatch.Club.Name)
+		assert.Equal(t, 72, match.AwayClubMatch.Score)
+	})
+	t.Run("player match has correct player, position and score", func(t *testing.T) {
+		require.Len(t, match.HomeClubMatch.PlayerMatches, 1)
+		pm := match.HomeClubMatch.PlayerMatches[0]
+		assert.Equal(t, "Test Player", pm.Player.Name)
+		require.NotNil(t, pm.Position)
+		assert.Equal(t, "goals", *pm.Position)
+		assert.Equal(t, 15, pm.Score)
+	})
 }
 
 func TestFflLatestRound(t *testing.T) {
@@ -510,12 +402,9 @@ func TestFflLatestRound(t *testing.T) {
 	// Add a second round so we can verify "latest" picks the last one
 	ctx := context.Background()
 	var round2ID int
-	err := pool.QueryRow(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO ffl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
-		ids.seasonID).Scan(&round2ID)
-	if err != nil {
-		t.Fatalf("failed to insert round 2: %v", err)
-	}
+		ids.seasonID).Scan(&round2ID))
 
 	result := execQuery(t, server, `{
 		fflLatestRound {
@@ -524,9 +413,7 @@ func TestFflLatestRound(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflLatestRound struct {
@@ -536,16 +423,14 @@ func TestFflLatestRound(t *testing.T) {
 			} `json:"season"`
 		} `json:"fflLatestRound"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if data.FflLatestRound.Name != "Round 2" {
-		t.Errorf("expected latest round 'Round 2', got %s", data.FflLatestRound.Name)
-	}
-	if data.FflLatestRound.Season.Name != "Test 2025" {
-		t.Errorf("expected season 'Test 2025', got %s", data.FflLatestRound.Season.Name)
-	}
+	t.Run("returns the most recently inserted round", func(t *testing.T) {
+		assert.Equal(t, "Round 2", data.FflLatestRound.Name)
+	})
+	t.Run("latest round includes its season", func(t *testing.T) {
+		assert.Equal(t, "Test 2025", data.FflLatestRound.Season.Name)
+	})
 }
 
 func TestFflClubSeason(t *testing.T) {
@@ -566,9 +451,7 @@ func TestFflClubSeason(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		FflClubSeason struct {
@@ -582,41 +465,29 @@ func TestFflClubSeason(t *testing.T) {
 			Won    int `json:"won"`
 		} `json:"fflClubSeason"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
 	cs := data.FflClubSeason
-	if cs.Club.Name != "Test Eagles" {
-		t.Errorf("expected club 'Test Eagles', got %s", cs.Club.Name)
-	}
-	if cs.Season.Name != "Test 2025" {
-		t.Errorf("expected season 'Test 2025', got %s", cs.Season.Name)
-	}
-	if cs.Season.ID != seasonID {
-		t.Errorf("expected season id %s, got %s", seasonID, cs.Season.ID)
-	}
-	if cs.Played != 5 {
-		t.Errorf("expected played 5, got %d", cs.Played)
-	}
-	if cs.Won != 4 {
-		t.Errorf("expected won 4, got %d", cs.Won)
-	}
+	t.Run("returns correct club and season", func(t *testing.T) {
+		assert.Equal(t, "Test Eagles", cs.Club.Name)
+		assert.Equal(t, "Test 2025", cs.Season.Name)
+		assert.Equal(t, seasonID, cs.Season.ID)
+	})
+	t.Run("returns correct win/loss record", func(t *testing.T) {
+		assert.Equal(t, 5, cs.Played)
+		assert.Equal(t, 4, cs.Won)
+	})
 }
 
 func TestCreateFFLPlayer(t *testing.T) {
 	pool := connectDB(t)
-	ids := seedTestData(t, pool)
+	seedTestData(t, pool)
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
-	// Create a second AFL player for the new FFL player to reference
 	ctx := context.Background()
 	var aflPlayerID2 int
-	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('New AFL Player') RETURNING id").Scan(&aflPlayerID2); err != nil {
-		t.Fatalf("failed to insert afl player: %v", err)
-	}
-	_ = ids
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('New AFL Player') RETURNING id").Scan(&aflPlayerID2))
 
 	aflPID := fmt.Sprintf("%d", aflPlayerID2)
 	result := execQuery(t, server, `mutation {
@@ -626,9 +497,7 @@ func TestCreateFFLPlayer(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		CreateFFLPlayer struct {
@@ -636,16 +505,12 @@ func TestCreateFFLPlayer(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"createFFLPlayer"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if data.CreateFFLPlayer.Name != "New Player" {
-		t.Errorf("expected name 'New Player', got %s", data.CreateFFLPlayer.Name)
-	}
-	if data.CreateFFLPlayer.ID == "" {
-		t.Error("expected non-empty ID")
-	}
+	t.Run("created player has correct name and non-empty id", func(t *testing.T) {
+		assert.Equal(t, "New Player", data.CreateFFLPlayer.Name)
+		assert.NotEmpty(t, data.CreateFFLPlayer.ID)
+	})
 }
 
 func TestUpdateFFLPlayer(t *testing.T) {
@@ -662,9 +527,7 @@ func TestUpdateFFLPlayer(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		UpdateFFLPlayer struct {
@@ -672,13 +535,11 @@ func TestUpdateFFLPlayer(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"updateFFLPlayer"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if data.UpdateFFLPlayer.Name != "Renamed Player" {
-		t.Errorf("expected 'Renamed Player', got %s", data.UpdateFFLPlayer.Name)
-	}
+	t.Run("player name is updated", func(t *testing.T) {
+		assert.Equal(t, "Renamed Player", data.UpdateFFLPlayer.Name)
+	})
 }
 
 func TestDeleteFFLPlayer(t *testing.T) {
@@ -687,14 +548,10 @@ func TestDeleteFFLPlayer(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
-	// Create an AFL player for the temp FFL player
 	ctx := context.Background()
 	var aflPID int
-	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Temp AFL') RETURNING id").Scan(&aflPID); err != nil {
-		t.Fatalf("failed to insert afl player: %v", err)
-	}
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Temp AFL') RETURNING id").Scan(&aflPID))
 
-	// Create a player to delete (not the seeded one, which has FKs)
 	aflPIDStr := fmt.Sprintf("%d", aflPID)
 	createResult := execQuery(t, server, `mutation {
 		createFFLPlayer(input: { name: "Temp Player", aflPlayerId: "`+aflPIDStr+`" }) { id }
@@ -704,17 +561,15 @@ func TestDeleteFFLPlayer(t *testing.T) {
 			ID string `json:"id"`
 		} `json:"createFFLPlayer"`
 	}
-	if err := json.Unmarshal(createResult.Data, &created); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(createResult.Data, &created))
 
 	result := execQuery(t, server, `mutation {
 		deleteFFLPlayer(id: "`+created.CreateFFLPlayer.ID+`")
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	t.Run("delete returns no errors", func(t *testing.T) {
+		assert.Empty(t, result.Errors)
+	})
 }
 
 func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
@@ -723,14 +578,10 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
-	// Create an AFL player for the new FFL player
 	ctx := context.Background()
 	var aflPID int
-	if err := pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Season AFL') RETURNING id").Scan(&aflPID); err != nil {
-		t.Fatalf("failed to insert afl player: %v", err)
-	}
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Season AFL') RETURNING id").Scan(&aflPID))
 
-	// Create a new player and add them to the away club season
 	aflPIDStr := fmt.Sprintf("%d", aflPID)
 	createResult := execQuery(t, server, `mutation {
 		createFFLPlayer(input: { name: "Season Player", aflPlayerId: "`+aflPIDStr+`" }) { id }
@@ -740,9 +591,7 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 			ID string `json:"id"`
 		} `json:"createFFLPlayer"`
 	}
-	if err := json.Unmarshal(createResult.Data, &created); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(createResult.Data, &created))
 
 	clubSeasonID := fmt.Sprintf("%d", ids.awayClubSeaID)
 	addResult := execQuery(t, server, `mutation {
@@ -753,9 +602,7 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 		}
 	}`)
 
-	if len(addResult.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", addResult.Errors)
-	}
+	require.Empty(t, addResult.Errors)
 
 	var addData struct {
 		AddFFLPlayerToSeason struct {
@@ -766,25 +613,20 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 			ClubSeasonID string `json:"clubSeasonId"`
 		} `json:"addFFLPlayerToSeason"`
 	}
-	if err := json.Unmarshal(addResult.Data, &addData); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(addResult.Data, &addData))
 
-	if addData.AddFFLPlayerToSeason.Player.ID != created.CreateFFLPlayer.ID {
-		t.Errorf("expected player ID %s, got %s", created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.Player.ID)
-	}
-	if addData.AddFFLPlayerToSeason.ClubSeasonID != clubSeasonID {
-		t.Errorf("expected club season ID %s, got %s", clubSeasonID, addData.AddFFLPlayerToSeason.ClubSeasonID)
-	}
+	t.Run("added player season references correct player and club season", func(t *testing.T) {
+		assert.Equal(t, created.CreateFFLPlayer.ID, addData.AddFFLPlayerToSeason.Player.ID)
+		assert.Equal(t, clubSeasonID, addData.AddFFLPlayerToSeason.ClubSeasonID)
+	})
 
-	// Remove the player from the season
 	removeResult := execQuery(t, server, `mutation {
 		removeFFLPlayerFromSeason(id: "`+addData.AddFFLPlayerToSeason.ID+`")
 	}`)
 
-	if len(removeResult.Errors) > 0 {
-		t.Fatalf("unexpected errors removing player from season: %v", removeResult.Errors)
-	}
+	t.Run("remove returns no errors", func(t *testing.T) {
+		assert.Empty(t, removeResult.Errors)
+	})
 }
 
 func TestCalculateFFLFantasyScore(t *testing.T) {
@@ -813,9 +655,7 @@ func TestCalculateFFLFantasyScore(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	require.Empty(t, result.Errors)
 
 	var data struct {
 		CalculateFFLFantasyScore struct {
@@ -827,17 +667,12 @@ func TestCalculateFFLFantasyScore(t *testing.T) {
 			Score    int     `json:"score"`
 		} `json:"calculateFFLFantasyScore"`
 	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
 
-	if data.CalculateFFLFantasyScore.Player.Name != "Test Player" {
-		t.Errorf("expected Test Player, got %s", data.CalculateFFLFantasyScore.Player.Name)
-	}
-	// goals position: 3 goals * 5 = 15
-	if data.CalculateFFLFantasyScore.Score != 15 {
-		t.Errorf("expected score 15, got %d", data.CalculateFFLFantasyScore.Score)
-	}
+	t.Run("player match score is goals multiplied by 5", func(t *testing.T) {
+		assert.Equal(t, "Test Player", data.CalculateFFLFantasyScore.Player.Name)
+		assert.Equal(t, 15, data.CalculateFFLFantasyScore.Score)
+	})
 }
 
 func TestCalculateFFLFantasyScore_RecalculatesClubMatchScore(t *testing.T) {
@@ -847,9 +682,8 @@ func TestCalculateFFLFantasyScore_RecalculatesClubMatchScore(t *testing.T) {
 	defer server.Close()
 
 	// Player has position "goals", sending goals=6 → score = 6*5 = 30
-	// Club match score should be recalculated to 30 (only 1 player, starter)
 	pmID := fmt.Sprintf("%d", ids.playerMatchID)
-	result := execQuery(t, server, `mutation {
+	calcResult := execQuery(t, server, `mutation {
 		calculateFFLFantasyScore(input: {
 			playerMatchId: "`+pmID+`"
 			goals: 6
@@ -862,12 +696,8 @@ func TestCalculateFFLFantasyScore_RecalculatesClubMatchScore(t *testing.T) {
 			score
 		}
 	}`)
+	require.Empty(t, calcResult.Errors)
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
-
-	// Query the club match to verify score was recalculated
 	seasonID := fmt.Sprintf("%d", ids.seasonID)
 	queryResult := execQuery(t, server, `{
 		fflSeason(id: "`+seasonID+`") {
@@ -881,9 +711,7 @@ func TestCalculateFFLFantasyScore_RecalculatesClubMatchScore(t *testing.T) {
 		}
 	}`)
 
-	if len(queryResult.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", queryResult.Errors)
-	}
+	require.Empty(t, queryResult.Errors)
 
 	var data struct {
 		FflSeason struct {
@@ -896,15 +724,13 @@ func TestCalculateFFLFantasyScore_RecalculatesClubMatchScore(t *testing.T) {
 			} `json:"rounds"`
 		} `json:"fflSeason"`
 	}
-	if err := json.Unmarshal(queryResult.Data, &data); err != nil {
-		t.Fatalf("failed to unmarshal data: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(queryResult.Data, &data))
+	require.Len(t, data.FflSeason.Rounds, 1)
+	require.Len(t, data.FflSeason.Rounds[0].Matches, 1)
 
-	homeScore := data.FflSeason.Rounds[0].Matches[0].HomeClubMatch.Score
-	// goals position: 6 goals * 5 = 30
-	if homeScore != 30 {
-		t.Errorf("expected recalculated home score 30, got %d", homeScore)
-	}
+	t.Run("club match score is recalculated after player score update", func(t *testing.T) {
+		assert.Equal(t, 30, data.FflSeason.Rounds[0].Matches[0].HomeClubMatch.Score)
+	})
 }
 
 func TestCalculateFFLFantasyScore_InvalidPlayerMatchID(t *testing.T) {
@@ -927,15 +753,13 @@ func TestCalculateFFLFantasyScore_InvalidPlayerMatchID(t *testing.T) {
 		}
 	}`)
 
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for invalid playerMatchId, got none")
-	}
+	t.Run("returns an error for unknown player match id", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 // ── SetFFLTeam: team composition rule tests ─────────────────────────────────
 
-// teamMutation builds a setFFLTeam mutation string for testing.
-// players is a slice of (playerSeasonId, position, backupPositions, interchangePosition) tuples.
 type teamPlayer struct {
 	playerSeasonID      string
 	position            string
@@ -977,20 +801,14 @@ func seedExtraPlayers(t *testing.T, pool *pgxpool.Pool, ids testIDs, count int) 
 	psIDs := make([]string, count)
 	for i := range count {
 		var aflID, playerID, psID int
-		if err := pool.QueryRow(ctx,
-			fmt.Sprintf("INSERT INTO afl.player (name) VALUES ('Extra Player %d') RETURNING id", i)).Scan(&aflID); err != nil {
-			t.Fatalf("seed extra afl player %d: %v", i, err)
-		}
-		if err := pool.QueryRow(ctx,
+		require.NoError(t, pool.QueryRow(ctx,
+			fmt.Sprintf("INSERT INTO afl.player (name) VALUES ('Extra Player %d') RETURNING id", i)).Scan(&aflID))
+		require.NoError(t, pool.QueryRow(ctx,
 			"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ($1, $2) RETURNING id",
-			fmt.Sprintf("Extra Player %d", i), aflID).Scan(&playerID); err != nil {
-			t.Fatalf("seed extra ffl player %d: %v", i, err)
-		}
-		if err := pool.QueryRow(ctx,
+			fmt.Sprintf("Extra Player %d", i), aflID).Scan(&playerID))
+		require.NoError(t, pool.QueryRow(ctx,
 			"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
-			playerID, ids.homeClubSeaID).Scan(&psID); err != nil {
-			t.Fatalf("seed extra player season %d: %v", i, err)
-		}
+			playerID, ids.homeClubSeaID).Scan(&psID))
 		psIDs[i] = fmt.Sprintf("%d", psID)
 	}
 	return psIDs
@@ -1011,15 +829,14 @@ func TestSetFFLTeam_ValidTeamSaves(t *testing.T) {
 		{playerSeasonID: psID, position: "goals"},
 	}))
 
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors: %v", result.Errors)
-	}
+	t.Run("single starter saves without errors", func(t *testing.T) {
+		assert.Empty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_TooManyStartersForPosition(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
-	// Need 4 players for goals (max is 3)
 	extras := seedExtraPlayers(t, pool, ids, 3)
 	server := setupTestServer(t, pool)
 	defer server.Close()
@@ -1027,16 +844,16 @@ func TestSetFFLTeam_TooManyStartersForPosition(t *testing.T) {
 	psID := fmt.Sprintf("%d", ids.playerSeasonID)
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
-	players := []teamPlayer{
+	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 		{playerSeasonID: extras[0], position: "goals"},
 		{playerSeasonID: extras[1], position: "goals"},
 		{playerSeasonID: extras[2], position: "goals"}, // 4th goals kicker — invalid
-	}
-	result := execQuery(t, server, buildSetTeamMutation(cmID, players))
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for too many goal kickers, got none")
-	}
+	}))
+
+	t.Run("returns an error for four goal kickers", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_TooManyBenchPlayers(t *testing.T) {
@@ -1047,25 +864,20 @@ func TestSetFFLTeam_TooManyBenchPlayers(t *testing.T) {
 	defer server.Close()
 
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
-	players := []teamPlayer{}
-	positions := [][2]string{
-		{"goals,kicks"}, {"goals,kicks"}, {"handballs,marks"}, {"tackles,hitouts"}, {"goals,kicks"},
-	}
-	_ = positions
-	// 5 bench players (max is 4)
-	for i, id := range extras {
-		_ = i
+	players := make([]teamPlayer, 0, 5)
+	for _, id := range extras {
 		players = append(players, teamPlayer{
 			playerSeasonID:  id,
 			position:        "goals",
-			backupPositions: strp(fmt.Sprintf("goals,kicks")),
+			backupPositions: strp("goals,kicks"),
 		})
-		_ = extras
 	}
+
 	result := execQuery(t, server, buildSetTeamMutation(cmID, players))
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for 5 bench players, got none")
-	}
+
+	t.Run("returns an error for five bench players", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_TwoBenchStars(t *testing.T) {
@@ -1082,9 +894,10 @@ func TestSetFFLTeam_TwoBenchStars(t *testing.T) {
 		{playerSeasonID: psID, position: "star", backupPositions: strp("star")},
 		{playerSeasonID: extras[0], position: "star", backupPositions: strp("star")},
 	}))
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for two backup stars, got none")
-	}
+
+	t.Run("returns an error for two backup star players", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
@@ -1101,9 +914,10 @@ func TestSetFFLTeam_SamePositionCoveredByTwoBenchPlayers(t *testing.T) {
 		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks")},
 		{playerSeasonID: extras[0], position: "goals", backupPositions: strp("goals,marks")}, // goals covered twice
 	}))
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for duplicate bench position coverage, got none")
-	}
+
+	t.Run("returns an error when two bench players cover the same position", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_TwoInterchangePositions(t *testing.T) {
@@ -1120,9 +934,10 @@ func TestSetFFLTeam_TwoInterchangePositions(t *testing.T) {
 		{playerSeasonID: psID, position: "goals", backupPositions: strp("goals,kicks"), interchangePosition: strp("goals")},
 		{playerSeasonID: extras[0], position: "marks", backupPositions: strp("marks,tackles"), interchangePosition: strp("marks")},
 	}))
-	if len(result.Errors) == 0 {
-		t.Fatal("expected error for two interchange positions, got none")
-	}
+
+	t.Run("returns an error for two interchange positions", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
 }
 
 func TestSetFFLTeam_MultipleStartersScoreCorrectly(t *testing.T) {
@@ -1137,47 +952,39 @@ func TestSetFFLTeam_MultipleStartersScoreCorrectly(t *testing.T) {
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
 	// Set 3 goal kickers
-	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
+	setResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 		{playerSeasonID: extras[0], position: "goals"},
 		{playerSeasonID: extras[1], position: "goals"},
 	}))
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting team: %v", result.Errors)
-	}
+	require.Empty(t, setResult.Errors)
 
-	// Directly set scores for all 3 goal kickers in the DB, then recalculate
+	// Set scores for all 3 goal kickers directly in the DB
 	_, err := pool.Exec(ctx,
 		"UPDATE ffl.player_match SET drv_score = 10 WHERE club_match_id = $1",
 		ids.homeClubMatchID)
-	if err != nil {
-		t.Fatalf("failed to update scores: %v", err)
-	}
-	// Recalculate club match score
-	playerMatches, err := pool.Query(ctx,
-		"SELECT id, position, backup_positions, interchange_position, status, drv_score FROM ffl.player_match WHERE club_match_id = $1",
+	require.NoError(t, err)
+
+	// Sum starter scores (no backup_positions and no interchange_position)
+	rows, err := pool.Query(ctx,
+		"SELECT backup_positions, interchange_position, drv_score FROM ffl.player_match WHERE club_match_id = $1",
 		ids.homeClubMatchID)
-	if err != nil {
-		t.Fatalf("failed to query player matches: %v", err)
-	}
-	defer playerMatches.Close()
+	require.NoError(t, err)
+	defer rows.Close()
 
 	totalScore := 0
-	for playerMatches.Next() {
+	for rows.Next() {
 		var score int
-		var pos, bp, ic, status *string
-		if err := playerMatches.Scan(&ids.playerMatchID, &pos, &bp, &ic, &status, &score); err != nil {
-			t.Fatalf("failed to scan: %v", err)
-		}
+		var bp, ic *string
+		require.NoError(t, rows.Scan(&bp, &ic, &score))
 		if bp == nil && ic == nil {
-			totalScore += score // starters only
+			totalScore += score
 		}
 	}
 
-	// 3 goal kickers × 10 = 30
-	if totalScore != 30 {
-		t.Errorf("expected total starter score 30, got %d", totalScore)
-	}
+	t.Run("three goal kicker starters each score 10", func(t *testing.T) {
+		assert.Equal(t, 30, totalScore)
+	})
 }
 
 func TestSetFFLTeam_ReplacesStaleEntries(t *testing.T) {
@@ -1193,28 +1000,22 @@ func TestSetFFLTeam_ReplacesStaleEntries(t *testing.T) {
 	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
 
 	// First team: original player at goals.
-	result := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
+	firstResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: psID, position: "goals"},
 	}))
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting first team: %v", result.Errors)
-	}
+	require.Empty(t, firstResult.Errors)
 
 	// Second team: different player at kicks — replaces the first.
-	result = execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
+	secondResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
 		{playerSeasonID: extraID, position: "kicks"},
 	}))
-	if len(result.Errors) > 0 {
-		t.Fatalf("unexpected errors setting second team: %v", result.Errors)
-	}
+	require.Empty(t, secondResult.Errors)
 
 	// Only the new player_match should exist in the DB.
 	rows, err := pool.Query(ctx,
 		"SELECT player_season_id, position FROM ffl.player_match WHERE club_match_id = $1",
 		ids.homeClubMatchID)
-	if err != nil {
-		t.Fatalf("failed to query player_match: %v", err)
-	}
+	require.NoError(t, err)
 	defer rows.Close()
 
 	type row struct {
@@ -1224,20 +1025,159 @@ func TestSetFFLTeam_ReplacesStaleEntries(t *testing.T) {
 	var found []row
 	for rows.Next() {
 		var r row
-		if err := rows.Scan(&r.playerSeasonID, &r.position); err != nil {
-			t.Fatalf("scan: %v", err)
-		}
+		require.NoError(t, rows.Scan(&r.playerSeasonID, &r.position))
 		found = append(found, r)
 	}
 
-	if len(found) != 1 {
-		t.Fatalf("expected 1 player_match after replacement, got %d", len(found))
-	}
+	require.Len(t, found, 1)
 	extraIDInt, _ := strconv.Atoi(extraID)
-	if found[0].playerSeasonID != extraIDInt {
-		t.Errorf("expected player_season_id %d, got %d", extraIDInt, found[0].playerSeasonID)
+
+	t.Run("only the replacement player remains after second set", func(t *testing.T) {
+		assert.Equal(t, extraIDInt, found[0].playerSeasonID)
+		assert.Equal(t, "kicks", found[0].position)
+	})
+}
+
+func TestSetFFLTeam_EmptyTeamClearsAll(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	// Set a one-player team first.
+	firstResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
+		{playerSeasonID: psID, position: "goals"},
+	}))
+	require.Empty(t, firstResult.Errors)
+
+	// Now set an empty team.
+	emptyResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{}))
+	require.Empty(t, emptyResult.Errors)
+
+	// No player_match rows should remain for this club match.
+	ctx := context.Background()
+	var count int
+	require.NoError(t, pool.QueryRow(ctx,
+		"SELECT COUNT(*) FROM ffl.player_match WHERE club_match_id = $1",
+		ids.homeClubMatchID).Scan(&count))
+
+	t.Run("all player match entries are cleared after empty team submission", func(t *testing.T) {
+		assert.Equal(t, 0, count)
+	})
+}
+
+func TestAddFFLSquadPlayer(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	ctx := context.Background()
+
+	// Seed an AFL player not yet linked to any ffl.player.
+	var freshAFLID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Dustin Martin') RETURNING id").Scan(&freshAFLID))
+
+	aflIDStr := fmt.Sprintf("%d", freshAFLID)
+	clubSeasonID := fmt.Sprintf("%d", ids.homeClubSeaID)
+
+	t.Run("creates a new FFL player and adds them to the squad", func(t *testing.T) {
+		result := execQuery(t, server, `mutation {
+			addFFLSquadPlayer(input: {
+				aflPlayerId: "`+aflIDStr+`"
+				aflPlayerName: "Dustin Martin"
+				clubSeasonId: "`+clubSeasonID+`"
+			}) {
+				id
+				player { id name }
+				clubSeasonId
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AddFFLSquadPlayer struct {
+				ID     string `json:"id"`
+				Player struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"player"`
+				ClubSeasonID string `json:"clubSeasonId"`
+			} `json:"addFFLSquadPlayer"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+
+		assert.NotEmpty(t, data.AddFFLSquadPlayer.ID)
+		assert.Equal(t, "Dustin Martin", data.AddFFLSquadPlayer.Player.Name)
+		assert.Equal(t, clubSeasonID, data.AddFFLSquadPlayer.ClubSeasonID)
+	})
+
+	t.Run("reuses the existing FFL player when called again with the same AFL player ID", func(t *testing.T) {
+		result := execQuery(t, server, `mutation {
+			addFFLSquadPlayer(input: {
+				aflPlayerId: "`+aflIDStr+`"
+				aflPlayerName: "Dustin Martin"
+				clubSeasonId: "`+fmt.Sprintf("%d", ids.awayClubSeaID)+`"
+			}) {
+				id
+				player { id }
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		// Only one ffl.player row should exist for this AFL player ID.
+		var count int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT COUNT(*) FROM ffl.player WHERE afl_player_id = $1", freshAFLID).Scan(&count))
+		assert.Equal(t, 1, count)
+	})
+}
+
+func TestCalculateFFLFantasyScore_StarPosition(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Update the seeded player match to star position.
+	ctx := context.Background()
+	_, err := pool.Exec(ctx,
+		"UPDATE ffl.player_match SET position = 'star' WHERE id = $1",
+		ids.playerMatchID)
+	require.NoError(t, err)
+
+	pmID := fmt.Sprintf("%d", ids.playerMatchID)
+	result := execQuery(t, server, `mutation {
+		calculateFFLFantasyScore(input: {
+			playerMatchId: "`+pmID+`"
+			goals: 2
+			kicks: 10
+			handballs: 5
+			marks: 4
+			tackles: 3
+			hitouts: 0
+		}) {
+			score
+			position
+		}
+	}`)
+
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		CalculateFFLFantasyScore struct {
+			Score    int    `json:"score"`
+			Position string `json:"position"`
+		} `json:"calculateFFLFantasyScore"`
 	}
-	if found[0].position != "kicks" {
-		t.Errorf("expected position %q, got %q", "kicks", found[0].position)
-	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	// star: 2*5 + 10*1 + 5*1 + 4*2 + 3*4 = 10+10+5+8+12 = 45
+	t.Run("star player score uses all stat multipliers", func(t *testing.T) {
+		assert.Equal(t, 45, data.CalculateFFLFantasyScore.Score)
+	})
 }

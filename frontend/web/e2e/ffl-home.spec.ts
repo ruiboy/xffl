@@ -6,7 +6,7 @@ test.describe('FFL Home', () => {
   })
 
   test('displays season name in heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('2024 Season')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('FFL 2026')
   })
 
   test('displays ladder with clubs', async ({ page }) => {

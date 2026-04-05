@@ -1,8 +1,10 @@
 package domain
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCalculateScore(t *testing.T) {
@@ -31,22 +33,31 @@ func TestCalculateScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pm := PlayerMatch{Position: PositionPtr(tt.position)}
-			if got := pm.CalculateScore(stats); got != tt.want {
-				t.Errorf("CalculateScore() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, pm.CalculateScore(stats))
 		})
 	}
 }
 
 func TestCalculateScore_NilPosition(t *testing.T) {
 	pm := PlayerMatch{}
-	if got := pm.CalculateScore(AFLStats{Goals: 5}); got != 0 {
-		t.Errorf("CalculateScore() with nil position = %d, want 0", got)
+	assert.Equal(t, 0, pm.CalculateScore(AFLStats{Goals: 5}))
+}
+
+func TestCalculateScore_ZeroStats(t *testing.T) {
+	stats := AFLStats{}
+	positions := []Position{
+		PositionGoals, PositionKicks, PositionHandballs,
+		PositionMarks, PositionTackles, PositionHitouts, PositionStar,
+	}
+	for _, pos := range positions {
+		t.Run(string(pos), func(t *testing.T) {
+			pm := PlayerMatch{Position: PositionPtr(pos)}
+			assert.Equal(t, 0, pm.CalculateScore(stats))
+		})
 	}
 }
 
 func bpPtr(s string) *string { return &s }
-func ipPtr(s string) *string { return &s }
 
 // validFullTeam builds a complete 18-starter team with no bench.
 func validFullTeam() []UpsertPlayerMatchParams {
@@ -62,32 +73,24 @@ func validFullTeam() []UpsertPlayerMatchParams {
 
 func TestValidateTeam_ValidCases(t *testing.T) {
 	t.Run("empty team is valid", func(t *testing.T) {
-		if err := ValidateTeam(nil); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.NoError(t, ValidateTeam(nil))
 	})
 
 	t.Run("full 18-starter team is valid", func(t *testing.T) {
-		if err := ValidateTeam(validFullTeam()); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.NoError(t, ValidateTeam(validFullTeam()))
 	})
 
 	t.Run("starters with backup star and 3 dual-position bench", func(t *testing.T) {
 		entries := validFullTeam()
-		// Backup star
 		star := PositionStar
 		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star")})
-		// Dual-position bench (each covers 2 unique non-star positions)
 		goals := PositionGoals
 		entries = append(entries, UpsertPlayerMatchParams{Position: &goals, BackupPositions: bpPtr("goals,kicks")})
 		handballs := PositionHandballs
 		entries = append(entries, UpsertPlayerMatchParams{Position: &handballs, BackupPositions: bpPtr("handballs,marks")})
 		tackles := PositionTackles
 		entries = append(entries, UpsertPlayerMatchParams{Position: &tackles, BackupPositions: bpPtr("tackles,hitouts")})
-		if err := ValidateTeam(entries); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.NoError(t, ValidateTeam(entries))
 	})
 
 	t.Run("interchange on bench star is valid", func(t *testing.T) {
@@ -95,9 +98,7 @@ func TestValidateTeam_ValidCases(t *testing.T) {
 		star := PositionStar
 		ic := "star"
 		entries = append(entries, UpsertPlayerMatchParams{Position: &star, BackupPositions: bpPtr("star"), InterchangePosition: &ic})
-		if err := ValidateTeam(entries); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.NoError(t, ValidateTeam(entries))
 	})
 
 	t.Run("partial team is valid", func(t *testing.T) {
@@ -106,9 +107,7 @@ func TestValidateTeam_ValidCases(t *testing.T) {
 			{Position: &goals},
 			{Position: &goals},
 		}
-		if err := ValidateTeam(entries); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.NoError(t, ValidateTeam(entries))
 	})
 }
 
@@ -226,28 +225,8 @@ func TestValidateTeam_InvalidCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateTeam(tt.entries)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), tt.errContains) {
-				t.Errorf("error %q does not contain %q", err.Error(), tt.errContains)
-			}
-		})
-	}
-}
-
-func TestCalculateScore_ZeroStats(t *testing.T) {
-	stats := AFLStats{}
-	positions := []Position{
-		PositionGoals, PositionKicks, PositionHandballs,
-		PositionMarks, PositionTackles, PositionHitouts, PositionStar,
-	}
-	for _, pos := range positions {
-		t.Run(string(pos), func(t *testing.T) {
-			pm := PlayerMatch{Position: PositionPtr(pos)}
-			if got := pm.CalculateScore(stats); got != 0 {
-				t.Errorf("CalculateScore() with zero stats = %d, want 0", got)
-			}
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.errContains)
 		})
 	}
 }

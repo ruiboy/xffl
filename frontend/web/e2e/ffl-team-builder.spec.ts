@@ -29,7 +29,7 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('shows club name as h1', async ({ page }) => {
-      await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
     })
 
     test('Manage button visible; Done not visible', async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('Remove buttons visible on filled starter slots', async ({ page }) => {
-      // Seed has 7 starters, so at least one Remove button should be present
+      // Seed has 2 starters (Goals: Jordan Dawson, Kicks: Wayne Milera)
       await expect(page.getByRole('button', { name: 'Remove' }).first()).toBeVisible()
     })
 
@@ -106,7 +106,12 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('dual-position selects appear on bench rows that have a player', async ({ page }) => {
-      // Seed loads one dual-position bench player (goals,kicks), so B1 should have selects
+      // All seed players are already assigned to starter slots, so remove one first
+      // to make them available in the squad panel, then bench them
+      await page.getByRole('button', { name: 'Remove' }).first().click()
+      const panel = squadPanel(page)
+      await panel.getByRole('button', { name: 'B' }).first().click()
+
       const bench = benchSection(page)
       // B1 is the 2nd rounded-lg (index 1, after backup star at index 0)
       const b1Row = bench.locator('.rounded-lg').nth(1)
@@ -114,6 +119,8 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('★ and B buttons appear in squad panel', async ({ page }) => {
+      // Remove a starter first so the squad panel has a player to show buttons for
+      await page.getByRole('button', { name: 'Remove' }).first().click()
       const panel = squadPanel(page)
       await expect(panel.getByRole('button', { name: '★' }).first()).toBeVisible()
       await expect(panel.getByRole('button', { name: 'B' }).first()).toBeVisible()
@@ -233,7 +240,7 @@ test.describe('FFL Team Builder', () => {
       // Seed data has some players in the team already
       // Verify they are present in read-only mode
       const goalsSection = positionSection(page, 'Goals')
-      // Should have at least 1 filled slot (seed puts 1 starter per position)
+      // Should have at least 1 filled slot (seed has Jordan Dawson in Goals)
       const emptyCount = await goalsSection.getByText('Empty slot').count()
       expect(emptyCount).toBeLessThan(3)
 

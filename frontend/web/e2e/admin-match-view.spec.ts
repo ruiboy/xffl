@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Admin match view', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: AFL Home → Round 13 → get match href → navigate to admin URL
+    // Navigate: AFL Home → Round 1 → get match href → navigate to admin URL
     await page.goto('/afl')
-    await page.locator('main nav').getByRole('link', { name: '13', exact: true }).click()
+    await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
     const matchLink = page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ }).first()
     const href = await matchLink.getAttribute('href')
     // Replace /afl/ with /admin/afl/ to get admin route

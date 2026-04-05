@@ -1,8 +1,12 @@
 package domain
 
-import "testing"
+import (
+	"testing"
 
-func pos(p Position) *Position                { return &p }
+	"github.com/stretchr/testify/assert"
+)
+
+func pos(p Position) *Position                    { return &p }
 func stat(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
 
 func TestClubMatch_Score(t *testing.T) {
@@ -11,13 +15,13 @@ func TestClubMatch_Score(t *testing.T) {
 		cm   ClubMatch
 		want int
 	}{
-		{"no players", ClubMatch{}, 0},
-		{"single starter", ClubMatch{
+		{"returns 0 with no players", ClubMatch{}, 0},
+		{"counts a single starter score", ClubMatch{
 			PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 20},
 			},
 		}, 20},
-		{"multiple starters", ClubMatch{
+		{"sums all starter scores", ClubMatch{
 			PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 15},
 				{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 10},
@@ -39,9 +43,7 @@ func TestClubMatch_Score(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.cm.Score())
 		})
 	}
 }
@@ -80,9 +82,7 @@ func TestClubMatch_Score_BenchSubstitution(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.cm.Score())
 		})
 	}
 }
@@ -114,9 +114,7 @@ func TestClubMatch_Score_InterchangeSwap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.cm.Score())
 		})
 	}
 }
@@ -128,9 +126,7 @@ func TestClubMatch_Score_SubTakesPriorityOverInterchange(t *testing.T) {
 			{Status: stat(PlayerMatchStatusPlayed), Score: 18, BackupPositions: strPtr("goals"), InterchangePosition: strPtr("goals")},
 		},
 	}
-	if got := cm.Score(); got != 18 {
-		t.Errorf("Score() = %d, want 18", got)
-	}
+	assert.Equal(t, 18, cm.Score())
 }
 
 func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
@@ -198,9 +194,7 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.cm.Score())
 		})
 	}
 }

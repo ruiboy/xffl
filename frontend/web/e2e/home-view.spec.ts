@@ -6,7 +6,7 @@ test.describe('AFL Home view', () => {
   })
 
   test('displays season name in heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('AFL 2025')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('AFL 2026')
   })
 
   test('displays ladder', async ({ page }) => {
@@ -22,12 +22,12 @@ test.describe('AFL Home view', () => {
     const roundNav = page.locator('main nav')
     await expect(roundNav).toBeVisible()
     await expect(roundNav.getByTitle('Ladder')).toBeVisible()
-    await expect(roundNav.getByRole('link', { name: '13', exact: true })).toBeVisible()
+    await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
   test('round circle navigates to round page', async ({ page }) => {
-    await page.locator('main nav').getByRole('link', { name: '13', exact: true }).click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 13')
+    await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
   })
 
   test('navbar has FFL and AFL links', async ({ page }) => {

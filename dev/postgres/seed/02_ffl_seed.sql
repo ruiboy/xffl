@@ -13,207 +13,140 @@ DELETE FROM ffl.season;
 DELETE FROM ffl.player;
 
 -- League (unique on name)
-INSERT INTO ffl.league (name) VALUES ('Premier Fantasy Football League')
+INSERT INTO ffl.league (name) VALUES ('FFL')
 ON CONFLICT (name) DO NOTHING;
 
 -- Clubs (unique on name)
 INSERT INTO ffl.club (name) VALUES
     ('Ruiboys'),
-    ('The Howling Cows')
+    ('The Howling Cows'),
+    ('Slashers'),
+    ('Cheetahs')
 ON CONFLICT (name) DO NOTHING;
 
 -- Season
 INSERT INTO ffl.season (name, league_id) VALUES
-    ('2024 Season', (SELECT id FROM ffl.league WHERE name = 'Premier Fantasy Football League'));
-
--- Round
-INSERT INTO ffl.round (name, season_id) VALUES
-    ('Round 1', (SELECT id FROM ffl.season WHERE name = '2024 Season'));
+    ('FFL 2026', (SELECT id FROM ffl.league WHERE name = 'FFL'));
 
 -- Club seasons
 INSERT INTO ffl.club_season (club_id, season_id) VALUES
-    ((SELECT id FROM ffl.club WHERE name = 'Ruiboys'), (SELECT id FROM ffl.season WHERE name = '2024 Season')),
-    ((SELECT id FROM ffl.club WHERE name = 'The Howling Cows'), (SELECT id FROM ffl.season WHERE name = '2024 Season'));
+    ((SELECT id FROM ffl.club WHERE name = 'Ruiboys'),        (SELECT id FROM ffl.season WHERE name = 'FFL 2026')),
+    ((SELECT id FROM ffl.club WHERE name = 'The Howling Cows'), (SELECT id FROM ffl.season WHERE name = 'FFL 2026')),
+    ((SELECT id FROM ffl.club WHERE name = 'Slashers'),       (SELECT id FROM ffl.season WHERE name = 'FFL 2026')),
+    ((SELECT id FROM ffl.club WHERE name = 'Cheetahs'),       (SELECT id FROM ffl.season WHERE name = 'FFL 2026'));
 
--- Match (initially without club_match references)
-INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
-    ((SELECT id FROM ffl.round WHERE name = 'Round 1'),
-     'versus',
-     'MCG',
-     '2024-03-15 19:30:00+00');
+-- Players: Ruiboys use Adelaide players, The Howling Cows use Brisbane players
+INSERT INTO ffl.player (afl_player_id, drv_name)
+SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
--- Club match records
-INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, drv_premiership_points) VALUES
-    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1')),
-     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
-     85, 4),
-    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1')),
-     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
-     72, 0);
-
--- Update match with club_match references
-UPDATE ffl.match
-SET home_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
-    away_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
-    clubs = jsonb_build_object(
-        'home', jsonb_build_object('club_season_id', (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys')),
-        'away', jsonb_build_object('club_season_id', (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'))
-    ),
-    drv_result = 'Ruiboys defeated The Howling Cows 85-72'
-WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 1');
-
--- 30 players for Ruiboys (afl_player_id looked up by name, drv_name derived)
 INSERT INTO ffl.player (afl_player_id, drv_name)
 SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
-    'Marcus Bontempelli', 'Christian Petracca', 'Lachie Neale', 'Clayton Oliver',
-    'Max Gawn', 'Touk Miller', 'Jack Steele', 'Rory Laird', 'Tim English',
-    'Sam Walsh', 'Jack Macrae', 'Jeremy Cameron', 'Tom Mitchell', 'Darcy Parish',
-    'Josh Dunkley', 'Luke Ryan', 'Nick Daicos', 'Jordan Dawson', 'Jayden Short',
-    'Andrew Brayshaw', 'Bailey Smith', 'Zach Merrett', 'Jake Lloyd', 'Brodie Grundy',
-    'Jack Crisp', 'Hugh McCluggage', 'Caleb Serong', 'Errol Gulden', 'Connor Rozee',
-    'Isaac Heeney'
+    'Henry Smith', 'Hugh McCluggage'
 );
 
--- 10 players for The Howling Cows
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
-    'Dustin Martin', 'Patrick Cripps', 'Lance Franklin', 'Travis Boak', 'Nat Fyfe',
-    'Tom Hawkins', 'Elliot Yeo', 'Scott Pendlebury', 'Robbie Gray', 'Joel Selwood'
-);
+-- Round 1
+INSERT INTO ffl.round (name, season_id) VALUES
+    ('1', (SELECT id FROM ffl.season WHERE name = 'FFL 2026'));
 
--- Player season records — Ruiboys
+-- Player seasons — Ruiboys
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
-SELECT
-    p.id,
-    cs.id,
-    r.id
+SELECT p.id, cs.id, r.id
 FROM ffl.player p
 JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'Ruiboys')
-JOIN ffl.season s ON cs.season_id = s.id
-JOIN ffl.round r ON r.season_id = s.id
-WHERE s.name = '2024 Season' AND r.name = 'Round 1'
-  AND ap.name IN (
-    'Marcus Bontempelli', 'Christian Petracca', 'Lachie Neale', 'Clayton Oliver',
-    'Max Gawn', 'Touk Miller', 'Jack Steele', 'Rory Laird', 'Tim English',
-    'Sam Walsh', 'Jack Macrae', 'Jeremy Cameron', 'Tom Mitchell', 'Darcy Parish',
-    'Josh Dunkley', 'Luke Ryan', 'Nick Daicos', 'Jordan Dawson', 'Jayden Short',
-    'Andrew Brayshaw', 'Bailey Smith', 'Zach Merrett', 'Jake Lloyd', 'Brodie Grundy',
-    'Jack Crisp', 'Hugh McCluggage', 'Caleb Serong', 'Errol Gulden', 'Connor Rozee',
-    'Isaac Heeney'
-  );
+JOIN ffl.round r ON r.season_id = cs.season_id
+WHERE r.name = '1' AND ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
--- Player season records — The Howling Cows
+-- Player seasons — The Howling Cows (Henry Smith + Hugh McCluggage assigned to positions;
+-- remaining 6 are squad-only with no player_match, available in the team builder)
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
-SELECT
-    p.id,
-    cs.id,
-    r.id
+SELECT p.id, cs.id, r.id
 FROM ffl.player p
 JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
-JOIN ffl.season s ON cs.season_id = s.id
-JOIN ffl.round r ON r.season_id = s.id
-WHERE s.name = '2024 Season' AND r.name = 'Round 1'
-  AND ap.name IN (
-    'Dustin Martin', 'Patrick Cripps', 'Lance Franklin', 'Travis Boak', 'Nat Fyfe',
-    'Tom Hawkins', 'Elliot Yeo', 'Scott Pendlebury', 'Robbie Gray', 'Joel Selwood'
-  );
+JOIN ffl.round r ON r.season_id = cs.season_id
+WHERE r.name = '1' AND ap.name IN (
+    'Henry Smith', 'Hugh McCluggage'
+);
 
--- Player match records for Ruiboys (7 starters + 2 bench)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
-SELECT
-    cm.id,
-    ps.id,
-    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
-        WHEN 1 THEN 'goals'
-        WHEN 2 THEN 'kicks'
-        WHEN 3 THEN 'handballs'
-        WHEN 4 THEN 'marks'
-        WHEN 5 THEN 'tackles'
-        WHEN 6 THEN 'hitouts'
-        WHEN 7 THEN 'star'
-    END,
-    'played',
-    FLOOR(RANDOM() * 30 + 5)::INTEGER
-FROM ffl.player_season ps
-JOIN ffl.club_season cs ON ps.club_season_id = cs.id
-JOIN ffl.club_match cm ON cm.club_season_id = cs.id
-JOIN ffl.club c ON cs.club_id = c.id
-WHERE c.name = 'Ruiboys'
-ORDER BY ps.id
-LIMIT 7;
+-- Rounds 2–23 fixture (DO block for compactness)
+DO $$
+DECLARE
+    v_season_id  INTEGER;
+    v_match_id   INTEGER;
+    v_home_cm_id INTEGER;
+    v_away_cm_id INTEGER;
+    r            RECORD;
+BEGIN
+    SELECT id INTO v_season_id FROM ffl.season WHERE name = 'FFL 2026';
 
--- Bench players for Ruiboys
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
-SELECT
-    cm.id,
-    ps.id,
-    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
-        WHEN 1 THEN 'goals'
-        WHEN 2 THEN 'kicks'
-    END,
-    'played',
-    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
-        WHEN 1 THEN 'goals,kicks'
-        WHEN 2 THEN NULL
-    END,
-    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
-        WHEN 1 THEN NULL
-        WHEN 2 THEN 'kicks'
-    END,
-    FLOOR(RANDOM() * 20 + 1)::INTEGER
-FROM ffl.player_season ps
-JOIN ffl.club_season cs ON ps.club_season_id = cs.id
-JOIN ffl.club_match cm ON cm.club_season_id = cs.id
-JOIN ffl.club c ON cs.club_id = c.id
-WHERE c.name = 'Ruiboys'
-ORDER BY ps.id
-OFFSET 7 LIMIT 2;
+    -- Insert rounds 1–23 in order (19 = SUPERBYE, 23 = no matches yet)
+    INSERT INTO ffl.round (name, season_id)
+    SELECT n::text, v_season_id
+    FROM generate_series(2, 23) AS n;
 
--- Player match records for The Howling Cows (7 starters)
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
-SELECT
-    cm.id,
-    ps.id,
-    CASE ROW_NUMBER() OVER (ORDER BY ps.id)
-        WHEN 1 THEN 'goals'
-        WHEN 2 THEN 'kicks'
-        WHEN 3 THEN 'handballs'
-        WHEN 4 THEN 'marks'
-        WHEN 5 THEN 'tackles'
-        WHEN 6 THEN 'hitouts'
-        WHEN 7 THEN 'star'
-    END,
-    'played',
-    FLOOR(RANDOM() * 30 + 5)::INTEGER
-FROM ffl.player_season ps
-JOIN ffl.club_season cs ON ps.club_season_id = cs.id
-JOIN ffl.club_match cm ON cm.club_season_id = cs.id
-JOIN ffl.club c ON cs.club_id = c.id
-WHERE c.name = 'The Howling Cows'
-ORDER BY ps.id
-LIMIT 7;
+    -- Insert all matches (rounds 19 and 23 have none)
+    FOR r IN
+        SELECT * FROM (VALUES
+            ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('3',  '2026-03-26 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('3',  '2026-03-26 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('4',  '2026-04-02 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('4',  '2026-04-02 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('5',  '2026-04-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('5',  '2026-04-09 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('6',  '2026-04-16 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('6',  '2026-04-16 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
+            ('7',  '2026-04-23 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
+            ('7',  '2026-04-23 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
+            ('8',  '2026-04-30 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('8',  '2026-04-30 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('9',  '2026-05-07 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('9',  '2026-05-07 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('10', '2026-05-14 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('10', '2026-05-14 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('11', '2026-05-21 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('11', '2026-05-21 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('12', '2026-05-28 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('12', '2026-05-28 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
+            ('13', '2026-06-04 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
+            ('13', '2026-06-04 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
+            ('14', '2026-06-11 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('14', '2026-06-11 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('15', '2026-06-18 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('15', '2026-06-18 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('16', '2026-06-25 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('16', '2026-06-25 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('17', '2026-07-02 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('17', '2026-07-02 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('18', '2026-07-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('18', '2026-07-09 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('20', '2026-07-23 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('20', '2026-07-23 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('21', '2026-07-30 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('21', '2026-07-30 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('22', '2026-08-06 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('22', '2026-08-06 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers')
+        ) AS t(round_name, start_dt, venue, home_club, away_club)
+    LOOP
+        INSERT INTO ffl.match (round_id, match_style, venue, start_dt)
+        VALUES (
+            (SELECT id FROM ffl.round WHERE name = r.round_name AND season_id = v_season_id),
+            'versus', r.venue, r.start_dt
+        )
+        RETURNING id INTO v_match_id;
 
--- Update club_season statistics
-UPDATE ffl.club_season
-SET drv_played = 1,
-    drv_won = 1,
-    drv_lost = 0,
-    drv_drawn = 0,
-    drv_for = 85,
-    drv_against = 72,
-    drv_premiership_points = 4
-WHERE id IN (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys');
+        INSERT INTO ffl.club_match (match_id, club_season_id)
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = r.home_club AND cs.season_id = v_season_id))
+        RETURNING id INTO v_home_cm_id;
 
-UPDATE ffl.club_season
-SET drv_played = 1,
-    drv_won = 0,
-    drv_lost = 1,
-    drv_drawn = 0,
-    drv_for = 72,
-    drv_against = 85,
-    drv_premiership_points = 0
-WHERE id IN (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows');
+        INSERT INTO ffl.club_match (match_id, club_season_id)
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = r.away_club AND cs.season_id = v_season_id))
+        RETURNING id INTO v_away_cm_id;
+
+        UPDATE ffl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id WHERE id = v_match_id;
+    END LOOP;
+END $$;
 
 COMMIT;
