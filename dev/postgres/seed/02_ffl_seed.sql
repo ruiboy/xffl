@@ -36,7 +36,10 @@ INSERT INTO ffl.player (afl_player_id, drv_name)
 SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
 INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN ('Henry Smith', 'Hugh McCluggage');
+SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
+    'Henry Smith', 'Hugh McCluggage',
+    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+);
 
 -- Round 1
 INSERT INTO ffl.round (name, season_id) VALUES
@@ -51,14 +54,18 @@ JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'R
 JOIN ffl.round r ON r.season_id = cs.season_id
 WHERE r.name = 'Round 1' AND ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
--- Player seasons — The Howling Cows
+-- Player seasons — The Howling Cows (Henry Smith + Hugh McCluggage assigned to positions;
+-- remaining 6 are squad-only with no player_match, available in the team builder)
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
 SELECT p.id, cs.id, r.id
 FROM ffl.player p
 JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
 JOIN ffl.round r ON r.season_id = cs.season_id
-WHERE r.name = 'Round 1' AND ap.name IN ('Henry Smith', 'Hugh McCluggage');
+WHERE r.name = 'Round 1' AND ap.name IN (
+    'Henry Smith', 'Hugh McCluggage',
+    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+);
 
 -- Round 1 match
 INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
