@@ -97,15 +97,23 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Team Builder: club name heading, Manage/Done pattern (Done saves team)
 - [x] `FFLClubSeason.season` field added to GraphQL schema and resolver
 
-## Phase 9: FFL Team Composition Rules
+## Phase 9: FFL Team Composition Rules ✅
 
 **Goal:** Define and enforce rules for how an FFL team is structured each round
 
-- [ ] Clarify team composition rules (positions, required structure, bench/interchange constraints)
-- [ ] Domain logic + validation
-- [ ] Details TBD — will plan when we get here
+- [x] Clarify team composition rules (positions, required structure, bench/interchange constraints)
+- [x] Domain logic + validation (`ValidateTeam`, multi-starter `Score()` fix)
+- [x] Enforce validation in `SetTeam` command + GraphQL mutation
+- [x] Team Builder UI rebuilt with structured position layout + bench/interchange management
+- [x] Domain unit tests + GraphQL integration tests
 
-## Phase 10: FFL Event Integration
+## Phase 10: Test Stabilisation
+
+**Goal:** Refactor tests to be accurate, extensible, and grounded in minimal seed data
+
+- [ ] Details driven by interactive prompting each session
+
+## Phase 11: FFL Event Integration
 
 **Goal:** Wire up cross-service event flow between AFL and FFL
 
@@ -113,7 +121,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] FFL publishes `FFL.FantasyScoreCalculated`
 - [ ] Tests — integration (event flow end-to-end)
 
-## Phase 11: Search Service
+## Phase 12: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -124,14 +132,14 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 12: Search Frontend
+## Phase 13: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
 
-## Phase 13: CQRS Player Stats Read Model
+## Phase 14: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -139,7 +147,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 14: Deployment
+## Phase 15: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
