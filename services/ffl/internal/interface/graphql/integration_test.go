@@ -1037,3 +1037,147 @@ func TestSetFFLTeam_ReplacesStaleEntries(t *testing.T) {
 		assert.Equal(t, "kicks", found[0].position)
 	})
 }
+
+func TestSetFFLTeam_EmptyTeamClearsAll(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	psID := fmt.Sprintf("%d", ids.playerSeasonID)
+	cmID := fmt.Sprintf("%d", ids.homeClubMatchID)
+
+	// Set a one-player team first.
+	firstResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{
+		{playerSeasonID: psID, position: "goals"},
+	}))
+	require.Empty(t, firstResult.Errors)
+
+	// Now set an empty team.
+	emptyResult := execQuery(t, server, buildSetTeamMutation(cmID, []teamPlayer{}))
+	require.Empty(t, emptyResult.Errors)
+
+	// No player_match rows should remain for this club match.
+	ctx := context.Background()
+	var count int
+	require.NoError(t, pool.QueryRow(ctx,
+		"SELECT COUNT(*) FROM ffl.player_match WHERE club_match_id = $1",
+		ids.homeClubMatchID).Scan(&count))
+
+	t.Run("all player match entries are cleared after empty team submission", func(t *testing.T) {
+		assert.Equal(t, 0, count)
+	})
+}
+
+func TestAddFFLSquadPlayer(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	ctx := context.Background()
+
+	// Seed an AFL player not yet linked to any ffl.player.
+	var freshAFLID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Dustin Martin') RETURNING id").Scan(&freshAFLID))
+
+	aflIDStr := fmt.Sprintf("%d", freshAFLID)
+	clubSeasonID := fmt.Sprintf("%d", ids.homeClubSeaID)
+
+	t.Run("creates a new FFL player and adds them to the squad", func(t *testing.T) {
+		result := execQuery(t, server, `mutation {
+			addFFLSquadPlayer(input: {
+				aflPlayerId: "`+aflIDStr+`"
+				aflPlayerName: "Dustin Martin"
+				clubSeasonId: "`+clubSeasonID+`"
+			}) {
+				id
+				player { id name }
+				clubSeasonId
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AddFFLSquadPlayer struct {
+				ID     string `json:"id"`
+				Player struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"player"`
+				ClubSeasonID string `json:"clubSeasonId"`
+			} `json:"addFFLSquadPlayer"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+
+		assert.NotEmpty(t, data.AddFFLSquadPlayer.ID)
+		assert.Equal(t, "Dustin Martin", data.AddFFLSquadPlayer.Player.Name)
+		assert.Equal(t, clubSeasonID, data.AddFFLSquadPlayer.ClubSeasonID)
+	})
+
+	t.Run("reuses the existing FFL player when called again with the same AFL player ID", func(t *testing.T) {
+		result := execQuery(t, server, `mutation {
+			addFFLSquadPlayer(input: {
+				aflPlayerId: "`+aflIDStr+`"
+				aflPlayerName: "Dustin Martin"
+				clubSeasonId: "`+fmt.Sprintf("%d", ids.awayClubSeaID)+`"
+			}) {
+				id
+				player { id }
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		// Only one ffl.player row should exist for this AFL player ID.
+		var count int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT COUNT(*) FROM ffl.player WHERE afl_player_id = $1", freshAFLID).Scan(&count))
+		assert.Equal(t, 1, count)
+	})
+}
+
+func TestCalculateFFLFantasyScore_StarPosition(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Update the seeded player match to star position.
+	ctx := context.Background()
+	_, err := pool.Exec(ctx,
+		"UPDATE ffl.player_match SET position = 'star' WHERE id = $1",
+		ids.playerMatchID)
+	require.NoError(t, err)
+
+	pmID := fmt.Sprintf("%d", ids.playerMatchID)
+	result := execQuery(t, server, `mutation {
+		calculateFFLFantasyScore(input: {
+			playerMatchId: "`+pmID+`"
+			goals: 2
+			kicks: 10
+			handballs: 5
+			marks: 4
+			tackles: 3
+			hitouts: 0
+		}) {
+			score
+			position
+		}
+	}`)
+
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		CalculateFFLFantasyScore struct {
+			Score    int    `json:"score"`
+			Position string `json:"position"`
+		} `json:"calculateFFLFantasyScore"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	// star: 2*5 + 10*1 + 5*1 + 4*2 + 3*4 = 10+10+5+8+12 = 45
+	t.Run("star player score uses all stat multipliers", func(t *testing.T) {
+		assert.Equal(t, 45, data.CalculateFFLFantasyScore.Score)
+	})
+}
