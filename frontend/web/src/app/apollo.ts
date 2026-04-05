@@ -1,7 +1,9 @@
 import { ApolloClient, createHttpLink, InMemoryCache, ApolloLink } from '@apollo/client/core'
 
-const aflLink = createHttpLink({ uri: 'http://localhost:8090/afl/query' })
-const fflLink = createHttpLink({ uri: 'http://localhost:8090/ffl/query' })
+const gatewayUrl = import.meta.env.VITE_GATEWAY_URL ?? 'http://localhost:8090'
+
+const aflLink = createHttpLink({ uri: `${gatewayUrl}/afl/query` })
+const fflLink = createHttpLink({ uri: `${gatewayUrl}/ffl/query` })
 
 const FFL_OPERATIONS = new Set([
   'GetFFLTeamBuilder',
