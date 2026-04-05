@@ -1,3 +1,9 @@
+---
+name: write-tests
+description: Write Go tests following project conventions (testify, testcontainers, expressive t.Run names)
+disable-model-invocation: true
+---
+
 Read `ai/architecture/testing.md` first. Then write tests for the code the user specifies.
 
 Steps:
