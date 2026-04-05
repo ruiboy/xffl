@@ -133,4 +133,76 @@ func TestClubMatch_Score_SubTakesPriorityOverInterchange(t *testing.T) {
 	}
 }
 
+func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
+	tests := []struct {
+		name string
+		cm   ClubMatch
+		want int
+	}{
+		{
+			name: "3 goal kickers each score independently",
+			cm: ClubMatch{
+				PlayerMatches: []PlayerMatch{
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 10},
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 15},
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 20},
+				},
+			},
+			want: 45,
+		},
+		{
+			name: "bench subs for one DNP slot, other goal kicker keeps scoring",
+			cm: ClubMatch{
+				PlayerMatches: []PlayerMatch{
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusPlayed), Score: 20},
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusDNP), Score: 0},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 12, BackupPositions: strPtr("goals")},
+				},
+			},
+			want: 32, // 20 (starter) + 12 (sub for DNP)
+		},
+		{
+			name: "bench only subs for one slot even if multiple DNP",
+			cm: ClubMatch{
+				PlayerMatches: []PlayerMatch{
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusDNP), Score: 0},
+					{Position: pos(PositionGoals), Status: stat(PlayerMatchStatusDNP), Score: 0},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 12, BackupPositions: strPtr("goals")},
+				},
+			},
+			want: 12, // only one bench player, fills first DNP slot; second DNP remains 0
+		},
+		{
+			name: "interchange picks best gain across multiple slots",
+			cm: ClubMatch{
+				PlayerMatches: []PlayerMatch{
+					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 5},
+					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 20},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 15, InterchangePosition: strPtr("kicks")},
+				},
+			},
+			want: 35, // bench (15) replaces the 5-score slot; 20-score slot unaffected
+		},
+		{
+			name: "interchange does not apply when bench does not outscore any slot",
+			cm: ClubMatch{
+				PlayerMatches: []PlayerMatch{
+					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 20},
+					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 25},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 15, InterchangePosition: strPtr("kicks")},
+				},
+			},
+			want: 45, // bench (15) beats neither starter
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cm.Score(); got != tt.want {
+				t.Errorf("Score() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
 func strPtr(s string) *string { return &s }

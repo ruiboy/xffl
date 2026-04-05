@@ -101,7 +101,14 @@ const { result: clubsResult } = useQuery(
   () => ({ enabled: isFfl.value && !!currentSeasonId.value })
 )
 
-const clubs = computed(() => clubsResult.value?.fflSeason?.ladder ?? [])
+const rawClubs = computed(() => clubsResult.value?.fflSeason?.ladder ?? [])
+
+// Persist the last non-empty clubs list so the ClubSelector doesn't
+// disappear during transient cache re-evaluations after mutations.
+const clubs = ref<typeof rawClubs.value>([])
+watch(rawClubs, (list) => {
+  if (list.length > 0) clubs.value = list
+}, { immediate: true })
 
 // Auto-select first club if nothing stored
 watch(clubs, (list) => {

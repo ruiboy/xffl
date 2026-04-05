@@ -10,6 +10,10 @@ SELECT id, club_match_id, player_season_id,
 FROM ffl.player_match
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: DeletePlayerMatchesByClubMatchID :exec
+DELETE FROM ffl.player_match
+WHERE club_match_id = $1;
+
 -- name: UpsertPlayerMatch :one
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

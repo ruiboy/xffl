@@ -107,26 +107,26 @@ func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input C
 	return convertPlayerMatch(pm, player), nil
 }
 
-// SetFFLLineup is the resolver for the setFFLLineup field.
-func (r *mutationResolver) SetFFLLineup(ctx context.Context, input SetFFLLineupInput) ([]*FFLPlayerMatch, error) {
+// SetFFLTeam is the resolver for the setFFLTeam field.
+func (r *mutationResolver) SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error) {
 	clubMatchID, err := fromID(input.ClubMatchID)
 	if err != nil {
 		return nil, err
 	}
-	entries := make([]application.SetLineupEntry, len(input.Players))
+	entries := make([]application.SetTeamEntry, len(input.Players))
 	for i, p := range input.Players {
 		psID, err := fromID(p.PlayerSeasonID)
 		if err != nil {
 			return nil, err
 		}
-		entries[i] = application.SetLineupEntry{
+		entries[i] = application.SetTeamEntry{
 			PlayerSeasonID:      psID,
 			Position:            p.Position,
 			BackupPositions:     p.BackupPositions,
 			InterchangePosition: p.InterchangePosition,
 		}
 	}
-	pms, err := r.Commands.SetLineup(ctx, clubMatchID, entries)
+	pms, err := r.Commands.SetTeam(ctx, clubMatchID, entries)
 	if err != nil {
 		return nil, err
 	}

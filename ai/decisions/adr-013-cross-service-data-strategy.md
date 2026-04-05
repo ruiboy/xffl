@@ -19,7 +19,7 @@ In parallel, the long-term data model calls for a search index (Zinc → Elastic
 
 **Do not federate the graph. Use a CQRS read/write split instead.**
 
-- **GraphQL services are write-model APIs** — they handle commands (enter stats, build squads, set lineups) and serve structured domain data (seasons, rounds, matches, squads). They are not the authority for aggregated player stats at read time.
+- **GraphQL services are write-model APIs** — they handle commands (enter stats, build squads, set teams) and serve structured domain data (seasons, rounds, matches, squads). They are not the authority for aggregated player stats at read time.
 - **The search index is the read model for player stats** — averages, per-round history, rankings. The frontend queries the search index directly for this data, keyed by player/season IDs obtained from GraphQL.
 - **Client-side stitching between GraphQL and search is intentional** — this is the expected pattern in CQRS, not a workaround. The two sides of the split are deliberately separate.
 
@@ -29,7 +29,7 @@ Federation solves a problem this architecture doesn't have in the long run. The 
 
 The CQRS split is also a better fit for the domain:
 - Player stats are aggregated, denormalised, high-read — search index wins
-- Squad composition, lineups, match results are relational, transactional — GraphQL/PG wins
+- Squad composition, teams, match results are relational, transactional — GraphQL/PG wins
 - The boundary between the two is clean and stable
 
 ## Consequences

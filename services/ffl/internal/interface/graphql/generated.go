@@ -125,7 +125,7 @@ type ComplexityRoot struct {
 		CreateFFLPlayer           func(childComplexity int, input CreateFFLPlayerInput) int
 		DeleteFFLPlayer           func(childComplexity int, id string) int
 		RemoveFFLPlayerFromSeason func(childComplexity int, id string) int
-		SetFFLLineup              func(childComplexity int, input SetFFLLineupInput) int
+		SetFFLTeam              func(childComplexity int, input SetFFLTeamInput) int
 		UpdateFFLPlayer           func(childComplexity int, input UpdateFFLPlayerInput) int
 	}
 
@@ -171,7 +171,7 @@ type MutationResolver interface {
 	AddFFLPlayerToSeason(ctx context.Context, input AddFFLPlayerToSeasonInput) (*FFLPlayerSeason, error)
 	RemoveFFLPlayerFromSeason(ctx context.Context, id string) (bool, error)
 	CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error)
-	SetFFLLineup(ctx context.Context, input SetFFLLineupInput) ([]*FFLPlayerMatch, error)
+	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
 	AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error)
 }
 type QueryResolver interface {
@@ -574,17 +574,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["id"].(string)), true
-	case "Mutation.setFFLLineup":
-		if e.ComplexityRoot.Mutation.SetFFLLineup == nil {
+	case "Mutation.setFFLTeam":
+		if e.ComplexityRoot.Mutation.SetFFLTeam == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_setFFLLineup_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_setFFLTeam_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.SetFFLLineup(childComplexity, args["input"].(SetFFLLineupInput)), true
+		return e.ComplexityRoot.Mutation.SetFFLTeam(childComplexity, args["input"].(SetFFLTeamInput)), true
 	case "Mutation.updateFFLPlayer":
 		if e.ComplexityRoot.Mutation.UpdateFFLPlayer == nil {
 			break
@@ -691,9 +691,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAddFFLSquadPlayerInput,
 		ec.unmarshalInputCalculateFFLFantasyScoreInput,
 		ec.unmarshalInputCreateFFLPlayerInput,
-		ec.unmarshalInputFFLLineupPlayerInput,
+		ec.unmarshalInputFFLTeamPlayerInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
-		ec.unmarshalInputSetFFLLineupInput,
+		ec.unmarshalInputSetFFLTeamInput,
 		ec.unmarshalInputUpdateFFLPlayerInput,
 	)
 	first := true
@@ -782,7 +782,7 @@ var sources = []*ast.Source{
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
   removeFFLPlayerFromSeason(id: ID!): Boolean!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
-  setFFLLineup(input: SetFFLLineupInput!): [FFLPlayerMatch!]!
+  setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
   addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
 }
 
@@ -817,12 +817,12 @@ input CalculateFFLFantasyScoreInput {
   hitouts: Int!
 }
 
-input SetFFLLineupInput {
+input SetFFLTeamInput {
   clubMatchId: ID!
-  players: [FFLLineupPlayerInput!]!
+  players: [FFLTeamPlayerInput!]!
 }
 
-input FFLLineupPlayerInput {
+input FFLTeamPlayerInput {
   playerSeasonId: ID!
   position: String!
   backupPositions: String
@@ -1017,10 +1017,10 @@ func (ec *executionContext) field_Mutation_removeFFLPlayerFromSeason_args(ctx co
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_setFFLLineup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_setFFLTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetFFLLineupInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐSetFFLLineupInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetFFLTeamInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐSetFFLTeamInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3032,15 +3032,15 @@ func (ec *executionContext) fieldContext_Mutation_calculateFFLFantasyScore(ctx c
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_setFFLLineup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_setFFLTeam(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_setFFLLineup,
+		ec.fieldContext_Mutation_setFFLTeam,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().SetFFLLineup(ctx, fc.Args["input"].(SetFFLLineupInput))
+			return ec.Resolvers.Mutation().SetFFLTeam(ctx, fc.Args["input"].(SetFFLTeamInput))
 		},
 		nil,
 		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
@@ -3049,7 +3049,7 @@ func (ec *executionContext) _Mutation_setFFLLineup(ctx context.Context, field gr
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_setFFLLineup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3084,7 +3084,7 @@ func (ec *executionContext) fieldContext_Mutation_setFFLLineup(ctx context.Conte
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_setFFLLineup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_setFFLTeam_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5306,8 +5306,8 @@ func (ec *executionContext) unmarshalInputCreateFFLPlayerInput(ctx context.Conte
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputFFLLineupPlayerInput(ctx context.Context, obj any) (FFLLineupPlayerInput, error) {
-	var it FFLLineupPlayerInput
+func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context, obj any) (FFLTeamPlayerInput, error) {
+	var it FFLTeamPlayerInput
 	if obj == nil {
 		return it, nil
 	}
@@ -5387,8 +5387,8 @@ func (ec *executionContext) unmarshalInputFFLPlayerSeasonFilter(ctx context.Cont
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSetFFLLineupInput(ctx context.Context, obj any) (SetFFLLineupInput, error) {
-	var it SetFFLLineupInput
+func (ec *executionContext) unmarshalInputSetFFLTeamInput(ctx context.Context, obj any) (SetFFLTeamInput, error) {
+	var it SetFFLTeamInput
 	if obj == nil {
 		return it, nil
 	}
@@ -5414,7 +5414,7 @@ func (ec *executionContext) unmarshalInputSetFFLLineupInput(ctx context.Context,
 			it.ClubMatchID = data
 		case "players":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("players"))
-			data, err := ec.unmarshalNFFLLineupPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLLineupPlayerInputᚄ(ctx, v)
+			data, err := ec.unmarshalNFFLTeamPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6333,9 +6333,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "setFFLLineup":
+		case "setFFLTeam":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_setFFLLineup(ctx, field)
+				return ec._Mutation_setFFLTeam(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -7061,14 +7061,14 @@ func (ec *executionContext) marshalNFFLClubSeason2ᚖxfflᚋservicesᚋfflᚋint
 	return ec._FFLClubSeason(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNFFLLineupPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLLineupPlayerInputᚄ(ctx context.Context, v any) ([]*FFLLineupPlayerInput, error) {
+func (ec *executionContext) unmarshalNFFLTeamPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInputᚄ(ctx context.Context, v any) ([]*FFLTeamPlayerInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
 	var err error
-	res := make([]*FFLLineupPlayerInput, len(vSlice))
+	res := make([]*FFLTeamPlayerInput, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNFFLLineupPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLLineupPlayerInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNFFLTeamPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -7076,8 +7076,8 @@ func (ec *executionContext) unmarshalNFFLLineupPlayerInput2ᚕᚖxfflᚋservices
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNFFLLineupPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLLineupPlayerInput(ctx context.Context, v any) (*FFLLineupPlayerInput, error) {
-	res, err := ec.unmarshalInputFFLLineupPlayerInput(ctx, v)
+func (ec *executionContext) unmarshalNFFLTeamPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInput(ctx context.Context, v any) (*FFLTeamPlayerInput, error) {
+	res, err := ec.unmarshalInputFFLTeamPlayerInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -7329,8 +7329,8 @@ func (ec *executionContext) marshalNPageInfo2ᚖxfflᚋservicesᚋfflᚋinternal
 	return ec._PageInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNSetFFLLineupInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐSetFFLLineupInput(ctx context.Context, v any) (SetFFLLineupInput, error) {
-	res, err := ec.unmarshalInputSetFFLLineupInput(ctx, v)
+func (ec *executionContext) unmarshalNSetFFLTeamInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐSetFFLTeamInput(ctx context.Context, v any) (SetFFLTeamInput, error) {
+	res, err := ec.unmarshalInputSetFFLTeamInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

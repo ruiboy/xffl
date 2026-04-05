@@ -135,6 +135,15 @@ func newMockPlayerMatchRepo() *mockPlayerMatchRepo {
 	return &mockPlayerMatchRepo{matches: make(map[int]domain.PlayerMatch), nextID: 1}
 }
 
+func (r *mockPlayerMatchRepo) DeleteByClubMatchID(_ context.Context, clubMatchID int) error {
+	for id, pm := range r.matches {
+		if pm.ClubMatchID == clubMatchID {
+			delete(r.matches, id)
+		}
+	}
+	return nil
+}
+
 func (r *mockPlayerMatchRepo) FindByClubMatchID(_ context.Context, clubMatchID int) ([]domain.PlayerMatch, error) {
 	var out []domain.PlayerMatch
 	for _, pm := range r.matches {
@@ -396,6 +405,65 @@ func TestAddAFLPlayerToSquad_ReusesExistingPlayer(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("expected 1 player with AFL ID 42, got %d", count)
+	}
+}
+
+func TestSetTeam_ReplacesExistingEntries(t *testing.T) {
+	cmds, _, _, pmRepo, _ := setupCommands()
+	ctx := context.Background()
+
+	// First team: player season 1 at goals, player season 2 at kicks.
+	_, err := cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
+		{PlayerSeasonID: 1, Position: "goals"},
+		{PlayerSeasonID: 2, Position: "kicks"},
+	})
+	if err != nil {
+		t.Fatalf("SetTeam (first): %v", err)
+	}
+	if len(pmRepo.matches) != 2 {
+		t.Fatalf("expected 2 player matches after first team, got %d", len(pmRepo.matches))
+	}
+
+	// Second team: only player season 3 at marks.
+	_, err = cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
+		{PlayerSeasonID: 3, Position: "marks"},
+	})
+	if err != nil {
+		t.Fatalf("SetTeam (second): %v", err)
+	}
+
+	// Old entries must be gone; only the new one should exist.
+	if len(pmRepo.matches) != 1 {
+		t.Fatalf("expected 1 player match after replacement, got %d", len(pmRepo.matches))
+	}
+	for _, pm := range pmRepo.matches {
+		if pm.PlayerSeasonID != 3 {
+			t.Errorf("expected PlayerSeasonID 3, got %d", pm.PlayerSeasonID)
+		}
+		if pm.Position == nil || *pm.Position != domain.PositionMarks {
+			t.Errorf("expected position %q, got %v", domain.PositionMarks, pm.Position)
+		}
+	}
+}
+
+func TestSetTeam_EmptyTeamClearsAll(t *testing.T) {
+	cmds, _, _, pmRepo, _ := setupCommands()
+	ctx := context.Background()
+
+	_, err := cmds.SetTeam(ctx, 1, []application.SetTeamEntry{
+		{PlayerSeasonID: 1, Position: "goals"},
+	})
+	if err != nil {
+		t.Fatalf("SetTeam (seed): %v", err)
+	}
+
+	_, err = cmds.SetTeam(ctx, 1, []application.SetTeamEntry{})
+	if err != nil {
+		t.Fatalf("SetTeam (empty): %v", err)
+	}
+
+	if len(pmRepo.matches) != 0 {
+		t.Errorf("expected 0 player matches after empty team, got %d", len(pmRepo.matches))
 	}
 }
 
