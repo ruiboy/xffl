@@ -1,6 +1,11 @@
 package domain
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestMatch_Winner(t *testing.T) {
 	tests := []struct {
@@ -10,7 +15,7 @@ func TestMatch_Winner(t *testing.T) {
 		wantDraw bool
 	}{
 		{
-			"home wins",
+			"home team wins when they have a higher score",
 			Match{
 				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 3}}},
 				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 1}}},
@@ -18,7 +23,7 @@ func TestMatch_Winner(t *testing.T) {
 			true, false,
 		},
 		{
-			"away wins",
+			"away team wins when they have a higher score",
 			Match{
 				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 1}}},
 				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 3}}},
@@ -26,7 +31,7 @@ func TestMatch_Winner(t *testing.T) {
 			false, false,
 		},
 		{
-			"draw",
+			"match is a draw when both teams score equally",
 			Match{
 				Home: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 2}}},
 				Away: ClubMatch{PlayerMatches: []PlayerMatch{{Goals: 2}}},
@@ -34,7 +39,7 @@ func TestMatch_Winner(t *testing.T) {
 			false, true,
 		},
 		{
-			"no players is a draw",
+			"empty match is a draw",
 			Match{},
 			false, true,
 		},
@@ -43,19 +48,14 @@ func TestMatch_Winner(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			winner := tt.match.Winner()
 			if tt.wantDraw {
-				if winner != nil {
-					t.Error("expected draw (nil winner)")
-				}
+				assert.Nil(t, winner)
 				return
 			}
-			if winner == nil {
-				t.Fatal("expected a winner, got nil")
-			}
-			if tt.wantHome && winner != &tt.match.Home {
-				t.Error("expected home to win")
-			}
-			if !tt.wantHome && winner != &tt.match.Away {
-				t.Error("expected away to win")
+			require.NotNil(t, winner)
+			if tt.wantHome {
+				assert.Equal(t, &tt.match.Home, winner)
+			} else {
+				assert.Equal(t, &tt.match.Away, winner)
 			}
 		})
 	}

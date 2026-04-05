@@ -1,6 +1,10 @@
 package domain
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestPlayerMatch_Disposals(t *testing.T) {
 	tests := []struct {
@@ -9,17 +13,15 @@ func TestPlayerMatch_Disposals(t *testing.T) {
 		handballs int
 		want      int
 	}{
-		{"zero stats", 0, 0, 0},
-		{"kicks only", 10, 0, 10},
-		{"handballs only", 0, 7, 7},
-		{"mixed", 12, 8, 20},
+		{"disposals are zero with no kicks or handballs", 0, 0, 0},
+		{"kicks alone count as disposals", 10, 0, 10},
+		{"handballs alone count as disposals", 0, 7, 7},
+		{"kicks and handballs are summed into disposals", 12, 8, 20},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pm := PlayerMatch{Kicks: tt.kicks, Handballs: tt.handballs}
-			if got := pm.Disposals(); got != tt.want {
-				t.Errorf("Disposals() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, pm.Disposals())
 		})
 	}
 }
@@ -31,17 +33,15 @@ func TestPlayerMatch_Score(t *testing.T) {
 		behinds int
 		want    int
 	}{
-		{"zero", 0, 0, 0},
-		{"goals only", 3, 0, 18},
-		{"behinds only", 0, 5, 5},
-		{"mixed", 2, 3, 15},
+		{"score is zero with no goals or behinds", 0, 0, 0},
+		{"goals score six points each", 3, 0, 18},
+		{"behinds score one point each", 0, 5, 5},
+		{"goals and behinds are combined into total score", 2, 3, 15},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pm := PlayerMatch{Goals: tt.goals, Behinds: tt.behinds}
-			if got := pm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, pm.Score())
 		})
 	}
 }

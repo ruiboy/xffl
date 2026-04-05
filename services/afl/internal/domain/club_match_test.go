@@ -1,6 +1,10 @@
 package domain
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestClubMatch_Score(t *testing.T) {
 	tests := []struct {
@@ -8,24 +12,22 @@ func TestClubMatch_Score(t *testing.T) {
 		cm   ClubMatch
 		want int
 	}{
-		{"no players no rushed", ClubMatch{}, 0},
-		{"rushed behinds only", ClubMatch{RushedBehinds: 3}, 3},
-		{"single player", ClubMatch{
+		{"empty match scores zero", ClubMatch{}, 0},
+		{"rushed behinds contribute to score without players", ClubMatch{RushedBehinds: 3}, 3},
+		{"single player goals and behinds are summed correctly", ClubMatch{
 			PlayerMatches: []PlayerMatch{{Goals: 2, Behinds: 1}},
 		}, 13},
-		{"multiple players with rushed", ClubMatch{
+		{"multiple player scores and rushed behinds are all included", ClubMatch{
 			RushedBehinds: 4,
 			PlayerMatches: []PlayerMatch{
-				{Goals: 3, Behinds: 2}, // 20
-				{Goals: 1, Behinds: 0}, // 6
+				{Goals: 3, Behinds: 2},
+				{Goals: 1, Behinds: 0},
 			},
 		}, 30},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cm.Score(); got != tt.want {
-				t.Errorf("Score() = %d, want %d", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.cm.Score())
 		})
 	}
 }
