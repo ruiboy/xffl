@@ -87,12 +87,9 @@ test-e2e:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Assemble test-init from canonical sources (single source of truth)
-    mkdir -p dev/postgres/test-init
-    cp dev/postgres/init/01_afl_schema.sql dev/postgres/test-init/01_afl_schema.sql
-    cp dev/postgres/init/02_ffl_schema.sql dev/postgres/test-init/02_ffl_schema.sql
-    cp dev/postgres/seed/01_afl_seed.sql   dev/postgres/test-init/03_afl_seed.sql
-    cp dev/postgres/seed/02_ffl_seed.sql   dev/postgres/test-init/04_ffl_seed.sql
+    # Copy schemas into test-e2e (seed files live there permanently)
+    cp dev/postgres/init/01_afl_schema.sql dev/postgres/test-e2e/01_afl_schema.sql
+    cp dev/postgres/init/02_ffl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
 
     docker compose -f dev/docker-compose.test.yml up -d
     echo "Waiting for test Postgres on :5433..."
@@ -102,6 +99,6 @@ test-e2e:
     cd frontend/web && npx playwright test; STATUS=$?
 
     docker compose -f dev/docker-compose.test.yml down
-    rm -rf dev/postgres/test-init
+    rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
     exit $STATUS
 

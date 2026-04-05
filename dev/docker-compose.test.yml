@@ -9,7 +9,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./postgres/test-init:/docker-entrypoint-initdb.d
+      - ./postgres/test-e2e:/docker-entrypoint-initdb.d
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
