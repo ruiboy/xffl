@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test'
 
 // Helpers
 async function goToTeamBuilder(page: import('@playwright/test').Page) {
-  await page.goto('/')
-  await page.getByRole('link', { name: 'Team Builder' }).click()
+  await page.goto('/ffl')
+  await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
+  await page.getByRole('link', { name: 'Build Team →' }).click()
   await page.waitForURL(/\/ffl\/.*\/team-builder/)
 }
 
@@ -310,6 +311,32 @@ test.describe('FFL Team Builder', () => {
       // IC should still be checked after reload
       const starICAfter = benchSection(page).locator('.rounded-lg').first().locator('input[type="checkbox"]')
       await expect(starICAfter).toBeChecked()
+    })
+  })
+
+  // ── Header ────────────────────────────────────────────────────────────────
+
+  test.describe('header', () => {
+    test.beforeEach(async ({ page }) => {
+      await goToTeamBuilder(page)
+    })
+
+    test('shows round name in heading', async ({ page }) => {
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
+    })
+
+    test('shows club name in heading', async ({ page }) => {
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
+    })
+  })
+
+  // ── Manage layout ─────────────────────────────────────────────────────────
+
+  test.describe('manage layout', () => {
+    test('squad panel visible alongside team in manage mode', async ({ page }) => {
+      await goToTeamBuilder(page)
+      await page.getByRole('button', { name: 'Manage' }).click()
+      await expect(page.getByRole('heading', { name: /Squad \(/ })).toBeVisible()
     })
   })
 })

@@ -49,4 +49,17 @@ test.describe('FFL Squad', () => {
     await page.getByPlaceholder('Search AFL players by name…').fill('Jordan')
     await expect(page.getByText('Jordan Dawson')).toBeVisible()
   })
+
+  test('switching club exits manage mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+
+    // Open club selector and pick a different club
+    await page.getByRole('button', { name: /The Howling Cows|Ruiboys/ }).click()
+    const options = page.locator('[class*="rounded-lg"][class*="border-border"]').filter({ hasText: /Ruiboys|The Howling Cows/ })
+    await options.first().click()
+
+    await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
+  })
 })

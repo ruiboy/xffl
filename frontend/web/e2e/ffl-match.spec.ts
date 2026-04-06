@@ -39,4 +39,14 @@ test.describe('FFL Match', () => {
   test('displays total row', async ({ page }) => {
     await expect(page.getByText('Total').first()).toBeVisible()
   })
+
+  test('shows Build Team link in selected club column only', async ({ page }) => {
+    // Selected club is The Howling Cows — link should appear once (in their column)
+    await expect(page.getByRole('link', { name: 'Build Team →' })).toHaveCount(1)
+  })
+
+  test('Build Team link navigates to team builder', async ({ page }) => {
+    await page.getByRole('link', { name: 'Build Team →' }).click()
+    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+  })
 })

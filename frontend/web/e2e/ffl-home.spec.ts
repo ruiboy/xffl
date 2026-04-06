@@ -44,4 +44,8 @@ test.describe('FFL Home', () => {
   test('navbar has settings cog', async ({ page }) => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
+
+  test('navbar does not have a Team Builder link', async ({ page }) => {
+    await expect(page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' })).not.toBeVisible()
+  })
 })
