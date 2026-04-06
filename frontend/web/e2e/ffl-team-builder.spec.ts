@@ -175,22 +175,18 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('save blocked when bench player has no position assigned', async ({ page }) => {
-      // Remove starter to mark dirty, then add a bench player with no positions
-      await page.getByRole('button', { name: 'Remove' }).first().click()
       await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeDisabled()
       await expect(page.getByText('Each bench player must have a position assigned')).toBeVisible()
     })
 
     test('save unblocked when bench player has valid star position', async ({ page }) => {
-      await page.getByRole('button', { name: 'Remove' }).first().click()
       await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
       await page.getByLabel('Position 1').selectOption('star')
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeEnabled()
     })
 
     test('save blocked when two bench players set but no interchange chosen', async ({ page }) => {
-      await page.getByRole('button', { name: 'Remove' }).first().click()
       const panel = squadPanel(page)
       await panel.getByRole('button', { name: 'B' }).nth(0).click()
       await panel.getByRole('button', { name: 'B' }).nth(0).click()
