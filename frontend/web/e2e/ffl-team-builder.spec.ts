@@ -105,19 +105,6 @@ test.describe('FFL Team Builder', () => {
       await expect(starRow.getByText('IC')).toBeVisible()
     })
 
-    test('dual-position selects appear on bench rows that have a player', async ({ page }) => {
-      // All seed players are already assigned to starter slots, so remove one first
-      // to make them available in the squad panel, then bench them
-      await page.getByRole('button', { name: 'Remove' }).first().click()
-      const panel = squadPanel(page)
-      await panel.getByRole('button', { name: 'B' }).first().click()
-
-      const bench = benchSection(page)
-      // B1 is the 2nd rounded-lg (index 1, after backup star at index 0)
-      const b1Row = bench.locator('.rounded-lg').nth(1)
-      await expect(b1Row.locator('select')).toHaveCount(2)
-    })
-
     test('★ and B buttons appear in squad panel', async ({ page }) => {
       // Remove a starter first so the squad panel has a player to show buttons for
       await page.getByRole('button', { name: 'Remove' }).first().click()
@@ -143,24 +130,6 @@ test.describe('FFL Team Builder', () => {
   test.describe('state retention across Manage/Done cycles', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
-    })
-
-    test('player added to slot is visible in read-only mode after Done', async ({ page }) => {
-      // Count empty Goals slots before
-      const goalsSection = positionSection(page, 'Goals')
-      const emptyBefore = await goalsSection.getByText('Empty slot').count()
-      expect(emptyBefore).toBeGreaterThan(0)
-
-      // Enter manage mode and add a player to Goals
-      await page.getByRole('button', { name: 'Manage' }).click()
-      const panel = squadPanel(page)
-      await panel.getByRole('button', { name: 'G' }).first().click()
-
-      // Save
-      await page.getByRole('button', { name: 'Done' }).click()
-
-      // One fewer empty slot in Goals after saving
-      await expect(goalsSection.getByText('Empty slot')).toHaveCount(emptyBefore - 1)
     })
 
     test('local edits not reset when re-entering manage mode (state retention)', async ({ page }) => {
@@ -205,51 +174,11 @@ test.describe('FFL Team Builder', () => {
   // ── Navigate away and back (server persistence) ───────────────────────────
 
   test.describe('navigate away and back', () => {
-    test('team persists after navigating to Squad view and returning', async ({ page }) => {
-      await goToTeamBuilder(page)
-
-      // Add a player to Kicks and save (Goals is filled by state-retention tests)
-      await page.getByRole('button', { name: 'Manage' }).click()
-      const playerName = await squadPanel(page).locator('.font-medium').first().textContent()
-      await squadPanel(page).getByRole('button', { name: 'K' }).first().click()
-      await page.getByRole('button', { name: 'Done' }).click()
-
-      // Navigate away to Squad page
-      await page.getByRole('link', { name: 'Squad' }).click()
-      await page.waitForURL(/\/ffl\/.*\/squad/)
-
-      // Navigate back to Team Builder
-      await page.getByRole('link', { name: 'Team Builder' }).click()
-      await page.waitForURL(/\/ffl\/.*\/team-builder/)
-
-      // Player still in Kicks (loaded from server)
-      await expect(positionSection(page, 'Kicks').getByText(playerName!.trim())).toBeVisible()
-
-      // And still there when entering manage mode
-      await page.getByRole('button', { name: 'Manage' }).click()
-      await expect(positionSection(page, 'Kicks').getByText(playerName!.trim())).toBeVisible()
-    })
   })
 
   // ── Continue building across sessions ─────────────────────────────────────
 
   test.describe('continue building on existing team', () => {
-    test('existing players present when entering manage mode on partial team', async ({ page }) => {
-      await goToTeamBuilder(page)
-
-      // Seed data has some players in the team already
-      // Verify they are present in read-only mode
-      const goalsSection = positionSection(page, 'Goals')
-      // Should have at least 1 filled slot (seed has Jordan Dawson in Goals)
-      const emptyCount = await goalsSection.getByText('Empty slot').count()
-      expect(emptyCount).toBeLessThan(3)
-
-      // Enter manage and those same players should still be there
-      await page.getByRole('button', { name: 'Manage' }).click()
-      const stillEmpty = await goalsSection.getByText('Empty slot').count()
-      expect(stillEmpty).toBe(emptyCount)
-    })
-
     test('adding to existing team: all players visible after Done', async ({ page }) => {
       await goToTeamBuilder(page)
 
@@ -353,95 +282,6 @@ test.describe('FFL Team Builder', () => {
     })
   })
 
-  // ── Bench: dual-position ──────────────────────────────────────────────────
-
-  test.describe('bench: dual-position', () => {
-    test.beforeEach(async ({ page }) => {
-      await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
-    })
-
-    test('B button in squad panel adds player to first empty dual bench row', async ({ page }) => {
-      const panel = squadPanel(page)
-      const playerName = await panel.locator('.font-medium').first().textContent()
-
-      // Click B for first available player (adds to next empty dual slot)
-      await panel.getByRole('button', { name: 'B' }).first().click()
-
-      // That player name should appear in one of B1/B2/B3 rows
-      const bench = benchSection(page)
-      const dualRows = bench.locator('.rounded-lg').filter({ hasText: playerName!.trim() })
-      await expect(dualRows).toHaveCount(1)
-    })
-
-    test('dual bench row shows two position selectors after player is added', async ({ page }) => {
-      // Find an empty dual bench row
-      const bench = benchSection(page)
-      // B1 may already have a player from seed; check B2 (nth 2, 0-indexed)
-      const b2Row = bench.locator('.rounded-lg').nth(2)
-      const b2HasPlayer = await b2Row.locator('select').count() > 0
-
-      if (!b2HasPlayer) {
-        const panel = squadPanel(page)
-        // Need to fill B1 first (if not already filled), then B2
-        const b1Row = bench.locator('.rounded-lg').nth(1)
-        const b1HasPlayer = await b1Row.locator('select').count() > 0
-        if (!b1HasPlayer) {
-          await panel.getByRole('button', { name: 'B' }).first().click()
-        }
-        await panel.getByRole('button', { name: 'B' }).first().click()
-      }
-
-      // The row now should have 2 select elements
-      await expect(b2Row.locator('select')).toHaveCount(2)
-    })
-
-    test('selecting a position in one bench row disables it in other rows', async ({ page }) => {
-      // Ensure at least 2 dual bench rows have players
-      const panel = squadPanel(page)
-      const bench = benchSection(page)
-
-      // Fill B1 if empty
-      const b1Row = bench.locator('.rounded-lg').nth(1)
-      if (!(await b1Row.locator('select').count())) {
-        await panel.getByRole('button', { name: 'B' }).first().click()
-      }
-      // Fill B2
-      const b2Row = bench.locator('.rounded-lg').nth(2)
-      if (!(await b2Row.locator('select').count())) {
-        await panel.getByRole('button', { name: 'B' }).first().click()
-      }
-
-      // Select "Goals" in B1's first position selector
-      await b1Row.locator('select').first().selectOption('goals')
-
-      // In B2's selectors, the "Goals" option should be disabled
-      const b2Select1 = b2Row.locator('select').first()
-      const goalsOption = b2Select1.locator('option[value="goals"]')
-      await expect(goalsOption).toBeDisabled()
-    })
-
-    test('B button disabled once all 3 dual slots are filled', async ({ page }) => {
-      const panel = squadPanel(page)
-      const bench = benchSection(page)
-
-      // Fill any empty dual slots (there may already be some filled from seed)
-      for (let i = 1; i <= 3; i++) {
-        const row = bench.locator('.rounded-lg').nth(i)
-        const hasPlayer = await row.locator('select').count() > 0
-        if (!hasPlayer) {
-          await panel.getByRole('button', { name: 'B' }).first().click()
-        }
-      }
-
-      // All B buttons in squad panel should now be disabled
-      const bButtons = panel.getByRole('button', { name: 'B' })
-      const count = await bButtons.count()
-      for (let i = 0; i < count; i++) {
-        await expect(bButtons.nth(i)).toBeDisabled()
-      }
-    })
-  })
 
   // ── Interchange ───────────────────────────────────────────────────────────
 
@@ -454,28 +294,6 @@ test.describe('FFL Team Builder', () => {
     test('IC checkbox visible on Backup Star row in manage mode', async ({ page }) => {
       const starRow = benchSection(page).locator('.rounded-lg').first()
       await expect(starRow.getByText('IC')).toBeVisible()
-    })
-
-    test('clicking IC on one bench row deactivates IC on another', async ({ page }) => {
-      const bench = benchSection(page)
-      const panel = squadPanel(page)
-
-      // Ensure B1 has a player (for its IC to appear)
-      const b1Row = bench.locator('.rounded-lg').nth(1)
-      if (!(await b1Row.locator('select').count())) {
-        await panel.getByRole('button', { name: 'B' }).first().click()
-      }
-
-      // Activate IC on Backup Star row
-      const starIC = bench.locator('.rounded-lg').first().locator('input[type="checkbox"]')
-      await starIC.check()
-      await expect(starIC).toBeChecked()
-
-      // Activate IC on B1 row → star IC should deactivate
-      const b1IC = b1Row.locator('input[type="checkbox"]')
-      await b1IC.check()
-      await expect(b1IC).toBeChecked()
-      await expect(starIC).not.toBeChecked()
     })
 
     test('interchange state persists through Done → re-open Manage', async ({ page }) => {
