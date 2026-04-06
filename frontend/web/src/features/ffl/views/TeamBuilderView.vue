@@ -47,7 +47,7 @@
             <button
               @click="onSaveTeam"
               class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="submitting || !isDirty"
+              :disabled="submitting || !isDirty || !!benchValidationError"
             >
               {{ submitting ? 'Saving...' : 'Save Team' }}
             </button>
@@ -59,7 +59,8 @@
           >
             Manage
           </button>
-          <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+          <span v-if="benchValidationError" class="text-sm text-red-400">{{ benchValidationError }}</span>
+          <span v-else-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
         </div>
 
         <!-- Summary bar -->
@@ -126,119 +127,83 @@
             <div class="mb-6">
               <h3 class="text-sm font-semibold uppercase tracking-wider text-text-faint mb-2">Bench</h3>
 
-              <!-- Backup Star -->
-              <div class="mb-1">
+              <div v-for="(slot, index) in benchDualSlots" :key="index" class="mb-1">
                 <div
                   class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
-                  :class="benchStarSlot.player
-                    ? 'border-border bg-surface-raised'
-                    : 'border-dashed border-border-subtle bg-surface'"
+                  :class="[
+                    slot.player ? 'border-border bg-surface-raised' : 'border-dashed border-border-subtle bg-surface',
+                    recentlyClearedSlot === index ? '!border-orange-400' : ''
+                  ]"
                 >
+                  <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
-                    <span v-if="benchStarSlot.player" class="font-medium text-text-muted">{{ benchStarSlot.player.name }}</span>
-                    <span v-else class="text-text-faint text-sm">Backup Star</span>
-                  </div>
-                  <div v-if="managing" class="flex items-center gap-2 ml-2 shrink-0">
-                    <label class="flex items-center gap-1 text-xs text-text-faint cursor-pointer">
-                      <input
-                        type="checkbox"
-                        class="accent-active"
-                        :checked="interchangePosition === 'star'"
-                        :disabled="!benchStarSlot.player"
-                        @change="toggleInterchange('star')"
-                      />
-                      IC
-                    </label>
-                    <button
-                      v-if="benchStarSlot.player"
-                      aria-label="Remove"
-                      class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                      @click="benchStarSlot.player = null"
-                    >
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dual-position bench slots -->
-              <div
-                v-for="(slot, index) in benchDualSlots"
-                :key="index"
-                class="mb-1"
-              >
-                <div
-                  class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
-                  :class="slot.player
-                    ? 'border-border bg-surface-raised'
-                    : 'border-dashed border-border-subtle bg-surface'"
-                >
-                  <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <span class="text-xs text-text-faint shrink-0">B{{ index + 1 }}</span>
                     <span v-if="slot.player" class="font-medium text-text-muted">{{ slot.player.name }}</span>
-                    <span v-else class="text-text-faint text-sm">Empty bench slot</span>
-                    <!-- Dual-position selectors (manage mode only) -->
-                    <div v-if="slot.player && managing" class="flex items-center gap-1 ml-2">
+                    <span v-else class="text-text-faint text-sm">Empty slot</span>
+                  </div>
+                  <!-- Right: selectors + remove (manage) or read-only tags -->
+                  <div class="flex items-center gap-2 ml-4 shrink-0">
+                    <template v-if="slot.player && managing">
                       <select
                         class="text-xs rounded bg-control text-text px-1 py-0.5 border border-border"
                         :value="slot.positions[0] ?? ''"
                         @change="setBenchPosition(index, 0, ($event.target as HTMLSelectElement).value)"
-                        aria-label="Backup position 1"
+                        aria-label="Position 1"
                       >
-                        <option value="">— pos 1 —</option>
-                        <option
-                          v-for="pos in nonStarPositions"
-                          :key="pos.key"
-                          :value="pos.key"
-                          :disabled="isBenchPositionUsed(pos.key, index, 0)"
-                        >{{ pos.label }}</option>
+                        <option value=""></option>
+                        <option v-for="pos in positions" :key="pos.key" :value="pos.key">
+                          {{ pos.short }}{{ isBenchPositionUsed(pos.key, index, 0) ? ' ·' : '' }}
+                        </option>
                       </select>
                       <select
+                        v-if="slot.positions[0] !== 'star'"
                         class="text-xs rounded bg-control text-text px-1 py-0.5 border border-border"
                         :value="slot.positions[1] ?? ''"
                         @change="setBenchPosition(index, 1, ($event.target as HTMLSelectElement).value)"
-                        aria-label="Backup position 2"
+                        aria-label="Position 2"
                       >
-                        <option value="">— pos 2 —</option>
-                        <option
-                          v-for="pos in nonStarPositions"
-                          :key="pos.key"
-                          :value="pos.key"
-                          :disabled="isBenchPositionUsed(pos.key, index, 1)"
-                        >{{ pos.label }}</option>
+                        <option value=""></option>
+                        <option v-for="pos in nonStarPositions" :key="pos.key" :value="pos.key">
+                          {{ pos.short }}{{ isBenchPositionUsed(pos.key, index, 1) ? ' ·' : '' }}
+                        </option>
                       </select>
-                    </div>
-                    <!-- Read-only position display -->
-                    <div v-else-if="slot.player && (slot.positions[0] || slot.positions[1])" class="flex items-center gap-1 ml-2">
-                      <span v-if="slot.positions[0]" class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">{{ slot.positions[0] }}</span>
-                      <span v-if="slot.positions[1]" class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">{{ slot.positions[1] }}</span>
-                    </div>
-                  </div>
-                  <div v-if="managing" class="flex items-center gap-2 ml-2 shrink-0">
-                    <label v-if="slot.player" class="flex items-center gap-1 text-xs text-text-faint cursor-pointer">
-                      <input
-                        type="checkbox"
-                        class="accent-active"
-                        :checked="interchangePosition === benchDualInterchangeKey(index)"
-                        :disabled="!slot.positions[0] && !slot.positions[1]"
-                        @change="toggleInterchange(benchDualInterchangeKey(index))"
-                      />
-                      IC
-                    </label>
-                    <button
-                      v-if="slot.player"
-                      aria-label="Remove"
-                      class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                      @click="removeBenchDual(index)"
-                    >
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                      </svg>
-                    </button>
+                      <button
+                        aria-label="Remove"
+                        class="text-xs text-red-400 hover:text-red-300 transition-colors"
+                        @click="removeBenchDual(index)"
+                      >
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                          <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                        </svg>
+                      </button>
+                    </template>
+                    <template v-else-if="slot.player">
+                      <template v-if="slot.positions[0]">
+                        <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
+                          {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
+                        </span>
+                      </template>
+                      <template v-if="slot.positions[1]">
+                        <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
+                          {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
+                        </span>
+                      </template>
+                    </template>
                   </div>
                 </div>
+              </div>
+
+              <!-- Interchange -->
+              <div v-if="managing" class="mt-3 flex items-center gap-2 justify-end">
+                <span class="text-xs text-text-faint">Interchange</span>
+                <select
+                  class="text-xs rounded bg-control text-text px-1 py-0.5 border border-border"
+                  aria-label="Interchange"
+                  :value="interchangePosition ?? ''"
+                  @change="setInterchange(($event.target as HTMLSelectElement).value)"
+                >
+                  <option value=""></option>
+                  <option v-for="pos in positions" :key="pos.key" :value="pos.key">{{ pos.short }}</option>
+                </select>
               </div>
             </div>
 
@@ -270,17 +235,7 @@
                     {{ pos.short }}
                   </button>
                   <span class="w-px h-4 bg-border mx-0.5 shrink-0"></span>
-                  <!-- Backup star -->
-                  <button
-                    class="rounded px-2 py-0.5 text-xs text-text-muted hover:bg-control-hover hover:text-text transition-colors"
-                    :disabled="!!benchStarSlot.player"
-                    :class="{ 'opacity-30 cursor-not-allowed': !!benchStarSlot.player }"
-                    title="Add as Backup Star"
-                    @click="addBenchStar(player)"
-                  >
-                    S
-                  </button>
-                  <!-- Dual-position bench -->
+                  <!-- Bench -->
                   <button
                     class="rounded px-2 py-0.5 text-xs text-text-faint hover:bg-control-hover hover:text-text transition-colors"
                     :disabled="benchDualFull"
@@ -335,13 +290,9 @@ interface Slot {
   player: SquadPlayer | null
 }
 
-interface BenchStarSlot {
-  player: SquadPlayer | null
-}
-
 interface BenchDualSlot {
   player: SquadPlayer | null
-  positions: [NonStarPositionKey | null, NonStarPositionKey | null]
+  positions: [PositionKey | null, NonStarPositionKey | null]
 }
 
 const { selectedClubId } = useFflState()
@@ -404,17 +355,19 @@ const teamSlots = ref<Record<PositionKey, Slot[]>>(
   Object.fromEntries(positions.map(p => [p.key, createSlots(p.count)])) as Record<PositionKey, Slot[]>
 )
 
-const benchStarSlot = ref<BenchStarSlot>({ player: null })
-
 const benchDualSlots = ref<BenchDualSlot[]>([
+  { player: null, positions: [null, null] },
   { player: null, positions: [null, null] },
   { player: null, positions: [null, null] },
   { player: null, positions: [null, null] },
 ])
 
-// Interchange: the position key for which the bench player may freely swap.
-// For the star slot this is 'star'; for dual slots it's derived from the first chosen position.
+// The position that acts as the free interchange slot.
 const interchangePosition = ref<string | null>(null)
+
+// Highlight recently-stolen bench slot index (orange border flash).
+const recentlyClearedSlot = ref<number | null>(null)
+let clearHighlightTimer: ReturnType<typeof setTimeout> | null = null
 
 // Track the match ID we last loaded from to avoid Apollo cache updates wiping local edits.
 const initializedMatchId = ref<string | null>(null)
@@ -434,8 +387,8 @@ function resetTeamState() {
   for (const pos of positions) {
     teamSlots.value[pos.key] = createSlots(pos.count)
   }
-  benchStarSlot.value = { player: null }
   benchDualSlots.value = [
+    { player: null, positions: [null, null] },
     { player: null, positions: [null, null] },
     { player: null, positions: [null, null] },
     { player: null, positions: [null, null] },
@@ -459,13 +412,15 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
         const slot = posSlots.find((s: Slot) => !s.player)
         if (slot) slot.player = player
       }
-    } else if (pm.backupPositions === 'star') {
-      benchStarSlot.value.player = player
-      if (pm.interchangePosition) interchangePosition.value = pm.interchangePosition
-    } else if (pm.backupPositions && dualIndex < 3) {
-      const parts = pm.backupPositions.split(',').map((p: string) => p.trim()) as NonStarPositionKey[]
-      benchDualSlots.value[dualIndex].player = player
-      benchDualSlots.value[dualIndex].positions = [parts[0] ?? null, parts[1] ?? null]
+    } else if (dualIndex < 4) {
+      if (pm.backupPositions === 'star') {
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = ['star', null]
+      } else if (pm.backupPositions) {
+        const parts = pm.backupPositions.split(',').map((p: string) => p.trim()) as NonStarPositionKey[]
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = [parts[0] ?? null, parts[1] ?? null]
+      }
       if (pm.interchangePosition) interchangePosition.value = pm.interchangePosition
       dualIndex++
     }
@@ -491,7 +446,6 @@ const assignedPlayerIds = computed(() => {
       if (slot.player) ids.add(slot.player.id)
     }
   }
-  if (benchStarSlot.value.player) ids.add(benchStarSlot.value.player.id)
   for (const slot of benchDualSlots.value) {
     if (slot.player) ids.add(slot.player.id)
   }
@@ -510,33 +464,39 @@ const starterCount = computed(() => {
   return count
 })
 
-const benchCount = computed(() => {
-  let count = benchStarSlot.value.player ? 1 : 0
-  count += benchDualSlots.value.filter(s => s.player).length
-  return count
-})
+const benchCount = computed(() => benchDualSlots.value.filter(s => s.player).length)
 
 const benchDualFull = computed(() => benchDualSlots.value.every(s => s.player !== null))
+
+const benchValidationError = computed<string | null>(() => {
+  for (const slot of benchDualSlots.value) {
+    if (!slot.player) continue
+    const [p1, p2] = slot.positions
+    if (!p1) return 'Each bench player must have a position assigned'
+    if (p1 !== 'star' && !p2) return 'Non-star bench players need two backup positions'
+  }
+  const filledCount = benchDualSlots.value.filter(s => s.player).length
+  if (filledCount > 1 && !interchangePosition.value) return 'Choose an interchange position'
+  return null
+})
 
 const isPositionFull = (key: PositionKey) =>
   teamSlots.value[key].every(s => s.player !== null)
 
-// Returns all non-star positions already claimed by another bench dual slot (optionally excluding a specific slot+side).
+// Returns true if posKey is already used by another bench slot (excluding slotIndex+sideIndex).
 function isBenchPositionUsed(posKey: string, slotIndex: number, sideIndex: number): boolean {
   for (let i = 0; i < benchDualSlots.value.length; i++) {
     const slot = benchDualSlots.value[i]
-    for (let j = 0; j < 2; j++) {
+    for (const j of [0, 1] as const) {
       if (i === slotIndex && j === sideIndex) continue
-      if (slot.positions[j as 0 | 1] === posKey) return true
+      if (slot.positions[j] === posKey) return true
     }
   }
   return false
 }
 
-// Derive an interchange key for a dual bench slot from its assigned positions.
-function benchDualInterchangeKey(index: number): string | null {
-  const slot = benchDualSlots.value[index]
-  return slot.positions[0] ?? slot.positions[1] ?? null
+function positionShort(key: string): string {
+  return positions.find(p => p.key === key)?.short ?? key
 }
 
 // ── Team management ─────────────────────────────────────────────────────────
@@ -561,12 +521,6 @@ function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: Position
   markDirty()
 }
 
-function addBenchStar(player: SquadPlayer) {
-  if (benchStarSlot.value.player) return
-  benchStarSlot.value.player = player
-  markDirty()
-}
-
 function addBenchDual(player: SquadPlayer) {
   const slot = benchDualSlots.value.find(s => !s.player)
   if (slot) { slot.player = player; markDirty() }
@@ -575,19 +529,41 @@ function addBenchDual(player: SquadPlayer) {
 function removeBenchDual(index: number) {
   benchDualSlots.value[index].player = null
   benchDualSlots.value[index].positions = [null, null]
-  const key = benchDualInterchangeKey(index)
-  if (key && interchangePosition.value === key) interchangePosition.value = null
   markDirty()
 }
 
 function setBenchPosition(slotIndex: number, sideIndex: 0 | 1, value: string) {
-  benchDualSlots.value[slotIndex].positions[sideIndex] = (value || null) as NonStarPositionKey | null
+  const slot = benchDualSlots.value[slotIndex]
+  // Steal position from any other slot that already has it, and flash that slot
+  if (value) {
+    for (let i = 0; i < benchDualSlots.value.length; i++) {
+      const other = benchDualSlots.value[i]
+      if (other.positions[0] === value && !(i === slotIndex && sideIndex === 0)) {
+        other.positions[0] = null
+        flashClearedSlot(i)
+      } else if (other.positions[1] === value && !(i === slotIndex && sideIndex === 1)) {
+        other.positions[1] = null
+        flashClearedSlot(i)
+      }
+    }
+  }
+  if (sideIndex === 0) {
+    slot.positions[0] = (value || null) as PositionKey | null
+    if (value === 'star') slot.positions[1] = null
+  } else {
+    slot.positions[1] = (value || null) as NonStarPositionKey | null
+  }
   markDirty()
 }
 
-function toggleInterchange(key: string | null) {
-  if (!key) return
-  interchangePosition.value = interchangePosition.value === key ? null : key
+function flashClearedSlot(index: number) {
+  if (clearHighlightTimer) clearTimeout(clearHighlightTimer)
+  recentlyClearedSlot.value = index
+  clearHighlightTimer = setTimeout(() => { recentlyClearedSlot.value = null }, 2000)
+}
+
+function setInterchange(value: string) {
+  interchangePosition.value = value || null
   markDirty()
 }
 
@@ -631,31 +607,19 @@ async function submitTeam() {
     }
   }
 
-  // Backup star
-  if (benchStarSlot.value.player) {
-    const entry: (typeof players)[number] = {
-      playerSeasonId: benchStarSlot.value.player.id,
-      position: 'star',
-      backupPositions: 'star',
-    }
-    if (interchangePosition.value === 'star') entry.interchangePosition = 'star'
-    players.push(entry)
-  }
-
-  // Dual-position bench
+  // Bench slots
   for (const slot of benchDualSlots.value) {
     if (!slot.player) continue
     const [p1, p2] = slot.positions
-    const bp = [p1, p2].filter(Boolean).join(',')
+    const isStar = p1 === 'star'
+    const bp = isStar ? 'star' : [p1, p2].filter(Boolean).join(',')
     const entry: (typeof players)[number] = {
       playerSeasonId: slot.player.id,
       position: p1 ?? p2 ?? 'goals',
       backupPositions: bp || undefined,
     }
-    // Attach interchange if this slot's first position matches the interchange position
-    const icKey = benchDualInterchangeKey(benchDualSlots.value.indexOf(slot))
-    if (icKey && interchangePosition.value === icKey) {
-      entry.interchangePosition = interchangePosition.value
+    if (interchangePosition.value && (p1 === interchangePosition.value || p2 === interchangePosition.value)) {
+      entry.interchangePosition = interchangePosition.value ?? undefined
     }
     players.push(entry)
   }
