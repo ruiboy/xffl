@@ -13,8 +13,8 @@ function setCookie(name: string, value: string) {
 
 // Module-level singletons — shared across all component instances
 const selectedClubId = ref<string>(getCookie('xffl_club_id'))
-const currentSeasonId = ref<string>('')
-const currentRoundId = ref<string>('')
+const currentSeasonId = ref<string>(getCookie('xffl_season_id'))
+const currentRoundId = ref<string>(getCookie('xffl_round_id'))
 
 function setClub(id: string) {
   selectedClubId.value = id
@@ -23,7 +23,9 @@ function setClub(id: string) {
 
 function setCurrentSeason(seasonId: string, roundId: string) {
   currentSeasonId.value = seasonId
+  setCookie('xffl_season_id', seasonId)
   currentRoundId.value = roundId
+  setCookie('xffl_round_id', roundId)
 }
 
 export function useFflState() {
