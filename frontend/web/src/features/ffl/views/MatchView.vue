@@ -19,7 +19,16 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div v-for="side in sides" :key="side.label">
-          <h2 class="text-lg font-semibold mb-1">{{ side.label }}</h2>
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-lg font-semibold">{{ side.label }}</h2>
+            <router-link
+              v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: matchData!.roundId } }"
+              class="text-xs text-active hover:text-active-hover transition-colors"
+            >
+              Build Team →
+            </router-link>
+          </div>
           <p class="text-sm text-text-muted mb-3">
             Fantasy score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
@@ -36,19 +45,29 @@ import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
 import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
 
+const { selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
-const match = computed(() => {
+const matchData = computed(() => {
   const season = result.value?.fflSeason
   if (!season) return null
   for (const round of season.rounds) {
     const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return found
+    if (found) return { match: found, roundId: round.id as string }
   }
   return null
+})
+
+const match = computed(() => matchData.value?.match ?? null)
+
+const isMyClubMatch = computed(() => {
+  if (!match.value || !selectedClubId.value) return false
+  return match.value.homeClubMatch?.club.id === selectedClubId.value ||
+    match.value.awayClubMatch?.club.id === selectedClubId.value
 })
 
 const sides = computed(() => {

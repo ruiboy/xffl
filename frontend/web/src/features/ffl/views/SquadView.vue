@@ -198,4 +198,8 @@ watch(managing, (val) => {
     debouncedQuery.value = ''
   }
 })
+
+watch(selectedClubId, () => {
+  managing.value = false
+})
 </script>

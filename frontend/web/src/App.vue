@@ -24,14 +24,6 @@
             >
               Squad
             </router-link>
-            <router-link
-              :to="currentSeasonId && currentRoundId ? { name: 'ffl-team-builder', params: { seasonId: currentSeasonId, roundId: currentRoundId } } : '/ffl'"
-              class="text-sm transition-colors"
-              :class="currentSeasonId && currentRoundId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
-            >
-              Team Builder
-            </router-link>
-
             <!-- Club selector -->
             <ClubSelector
               v-if="clubs.length > 0"
@@ -90,7 +82,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 
 const route = useRoute()
-const { selectedClubId, currentSeasonId, currentRoundId, setClub } = useFflState()
+const { selectedClubId, currentSeasonId, setClub } = useFflState()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
 

@@ -4,8 +4,9 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold mb-1">{{ selectedClubSeason?.club.name ?? '' }}</h1>
-        <p class="text-text-muted">Build your team for the round</p>
+        <h1 class="text-2xl font-bold mb-1">
+          {{ selectedClubSeason?.club.name ?? '' }}<span v-if="currentRound" class="font-normal text-text-muted"> · {{ currentRound.name }}</span>
+        </h1>
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
@@ -31,9 +32,9 @@
           </div>
         </div>
 
-        <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'">
-          <!-- Team (left 2 cols) -->
-          <div class="lg:col-span-2">
+        <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'">
+          <!-- Team (left col) -->
+          <div>
 
             <!-- Starter position groups -->
             <div v-for="pos in positions" :key="pos.key" class="mb-6">
@@ -303,6 +304,10 @@ const season = computed(() => result.value?.fflSeason ?? null)
 
 const selectedClubSeason = computed(() =>
   season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
+)
+
+const currentRound = computed(() =>
+  season.value?.rounds.find((r: { id: string }) => r.id === props.roundId) ?? null
 )
 
 const clubMatch = computed(() => {
