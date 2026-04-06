@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { setupFflSession } from './helpers'
 
 test.describe('FFL Home', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await setupFflSession(page)
   })
 
   test('displays season name in heading', async ({ page }) => {
@@ -32,6 +33,8 @@ test.describe('FFL Home', () => {
 
   test('round circle navigates to round page', async ({ page }) => {
     await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
+    await page.waitForURL(/\/ffl\/seasons\/.*\/rounds\//)
+    await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
   })
 
