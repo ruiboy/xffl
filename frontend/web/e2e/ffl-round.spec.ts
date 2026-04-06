@@ -36,4 +36,19 @@ test.describe('FFL Round', () => {
     await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Score' })).toBeVisible()
   })
+
+  test('shows Build Team link for selected club match', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'Build Team →' })).toBeVisible()
+  })
+
+  test('Build Team link navigates to team builder', async ({ page }) => {
+    await page.getByRole('link', { name: 'Build Team →' }).click()
+    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+  })
+
+  test('rounds display in numeric order', async ({ page }) => {
+    const roundLinks = await page.locator('main nav').getByRole('link').allTextContents()
+    const roundNumbers = roundLinks.map(t => parseInt(t.trim())).filter(n => !isNaN(n))
+    expect(roundNumbers).toEqual([...roundNumbers].sort((a, b) => a - b))
+  })
 })

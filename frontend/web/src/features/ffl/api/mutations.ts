@@ -20,7 +20,6 @@ export const ADD_FFL_SQUAD_PLAYER = gql`
   mutation AddFFLSquadPlayer($input: AddFFLSquadPlayerInput!) {
     addFFLSquadPlayer(input: $input) {
       id
-      playerId
       clubSeasonId
     }
   }

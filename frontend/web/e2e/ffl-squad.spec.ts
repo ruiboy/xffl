@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { setupFflSession } from './helpers'
 
 test.describe('FFL Squad', () => {
   test.beforeEach(async ({ page }) => {
-    // Load home first so FFL state (seasonId) is populated, then navigate via nav
-    await page.goto('/')
+    await setupFflSession(page)
     await page.getByRole('link', { name: 'Squad' }).click()
+    await page.waitForURL(/\/ffl\/seasons\/.*\/squad/)
+    await page.waitForLoadState('networkidle')
   })
 
   test('displays club name as heading', async ({ page }) => {
@@ -29,12 +31,18 @@ test.describe('FFL Squad', () => {
     await page.getByRole('button', { name: 'Manage' }).click()
     await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Add Player' })).toBeVisible()
-    await expect(page.getByPlaceholder('Search AFL players by name…')).toBeVisible()
+    await expect(page.getByPlaceholder('Search AFL players by name...')).toBeVisible()
   })
 
   test('clicking Manage shows Remove buttons on player rows', async ({ page }) => {
     await page.getByRole('button', { name: 'Manage' }).click()
     await expect(page.getByRole('button', { name: 'Remove' }).first()).toBeVisible()
+  })
+
+  test('shows Saved message after removing a player', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await page.getByRole('button', { name: 'Remove' }).first().click()
+    await expect(page.getByText('Saved')).toBeVisible()
   })
 
   test('clicking Done exits manage mode', async ({ page }) => {
@@ -46,7 +54,19 @@ test.describe('FFL Squad', () => {
 
   test('player search returns results', async ({ page }) => {
     await page.getByRole('button', { name: 'Manage' }).click()
-    await page.getByPlaceholder('Search AFL players by name…').fill('Jordan')
+    await page.getByPlaceholder('Search AFL players by name...').fill('Jordan')
     await expect(page.getByText('Jordan Dawson')).toBeVisible()
+  })
+
+  test('switching club exits manage mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+
+    // Open club selector and pick a different club (Ruiboys)
+    await page.getByRole('button', { name: /The Howling Cows|Ruiboys/ }).click()
+    await page.getByRole('button', { name: /Ruiboys/ }).click()
+
+    await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
   })
 })

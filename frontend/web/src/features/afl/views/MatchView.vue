@@ -15,12 +15,18 @@
         <p v-if="match.result" class="text-lg font-semibold mt-2">
           {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
         </p>
-        <router-link
-          :to="{ name: 'afl-admin-match', params: { seasonId: props.seasonId, matchId: props.matchId } }"
-          class="inline-block mt-3 text-sm text-text-faint hover:text-text-heading transition-colors"
-        >
-          Edit stats
-        </router-link>
+        <div class="mt-3 flex items-center gap-4">
+          <button
+            @click="managing = !managing"
+            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="managing
+              ? 'border-active bg-active text-active-text'
+              : 'border-border bg-surface text-text hover:bg-surface-hover'"
+          >
+            {{ managing ? 'Done' : 'Manage' }}
+          </button>
+          <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
+        </div>
       </div>
 
       <div v-for="side in sides" :key="side.label" class="mb-10">
@@ -28,7 +34,8 @@
         <PlayerStatsTable
           v-if="side.clubMatch"
           :club-match="side.clubMatch"
-          :readonly="true"
+          :readonly="!managing"
+          @update="handleUpdate"
         />
       </div>
     </template>
@@ -36,13 +43,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useQuery } from '@vue/apollo-composable'
+import { ref, computed } from 'vue'
+import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_MATCH } from '../api/queries'
+import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
+
+const managing = ref(false)
 
 const { result, loading, error } = useQuery(GET_MATCH, () => ({ seasonId: props.seasonId }))
 
@@ -63,4 +73,16 @@ const sides = computed(() => {
     { label: match.value.awayClubMatch?.club.name ?? 'Away', clubMatch: match.value.awayClubMatch },
   ]
 })
+
+const { mutate } = useMutation(UPDATE_PLAYER_MATCH)
+
+const saveMessage = ref('')
+let saveMessageTimer: ReturnType<typeof setTimeout> | null = null
+
+async function handleUpdate(input: { playerSeasonId: string; clubMatchId: string; [key: string]: unknown }) {
+  await mutate({ input })
+  if (saveMessageTimer) clearTimeout(saveMessageTimer)
+  saveMessage.value = 'Saved'
+  saveMessageTimer = setTimeout(() => { saveMessage.value = '' }, 3000)
+}
 </script>

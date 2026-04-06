@@ -17,12 +17,19 @@
       <section class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
         <div class="space-y-2">
-          <MatchSummary
-            v-for="match in data.round.matches"
-            :key="match.id"
-            :match="match"
-            :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
-          />
+          <div v-for="match in data.round.matches" :key="match.id">
+            <MatchSummary
+              :match="match"
+              :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            />
+            <router-link
+              v-if="myMatch?.id === match.id"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } }"
+              class="mt-1 flex items-center justify-end text-xs text-active hover:text-active-hover transition-colors"
+            >
+              Build Team →
+            </router-link>
+          </div>
         </div>
       </section>
 
@@ -70,7 +77,7 @@ import RoundNav from '../components/RoundNav.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
-const { currentRoundId: liveRoundId } = useFflState()
+const { currentRoundId: liveRoundId, selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const data = computed(() => {
@@ -79,6 +86,14 @@ const data = computed(() => {
   const round = season.rounds.find((r: { id: string }) => r.id === props.roundId)
   if (!round) return null
   return { season, round }
+})
+
+const myMatch = computed(() => {
+  if (!data.value || !selectedClubId.value) return null
+  return data.value.round.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+    m.homeClubMatch?.club.id === selectedClubId.value ||
+    m.awayClubMatch?.club.id === selectedClubId.value
+  ) ?? null
 })
 
 interface PlayerMatch {

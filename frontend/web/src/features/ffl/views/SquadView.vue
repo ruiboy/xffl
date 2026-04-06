@@ -16,9 +16,10 @@
       >
         {{ managing ? 'Done' : 'Manage' }}
       </button>
+      <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
     </div>
 
-    <div v-if="squadLoading" class="text-text-faint">Loading…</div>
+    <div v-if="squadLoading" class="text-text-faint">Loading...</div>
     <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
     <template v-else>
       <div class="flex gap-8 items-start">
@@ -42,10 +43,13 @@
                   <td v-if="managing" class="py-2 px-2 text-right">
                     <button
                       @click="removePlayer(row.id)"
-                      class="text-red-400 hover:text-red-300 text-xs font-medium"
+                      aria-label="Remove"
+                      class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
                       :disabled="removingId === row.id"
                     >
-                      {{ removingId === row.id ? 'Removing…' : 'Remove' }}
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                      </svg>
                     </button>
                   </td>
                 </tr>
@@ -61,10 +65,10 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search AFL players by name…"
+            placeholder="Search AFL players by name..."
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
           />
-          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching…</div>
+          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching...</div>
           <div v-else-if="searchResults.length > 0" class="mt-2">
             <div
               v-for="player in searchResults"
@@ -77,7 +81,7 @@
                 class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
                 :disabled="addingId === player.id"
               >
-                {{ addingId === player.id ? 'Adding…' : 'Add' }}
+                {{ addingId === player.id ? 'Adding...' : 'Add' }}
               </button>
             </div>
           </div>
@@ -157,6 +161,15 @@ const searchResults = computed(() => {
   return results.filter((p: { id: string }) => !squadAflPlayerIds.value.has(p.id))
 })
 
+// Saved flash
+const saveMessage = ref('')
+let saveMessageTimer: ReturnType<typeof setTimeout> | null = null
+function flashSaved() {
+  if (saveMessageTimer) clearTimeout(saveMessageTimer)
+  saveMessage.value = 'Saved'
+  saveMessageTimer = setTimeout(() => { saveMessage.value = '' }, 3000)
+}
+
 // Remove player
 const removingId = ref<string | null>(null)
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
@@ -166,6 +179,7 @@ async function removePlayer(playerSeasonId: string) {
   try {
     await removePlayerMutation({ id: playerSeasonId })
     await refetchSquad()
+    flashSaved()
   } finally {
     removingId.value = null
   }
@@ -187,6 +201,7 @@ async function addPlayer(player: { id: string; name: string }) {
       },
     })
     await refetchSquad()
+    flashSaved()
   } finally {
     addingId.value = null
   }
@@ -197,5 +212,9 @@ watch(managing, (val) => {
     searchQuery.value = ''
     debouncedQuery.value = ''
   }
+})
+
+watch(selectedClubId, () => {
+  managing.value = false
 })
 </script>
