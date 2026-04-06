@@ -19,7 +19,7 @@
       <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
     </div>
 
-    <div v-if="squadLoading" class="text-text-faint">Loading…</div>
+    <div v-if="squadLoading" class="text-text-faint">Loading...</div>
     <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
     <template v-else>
       <div class="flex gap-8 items-start">
@@ -65,10 +65,10 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search AFL players by name…"
+            placeholder="Search AFL players by name..."
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
           />
-          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching…</div>
+          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching...</div>
           <div v-else-if="searchResults.length > 0" class="mt-2">
             <div
               v-for="player in searchResults"
@@ -81,7 +81,7 @@
                 class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
                 :disabled="addingId === player.id"
               >
-                {{ addingId === player.id ? 'Adding…' : 'Add' }}
+                {{ addingId === player.id ? 'Adding...' : 'Add' }}
               </button>
             </div>
           </div>

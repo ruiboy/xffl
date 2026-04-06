@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="loading" class="text-text-faint">Loading…</div>
+    <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
       <div class="mb-6">
@@ -49,7 +49,7 @@
               class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="submitting || !isDirty"
             >
-              {{ submitting ? 'Saving…' : 'Save Team' }}
+              {{ submitting ? 'Saving...' : 'Save Team' }}
             </button>
           </template>
           <button

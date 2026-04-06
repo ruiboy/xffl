@@ -50,6 +50,10 @@ run-search:
 run-gateway:
     cd services/gateway && go run ./cmd/main.go
 
+# Install frontend dependencies (run once before first run-all)
+install-frontend:
+    cd frontend/web && npm install
+
 # Run Frontend (port 3000)
 run-frontend:
     cd frontend/web && npm run dev

@@ -70,6 +70,7 @@ Prerequisites: Docker, Go 1.25+, Node.js 20+, [just](https://github.com/casey/ju
 cp .env.example .env
 just dev-up        # start Postgres + Zinc
 just dev-seed      # load test data (optional)
+just install-frontend  # install frontend dependencies (first time only)
 ```
 
 For psql: `docker exec -it xffl-postgres psql -U postgres -d xffl`
@@ -79,7 +80,7 @@ To stop: `just dev-down` | To nuke and start fresh: `just dev-reset`
 ### Running
 
 ```sh
-just run-all       # AFL service + gateway + frontend
+just run-all       # AFL and FFL service + gateway + frontend
 ```
 Or individually: `just run-afl`, `just run-gateway`, `just run-frontend`
 
