@@ -4,22 +4,60 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold mb-1">
+        <!-- Breadcrumb + round nav -->
+        <div v-if="currentRound" class="flex items-center gap-3 mb-2">
+          <router-link
+            :to="{ name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } }"
+            class="text-sm text-text-muted hover:text-text transition-colors"
+          >
+            ← Back to round
+          </router-link>
+          <div class="flex items-center gap-1 ml-auto">
+            <router-link
+              v-if="prevRound"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: prevRound.id } }"
+              class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
+              title="Previous round"
+            >‹</router-link>
+            <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">‹</span>
+            <router-link
+              v-if="nextRound"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: nextRound.id } }"
+              class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
+              title="Next round"
+            >›</router-link>
+            <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">›</span>
+          </div>
+        </div>
+        <h1 class="text-2xl font-bold">
           {{ selectedClubSeason?.club.name ?? '' }}<span v-if="currentRound" class="font-normal text-text-muted"> · {{ currentRound.name }}</span>
         </h1>
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
         <div class="mb-6 flex items-center gap-4">
+          <template v-if="managing">
+            <button
+              @click="cancelManage"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+              :disabled="submitting"
+            >
+              Cancel
+            </button>
+            <button
+              @click="onSaveTeam"
+              class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="submitting || !isDirty"
+            >
+              {{ submitting ? 'Saving…' : 'Save Team' }}
+            </button>
+          </template>
           <button
-            @click="onManageToggle"
-            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="managing
-              ? 'border-active bg-active text-active-text'
-              : 'border-border bg-surface text-text hover:bg-surface-hover'"
-            :disabled="submitting"
+            v-else
+            @click="managing = true"
+            class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
           >
-            {{ submitting ? 'Saving…' : managing ? 'Done' : 'Manage' }}
+            Manage
           </button>
           <span v-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
         </div>
@@ -32,7 +70,7 @@
           </div>
         </div>
 
-        <div class="grid gap-8" :class="managing ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'">
+        <div class="grid gap-8" :class="managing ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'">
           <!-- Team (left col) -->
           <div>
 
@@ -51,6 +89,7 @@
                     : 'border-dashed border-border-subtle bg-surface'"
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
+                    <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
                     <span class="font-medium">{{ slot.player.name }}</span>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -58,19 +97,25 @@
                     <button
                       v-for="target in positions.filter(p => p.key !== pos.key)"
                       :key="target.key"
-                      class="rounded px-1.5 py-0.5 text-xs text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                      class="rounded px-1.5 py-0.5 text-xs transition-colors"
                       :disabled="isPositionFull(target.key)"
-                      :class="{ 'opacity-30 cursor-not-allowed': isPositionFull(target.key) }"
+                      :class="[
+                        isPositionFull(target.key) ? 'opacity-30 cursor-not-allowed' : '',
+                        target.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-faint hover:bg-control-hover hover:text-text'
+                      ]"
                       :title="`Move to ${target.label}`"
                       @click="moveToPosition(pos.key, index, target.key)"
                     >
                       {{ target.short }}
                     </button>
                     <button
+                      aria-label="Remove"
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
                       @click="removeFromTeam(pos.key, index)"
                     >
-                      Remove
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -90,7 +135,6 @@
                     : 'border-dashed border-border-subtle bg-surface'"
                 >
                   <div class="flex items-center gap-3 min-w-0">
-                    <span class="text-xs text-text-faint shrink-0">★</span>
                     <span v-if="benchStarSlot.player" class="font-medium text-text-muted">{{ benchStarSlot.player.name }}</span>
                     <span v-else class="text-text-faint text-sm">Backup Star</span>
                   </div>
@@ -107,10 +151,13 @@
                     </label>
                     <button
                       v-if="benchStarSlot.player"
+                      aria-label="Remove"
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
                       @click="benchStarSlot.player = null"
                     >
-                      Remove
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -182,10 +229,13 @@
                     </label>
                     <button
                       v-if="slot.player"
+                      aria-label="Remove"
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
                       @click="removeBenchDual(index)"
                     >
-                      Remove
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -209,22 +259,26 @@
                   <button
                     v-for="pos in positions"
                     :key="pos.key"
-                    class="rounded px-2 py-0.5 text-xs text-text-muted hover:bg-control-hover hover:text-text transition-colors"
+                    class="rounded px-2 py-0.5 text-xs transition-colors"
+                    :class="[
+                      isPositionFull(pos.key) ? 'opacity-30 cursor-not-allowed' : '',
+                      pos.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-muted hover:bg-control-hover hover:text-text'
+                    ]"
                     :disabled="isPositionFull(pos.key)"
-                    :class="{ 'opacity-30 cursor-not-allowed': isPositionFull(pos.key) }"
                     @click="addToTeam(pos.key, player)"
                   >
                     {{ pos.short }}
                   </button>
+                  <span class="w-px h-4 bg-border mx-0.5 shrink-0"></span>
                   <!-- Backup star -->
                   <button
-                    class="rounded px-2 py-0.5 text-xs text-yellow-400 hover:bg-control-hover hover:text-yellow-300 transition-colors"
+                    class="rounded px-2 py-0.5 text-xs text-text-muted hover:bg-control-hover hover:text-text transition-colors"
                     :disabled="!!benchStarSlot.player"
                     :class="{ 'opacity-30 cursor-not-allowed': !!benchStarSlot.player }"
                     title="Add as Backup Star"
                     @click="addBenchStar(player)"
                   >
-                    ★
+                    S
                   </button>
                   <!-- Dual-position bench -->
                   <button
@@ -260,11 +314,11 @@ const props = defineProps<{ seasonId: string; roundId: string }>()
 const positions = [
   { key: 'goals',     label: 'Goals',     short: 'G',  count: 3 },
   { key: 'kicks',     label: 'Kicks',     short: 'K',  count: 4 },
-  { key: 'handballs', label: 'Handballs', short: 'HB', count: 4 },
+  { key: 'handballs', label: 'Handballs', short: 'H',  count: 4 },
   { key: 'marks',     label: 'Marks',     short: 'M',  count: 2 },
   { key: 'tackles',   label: 'Tackles',   short: 'T',  count: 2 },
-  { key: 'hitouts',   label: 'Hitouts',   short: 'HO', count: 2 },
-  { key: 'star',      label: 'Star',      short: 'S',  count: 1 },
+  { key: 'hitouts',   label: 'Hitouts',   short: 'R',  count: 2 },
+  { key: 'star',      label: 'Star',      short: '★',  count: 1 },
 ] as const
 
 type PositionKey = typeof positions[number]['key']
@@ -310,6 +364,18 @@ const currentRound = computed(() =>
   season.value?.rounds.find((r: { id: string }) => r.id === props.roundId) ?? null
 )
 
+const prevRound = computed(() => {
+  const rounds = season.value?.rounds ?? []
+  const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
+  return idx > 0 ? rounds[idx - 1] : null
+})
+
+const nextRound = computed(() => {
+  const rounds = season.value?.rounds ?? []
+  const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
+  return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
+})
+
 const clubMatch = computed(() => {
   if (!season.value || !selectedClubSeason.value) return null
   const round = season.value.rounds.find((r: { id: string }) => r.id === props.roundId)
@@ -353,6 +419,17 @@ const interchangePosition = ref<string | null>(null)
 // Track the match ID we last loaded from to avoid Apollo cache updates wiping local edits.
 const initializedMatchId = ref<string | null>(null)
 
+// Dirty tracking — snapshot taken after load or save; compared to detect unsaved changes.
+const isDirty = ref(false)
+
+function takeSnapshot() {
+  isDirty.value = false
+}
+
+function markDirty() {
+  isDirty.value = true
+}
+
 function resetTeamState() {
   for (const pos of positions) {
     teamSlots.value[pos.key] = createSlots(pos.count)
@@ -366,15 +443,9 @@ function resetTeamState() {
   interchangePosition.value = null
 }
 
-// Load existing team from server data — only when the match changes, not on every Apollo cache update.
-// { immediate: true } ensures this fires on component remount when Apollo cache already has data
-// (without it, watch only fires on changes — a cache hit on remount produces no change event).
-watch(clubMatch, (cm) => {
-  if (!cm) return
-  if (cm.id === initializedMatchId.value) return  // already initialised for this match; don't reset local edits
-  initializedMatchId.value = cm.id
-
+function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
   resetTeamState()
+  takeSnapshot()
   if (!cm.playerMatches) return
 
   let dualIndex = 0
@@ -383,18 +454,15 @@ watch(clubMatch, (cm) => {
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (!isBench) {
-      // Starter
       const posSlots = teamSlots.value[pm.position as PositionKey]
       if (posSlots) {
         const slot = posSlots.find((s: Slot) => !s.player)
         if (slot) slot.player = player
       }
     } else if (pm.backupPositions === 'star') {
-      // Backup star
       benchStarSlot.value.player = player
       if (pm.interchangePosition) interchangePosition.value = pm.interchangePosition
     } else if (pm.backupPositions && dualIndex < 3) {
-      // Dual-position bench
       const parts = pm.backupPositions.split(',').map((p: string) => p.trim()) as NonStarPositionKey[]
       benchDualSlots.value[dualIndex].player = player
       benchDualSlots.value[dualIndex].positions = [parts[0] ?? null, parts[1] ?? null]
@@ -402,6 +470,16 @@ watch(clubMatch, (cm) => {
       dualIndex++
     }
   }
+}
+
+// Load existing team from server data — only when the match changes, not on every Apollo cache update.
+// { immediate: true } ensures this fires on component remount when Apollo cache already has data
+// (without it, watch only fires on changes — a cache hit on remount produces no change event).
+watch(clubMatch, (cm) => {
+  if (!cm) return
+  if (cm.id === initializedMatchId.value) return  // already initialised for this match; don't reset local edits
+  initializedMatchId.value = cm.id
+  loadTeamFromMatch(cm)
 }, { immediate: true })
 
 // ── Computed helpers ──────────────────────────────────────────────────────────
@@ -465,11 +543,12 @@ function benchDualInterchangeKey(index: number): string | null {
 
 function addToTeam(key: PositionKey, player: SquadPlayer) {
   const slot = teamSlots.value[key].find(s => !s.player)
-  if (slot) slot.player = player
+  if (slot) { slot.player = player; markDirty() }
 }
 
 function removeFromTeam(key: PositionKey, index: number) {
   teamSlots.value[key][index].player = null
+  markDirty()
 }
 
 function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: PositionKey) {
@@ -479,33 +558,37 @@ function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: Position
   if (!toSlot) return
   teamSlots.value[fromKey][fromIndex].player = null
   toSlot.player = player
+  markDirty()
 }
 
 function addBenchStar(player: SquadPlayer) {
   if (benchStarSlot.value.player) return
   benchStarSlot.value.player = player
+  markDirty()
 }
 
 function addBenchDual(player: SquadPlayer) {
   const slot = benchDualSlots.value.find(s => !s.player)
-  if (slot) slot.player = player
+  if (slot) { slot.player = player; markDirty() }
 }
 
 function removeBenchDual(index: number) {
   benchDualSlots.value[index].player = null
   benchDualSlots.value[index].positions = [null, null]
-  // Clear interchange if it pointed to this slot
   const key = benchDualInterchangeKey(index)
   if (key && interchangePosition.value === key) interchangePosition.value = null
+  markDirty()
 }
 
 function setBenchPosition(slotIndex: number, sideIndex: 0 | 1, value: string) {
   benchDualSlots.value[slotIndex].positions[sideIndex] = (value || null) as NonStarPositionKey | null
+  markDirty()
 }
 
 function toggleInterchange(key: string | null) {
   if (!key) return
   interchangePosition.value = interchangePosition.value === key ? null : key
+  markDirty()
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────────
@@ -517,11 +600,14 @@ const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
 const submitting = ref(false)
 const submitMessage = ref('')
 
-async function onManageToggle() {
-  if (managing.value) {
-    await submitTeam()
-  }
-  managing.value = !managing.value
+async function onSaveTeam() {
+  await submitTeam()
+  managing.value = false
+}
+
+function cancelManage() {
+  if (clubMatch.value) loadTeamFromMatch(clubMatch.value)
+  managing.value = false
 }
 
 async function submitTeam() {
@@ -576,7 +662,8 @@ async function submitTeam() {
 
   try {
     await setTeam({ input: { clubMatchId: clubMatch.value.id, players } })
-    submitMessage.value = 'Team saved!'
+    takeSnapshot()
+    submitMessage.value = 'Saved'
     setTimeout(() => { submitMessage.value = '' }, 3000)
   } catch (e) {
     submitMessage.value = 'Failed to save team'

@@ -37,6 +37,12 @@ test.describe('FFL Squad', () => {
     await expect(page.getByRole('button', { name: 'Remove' }).first()).toBeVisible()
   })
 
+  test('shows Saved message after removing a player', async ({ page }) => {
+    await page.getByRole('button', { name: 'Manage' }).click()
+    await page.getByRole('button', { name: 'Remove' }).first().click()
+    await expect(page.getByText('Saved')).toBeVisible()
+  })
+
   test('clicking Done exits manage mode', async ({ page }) => {
     await page.getByRole('button', { name: 'Manage' }).click()
     await page.getByRole('button', { name: 'Done' }).click()

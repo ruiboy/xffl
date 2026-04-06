@@ -33,9 +33,9 @@ test.describe('FFL Team Builder', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
     })
 
-    test('Manage button visible; Done not visible', async ({ page }) => {
+    test('Manage button visible; Save Team not visible', async ({ page }) => {
       await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
+      await expect(page.getByRole('button', { name: 'Save Team' })).not.toBeVisible()
     })
 
     test('all position group headings present', async ({ page }) => {
@@ -86,9 +86,26 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Manage' }).click()
     })
 
-    test('Done button visible; Manage button gone', async ({ page }) => {
-      await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+    test('Save Team and Cancel visible; Manage button gone', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Save Team' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Manage' })).not.toBeVisible()
+    })
+
+    test('Save Team disabled until a change is made', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Save Team' })).toBeDisabled()
+      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await expect(page.getByRole('button', { name: 'Save Team' })).toBeEnabled()
+    })
+
+    test('Cancel resets changes and exits manage mode', async ({ page }) => {
+      const goalsSection = positionSection(page, 'Goals')
+      const filledBefore = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
+      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await page.getByRole('button', { name: 'Cancel' }).click()
+      await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+      const filledAfter = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
+      expect(filledAfter).toBe(filledBefore)
     })
 
     test('squad panel shows player count', async ({ page }) => {
@@ -106,18 +123,19 @@ test.describe('FFL Team Builder', () => {
       await expect(starRow.getByText('IC')).toBeVisible()
     })
 
-    test('★ and B buttons appear in squad panel', async ({ page }) => {
+    test('S and B buttons appear in squad panel', async ({ page }) => {
       // Remove a starter first so the squad panel has a player to show buttons for
       await page.getByRole('button', { name: 'Remove' }).first().click()
       const panel = squadPanel(page)
-      await expect(panel.getByRole('button', { name: '★' }).first()).toBeVisible()
+      await expect(panel.getByRole('button', { name: 'S' }).first()).toBeVisible()
       await expect(panel.getByRole('button', { name: 'B' }).first()).toBeVisible()
     })
 
-    test('Done saves and returns to read-only mode', async ({ page }) => {
-      await page.getByRole('button', { name: 'Done' }).click()
+    test('Save Team saves and returns to read-only mode', async ({ page }) => {
+      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
       await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()
+      await expect(page.getByRole('button', { name: 'Save Team' })).not.toBeVisible()
       await expect(page.getByRole('heading', { name: /Squad \(/ })).not.toBeVisible()
     })
   })
@@ -128,13 +146,13 @@ test.describe('FFL Team Builder', () => {
   // response and resets all local slot state. The initializedMatchId guard
   // prevents that reset.
 
-  test.describe('state retention across Manage/Done cycles', () => {
+  test.describe('state retention across Manage/Save cycles', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
     })
 
     test('local edits not reset when re-entering manage mode (state retention)', async ({ page }) => {
-      // Add a player to an available Kicks slot (Goals is used by other tests in this group)
+      // Add a player to an available Kicks slot
       await page.getByRole('button', { name: 'Manage' }).click()
       const panel = squadPanel(page)
 
@@ -142,8 +160,8 @@ test.describe('FFL Team Builder', () => {
       const playerName = await panel.locator('.font-medium').first().textContent()
       await panel.getByRole('button', { name: 'K' }).first().click()
 
-      // Save (Done fires the mutation)
-      await page.getByRole('button', { name: 'Done' }).click()
+      // Save
+      await page.getByRole('button', { name: 'Save Team' }).click()
 
       // Immediately re-enter manage mode — player must still be in the Kicks slot
       await page.getByRole('button', { name: 'Manage' }).click()
@@ -152,19 +170,19 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('two rounds of editing accumulate correctly', async ({ page }) => {
-      // Round 1: add to Handballs (Goals/Kicks used by other tests in this group)
+      // Round 1: add to Handballs
       await page.getByRole('button', { name: 'Manage' }).click()
       let panel = squadPanel(page)
       const player1 = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'HB' }).first().click()
-      await page.getByRole('button', { name: 'Done' }).click()
+      await panel.getByRole('button', { name: 'H' }).first().click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
 
       // Round 2: add to Kicks
       await page.getByRole('button', { name: 'Manage' }).click()
       panel = squadPanel(page)
       const player2 = await panel.locator('.font-medium').first().textContent()
       await panel.getByRole('button', { name: 'K' }).first().click()
-      await page.getByRole('button', { name: 'Done' }).click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
 
       // Both players visible in read-only mode
       await expect(positionSection(page, 'Handballs').getByText(player1!.trim())).toBeVisible()
@@ -180,18 +198,17 @@ test.describe('FFL Team Builder', () => {
   // ── Continue building across sessions ─────────────────────────────────────
 
   test.describe('continue building on existing team', () => {
-    test('adding to existing team: all players visible after Done', async ({ page }) => {
+    test('adding to existing team: all players visible after Save', async ({ page }) => {
       await goToTeamBuilder(page)
 
-      // Find players already in Handballs read-only (has capacity from prior tests in the run)
       const hbSection = positionSection(page, 'Handballs')
       const existingNames = await hbSection.locator('.font-medium').allTextContents()
 
       // Add one more to Handballs
       await page.getByRole('button', { name: 'Manage' }).click()
       const newPlayerName = await squadPanel(page).locator('.font-medium').first().textContent()
-      await squadPanel(page).getByRole('button', { name: 'HB' }).first().click()
-      await page.getByRole('button', { name: 'Done' }).click()
+      await squadPanel(page).getByRole('button', { name: 'H' }).first().click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
 
       // All existing + new player visible
       for (const name of existingNames) {
@@ -216,63 +233,56 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Manage' }).click()
     })
 
-    test('★ button in squad panel adds player to Backup Star row', async ({ page }) => {
+    test('S button in squad panel adds player to Backup Star row', async ({ page }) => {
       const panel = squadPanel(page)
       const playerName = await panel.locator('.font-medium').first().textContent()
 
-      await panel.getByRole('button', { name: '★' }).first().click()
+      await panel.getByRole('button', { name: 'S' }).first().click()
 
       const bench = benchSection(page)
       const starRow = bench.locator('.rounded-lg').first()
       await expect(starRow.getByText(playerName!.trim())).toBeVisible()
     })
 
-    test('★ button disabled for all players once Backup Star slot is filled', async ({ page }) => {
+    test('S button disabled for all players once Backup Star slot is filled', async ({ page }) => {
       const panel = squadPanel(page)
-
-      // Seed data may or may not have the backup star slot filled
-      // Ensure it's empty first (if there's no player there, the ★ buttons should be enabled)
       const bench = benchSection(page)
       const starRow = bench.locator('.rounded-lg').first()
       const hasExistingStarPlayer = await starRow.getByRole('button', { name: 'Remove' }).isVisible()
 
       if (!hasExistingStarPlayer) {
-        // Add a player via ★
-        await panel.getByRole('button', { name: '★' }).first().click()
+        await panel.getByRole('button', { name: 'S' }).first().click()
       }
 
-      // Now all ★ buttons should be disabled
-      const starButtons = panel.getByRole('button', { name: '★' })
-      const count = await starButtons.count()
+      // Now all S buttons should be disabled
+      const sButtons = panel.getByRole('button', { name: 'S' })
+      const count = await sButtons.count()
       for (let i = 0; i < count; i++) {
-        await expect(starButtons.nth(i)).toBeDisabled()
+        await expect(sButtons.nth(i)).toBeDisabled()
       }
     })
 
-    test('removing from Backup Star row re-enables ★ buttons', async ({ page }) => {
+    test('removing from Backup Star row re-enables S buttons', async ({ page }) => {
       const panel = squadPanel(page)
       const bench = benchSection(page)
       const starRow = bench.locator('.rounded-lg').first()
 
-      // Ensure slot is filled (add if necessary)
       const hasPlayer = await starRow.getByRole('button', { name: 'Remove' }).isVisible()
       if (!hasPlayer) {
-        await panel.getByRole('button', { name: '★' }).first().click()
+        await panel.getByRole('button', { name: 'S' }).first().click()
       }
 
-      // Remove from star slot
       await starRow.getByRole('button', { name: 'Remove' }).click()
 
-      // ★ buttons should now be enabled for squad players
-      await expect(panel.getByRole('button', { name: '★' }).first()).toBeEnabled()
+      await expect(panel.getByRole('button', { name: 'S' }).first()).toBeEnabled()
     })
 
-    test('backup star slot visible after Done → re-open Manage', async ({ page }) => {
+    test('backup star slot visible after Save → re-open Manage', async ({ page }) => {
       const panel = squadPanel(page)
       const playerName = await panel.locator('.font-medium').first().textContent()
 
-      await panel.getByRole('button', { name: '★' }).first().click()
-      await page.getByRole('button', { name: 'Done' }).click()
+      await panel.getByRole('button', { name: 'S' }).first().click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
 
       // Read-only mode: player name visible in bench section
       await expect(benchSection(page).locator('.rounded-lg').first().getByText(playerName!.trim())).toBeVisible()
@@ -282,7 +292,6 @@ test.describe('FFL Team Builder', () => {
       await expect(benchSection(page).locator('.rounded-lg').first().getByText(playerName!.trim())).toBeVisible()
     })
   })
-
 
   // ── Interchange ───────────────────────────────────────────────────────────
 
@@ -297,7 +306,7 @@ test.describe('FFL Team Builder', () => {
       await expect(starRow.getByText('IC')).toBeVisible()
     })
 
-    test('interchange state persists through Done → re-open Manage', async ({ page }) => {
+    test('interchange state persists through Save → re-open Manage', async ({ page }) => {
       const bench = benchSection(page)
 
       // Activate IC on Backup Star row
@@ -305,7 +314,7 @@ test.describe('FFL Team Builder', () => {
       const starIC = starRow.locator('input[type="checkbox"]')
       await starIC.check()
 
-      await page.getByRole('button', { name: 'Done' }).click()
+      await page.getByRole('button', { name: 'Save Team' }).click()
       await page.getByRole('button', { name: 'Manage' }).click()
 
       // IC should still be checked after reload
