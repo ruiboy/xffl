@@ -2,8 +2,13 @@ package application
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 
+	"xffl/contracts/events"
 	"xffl/services/ffl/internal/domain"
+	sharedevents "xffl/shared/events"
 )
 
 // WriteRepos provides repository access within a transaction.
@@ -19,13 +24,22 @@ type TxManager interface {
 	WithTx(ctx context.Context, fn func(repos WriteRepos) error) error
 }
 
-// Commands handles all write operations for the FFL service.
-type Commands struct {
-	tx TxManager
+// EventRepos provides read-only access for event handler lookups.
+type EventRepos struct {
+	Rounds        domain.RoundRepository
+	PlayerSeasons domain.PlayerSeasonRepository
+	PlayerMatches domain.PlayerMatchRepository
 }
 
-func NewCommands(tx TxManager) *Commands {
-	return &Commands{tx: tx}
+// Commands handles all write operations for the FFL service.
+type Commands struct {
+	tx         TxManager
+	dispatcher sharedevents.Dispatcher
+	eventRepos EventRepos
+}
+
+func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, eventRepos EventRepos) *Commands {
+	return &Commands{tx: tx, dispatcher: dispatcher, eventRepos: eventRepos}
 }
 
 // CreatePlayer creates a new player linked to an AFL player.
@@ -199,4 +213,77 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 		return repos.ClubMatches.UpdateScore(ctx, pm.ClubMatchID, clubMatch.Score())
 	})
 	return result, err
+}
+
+// HandlePlayerMatchUpdated processes an AFL.PlayerMatchUpdated event.
+// It finds all FFL player matches for the given AFL player in the matching round
+// and recalculates their fantasy scores.
+func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte) error {
+	var event events.PlayerMatchUpdatedPayload
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return fmt.Errorf("unmarshal PlayerMatchUpdated: %w", err)
+	}
+
+	// Find the FFL round that corresponds to this AFL round.
+	fflRound, err := c.eventRepos.Rounds.FindByAFLRoundID(ctx, event.RoundID)
+	if err != nil {
+		log.Printf("FFL: no round for AFL round %d, skipping", event.RoundID)
+		return nil
+	}
+
+	// Find all FFL player seasons linked to this AFL player season.
+	fflPlayerSeasons, err := c.eventRepos.PlayerSeasons.FindByAFLPlayerSeasonID(ctx, event.PlayerSeasonID)
+	if err != nil {
+		return fmt.Errorf("find FFL player seasons for AFL player_season %d: %w", event.PlayerSeasonID, err)
+	}
+	if len(fflPlayerSeasons) == 0 {
+		return nil // player not in any FFL squad
+	}
+
+	stats := domain.AFLStats{
+		Goals:     event.Goals,
+		Kicks:     event.Kicks,
+		Handballs: event.Handballs,
+		Marks:     event.Marks,
+		Tackles:   event.Tackles,
+		Hitouts:   event.Hitouts,
+	}
+
+	for _, ps := range fflPlayerSeasons {
+		// Find the FFL player match for this player season in the matching round.
+		pm, err := c.eventRepos.PlayerMatches.FindByPlayerSeasonAndRound(ctx, ps.ID, fflRound.ID)
+		if err != nil {
+			log.Printf("FFL: no player_match for player_season %d in round %d, skipping", ps.ID, fflRound.ID)
+			continue
+		}
+
+		// Link to the AFL player match if not already set.
+		if pm.AFLPlayerMatchID == nil {
+			if err := c.eventRepos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, event.PlayerMatchID); err != nil {
+				log.Printf("FFL: failed to set afl_player_match_id on player_match %d: %v", pm.ID, err)
+			}
+		}
+
+		// Calculate and store the fantasy score.
+		scored, err := c.CalculateFantasyScore(ctx, pm.ID, stats)
+		if err != nil {
+			log.Printf("FFL: failed to calculate score for player_match %d: %v", pm.ID, err)
+			continue
+		}
+
+		// Publish FFL.FantasyScoreCalculated.
+		fflPayload, err := json.Marshal(events.FantasyScoreCalculatedPayload{
+			PlayerMatchID: scored.ID,
+			Score:         scored.Score,
+		})
+		if err != nil {
+			log.Printf("FFL: failed to marshal FantasyScoreCalculated: %v", err)
+			continue
+		}
+		if err := c.dispatcher.Publish(ctx, events.FantasyScoreCalculated, fflPayload); err != nil {
+			log.Printf("FFL: failed to publish FantasyScoreCalculated: %v", err)
+		}
+	}
+
+	return nil
 }

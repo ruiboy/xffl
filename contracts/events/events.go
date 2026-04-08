@@ -15,6 +15,7 @@ type PlayerMatchUpdatedPayload struct {
 	PlayerMatchID  int `json:"player_match_id"`
 	PlayerSeasonID int `json:"player_season_id"`
 	ClubMatchID    int `json:"club_match_id"`
+	RoundID        int `json:"round_id"`
 	Kicks          int `json:"kicks"`
 	Handballs      int `json:"handballs"`
 	Marks          int `json:"marks"`

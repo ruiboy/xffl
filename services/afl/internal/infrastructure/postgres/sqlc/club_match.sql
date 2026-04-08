@@ -13,3 +13,9 @@ UPDATE afl.club_match
 SET drv_score = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: FindRoundIDByClubMatchID :one
+SELECT m.round_id
+FROM afl.match m
+JOIN afl.club_match cm ON cm.match_id = m.id
+WHERE cm.id = $1 AND cm.deleted_at IS NULL AND m.deleted_at IS NULL;

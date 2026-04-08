@@ -76,6 +76,20 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 	return items, nil
 }
 
+const findRoundIDByClubMatchID = `-- name: FindRoundIDByClubMatchID :one
+SELECT m.round_id
+FROM afl.match m
+JOIN afl.club_match cm ON cm.match_id = m.id
+WHERE cm.id = $1 AND cm.deleted_at IS NULL AND m.deleted_at IS NULL
+`
+
+func (q *Queries) FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, findRoundIDByClubMatchID, id)
+	var round_id int32
+	err := row.Scan(&round_id)
+	return round_id, err
+}
+
 const updateClubMatchScore = `-- name: UpdateClubMatchScore :exec
 UPDATE afl.club_match
 SET drv_score = $2,

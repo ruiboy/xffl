@@ -117,13 +117,16 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Add `ai/architecture/testing.md` conventions doc + `/write-tests` skill
 - [x] Delete mock-based `commands_test.go` — coverage consolidated into integration tests
 
-## Phase 11: FFL Event Integration
+## Phase 11: FFL Event Integration ✅
 
 **Goal:** Wire up cross-service event flow between AFL and FFL
 
-- [ ] FFL subscribes to `AFL.PlayerMatchUpdated` → auto-calculates fantasy scores
-- [ ] FFL publishes `FFL.FantasyScoreCalculated`
-- [ ] Tests — integration (event flow end-to-end)
+- [x] Contract extended: `RoundID` added to `PlayerMatchUpdatedPayload`
+- [x] AFL publishes `AFL.PlayerMatchUpdated` after stat updates (PG LISTEN/NOTIFY)
+- [x] FFL round correlation: `afl_round_id` column + join query for player_match lookup
+- [x] FFL subscribes to `AFL.PlayerMatchUpdated` → auto-calculates fantasy scores
+- [x] FFL publishes `FFL.FantasyScoreCalculated`
+- [x] Tests — integration (event flow end-to-end, unknown player, multiple clubs)
 
 ## Phase 12: Search Service
 

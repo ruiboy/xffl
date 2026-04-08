@@ -116,6 +116,15 @@ func (r *RoundRepository) FindLatest(ctx context.Context) (domain.Round, error) 
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
 }
 
+func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {
+	v := int32(aflRoundID)
+	row, err := r.q.FindRoundByAFLRoundID(ctx, &v)
+	if err != nil {
+		return domain.Round{}, err
+	}
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}, nil
+}
+
 // --- Match ---
 
 type MatchRepository struct{ q *sqlcgen.Queries }
@@ -460,6 +469,26 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
+func (r *PlayerMatchRepository) FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (domain.PlayerMatch, error) {
+	row, err := r.q.FindPlayerMatchByPlayerSeasonAndRound(ctx, sqlcgen.FindPlayerMatchByPlayerSeasonAndRoundParams{
+		PlayerSeasonID: int32(playerSeasonID),
+		RoundID:        int32(roundID),
+	})
+	if err != nil {
+		return domain.PlayerMatch{}, err
+	}
+	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
+		row.Position, row.Status, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
+}
+
+func (r *PlayerMatchRepository) UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error {
+	v := int32(aflPlayerMatchID)
+	return r.q.UpdateAFLPlayerMatchID(ctx, sqlcgen.UpdateAFLPlayerMatchIDParams{
+		ID:               int32(id),
+		AflPlayerMatchID: &v,
+	})
+}
+
 func posToStringPtr(p *domain.Position) *string {
 	if p == nil {
 		return nil
@@ -503,6 +532,19 @@ func NewPlayerSeasonRepository(q *sqlcgen.Queries) *PlayerSeasonRepository {
 
 func (r *PlayerSeasonRepository) FindByClubSeasonID(ctx context.Context, clubSeasonID int) ([]domain.PlayerSeason, error) {
 	rows, err := r.q.FindPlayerSeasonsByClubSeasonID(ctx, int32(clubSeasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeason, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeason{ID: int(row.ID), PlayerID: int(row.PlayerID), ClubSeasonID: int(row.ClubSeasonID), AFLPlayerSeasonID: int32PtrToIntPtr(row.AflPlayerSeasonID)}
+	}
+	return out, nil
+}
+
+func (r *PlayerSeasonRepository) FindByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int) ([]domain.PlayerSeason, error) {
+	v := int32(aflPlayerSeasonID)
+	rows, err := r.q.FindPlayerSeasonsByAFLPlayerSeasonID(ctx, &v)
 	if err != nil {
 		return nil, err
 	}
