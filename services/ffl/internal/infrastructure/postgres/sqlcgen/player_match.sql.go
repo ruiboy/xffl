@@ -9,6 +9,16 @@ import (
 	"context"
 )
 
+const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
+DELETE FROM ffl.player_match
+WHERE club_match_id = $1
+`
+
+func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error {
+	_, err := q.db.Exec(ctx, deletePlayerMatchesByClubMatchID, clubMatchID)
+	return err
+}
+
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
 SELECT id, club_match_id, player_season_id,
        position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
@@ -31,6 +41,49 @@ type FindPlayerMatchByIDRow struct {
 func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayerMatchByIDRow, error) {
 	row := q.db.QueryRow(ctx, findPlayerMatchByID, id)
 	var i FindPlayerMatchByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.ClubMatchID,
+		&i.PlayerSeasonID,
+		&i.Position,
+		&i.Status,
+		&i.BackupPositions,
+		&i.InterchangePosition,
+		&i.DrvScore,
+		&i.AflPlayerMatchID,
+	)
+	return i, err
+}
+
+const findPlayerMatchByPlayerSeasonAndRound = `-- name: FindPlayerMatchByPlayerSeasonAndRound :one
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.position, pm.status, pm.backup_positions, pm.interchange_position, pm.drv_score, pm.afl_player_match_id
+FROM ffl.player_match pm
+JOIN ffl.club_match cm ON pm.club_match_id = cm.id
+JOIN ffl.match m ON cm.match_id = m.id
+WHERE pm.player_season_id = $1 AND m.round_id = $2 AND pm.deleted_at IS NULL
+`
+
+type FindPlayerMatchByPlayerSeasonAndRoundParams struct {
+	PlayerSeasonID int32
+	RoundID        int32
+}
+
+type FindPlayerMatchByPlayerSeasonAndRoundRow struct {
+	ID                  int32
+	ClubMatchID         int32
+	PlayerSeasonID      int32
+	Position            *string
+	Status              *string
+	BackupPositions     *string
+	InterchangePosition *string
+	DrvScore            *int32
+	AflPlayerMatchID    *int32
+}
+
+func (q *Queries) FindPlayerMatchByPlayerSeasonAndRound(ctx context.Context, arg FindPlayerMatchByPlayerSeasonAndRoundParams) (FindPlayerMatchByPlayerSeasonAndRoundRow, error) {
+	row := q.db.QueryRow(ctx, findPlayerMatchByPlayerSeasonAndRound, arg.PlayerSeasonID, arg.RoundID)
+	var i FindPlayerMatchByPlayerSeasonAndRoundRow
 	err := row.Scan(
 		&i.ID,
 		&i.ClubMatchID,
@@ -94,13 +147,19 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
-const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
-DELETE FROM ffl.player_match
-WHERE club_match_id = $1
+const updateAFLPlayerMatchID = `-- name: UpdateAFLPlayerMatchID :exec
+UPDATE ffl.player_match
+SET afl_player_match_id = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error {
-	_, err := q.db.Exec(ctx, deletePlayerMatchesByClubMatchID, clubMatchID)
+type UpdateAFLPlayerMatchIDParams struct {
+	ID               int32
+	AflPlayerMatchID *int32
+}
+
+func (q *Queries) UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error {
+	_, err := q.db.Exec(ctx, updateAFLPlayerMatchID, arg.ID, arg.AflPlayerMatchID)
 	return err
 }
 

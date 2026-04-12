@@ -317,6 +317,14 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 	}, nil
 }
 
+func (r *ClubMatchRepository) FindRoundID(ctx context.Context, clubMatchID int) (int, error) {
+	roundID, err := r.q.FindRoundIDByClubMatchID(ctx, int32(clubMatchID))
+	if err != nil {
+		return 0, err
+	}
+	return int(roundID), nil
+}
+
 func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int) error {
 	s := int32(score)
 	return r.q.UpdateClubMatchScore(ctx, sqlcgen.UpdateClubMatchScoreParams{

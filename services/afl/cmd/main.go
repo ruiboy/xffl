@@ -14,6 +14,7 @@ import (
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	pgevents "xffl/shared/events/pg"
 )
 
 func main() {
@@ -48,8 +49,15 @@ func main() {
 		pg.NewPlayerSeasonRepository(q),
 	)
 
+	dispatcher := pgevents.New(pool, "xffl_events")
+	go func() {
+		if err := dispatcher.Listen(ctx); err != nil {
+			log.Printf("AFL: event listener stopped: %v", err)
+		}
+	}()
+
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db)
+	commands := application.NewCommands(db, dispatcher)
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

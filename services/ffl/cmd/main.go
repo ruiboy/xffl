@@ -10,10 +10,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
+	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/ffl/internal/interface/graphql"
+	pgevents "xffl/shared/events/pg"
 )
 
 func main() {
@@ -48,8 +50,21 @@ func main() {
 		pg.NewPlayerSeasonRepository(q),
 	)
 
+	dispatcher := pgevents.New(pool, "xffl_events")
+
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db)
+	commands := application.NewCommands(db, dispatcher, application.EventRepos{
+		Rounds:        pg.NewRoundRepository(q),
+		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+		PlayerMatches: pg.NewPlayerMatchRepository(q),
+	})
+
+	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
+	go func() {
+		if err := dispatcher.Listen(ctx); err != nil {
+			log.Printf("FFL: event listener stopped: %v", err)
+		}
+	}()
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

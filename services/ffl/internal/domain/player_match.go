@@ -222,6 +222,8 @@ type PlayerMatchRepository interface {
 	DeleteByClubMatchID(ctx context.Context, clubMatchID int) error
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
+	FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (PlayerMatch, error)
+	UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }
 

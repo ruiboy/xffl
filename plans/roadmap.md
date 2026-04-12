@@ -117,15 +117,31 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Add `ai/architecture/testing.md` conventions doc + `/write-tests` skill
 - [x] Delete mock-based `commands_test.go` — coverage consolidated into integration tests
 
-## Phase 11: FFL Event Integration
+## Phase 11: FFL Event Integration ✅
 
 **Goal:** Wire up cross-service event flow between AFL and FFL
 
-- [ ] FFL subscribes to `AFL.PlayerMatchUpdated` → auto-calculates fantasy scores
-- [ ] FFL publishes `FFL.FantasyScoreCalculated`
-- [ ] Tests — integration (event flow end-to-end)
+- [x] Contract extended: `RoundID` added to `PlayerMatchUpdatedPayload`
+- [x] AFL publishes `AFL.PlayerMatchUpdated` after stat updates (PG LISTEN/NOTIFY)
+- [x] FFL round correlation: `afl_round_id` column + join query for player_match lookup
+- [x] FFL subscribes to `AFL.PlayerMatchUpdated` → auto-calculates fantasy scores
+- [x] FFL publishes `FFL.FantasyScoreCalculated`
+- [x] Tests — integration (event flow end-to-end, unknown player, multiple clubs)
 
-## Phase 12: Search Service
+## Phase 12: Live Round
+
+**Goal:** Compute and expose a contextually relevant "live round" across AFL and FFL, drive round nav defaults and indicators from it, and make the whole thing testable without real-time dependency.
+
+- [ ] Injectable `Clock` interface (shared); `CLOCK_OVERRIDE` env var for e2e
+- [ ] AFL `LiveRound` use case — midnight-bounded window (Australia/Adelaide), `RoundStatus: Open/Closed`, fallback to most recently completed
+- [ ] AFL `liveRound` GraphQL query
+- [ ] FFL `LiveRound` use case — maps via `afl_round_id`, frontend drives the AFL→FFL mapping (no FFL→AFL service dep)
+- [ ] FFL `liveRound` GraphQL query
+- [ ] E2e seed data with fixed `start_dt` values; test harness sets `CLOCK_OVERRIDE`
+- [ ] Frontend: `useAflState` + refactored `useFflState` — JSON cookies `xffl_afl` / `xffl_ffl` with `{ seasonId, roundId, roundStatus }`
+- [ ] RoundNav: `liveRoundId` from cookie; distinct ring style for `Open` vs `Closed`
+
+## Phase 13: Search Service
 
 **Goal:** Event-driven search indexing
 
@@ -136,14 +152,14 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] Add search passthrough to gateway
 - [ ] Tests — unit (document transformation) + integration (Zinc)
 
-## Phase 13: Search Frontend
+## Phase 14: Search Frontend
 
 **Goal:** Search UI (new feature, not in first-cut)
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
 
-## Phase 14: CQRS Player Stats Read Model
+## Phase 15: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -151,7 +167,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 15: Deployment
+## Phase 16: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)

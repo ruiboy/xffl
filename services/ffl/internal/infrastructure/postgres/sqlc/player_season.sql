@@ -8,6 +8,11 @@ SELECT id, player_id, club_season_id, afl_player_season_id
 FROM ffl.player_season
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: FindPlayerSeasonsByAFLPlayerSeasonID :many
+SELECT id, player_id, club_season_id, afl_player_season_id
+FROM ffl.player_season
+WHERE afl_player_season_id = $1 AND deleted_at IS NULL;
+
 -- name: CreatePlayerSeason :one
 INSERT INTO ffl.player_season (player_id, club_season_id)
 VALUES ($1, $2)

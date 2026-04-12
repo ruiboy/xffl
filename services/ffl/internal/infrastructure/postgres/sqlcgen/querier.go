@@ -29,12 +29,16 @@ type Querier interface {
 	FindPlayerByAFLPlayerID(ctx context.Context, aflPlayerID int32) (FindPlayerByAFLPlayerIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)
 	FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayerMatchByIDRow, error)
+	FindPlayerMatchByPlayerSeasonAndRound(ctx context.Context, arg FindPlayerMatchByPlayerSeasonAndRoundParams) (FindPlayerMatchByPlayerSeasonAndRoundRow, error)
 	FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error)
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
+	FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error)
 	FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error)
+	FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
 	UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (UpdatePlayerRow, error)
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)

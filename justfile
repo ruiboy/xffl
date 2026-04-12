@@ -11,6 +11,12 @@ dev-up:
     @until docker exec xffl-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
     @echo "Postgres ready on :${DB_PORT:-5432} | Zinc ready on :${ZINC_PORT:-4080}"
 
+# Load test data into Postgres
+dev-seed:
+    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/01_afl_seed.sql
+    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/02_ffl_seed.sql
+    @echo "Test data loaded"
+
 # Stop local infrastructure
 dev-down:
     docker compose -f dev/docker-compose.yml down
@@ -23,16 +29,6 @@ dev-reset:
 # Tail infrastructure logs
 dev-logs:
     docker compose -f dev/docker-compose.yml logs -f
-
-# Load test data into Postgres
-dev-seed:
-    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/01_afl_seed.sql
-    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/02_ffl_seed.sql
-    @echo "Test data loaded"
-
-# Snapshot AI control plane context for sharing or LLM ingestion
-ai-snapshot:
-    bash dev/ai-snapshot.sh
 
 # Run AFL service (port 8080)
 run-afl:
@@ -55,7 +51,7 @@ install-frontend:
     cd frontend/web && npm install
 
 # Run Frontend (port 3000)
-run-frontend:
+run-frontend: install-frontend
     cd frontend/web && npm run dev
 
 # Run AFL + FFL services, gateway, and frontend together
@@ -105,4 +101,14 @@ test-e2e:
     docker compose -p xffl-test -f dev/docker-compose.test.yml down
     rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
     exit $STATUS
+
+# Run all tests (AFL unit, FFL unit, and e2e)
+test-all:
+    just test-afl
+    just test-ffl
+    just test-e2e
+
+# Snapshot AI control plane context for sharing or LLM ingestion
+ai-snapshot:
+    bash dev/ai-snapshot.sh
 

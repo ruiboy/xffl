@@ -19,6 +19,7 @@ import (
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/ffl/internal/interface/graphql"
+	memevents "xffl/shared/events/memory"
 )
 
 // db setup
@@ -45,7 +46,11 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db)
+	commands := application.NewCommands(db, memevents.New(), application.EventRepos{
+		Rounds:        pg.NewRoundRepository(q),
+		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+		PlayerMatches: pg.NewPlayerMatchRepository(q),
+	})
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

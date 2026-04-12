@@ -18,6 +18,7 @@ import (
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	memevents "xffl/shared/events/memory"
 )
 
 // db setup
@@ -44,7 +45,7 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db)
+	commands := application.NewCommands(db, memevents.New())
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

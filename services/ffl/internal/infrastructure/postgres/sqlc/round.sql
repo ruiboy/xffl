@@ -1,8 +1,10 @@
 -- name: FindRoundsBySeasonID :many
-SELECT id, name, season_id
-FROM ffl.round
-WHERE season_id = $1 AND deleted_at IS NULL
-ORDER BY id;
+SELECT r.id, r.name, r.season_id
+FROM ffl.round r
+LEFT JOIN ffl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+WHERE r.season_id = $1 AND r.deleted_at IS NULL
+GROUP BY r.id, r.name, r.season_id
+ORDER BY MIN(m.start_dt) NULLS LAST, r.id;
 
 -- name: FindRoundByID :one
 SELECT id, name, season_id
@@ -16,3 +18,8 @@ JOIN ffl.season s ON s.id = r.season_id AND s.deleted_at IS NULL
 WHERE r.deleted_at IS NULL
 ORDER BY s.id DESC, r.id DESC
 LIMIT 1;
+
+-- name: FindRoundByAFLRoundID :one
+SELECT id, name, season_id, afl_round_id
+FROM ffl.round
+WHERE afl_round_id = $1 AND deleted_at IS NULL;

@@ -31,6 +31,31 @@ func (q *Queries) FindLatestRound(ctx context.Context) (FindLatestRoundRow, erro
 	return i, err
 }
 
+const findRoundByAFLRoundID = `-- name: FindRoundByAFLRoundID :one
+SELECT id, name, season_id, afl_round_id
+FROM ffl.round
+WHERE afl_round_id = $1 AND deleted_at IS NULL
+`
+
+type FindRoundByAFLRoundIDRow struct {
+	ID         int32
+	Name       string
+	SeasonID   int32
+	AflRoundID *int32
+}
+
+func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error) {
+	row := q.db.QueryRow(ctx, findRoundByAFLRoundID, aflRoundID)
+	var i FindRoundByAFLRoundIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.SeasonID,
+		&i.AflRoundID,
+	)
+	return i, err
+}
+
 const findRoundByID = `-- name: FindRoundByID :one
 SELECT id, name, season_id
 FROM ffl.round
@@ -51,10 +76,12 @@ func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow
 }
 
 const findRoundsBySeasonID = `-- name: FindRoundsBySeasonID :many
-SELECT id, name, season_id
-FROM ffl.round
-WHERE season_id = $1 AND deleted_at IS NULL
-ORDER BY id
+SELECT r.id, r.name, r.season_id
+FROM ffl.round r
+LEFT JOIN ffl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+WHERE r.season_id = $1 AND r.deleted_at IS NULL
+GROUP BY r.id, r.name, r.season_id
+ORDER BY MIN(m.start_dt) NULLS LAST, r.id
 `
 
 type FindRoundsBySeasonIDRow struct {
