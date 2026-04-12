@@ -18,6 +18,7 @@ import (
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	"xffl/shared/clock"
 	memevents "xffl/shared/events/memory"
 )
 
@@ -33,9 +34,10 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 
 	q := sqlcgen.New(pool)
 	queries := application.NewQueries(
+		clock.RealClock{},
 		pg.NewClubRepository(q),
 		pg.NewSeasonRepository(q),
-		pg.NewRoundRepository(q),
+		pg.NewRoundRepository(q, pool),
 		pg.NewMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewClubMatchRepository(q),

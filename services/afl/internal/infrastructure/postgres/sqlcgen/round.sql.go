@@ -84,3 +84,51 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 	}
 	return items, nil
 }
+
+const findRoundsWithMatchBoundsBySeasonID = `-- name: FindRoundsWithMatchBoundsBySeasonID :many
+SELECT
+    r.id,
+    r.name,
+    r.season_id,
+    COALESCE(MIN(m.start_dt), '0001-01-01T00:00:00Z'::timestamptz) AS first_match_dt,
+    COALESCE(MAX(m.start_dt), '0001-01-01T00:00:00Z'::timestamptz) AS last_match_dt
+FROM afl.round r
+JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+WHERE r.season_id = $1 AND r.deleted_at IS NULL
+GROUP BY r.id, r.name, r.season_id
+ORDER BY MIN(m.start_dt)
+`
+
+type FindRoundsWithMatchBoundsBySeasonIDRow struct {
+	ID           int32
+	Name         string
+	SeasonID     int32
+	FirstMatchDt interface{}
+	LastMatchDt  interface{}
+}
+
+func (q *Queries) FindRoundsWithMatchBoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsWithMatchBoundsBySeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findRoundsWithMatchBoundsBySeasonID, seasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindRoundsWithMatchBoundsBySeasonIDRow{}
+	for rows.Next() {
+		var i FindRoundsWithMatchBoundsBySeasonIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.SeasonID,
+			&i.FirstMatchDt,
+			&i.LastMatchDt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

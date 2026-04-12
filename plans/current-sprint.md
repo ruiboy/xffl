@@ -1,57 +1,4 @@
-# Current Sprint
-
-**Sprint goal:** Phase 11 — FFL Event Integration
-
-Wire up cross-service event flow: AFL stat updates automatically trigger FFL fantasy score recalculation.
-
-## Tasks
-
-### 1. Contract: extend event payload
-- [x] Add `RoundID int` to `PlayerMatchUpdatedPayload` in `contracts/events/events.go`
-
-### 2. AFL: publish event on stat update
-- [x] Add `events.Dispatcher` to AFL `Commands` (new dependency)
-- [x] Publish `AFL.PlayerMatchUpdated` after `UpdatePlayerMatch` succeeds
-- [x] Wire PG dispatcher in `services/afl/cmd/main.go`, start `Listen` goroutine
-- [x] Add `FindRoundIDByClubMatchID` SQLC query + domain interface + repo method
-
-### 3. FFL schema: round correlation
-- [x] Add `afl_round_id INTEGER` column to `ffl.round` in `dev/postgres/init/02_ffl_schema.sql`
-- [x] Populate `afl_round_id` in seed data
-- [x] Add field to FFL `domain.Round`
-
-### 4. FFL infra: new queries
-- [x] SQLC query: `FindRoundByAFLRoundID` — find FFL round by `afl_round_id`
-- [x] SQLC query: `FindPlayerMatchByPlayerSeasonAndRound` — join `player_match → club_match → match` to find player_match by `(player_season_id, round_id)`
-- [x] SQLC query: `FindPlayerSeasonsByAFLPlayerSeasonID` — find all FFL player_seasons for a given AFL player_season
-- [x] SQLC query: `UpdateAFLPlayerMatchID` — set the AFL link on player_match
-- [x] Add repository methods + domain interfaces for the above
-- [x] `sqlc generate` + update `repository.go`
-
-### 5. FFL application: event handler
-- [x] New `HandlePlayerMatchUpdated(ctx, payload)` method on `Commands`
-  - Decode `PlayerMatchUpdatedPayload`
-  - Find FFL round by `afl_round_id`
-  - Find FFL player_seasons by `afl_player_season_id`
-  - For each: find FFL player_match by `(player_season_id, round_id)` via join query
-  - Call `CalculateFantasyScore` with AFL stats
-  - Set `afl_player_match_id` on the FFL player_match
-  - Publish `FFL.FantasyScoreCalculated`
-- [x] Add `events.Dispatcher` dependency to FFL `Commands`
-
-### 6. FFL main.go: wire dispatcher
-- [x] Wire PG dispatcher in `services/ffl/cmd/main.go`
-- [x] Subscribe `HandlePlayerMatchUpdated` to `AFL.PlayerMatchUpdated`
-- [x] Start `Listen` goroutine
-
-### 7. Integration tests
-- [x] Test: AFL publishes event → FFL handler scores the correct player_match
-- [x] Test: event for player not in any FFL squad is silently ignored
-- [x] Test: multiple FFL clubs with same AFL player all get scored
-
----
-
-# Phase 12 — Live Round
+# Current Sprint — Phase 12: Live Round
 
 **Sprint goal:** Compute and expose a "live round" across AFL and FFL services, drive the round nav default and indicator from it, and make the whole thing testable without real-time dependency.
 
@@ -72,24 +19,21 @@ Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_
 ## Tasks
 
 ### 1. Shared: Clock interface
-- [ ] Define `Clock` interface in `shared/` (or per-service if no shared location is appropriate)
-- [ ] `RealClock` implementation wrapping `time.Now()`
-- [ ] `FixedClock` implementation for tests
-- [ ] `CLOCK_OVERRIDE` env var support: if set at startup, wire `FixedClock`; otherwise `RealClock`
+- [x] Define `Clock` interface in `shared/clock/`
+- [x] `RealClock` implementation wrapping `time.Now()`
+- [x] `FixedClock` implementation for tests
+- [x] `CLOCK_OVERRIDE` env var support: if set at startup, wire `FixedClock`; otherwise `RealClock`
 
 ### 2. AFL: RoundStatus type + LiveRound use case
-- [ ] Add `RoundStatus` type (`Open` / `Closed`) to AFL domain
-- [ ] Add `LiveRoundResult` struct: `Round *Round`, `Status RoundStatus`
-- [ ] SQLC query: fetch all rounds for a season with `MIN(match.start_dt)` and `MAX(match.start_dt)`
-- [ ] `LiveRound(ctx, asOf time.Time) (*LiveRoundResult, error)` use case:
-  - Load round+match bounds for current season
-  - For each round: compute window in Australia/Adelaide timezone
-  - Return first round whose window contains `asOf`; if none, return most recently completed with `Closed`
-- [ ] Wire `Clock` into AFL `Commands`
+- [x] Add `RoundStatus` type (`Open` / `Closed`) to AFL domain
+- [x] Add `LiveRoundResult` struct: `Round`, `Status RoundStatus`
+- [x] SQLC query: fetch all rounds for a season with `MIN(match.start_dt)` and `MAX(match.start_dt)`
+- [x] `LiveRound(ctx) LiveRoundResult` use case: loads round+match bounds, computes midnight windows in Australia/Adelaide, returns Open if window active, Closed for most recently completed
+- [x] Wire `Clock` into AFL `Queries`
 
 ### 3. AFL: GraphQL
-- [ ] Add `liveRound: LiveRoundResult` query to AFL schema
-- [ ] Resolver calls `commands.LiveRound(ctx, clock.Now())`
+- [x] Add `aflLiveRound: AFLLiveRound` query to AFL schema
+- [x] Resolver calls `queries.LiveRound(ctx)`
 
 ### 4. FFL: LiveRound use case
 - [ ] Add `RoundStatus` type + `LiveRoundResult` to FFL domain
@@ -113,3 +57,7 @@ Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_
 ### 8. Frontend: RoundNav
 - [ ] Feed `liveRoundId` from cookie (not URL)
 - [ ] Pass `roundStatus` alongside `liveRoundId`; apply distinct ring style for `Open` vs `Closed`
+
+## Revisit at end of sprint
+
+- [ ] `adelaideLoc` in `domain/round.go` — not fully convinced this belongs in domain. Consider whether timezone config belongs in application layer or as a domain constant. Revisit once FFL side is implemented and the full pattern is visible.

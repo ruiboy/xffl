@@ -2,6 +2,10 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"xffl/services/afl/internal/domain"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
@@ -99,10 +103,13 @@ func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season,
 
 // --- Round ---
 
-type RoundRepository struct{ q *sqlcgen.Queries }
+type RoundRepository struct {
+	q    *sqlcgen.Queries
+	pool *pgxpool.Pool
+}
 
-func NewRoundRepository(q *sqlcgen.Queries) *RoundRepository {
-	return &RoundRepository{q: q}
+func NewRoundRepository(q *sqlcgen.Queries, pool *pgxpool.Pool) *RoundRepository {
+	return &RoundRepository{q: q, pool: pool}
 }
 
 func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]domain.Round, error) {
@@ -131,6 +138,45 @@ func (r *RoundRepository) FindLatest(ctx context.Context) (domain.Round, error) 
 		return domain.Round{}, err
 	}
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
+}
+
+const findRoundsWithMatchBounds = `
+SELECT
+    r.id, r.name, r.season_id,
+    MIN(m.start_dt) AS first_match_dt,
+    MAX(m.start_dt) AS last_match_dt
+FROM afl.round r
+JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+WHERE r.season_id = $1 AND r.deleted_at IS NULL
+GROUP BY r.id, r.name, r.season_id
+ORDER BY MIN(m.start_dt)
+`
+
+func (r *RoundRepository) FindWithMatchBoundsBySeasonID(ctx context.Context, seasonID int) ([]domain.RoundWithBounds, error) {
+	rows, err := r.pool.Query(ctx, findRoundsWithMatchBounds, int32(seasonID))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []domain.RoundWithBounds
+	for rows.Next() {
+		var id, sid int32
+		var name string
+		var first, last pgtype.Timestamptz
+		if err := rows.Scan(&id, &name, &sid, &first, &last); err != nil {
+			return nil, fmt.Errorf("scan round with bounds: %w", err)
+		}
+		if !first.Valid || !last.Valid {
+			continue
+		}
+		out = append(out, domain.RoundWithBounds{
+			Round:          domain.Round{ID: int(id), Name: name, SeasonID: int(sid)},
+			FirstMatchTime: first.Time,
+			LastMatchTime:  last.Time,
+		})
+	}
+	return out, rows.Err()
 }
 
 // --- Match ---

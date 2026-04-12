@@ -196,6 +196,18 @@ func (r *queryResolver) AflLatestRound(ctx context.Context) (*AFLRound, error) {
 	return convertRound(round), nil
 }
 
+// AflLiveRound is the resolver for the aflLiveRound field.
+func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error) {
+	result, err := r.Queries.LiveRound(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &AFLLiveRound{
+		Round:  convertRound(result.Round),
+		Status: string(result.Status),
+	}, nil
+}
+
 // AflPlayerSeasonStats is the resolver for the aflPlayerSeasonStats field.
 func (r *queryResolver) AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error) {
 	intIDs := make([]int, len(ids))

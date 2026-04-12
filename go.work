@@ -5,6 +5,7 @@ use (
 	./services/afl
 	./services/ffl
 	./services/gateway
+	./shared/clock
 	./shared/database
 	./shared/events
 )

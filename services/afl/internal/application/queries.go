@@ -4,22 +4,25 @@ import (
 	"context"
 
 	"xffl/services/afl/internal/domain"
+	"xffl/shared/clock"
 )
 
 // Queries handles all read operations for the AFL service.
 type Queries struct {
-	clubs          domain.ClubRepository
-	seasons        domain.SeasonRepository
-	rounds         domain.RoundRepository
-	matches        domain.MatchRepository
-	clubSeasons    domain.ClubSeasonRepository
-	clubMatches    domain.ClubMatchRepository
-	players        domain.PlayerRepository
-	playerMatches  domain.PlayerMatchRepository
-	playerSeasons  domain.PlayerSeasonRepository
+	clock         clock.Clock
+	clubs         domain.ClubRepository
+	seasons       domain.SeasonRepository
+	rounds        domain.RoundRepository
+	matches       domain.MatchRepository
+	clubSeasons   domain.ClubSeasonRepository
+	clubMatches   domain.ClubMatchRepository
+	players       domain.PlayerRepository
+	playerMatches domain.PlayerMatchRepository
+	playerSeasons domain.PlayerSeasonRepository
 }
 
 func NewQueries(
+	clk clock.Clock,
 	clubs domain.ClubRepository,
 	seasons domain.SeasonRepository,
 	rounds domain.RoundRepository,
@@ -31,6 +34,7 @@ func NewQueries(
 	playerSeasons domain.PlayerSeasonRepository,
 ) *Queries {
 	return &Queries{
+		clock:         clk,
 		clubs:         clubs,
 		seasons:       seasons,
 		rounds:        rounds,
@@ -69,6 +73,19 @@ func (q *Queries) GetRounds(ctx context.Context, seasonID int) ([]domain.Round, 
 
 func (q *Queries) GetLatestRound(ctx context.Context) (domain.Round, error) {
 	return q.rounds.FindLatest(ctx)
+}
+
+// LiveRound returns the contextually relevant AFL round as of the clock's current time.
+func (q *Queries) LiveRound(ctx context.Context) (domain.LiveRoundResult, error) {
+	latest, err := q.rounds.FindLatest(ctx)
+	if err != nil {
+		return domain.LiveRoundResult{}, err
+	}
+	rounds, err := q.rounds.FindWithMatchBoundsBySeasonID(ctx, latest.SeasonID)
+	if err != nil {
+		return domain.LiveRoundResult{}, err
+	}
+	return domain.FindLiveRound(rounds, q.clock.Now())
 }
 
 func (q *Queries) GetMatch(ctx context.Context, id int) (domain.Match, error) {
