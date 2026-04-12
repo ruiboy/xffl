@@ -1,26 +1,20 @@
 import { ref, readonly } from 'vue'
 
-const FFL_COOKIE = 'xffl_ffl'
-
-interface FflState {
+interface AflState {
   seasonId: string
   roundId: string
   roundStatus: string
 }
 
-function getCookie(name: string): string {
+const COOKIE_NAME = 'xffl_afl'
+
+function getCookieRaw(name: string): string {
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
   return match ? decodeURIComponent(match[2]) : ''
 }
 
-function setCookie(name: string, value: string) {
-  const expires = new Date()
-  expires.setDate(expires.getDate() + 30)
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`
-}
-
-function readFflCookie(): FflState {
-  const raw = getCookie(FFL_COOKIE)
+function readCookie(): AflState {
+  const raw = getCookieRaw(COOKIE_NAME)
   if (!raw) return { seasonId: '', roundId: '', roundStatus: '' }
   try {
     const parsed = JSON.parse(raw)
@@ -34,32 +28,30 @@ function readFflCookie(): FflState {
   }
 }
 
+function writeCookie(state: AflState) {
+  const expires = new Date()
+  expires.setDate(expires.getDate() + 30)
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(state))};expires=${expires.toUTCString()};path=/`
+}
+
 // Module-level singletons — shared across all component instances
-const selectedClubId = ref<string>(getCookie('xffl_club_id'))
-const stored = readFflCookie()
+const stored = readCookie()
 const liveSeasonId = ref<string>(stored.seasonId)
 const liveRoundId = ref<string>(stored.roundId)
 const liveRoundStatus = ref<string>(stored.roundStatus)
-
-function setClub(id: string) {
-  selectedClubId.value = id
-  setCookie('xffl_club_id', id)
-}
 
 function setLiveRound(seasonId: string, roundId: string, roundStatus: string) {
   liveSeasonId.value = seasonId
   liveRoundId.value = roundId
   liveRoundStatus.value = roundStatus
-  setCookie(FFL_COOKIE, JSON.stringify({ seasonId, roundId, roundStatus }))
+  writeCookie({ seasonId, roundId, roundStatus })
 }
 
-export function useFflState() {
+export function useAflState() {
   return {
-    selectedClubId: readonly(selectedClubId),
     liveSeasonId: readonly(liveSeasonId),
     liveRoundId: readonly(liveRoundId),
     liveRoundStatus: readonly(liveRoundStatus),
-    setClub,
     setLiveRound,
   }
 }

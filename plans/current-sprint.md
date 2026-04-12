@@ -46,13 +46,13 @@ Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_
 - [x] `CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30` wired into both service commands in `playwright.config.ts`
 
 ### 7. Frontend: state composables
-- [ ] Create `useAflState.ts`: manages `xffl_afl` JSON cookie `{ seasonId, roundId, roundStatus }`
-- [ ] Refactor `useFflState.ts`: replace flat string refs + `setCurrentSeason` with `xffl_ffl` JSON cookie, same shape
-- [ ] On page load: call `liveRound` query for the relevant service, update cookie; trust stale value on failure
+- [x] Create `useAflState.ts`: manages `xffl_afl` JSON cookie `{ seasonId, roundId, roundStatus }`
+- [x] Refactor `useFflState.ts`: replace flat string refs + `setCurrentSeason` with `xffl_ffl` JSON cookie, same shape
+- [x] On page load: call `liveRound` query for the relevant service, update cookie; trust stale value on failure
 
 ### 8. Frontend: RoundNav
-- [ ] Feed `liveRoundId` from cookie (not URL)
-- [ ] Pass `roundStatus` alongside `liveRoundId`; apply distinct ring style for `Open` vs `Closed`
+- [x] Feed `liveRoundId` from cookie (not URL)
+- [x] Pass `roundStatus` alongside `liveRoundId`; apply distinct ring style for `Open` vs `Closed`
 
 ## Revisit at end of sprint
 

@@ -115,6 +115,7 @@ export const GET_FFL_LATEST_ROUND = gql`
         rounds {
           id
           name
+          aflRoundId
         }
       }
       matches {
@@ -133,6 +134,15 @@ export const GET_FFL_LATEST_ROUND = gql`
           score
         }
       }
+    }
+  }
+`
+
+export const GET_AFL_LIVE_ROUND = gql`
+  query GetAFLLiveRoundForFFL {
+    aflLiveRound {
+      round { id }
+      status
     }
   }
 `

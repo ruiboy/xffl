@@ -1,66 +1,30 @@
 import gql from 'graphql-tag'
 
-export const GET_SEASONS = gql`
-  query GetSeasons {
-    aflSeasons {
-      id
-      name
-    }
-  }
-`
-
-export const GET_LATEST_ROUND = gql`
-  query GetLatestRound {
-    aflLatestRound {
-      id
-      name
-      season {
+export const GET_AFL_LIVE_ROUND = gql`
+  query GetAFLLiveRound {
+    aflLiveRound {
+      round {
         id
         name
-        ladder {
-          id
-          club { id name }
-          played
-          won
-          lost
-          drawn
-          for
-          against
-          premiershipPoints
-        }
-        rounds {
+        season {
           id
           name
+          ladder {
+            id
+            club { id name }
+            played
+            won
+            lost
+            drawn
+            for
+            against
+            premiershipPoints
+          }
+          rounds {
+            id
+            name
+          }
         }
-      }
-      matches {
-        id
-        venue
-        startTime
-        result
-        homeClubMatch {
-          id
-          club { id name }
-          score
-        }
-        awayClubMatch {
-          id
-          club { id name }
-          score
-        }
-      }
-    }
-  }
-`
-
-export const GET_SEASON = gql`
-  query GetSeason($id: ID!) {
-    aflSeason(id: $id) {
-      id
-      name
-      rounds {
-        id
-        name
         matches {
           id
           venue
@@ -78,6 +42,7 @@ export const GET_SEASON = gql`
           }
         }
       }
+      status
     }
   }
 `

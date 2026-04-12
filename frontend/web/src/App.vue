@@ -18,9 +18,9 @@
           <!-- Squad + Team Builder (always visible on FFL pages once season is known) -->
           <template v-if="isFfl">
             <router-link
-              :to="currentSeasonId ? { name: 'ffl-squad', params: { seasonId: currentSeasonId } } : '/ffl'"
+              :to="liveSeasonId ? { name: 'ffl-squad', params: { seasonId: liveSeasonId } } : '/ffl'"
               class="text-sm transition-colors"
-              :class="currentSeasonId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
+              :class="liveSeasonId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
             >
               Squad
             </router-link>
@@ -82,15 +82,15 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 
 const route = useRoute()
-const { selectedClubId, currentSeasonId, setClub } = useFflState()
+const { selectedClubId, liveSeasonId, setClub } = useFflState()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
 
 // Load clubs for the current FFL season (driven by state, not route params)
 const { result: clubsResult } = useQuery(
   GET_FFL_SEASON_CLUBS,
-  () => ({ seasonId: currentSeasonId.value }),
-  () => ({ enabled: isFfl.value && !!currentSeasonId.value })
+  () => ({ seasonId: liveSeasonId.value }),
+  () => ({ enabled: isFfl.value && !!liveSeasonId.value })
 )
 
 const rawClubs = computed(() => clubsResult.value?.fflSeason?.ladder ?? [])

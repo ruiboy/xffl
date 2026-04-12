@@ -8,7 +8,8 @@
       <RoundNav
         class="mb-8"
         :rounds="data.season.rounds"
-        :live-round-id="data.round.id"
+        :live-round-id="liveRoundId"
+        :live-round-status="liveRoundStatus"
         :season-id="data.season.id"
       />
 
@@ -23,13 +24,14 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_FFL_LATEST_ROUND } from '../api/queries'
+import { GET_FFL_LATEST_ROUND, GET_AFL_LIVE_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
-const { setCurrentSeason } = useFflState()
+const { liveRoundId, liveRoundStatus, setLiveRound } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_LATEST_ROUND)
+const { result: aflResult } = useQuery(GET_AFL_LIVE_ROUND)
 
 const data = computed(() => {
   const round = result.value?.fflLatestRound
@@ -40,7 +42,14 @@ const data = computed(() => {
   }
 })
 
-watch(data, (d) => {
-  if (d) setCurrentSeason(d.season.id, d.round.id)
+watch([data, () => aflResult.value], ([d, afl]) => {
+  if (!d || !afl) return
+  const aflRoundId = afl.aflLiveRound.round.id
+  const status = afl.aflLiveRound.status
+  const fflRound = d.season.rounds.find(
+    (r: { id: string; aflRoundId?: string | null }) => r.aflRoundId === aflRoundId
+  )
+  const roundId = fflRound?.id ?? d.round.id
+  setLiveRound(d.season.id, roundId, status)
 })
 </script>

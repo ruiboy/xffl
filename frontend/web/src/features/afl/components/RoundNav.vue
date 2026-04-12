@@ -24,7 +24,7 @@
       :class="activeRoundId === round.id
         ? 'bg-active text-active-text'
         : round.id === liveRoundId
-          ? 'ring-2 ring-active bg-control text-text-muted hover:bg-control-hover hover:text-text'
+          ? [liveRoundStatus === 'open' ? 'ring-2 ring-active ring-offset-2 ring-offset-surface' : 'ring-2 ring-text-muted ring-offset-2 ring-offset-surface', 'bg-control text-text-muted hover:bg-control-hover hover:text-text']
           : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
     >
       {{ round.name === 'Opening Round' ? '0' : round.name.replace(/^Round\s+/i, '') }}
@@ -45,6 +45,7 @@ const props = defineProps<{
   rounds: Round[]
   seasonId: string
   liveRoundId: string
+  liveRoundStatus: string
 }>()
 
 const route = useRoute()
