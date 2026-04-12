@@ -58,7 +58,12 @@ func convertSeasons(seasons []domain.Season) []*FFLSeason {
 }
 
 func convertRound(r domain.Round) *FFLRound {
-	return &FFLRound{ID: toID(r.ID), Name: r.Name}
+	round := &FFLRound{ID: toID(r.ID), Name: r.Name}
+	if r.AFLRoundID != nil {
+		id := toID(*r.AFLRoundID)
+		round.AflRoundID = &id
+	}
+	return round
 }
 
 func convertRounds(rounds []domain.Round) []*FFLRound {

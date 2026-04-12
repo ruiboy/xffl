@@ -54,13 +54,6 @@ type FFLClubSeason struct {
 	Players    *FFLPlayerSeasonConnection `json:"players"`
 }
 
-type FFLTeamPlayerInput struct {
-	PlayerSeasonID      string  `json:"playerSeasonId"`
-	Position            string  `json:"position"`
-	BackupPositions     *string `json:"backupPositions,omitempty"`
-	InterchangePosition *string `json:"interchangePosition,omitempty"`
-}
-
 type FFLMatch struct {
 	ID            string        `json:"id"`
 	Venue         *string       `json:"venue,omitempty"`
@@ -105,10 +98,11 @@ type FFLPlayerSeasonFilter struct {
 }
 
 type FFLRound struct {
-	ID      string      `json:"id"`
-	Name    string      `json:"name"`
-	Season  *FFLSeason  `json:"season"`
-	Matches []*FFLMatch `json:"matches"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	AflRoundID *string     `json:"aflRoundId,omitempty"`
+	Season     *FFLSeason  `json:"season"`
+	Matches    []*FFLMatch `json:"matches"`
 }
 
 type FFLSeason struct {
@@ -116,6 +110,13 @@ type FFLSeason struct {
 	Name   string           `json:"name"`
 	Ladder []*FFLClubSeason `json:"ladder"`
 	Rounds []*FFLRound      `json:"rounds"`
+}
+
+type FFLTeamPlayerInput struct {
+	PlayerSeasonID      string  `json:"playerSeasonId"`
+	Position            string  `json:"position"`
+	BackupPositions     *string `json:"backupPositions,omitempty"`
+	InterchangePosition *string `json:"interchangePosition,omitempty"`
 }
 
 type Mutation struct {
@@ -130,8 +131,8 @@ type Query struct {
 }
 
 type SetFFLTeamInput struct {
-	ClubMatchID string                 `json:"clubMatchId"`
-	Players     []*FFLTeamPlayerInput  `json:"players"`
+	ClubMatchID string                `json:"clubMatchId"`
+	Players     []*FFLTeamPlayerInput `json:"players"`
 }
 
 type UpdateFFLPlayerInput struct {

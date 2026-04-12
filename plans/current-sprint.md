@@ -35,14 +35,10 @@ Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_
 - [x] Add `aflLiveRound: AFLLiveRound` query to AFL schema
 - [x] Resolver calls `queries.LiveRound(ctx)`
 
-### 4. FFL: LiveRound use case
-- [ ] Add `RoundStatus` type + `LiveRoundResult` to FFL domain
-- [ ] `LiveRound` use case: find FFL round matching live AFL round via `afl_round_id`; fall back to most recently completed FFL round
-- [ ] Wire `Clock` into FFL `Commands`
-
-### 5. FFL: GraphQL
-- [ ] Add `liveRound: LiveRoundResult` query to FFL schema
-- [ ] Resolver calls `commands.LiveRound(ctx, clock.Now())`
+### 4 & 5. FFL: expose aflRoundId on FFLRound
+- [x] Add `aflRoundId: ID` to `FFLRound` in FFL GraphQL schema
+- [x] Populate `AflRoundID` in `convertRound`
+- No clock, no use case, no `fflLiveRound` query needed — frontend maps AFL→FFL round client-side using `aflRoundId`
 
 ### 6. E2e test seed data
 - [ ] Add a dedicated e2e AFL round with `afl.match.start_dt` values around a fixed date (e.g. `2026-01-15`)
