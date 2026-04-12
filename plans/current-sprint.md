@@ -41,9 +41,9 @@ Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_
 - No clock, no use case, no `fflLiveRound` query needed — frontend maps AFL→FFL round client-side using `aflRoundId`
 
 ### 6. E2e test seed data
-- [ ] Add a dedicated e2e AFL round with `afl.match.start_dt` values around a fixed date (e.g. `2026-01-15`)
-- [ ] Add matching FFL round with `afl_round_id` pointing to above
-- [ ] Configure e2e harness to start services with `CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30`
+- [x] Add AFL Round 3 with `start_dt = 2026-01-15 14:10:00+10:30` to e2e AFL seed
+- [x] Add FFL Round 3 with `afl_round_id` pointing to AFL Round 3 to e2e FFL seed
+- [x] `CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30` wired into both service commands in `playwright.config.ts`
 
 ### 7. Frontend: state composables
 - [ ] Create `useAflState.ts`: manages `xffl_afl` JSON cookie `{ seasonId, roundId, roundStatus }`

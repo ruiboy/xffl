@@ -181,4 +181,29 @@ FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club
 WHERE p.name = 'Hugh McCluggage' AND r.name = 'Round 2'
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
+-- Round 3 — fixed date for CLOCK_OVERRIDE e2e live-round tests
+-- Window: midnight 2026-01-15 Adelaide → midnight 2026-01-16 Adelaide
+-- CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30 lands inside this window (Open)
+INSERT INTO afl.round (season_id, name)
+SELECT s.id, 'Round 3'
+FROM afl.season s JOIN afl.league l ON s.league_id = l.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026';
+
+INSERT INTO afl.match (round_id, venue, start_dt, drv_result)
+SELECT r.id, 'Adelaide Oval', '2026-01-15 14:10:00+10:30', 'no_result'
+FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 3';
+
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+SELECT m.id, cs.id, 0, 0, 0
+FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND r.name = 'Round 3' AND c.name IN ('Adelaide Crows', 'Brisbane Lions')
+ON CONFLICT (club_season_id, match_id) DO NOTHING;
+
+UPDATE afl.match SET
+  home_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Adelaide Crows'),
+  away_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Brisbane Lions')
+WHERE round_id = (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 3');
+
 COMMIT;
