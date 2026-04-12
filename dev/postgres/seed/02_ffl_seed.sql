@@ -77,9 +77,12 @@ DO $$
 DECLARE
     v_season_id  INTEGER;
     v_match_id   INTEGER;
-    v_home_cm_id INTEGER;
-    v_away_cm_id INTEGER;
-    r            RECORD;
+    v_home_cm_id  INTEGER;
+    v_away_cm_id  INTEGER;
+    v_match_count INTEGER := 0;
+    v_cm_count    INTEGER := 0;
+    v_row_count   INTEGER;
+    rec           RECORD;
 BEGIN
     SELECT id INTO v_season_id FROM ffl.season WHERE name = 'FFL 2026';
 
@@ -87,12 +90,14 @@ BEGIN
     -- afl_round_id links each FFL round to its corresponding AFL round
     INSERT INTO ffl.round (name, season_id, afl_round_id)
     SELECT n::text, v_season_id,
-           (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id
-            WHERE r.name = 'Round ' || n::text AND s.name = 'AFL 2026')
+           (SELECT ar.id FROM afl.round ar JOIN afl.season s ON ar.season_id = s.id
+            WHERE ar.name = 'Round ' || n::text AND s.name = 'AFL 2026')
     FROM generate_series(2, 23) AS n;
+    GET DIAGNOSTICS v_row_count = ROW_COUNT;
+    RAISE NOTICE 'rounds inserted: %', v_row_count;
 
     -- Insert all matches (rounds 19 and 23 have none)
-    FOR r IN
+    FOR rec IN
         SELECT * FROM (VALUES
             ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
             ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
@@ -138,21 +143,26 @@ BEGIN
     LOOP
         INSERT INTO ffl.match (round_id, match_style, venue, start_dt)
         VALUES (
-            (SELECT id FROM ffl.round WHERE name = r.round_name AND season_id = v_season_id),
-            'versus', r.venue, r.start_dt
+            (SELECT id FROM ffl.round WHERE name = rec.round_name AND season_id = v_season_id),
+            'versus', rec.venue, rec.start_dt
         )
         RETURNING id INTO v_match_id;
+        v_match_count := v_match_count + 1;
 
         INSERT INTO ffl.club_match (match_id, club_season_id)
-        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = r.home_club AND cs.season_id = v_season_id))
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.home_club AND cs.season_id = v_season_id))
         RETURNING id INTO v_home_cm_id;
+        v_cm_count := v_cm_count + 1;
 
         INSERT INTO ffl.club_match (match_id, club_season_id)
-        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = r.away_club AND cs.season_id = v_season_id))
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.away_club AND cs.season_id = v_season_id))
         RETURNING id INTO v_away_cm_id;
+        v_cm_count := v_cm_count + 1;
 
         UPDATE ffl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id WHERE id = v_match_id;
     END LOOP;
+    RAISE NOTICE 'matches inserted: %', v_match_count;
+    RAISE NOTICE 'club_matches inserted: %', v_cm_count;
 END $$;
 
 COMMIT;
