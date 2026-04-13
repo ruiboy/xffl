@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -18,7 +18,19 @@ import (
 	pgevents "xffl/shared/events/pg"
 )
 
+// logLevelFromEnv returns slog.LevelDebug if LOG_LEVEL=debug, otherwise LevelInfo.
+func logLevelFromEnv() slog.Level {
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		return slog.LevelDebug
+	}
+	return slog.LevelInfo
+}
+
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevelFromEnv(),
+	})))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8081"
@@ -32,7 +44,8 @@ func main() {
 	ctx := context.Background()
 	pool, err := pg.NewPool(ctx, dbURL)
 	if err != nil {
-		log.Fatalf("unable to connect to database: %v", err)
+		slog.ErrorContext(ctx, "unable to connect to database", slog.Any("error", err))
+		os.Exit(1)
 	}
 	defer pool.Close()
 
@@ -62,7 +75,7 @@ func main() {
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
-			log.Printf("FFL: event listener stopped: %v", err)
+			slog.ErrorContext(ctx, "FFL event listener stopped", slog.Any("error", err))
 		}
 	}()
 
@@ -77,8 +90,9 @@ func main() {
 	mux.Handle("/", playground.Handler("FFL", "/query"))
 	mux.Handle("/query", srv)
 
-	log.Printf("FFL service starting on :%s", port)
+	slog.InfoContext(ctx, "FFL service starting", slog.String("port", port))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatal(err)
+		slog.ErrorContext(ctx, "FFL service failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 }

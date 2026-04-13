@@ -3,7 +3,7 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"xffl/contracts/events"
 	"xffl/services/afl/internal/domain"
@@ -78,11 +78,11 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		Behinds:        result.Behinds,
 	})
 	if err != nil {
-		log.Printf("AFL: failed to marshal PlayerMatchUpdated event: %v", err)
+		slog.ErrorContext(ctx, "failed to marshal PlayerMatchUpdated event", slog.Any("error", err))
 		return result, nil
 	}
 	if err := c.dispatcher.Publish(ctx, events.PlayerMatchUpdated, payload); err != nil {
-		log.Printf("AFL: failed to publish PlayerMatchUpdated event: %v", err)
+		slog.ErrorContext(ctx, "failed to publish PlayerMatchUpdated event", slog.Any("error", err))
 	}
 
 	return result, nil

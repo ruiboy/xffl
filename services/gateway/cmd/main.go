@@ -1,15 +1,28 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 )
 
+// logLevelFromEnv returns slog.LevelDebug if LOG_LEVEL=debug, otherwise LevelInfo.
+func logLevelFromEnv() slog.Level {
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		return slog.LevelDebug
+	}
+	return slog.LevelInfo
+}
+
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevelFromEnv(),
+	})))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8090"
@@ -30,15 +43,18 @@ func main() {
 		corsOrigin = "http://localhost:3000"
 	}
 
+	ctx := context.Background()
 	aflTarget, err := url.Parse(aflURL)
 	if err != nil {
-		log.Fatalf("invalid AFL_SERVICE_URL: %v", err)
+		slog.ErrorContext(ctx, "invalid AFL_SERVICE_URL", slog.Any("error", err))
+		os.Exit(1)
 	}
 	aflProxy := httputil.NewSingleHostReverseProxy(aflTarget)
 
 	fflTarget, err := url.Parse(fflURL)
 	if err != nil {
-		log.Fatalf("invalid FFL_SERVICE_URL: %v", err)
+		slog.ErrorContext(ctx, "invalid FFL_SERVICE_URL", slog.Any("error", err))
+		os.Exit(1)
 	}
 	fflProxy := httputil.NewSingleHostReverseProxy(fflTarget)
 
@@ -74,8 +90,9 @@ func main() {
 		fflProxy.ServeHTTP(w, r)
 	}))
 
-	log.Printf("Gateway starting on :%s (AFL→%s, FFL→%s)", port, aflURL, fflURL)
+	slog.InfoContext(ctx, "gateway starting", slog.String("port", port), slog.String("afl_url", aflURL), slog.String("ffl_url", fflURL))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatal(err)
+		slog.ErrorContext(ctx, "gateway failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 }
