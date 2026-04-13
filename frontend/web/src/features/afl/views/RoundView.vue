@@ -11,7 +11,6 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
-        :live-round-status="liveRoundStatus"
         :season-id="props.seasonId"
       />
 
@@ -54,7 +53,7 @@ import TopPlayers from '../components/TopPlayers.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
-const { liveRoundId, liveRoundStatus } = useAflState()
+const { liveRoundId } = useAflState()
 const { result, loading, error } = useQuery(GET_ROUND, () => ({ seasonId: props.seasonId }))
 
 const data = computed(() => {

@@ -5,7 +5,7 @@ const FFL_COOKIE = 'xffl_ffl'
 interface FflState {
   seasonId: string
   roundId: string
-  roundStatus: string
+  startDate: string
 }
 
 function getCookie(name: string): string {
@@ -21,16 +21,16 @@ function setCookie(name: string, value: string) {
 
 function readFflCookie(): FflState {
   const raw = getCookie(FFL_COOKIE)
-  if (!raw) return { seasonId: '', roundId: '', roundStatus: '' }
+  if (!raw) return { seasonId: '', roundId: '', startDate: '' }
   try {
     const parsed = JSON.parse(raw)
     return {
       seasonId: parsed.seasonId ?? '',
       roundId: parsed.roundId ?? '',
-      roundStatus: parsed.roundStatus ?? '',
+      startDate: parsed.startDate ?? '',
     }
   } catch {
-    return { seasonId: '', roundId: '', roundStatus: '' }
+    return { seasonId: '', roundId: '', startDate: '' }
   }
 }
 
@@ -39,18 +39,18 @@ const selectedClubId = ref<string>(getCookie('xffl_club_id'))
 const stored = readFflCookie()
 const liveSeasonId = ref<string>(stored.seasonId)
 const liveRoundId = ref<string>(stored.roundId)
-const liveRoundStatus = ref<string>(stored.roundStatus)
+const liveStartDate = ref<string>(stored.startDate)
 
 function setClub(id: string) {
   selectedClubId.value = id
   setCookie('xffl_club_id', id)
 }
 
-function setLiveRound(seasonId: string, roundId: string, roundStatus: string) {
+function setLiveRound(seasonId: string, roundId: string, startDate: string) {
   liveSeasonId.value = seasonId
   liveRoundId.value = roundId
-  liveRoundStatus.value = roundStatus
-  setCookie(FFL_COOKIE, JSON.stringify({ seasonId, roundId, roundStatus }))
+  liveStartDate.value = startDate
+  setCookie(FFL_COOKIE, JSON.stringify({ seasonId, roundId, startDate }))
 }
 
 export function useFflState() {
@@ -58,7 +58,7 @@ export function useFflState() {
     selectedClubId: readonly(selectedClubId),
     liveSeasonId: readonly(liveSeasonId),
     liveRoundId: readonly(liveRoundId),
-    liveRoundStatus: readonly(liveRoundStatus),
+    liveStartDate: readonly(liveStartDate),
     setClub,
     setLiveRound,
   }

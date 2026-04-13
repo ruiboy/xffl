@@ -13,7 +13,6 @@
         class="mb-8"
         :rounds="fflRound.season.rounds"
         :live-round-id="liveRoundId"
-        :live-round-status="liveRoundStatus"
         :season-id="fflRound.season.id"
       />
 
@@ -33,7 +32,7 @@ import { useFflState } from '../composables/useFflState'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
-const { liveRoundId, liveRoundStatus, setLiveRound } = useFflState()
+const { liveRoundId, setLiveRound } = useFflState()
 
 // Step 1: get the live AFL round
 const { result: aflResult, loading: aflLoading, error: aflError } = useQuery(GET_AFL_LIVE_ROUND)
@@ -51,6 +50,6 @@ const fflRound = computed(() => fflResult.value?.fflRoundByAflRound ?? null)
 
 watch([fflRound, () => aflResult.value], ([round, afl]) => {
   if (!round || !afl) return
-  setLiveRound(round.season.id, round.id, afl.aflLiveRound.status)
+  setLiveRound(round.season.id, round.id, afl.aflLiveRound.startDate)
 })
 </script>

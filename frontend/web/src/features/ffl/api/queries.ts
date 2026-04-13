@@ -125,7 +125,7 @@ export const GET_AFL_LIVE_ROUND = gql`
   query GetAFLLiveRoundForFFL {
     aflLiveRound {
       round { id }
-      status
+      startDate
     }
   }
 `

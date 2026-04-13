@@ -11,7 +11,6 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
-        :live-round-status="liveRoundStatus"
         :season-id="props.seasonId"
       />
 
@@ -78,7 +77,7 @@ import RoundNav from '../components/RoundNav.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
-const { liveRoundId, liveRoundStatus, selectedClubId } = useFflState()
+const { liveRoundId, selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const data = computed(() => {

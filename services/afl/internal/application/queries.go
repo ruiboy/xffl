@@ -71,16 +71,6 @@ func (q *Queries) GetRounds(ctx context.Context, seasonID int) ([]domain.Round, 
 	return q.rounds.FindBySeasonID(ctx, seasonID)
 }
 
-// LiveRound returns the contextually relevant AFL round as of the clock's current time.
-// It queries all rounds across all seasons and delegates the selection logic to the domain.
-func (q *Queries) LiveRound(ctx context.Context) (domain.LiveRoundResult, error) {
-	rounds, err := q.rounds.FindAllWithMatchBounds(ctx)
-	if err != nil {
-		return domain.LiveRoundResult{}, err
-	}
-	return domain.FindLiveRound(rounds, q.clock.Now())
-}
-
 func (q *Queries) GetMatch(ctx context.Context, id int) (domain.Match, error) {
 	return q.matches.FindByID(ctx, id)
 }

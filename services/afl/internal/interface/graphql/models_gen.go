@@ -28,8 +28,8 @@ type AFLClubSeason struct {
 }
 
 type AFLLiveRound struct {
-	Round  *AFLRound `json:"round"`
-	Status string    `json:"status"`
+	Round     *AFLRound `json:"round"`
+	StartDate string    `json:"startDate"`
 }
 
 type AFLMatch struct {

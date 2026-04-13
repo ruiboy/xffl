@@ -3,7 +3,7 @@ import { ref, readonly } from 'vue'
 interface AflState {
   seasonId: string
   roundId: string
-  roundStatus: string
+  startDate: string
 }
 
 const COOKIE_NAME = 'xffl_afl'
@@ -15,16 +15,16 @@ function getCookieRaw(name: string): string {
 
 function readCookie(): AflState {
   const raw = getCookieRaw(COOKIE_NAME)
-  if (!raw) return { seasonId: '', roundId: '', roundStatus: '' }
+  if (!raw) return { seasonId: '', roundId: '', startDate: '' }
   try {
     const parsed = JSON.parse(raw)
     return {
       seasonId: parsed.seasonId ?? '',
       roundId: parsed.roundId ?? '',
-      roundStatus: parsed.roundStatus ?? '',
+      startDate: parsed.startDate ?? '',
     }
   } catch {
-    return { seasonId: '', roundId: '', roundStatus: '' }
+    return { seasonId: '', roundId: '', startDate: '' }
   }
 }
 
@@ -38,20 +38,20 @@ function writeCookie(state: AflState) {
 const stored = readCookie()
 const liveSeasonId = ref<string>(stored.seasonId)
 const liveRoundId = ref<string>(stored.roundId)
-const liveRoundStatus = ref<string>(stored.roundStatus)
+const liveStartDate = ref<string>(stored.startDate)
 
-function setLiveRound(seasonId: string, roundId: string, roundStatus: string) {
+function setLiveRound(seasonId: string, roundId: string, startDate: string) {
   liveSeasonId.value = seasonId
   liveRoundId.value = roundId
-  liveRoundStatus.value = roundStatus
-  writeCookie({ seasonId, roundId, roundStatus })
+  liveStartDate.value = startDate
+  writeCookie({ seasonId, roundId, startDate })
 }
 
 export function useAflState() {
   return {
     liveSeasonId: readonly(liveSeasonId),
     liveRoundId: readonly(liveRoundId),
-    liveRoundStatus: readonly(liveRoundStatus),
+    liveStartDate: readonly(liveStartDate),
     setLiveRound,
   }
 }

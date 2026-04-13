@@ -193,9 +193,12 @@ func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error)
 	if err != nil {
 		return nil, err
 	}
+	if result == nil {
+		return nil, nil
+	}
 	return &AFLLiveRound{
-		Round:  convertRound(result.Round),
-		Status: string(result.Status),
+		Round:     convertRound(result.Round),
+		StartDate: result.FirstMatchTime.UTC().Format("2006-01-02T15:04:05Z"),
 	}, nil
 }
 
@@ -259,10 +262,3 @@ type aFLMatchResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.

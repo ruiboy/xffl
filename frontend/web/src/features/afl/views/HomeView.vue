@@ -9,7 +9,6 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
-        :live-round-status="liveRoundStatus"
         :season-id="data.season.id"
       />
 
@@ -29,7 +28,7 @@ import { useAflState } from '../composables/useAflState'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
-const { liveRoundId, liveRoundStatus, setLiveRound } = useAflState()
+const { liveRoundId, setLiveRound } = useAflState()
 const { result, loading, error } = useQuery(GET_AFL_LIVE_ROUND)
 
 const data = computed(() => {
@@ -38,11 +37,11 @@ const data = computed(() => {
   return {
     round: { id: live.round.id, name: live.round.name, matches: live.round.matches },
     season: live.round.season,
-    status: live.status,
+    startDate: live.startDate,
   }
 })
 
 watch(data, (d) => {
-  if (d) setLiveRound(d.season.id, d.round.id, d.status)
+  if (d) setLiveRound(d.season.id, d.round.id, d.startDate)
 })
 </script>

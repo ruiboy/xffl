@@ -42,7 +42,7 @@ export const GET_AFL_LIVE_ROUND = gql`
           }
         }
       }
-      status
+      startDate
     }
   }
 `

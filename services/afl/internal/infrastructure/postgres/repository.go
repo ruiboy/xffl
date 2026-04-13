@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -132,40 +133,45 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
 }
 
-const findAllRoundsWithMatchBounds = `
-SELECT
-    r.id, r.name, r.season_id,
-    MIN(m.start_dt) AS first_match_dt,
-    MAX(m.start_dt) AS last_match_dt
-FROM afl.round r
-JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
-WHERE r.deleted_at IS NULL
-GROUP BY r.id, r.name, r.season_id
-ORDER BY MIN(m.start_dt)
+// findNeighbours returns at most two rows: the most recently started round
+// (first_match_dt <= asOf) and the first upcoming round (first_match_dt > asOf).
+const findNeighbours = `
+WITH round_bounds AS (
+    SELECT r.id, r.name, r.season_id, MIN(m.start_dt) AS first_match_dt
+    FROM afl.round r
+    JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+    WHERE r.deleted_at IS NULL
+    GROUP BY r.id, r.name, r.season_id
+    HAVING MIN(m.start_dt) IS NOT NULL
+)
+(SELECT id, name, season_id, first_match_dt FROM round_bounds
+ WHERE first_match_dt <= $1 ORDER BY first_match_dt DESC LIMIT 1)
+UNION ALL
+(SELECT id, name, season_id, first_match_dt FROM round_bounds
+ WHERE first_match_dt > $1 ORDER BY first_match_dt ASC LIMIT 1)
 `
 
-func (r *RoundRepository) FindAllWithMatchBounds(ctx context.Context) ([]domain.RoundWithBounds, error) {
-	rows, err := r.pool.Query(ctx, findAllRoundsWithMatchBounds)
+func (r *RoundRepository) FindNeighbours(ctx context.Context, asOf time.Time) ([]domain.RoundWithStart, error) {
+	rows, err := r.pool.Query(ctx, findNeighbours, asOf)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var out []domain.RoundWithBounds
+	var out []domain.RoundWithStart
 	for rows.Next() {
 		var id, sid int32
 		var name string
-		var first, last pgtype.Timestamptz
-		if err := rows.Scan(&id, &name, &sid, &first, &last); err != nil {
-			return nil, fmt.Errorf("scan round with bounds: %w", err)
+		var first pgtype.Timestamptz
+		if err := rows.Scan(&id, &name, &sid, &first); err != nil {
+			return nil, fmt.Errorf("scan round neighbours: %w", err)
 		}
-		if !first.Valid || !last.Valid {
+		if !first.Valid {
 			continue
 		}
-		out = append(out, domain.RoundWithBounds{
+		out = append(out, domain.RoundWithStart{
 			Round:          domain.Round{ID: int(id), Name: name, SeasonID: int(sid)},
 			FirstMatchTime: first.Time,
-			LastMatchTime:  last.Time,
 		})
 	}
 	return out, rows.Err()
@@ -187,11 +193,11 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 	out := make([]domain.Match, len(rows))
 	for i, row := range rows {
 		out[i] = domain.Match{
-			ID:      int(row.ID),
-			RoundID: int(row.RoundID),
-			Home:    domain.ClubMatch{ID: int(row.HomeClubMatchID)},
-			Away:    domain.ClubMatch{ID: int(row.AwayClubMatchID)},
-			Venue:   row.Venue,
+			ID:        int(row.ID),
+			RoundID:   int(row.RoundID),
+			Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
+			Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
+			Venue:     row.Venue,
 			StartTime: row.StartDt.Time,
 			Result:    domain.MatchResult(row.DrvResult),
 		}
@@ -205,11 +211,11 @@ func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, e
 		return domain.Match{}, err
 	}
 	return domain.Match{
-		ID:      int(row.ID),
-		RoundID: int(row.RoundID),
-		Home:    domain.ClubMatch{ID: int(row.HomeClubMatchID)},
-		Away:    domain.ClubMatch{ID: int(row.AwayClubMatchID)},
-		Venue:   row.Venue,
+		ID:        int(row.ID),
+		RoundID:   int(row.RoundID),
+		Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
+		Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
+		Venue:     row.Venue,
 		StartTime: row.StartDt.Time,
 		Result:    domain.MatchResult(row.DrvResult),
 	}, nil
