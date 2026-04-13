@@ -30,7 +30,7 @@ fflservice --> fflqueue : "events (teams, scores etc)"
 fflqueue --> searchservice
 
 gateway <--> searchservice : rest
-searchservice <--> searchindex : index / search
+searchservice <-> searchindex : index / search
 
 
 @enduml
