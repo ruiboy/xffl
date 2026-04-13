@@ -30,7 +30,7 @@ function readCookie(): AflState {
 
 function writeCookie(state: AflState) {
   const expires = new Date()
-  expires.setDate(expires.getDate() + 30)
+  expires.setHours(24, 0, 0, 0)
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(state))};expires=${expires.toUTCString()};path=/`
 }
 

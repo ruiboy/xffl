@@ -1,5 +1,14 @@
 import gql from 'graphql-tag'
 
+export const GET_AFL_LIVE_ROUND_IDS = gql`
+  query GetAFLLiveRoundIds {
+    aflLiveRound {
+      round { id season { id } }
+      startDate
+    }
+  }
+`
+
 export const GET_AFL_LIVE_ROUND = gql`
   query GetAFLLiveRound {
     aflLiveRound {

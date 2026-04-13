@@ -93,6 +93,15 @@ export const SEARCH_AFL_PLAYERS = gql`
 `
 
 
+export const GET_FFL_ROUND_IDS_BY_AFL_ROUND = gql`
+  query GetFFLRoundIdsByAflRound($aflRoundId: ID!) {
+    fflRoundByAflRound(aflRoundId: $aflRoundId) {
+      id
+      season { id }
+    }
+  }
+`
+
 export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
   query GetFFLRoundByAflRound($aflRoundId: ID!) {
     fflRoundByAflRound(aflRoundId: $aflRoundId) {
