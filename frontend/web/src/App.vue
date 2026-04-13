@@ -80,9 +80,11 @@ import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
+import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
 const { selectedClubId, liveSeasonId, setClub } = useFflState()
+useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
 

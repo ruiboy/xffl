@@ -15,7 +15,7 @@ function getCookie(name: string): string {
 
 function setCookie(name: string, value: string) {
   const expires = new Date()
-  expires.setDate(expires.getDate() + 30)
+  expires.setHours(expires.getHours() + 24)
   document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`
 }
 
