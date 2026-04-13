@@ -71,17 +71,10 @@ func (q *Queries) GetRounds(ctx context.Context, seasonID int) ([]domain.Round, 
 	return q.rounds.FindBySeasonID(ctx, seasonID)
 }
 
-func (q *Queries) GetLatestRound(ctx context.Context) (domain.Round, error) {
-	return q.rounds.FindLatest(ctx)
-}
-
 // LiveRound returns the contextually relevant AFL round as of the clock's current time.
+// It queries all rounds across all seasons and delegates the selection logic to the domain.
 func (q *Queries) LiveRound(ctx context.Context) (domain.LiveRoundResult, error) {
-	latest, err := q.rounds.FindLatest(ctx)
-	if err != nil {
-		return domain.LiveRoundResult{}, err
-	}
-	rounds, err := q.rounds.FindWithMatchBoundsBySeasonID(ctx, latest.SeasonID)
+	rounds, err := q.rounds.FindAllWithMatchBounds(ctx)
 	if err != nil {
 		return domain.LiveRoundResult{}, err
 	}

@@ -187,15 +187,6 @@ func (r *queryResolver) AflSeason(ctx context.Context, id string) (*AFLSeason, e
 	return convertSeason(season), nil
 }
 
-// AflLatestRound is the resolver for the aflLatestRound field.
-func (r *queryResolver) AflLatestRound(ctx context.Context) (*AFLRound, error) {
-	round, err := r.Queries.GetLatestRound(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return convertRound(round), nil
-}
-
 // AflLiveRound is the resolver for the aflLiveRound field.
 func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error) {
 	result, err := r.Queries.LiveRound(ctx)
@@ -268,3 +259,10 @@ type aFLMatchResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.

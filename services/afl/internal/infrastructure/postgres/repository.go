@@ -132,28 +132,20 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
 }
 
-func (r *RoundRepository) FindLatest(ctx context.Context) (domain.Round, error) {
-	row, err := r.q.FindLatestRound(ctx)
-	if err != nil {
-		return domain.Round{}, err
-	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
-}
-
-const findRoundsWithMatchBounds = `
+const findAllRoundsWithMatchBounds = `
 SELECT
     r.id, r.name, r.season_id,
     MIN(m.start_dt) AS first_match_dt,
     MAX(m.start_dt) AS last_match_dt
 FROM afl.round r
 JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
-WHERE r.season_id = $1 AND r.deleted_at IS NULL
+WHERE r.deleted_at IS NULL
 GROUP BY r.id, r.name, r.season_id
 ORDER BY MIN(m.start_dt)
 `
 
-func (r *RoundRepository) FindWithMatchBoundsBySeasonID(ctx context.Context, seasonID int) ([]domain.RoundWithBounds, error) {
-	rows, err := r.pool.Query(ctx, findRoundsWithMatchBounds, int32(seasonID))
+func (r *RoundRepository) FindAllWithMatchBounds(ctx context.Context) ([]domain.RoundWithBounds, error) {
+	rows, err := r.pool.Query(ctx, findAllRoundsWithMatchBounds)
 	if err != nil {
 		return nil, err
 	}

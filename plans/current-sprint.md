@@ -14,7 +14,7 @@
 
 ## Decision: FFL live round mapping
 
-Frontend-driven: frontend calls AFL `liveRound`, then maps to FFL round by `afl_round_id` client-side. No FFL → AFL service dependency introduced yet.
+Two-step frontend query: (1) `aflLiveRound` → AFL round ID + status; (2) `fflRoundByAflRound(aflRoundId)` → FFL round (nullable). If null, show "Cannot determine round to display. Consult your admin." No `fflLatestRound` on home page — it returned the last round by insertion order, which could be a future round.
 
 ## Tasks
 

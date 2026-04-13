@@ -39,8 +39,7 @@ type RoundWithBounds struct {
 type RoundRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]Round, error)
 	FindByID(ctx context.Context, id int) (Round, error)
-	FindLatest(ctx context.Context) (Round, error)
-	FindWithMatchBoundsBySeasonID(ctx context.Context, seasonID int) ([]RoundWithBounds, error)
+	FindAllWithMatchBounds(ctx context.Context) ([]RoundWithBounds, error)
 }
 
 // adelaideLoc is the canonical timezone for AFL round window boundaries.
