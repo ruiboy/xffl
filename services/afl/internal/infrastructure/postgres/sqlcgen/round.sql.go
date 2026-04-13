@@ -9,28 +9,6 @@ import (
 	"context"
 )
 
-const findLatestRound = `-- name: FindLatestRound :one
-SELECT r.id, r.name, r.season_id
-FROM afl.round r
-JOIN afl.season s ON s.id = r.season_id AND s.deleted_at IS NULL
-WHERE r.deleted_at IS NULL
-ORDER BY s.id DESC, r.id DESC
-LIMIT 1
-`
-
-type FindLatestRoundRow struct {
-	ID       int32
-	Name     string
-	SeasonID int32
-}
-
-func (q *Queries) FindLatestRound(ctx context.Context) (FindLatestRoundRow, error) {
-	row := q.db.QueryRow(ctx, findLatestRound)
-	var i FindLatestRoundRow
-	err := row.Scan(&i.ID, &i.Name, &i.SeasonID)
-	return i, err
-}
-
 const findRoundByID = `-- name: FindRoundByID :one
 SELECT id, name, season_id
 FROM afl.round

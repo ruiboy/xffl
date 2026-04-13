@@ -77,7 +77,7 @@ import RoundNav from '../components/RoundNav.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
-const { currentRoundId: liveRoundId, selectedClubId } = useFflState()
+const { liveRoundId, selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const data = computed(() => {

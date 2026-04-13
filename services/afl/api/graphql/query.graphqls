@@ -3,9 +3,14 @@ type Query {
   aflClub(id: ID!): AFLClub!
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
-  aflLatestRound: AFLRound!
+  aflLiveRound: AFLLiveRound
   aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
   aflPlayerSearch(query: String!): [AFLPlayer!]!
+}
+
+type AFLLiveRound {
+  round: AFLRound!
+  startDate: String!
 }
 
 type AFLPlayerSeasonStats {

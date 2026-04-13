@@ -262,13 +262,20 @@ func (r *queryResolver) FflClubSeason(ctx context.Context, seasonID string, club
 	return convertClubSeason(cs, club, season), nil
 }
 
-// FflLatestRound is the resolver for the fflLatestRound field.
-func (r *queryResolver) FflLatestRound(ctx context.Context) (*FFLRound, error) {
-	round, err := r.Queries.GetLatestRound(ctx)
+// FflRoundByAflRound is the resolver for the fflRoundByAflRound field.
+func (r *queryResolver) FflRoundByAflRound(ctx context.Context, aflRoundID string) (*FFLRound, error) {
+	id, err := fromID(aflRoundID)
 	if err != nil {
 		return nil, err
 	}
-	return convertRound(round), nil
+	round, err := r.Queries.GetRoundByAFLRoundID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if round == nil {
+		return nil, nil
+	}
+	return convertRound(*round), nil
 }
 
 // FFLClubMatch returns FFLClubMatchResolver implementation.

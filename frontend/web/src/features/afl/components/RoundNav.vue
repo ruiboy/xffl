@@ -24,7 +24,7 @@
       :class="activeRoundId === round.id
         ? 'bg-active text-active-text'
         : round.id === liveRoundId
-          ? 'ring-2 ring-active bg-control text-text-muted hover:bg-control-hover hover:text-text'
+          ? ['ring-2 ring-active ring-offset-2 ring-offset-surface', 'bg-control text-text-muted hover:bg-control-hover hover:text-text']
           : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
     >
       {{ round.name === 'Opening Round' ? '0' : round.name.replace(/^Round\s+/i, '') }}

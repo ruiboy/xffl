@@ -46,12 +46,14 @@
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_ROUND } from '../api/queries'
+import { useAflState } from '../composables/useAflState'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
+const { liveRoundId } = useAflState()
 const { result, loading, error } = useQuery(GET_ROUND, () => ({ seasonId: props.seasonId }))
 
 const data = computed(() => {
@@ -61,8 +63,6 @@ const data = computed(() => {
   if (!round) return null
   return { season, round }
 })
-
-const liveRoundId = computed(() => data.value?.season.rounds.at(-1)?.id ?? '')
 
 const statCategories = [
   { key: 'kicks', label: 'Kicks' },

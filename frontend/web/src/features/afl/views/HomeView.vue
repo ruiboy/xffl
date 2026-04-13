@@ -8,7 +8,7 @@
       <RoundNav
         class="mb-8"
         :rounds="data.season.rounds"
-        :live-round-id="data.round.id"
+        :live-round-id="liveRoundId"
         :season-id="data.season.id"
       />
 
@@ -21,20 +21,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_LATEST_ROUND } from '../api/queries'
+import { GET_AFL_LIVE_ROUND } from '../api/queries'
+import { useAflState } from '../composables/useAflState'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
-const { result, loading, error } = useQuery(GET_LATEST_ROUND)
+const { liveRoundId, setLiveRound } = useAflState()
+const { result, loading, error } = useQuery(GET_AFL_LIVE_ROUND)
 
 const data = computed(() => {
-  const round = result.value?.aflLatestRound
-  if (!round) return null
+  const live = result.value?.aflLiveRound
+  if (!live) return null
   return {
-    round: { id: round.id, name: round.name, matches: round.matches },
-    season: round.season,
+    round: { id: live.round.id, name: live.round.name, matches: live.round.matches },
+    season: live.round.season,
+    startDate: live.startDate,
   }
+})
+
+watch(data, (d) => {
+  if (d) setLiveRound(d.season.id, d.round.id, d.startDate)
 })
 </script>

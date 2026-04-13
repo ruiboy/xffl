@@ -27,6 +27,11 @@ type AFLClubSeason struct {
 	PremiershipPoints int      `json:"premiershipPoints"`
 }
 
+type AFLLiveRound struct {
+	Round     *AFLRound `json:"round"`
+	StartDate string    `json:"startDate"`
+}
+
 type AFLMatch struct {
 	ID            string        `json:"id"`
 	Venue         *string       `json:"venue,omitempty"`

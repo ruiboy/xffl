@@ -93,9 +93,9 @@ export const SEARCH_AFL_PLAYERS = gql`
 `
 
 
-export const GET_FFL_LATEST_ROUND = gql`
-  query GetFFLLatestRound {
-    fflLatestRound {
+export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
+  query GetFFLRoundByAflRound($aflRoundId: ID!) {
+    fflRoundByAflRound(aflRoundId: $aflRoundId) {
       id
       name
       season {
@@ -117,22 +117,15 @@ export const GET_FFL_LATEST_ROUND = gql`
           name
         }
       }
-      matches {
-        id
-        venue
-        startTime
-        result
-        homeClubMatch {
-          id
-          club { id name }
-          score
-        }
-        awayClubMatch {
-          id
-          club { id name }
-          score
-        }
-      }
+    }
+  }
+`
+
+export const GET_AFL_LIVE_ROUND = gql`
+  query GetAFLLiveRoundForFFL {
+    aflLiveRound {
+      round { id }
+      startDate
     }
   }
 `

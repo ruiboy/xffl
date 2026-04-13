@@ -128,18 +128,17 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] FFL publishes `FFL.FantasyScoreCalculated`
 - [x] Tests — integration (event flow end-to-end, unknown player, multiple clubs)
 
-## Phase 12: Live Round
+## Phase 12: Live Round ✅
 
 **Goal:** Compute and expose a contextually relevant "live round" across AFL and FFL, drive round nav defaults and indicators from it, and make the whole thing testable without real-time dependency.
 
-- [ ] Injectable `Clock` interface (shared); `CLOCK_OVERRIDE` env var for e2e
-- [ ] AFL `LiveRound` use case — midnight-bounded window (Australia/Adelaide), `RoundStatus: Open/Closed`, fallback to most recently completed
-- [ ] AFL `liveRound` GraphQL query
-- [ ] FFL `LiveRound` use case — maps via `afl_round_id`, frontend drives the AFL→FFL mapping (no FFL→AFL service dep)
-- [ ] FFL `liveRound` GraphQL query
-- [ ] E2e seed data with fixed `start_dt` values; test harness sets `CLOCK_OVERRIDE`
-- [ ] Frontend: `useAflState` + refactored `useFflState` — JSON cookies `xffl_afl` / `xffl_ffl` with `{ seasonId, roundId, roundStatus }`
-- [ ] RoundNav: `liveRoundId` from cookie; distinct ring style for `Open` vs `Closed`
+- [x] Injectable `Clock` interface (shared); `CLOCK_OVERRIDE` env var for e2e
+- [x] AFL `LiveRound` use case — `FindNeighbours` DB query + Adelaide midnight boundary; nullable (nil before season starts); no Open/Closed status — single ring style
+- [x] AFL `aflLiveRound` GraphQL query (nullable)
+- [x] FFL maps AFL→FFL round client-side via `afl_round_id`; no FFL service-side live round query needed
+- [x] E2e seed data with fixed `start_dt` values; `CLOCK_OVERRIDE` wired into Playwright config
+- [x] Frontend: `useAflState` + refactored `useFflState` — JSON cookies `xffl_afl` / `xffl_ffl` with `{ seasonId, roundId, startDate }`
+- [x] RoundNav: `liveRoundId` from cookie; single `ring-active` indicator (no closed/open distinction)
 
 ## Phase 13: Search Service
 

@@ -51,4 +51,9 @@ test.describe('FFL Home', () => {
   test('navbar does not have a Team Builder link', async ({ page }) => {
     await expect(page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' })).not.toBeVisible()
   })
+
+  test('round 3 has the open live-round ring indicator', async ({ page }) => {
+    const round3 = page.locator('main nav').getByRole('link', { name: '3', exact: true })
+    await expect(round3).toHaveClass(/ring-active/)
+  })
 })

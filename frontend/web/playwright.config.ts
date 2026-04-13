@@ -2,6 +2,8 @@ import { defineConfig } from '@playwright/test'
 
 const TEST_DB = 'postgres://postgres:postgres@localhost:5433/xffl?sslmode=disable'
 const TEST_GW = 'http://localhost:8190'
+// Fixed clock for live-round tests: falls inside Round 3 window (2026-01-15 Adelaide time)
+const CLOCK_OVERRIDE = '2026-01-15T10:00:00+10:30'
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,14 +22,14 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `DATABASE_URL="${TEST_DB}" PORT=8180 go run ./cmd/main.go`,
+      command: `DATABASE_URL="${TEST_DB}" CLOCK_OVERRIDE="${CLOCK_OVERRIDE}" PORT=8180 go run ./cmd/main.go`,
       cwd: '../../services/afl',
       port: 8180,
       timeout: 60_000,
       reuseExistingServer: false,
     },
     {
-      command: `DATABASE_URL="${TEST_DB}" PORT=8181 go run ./cmd/main.go`,
+      command: `DATABASE_URL="${TEST_DB}" CLOCK_OVERRIDE="${CLOCK_OVERRIDE}" PORT=8181 go run ./cmd/main.go`,
       cwd: '../../services/ffl',
       port: 8181,
       timeout: 60_000,

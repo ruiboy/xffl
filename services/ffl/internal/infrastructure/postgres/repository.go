@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"xffl/services/ffl/internal/domain"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
 )
@@ -108,17 +110,12 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
 }
 
-func (r *RoundRepository) FindLatest(ctx context.Context) (domain.Round, error) {
-	row, err := r.q.FindLatestRound(ctx)
-	if err != nil {
-		return domain.Round{}, err
-	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
-}
-
 func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {
 	v := int32(aflRoundID)
 	row, err := r.q.FindRoundByAFLRoundID(ctx, &v)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Round{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Round{}, err
 	}

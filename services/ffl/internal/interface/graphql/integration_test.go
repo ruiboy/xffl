@@ -398,46 +398,6 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 	})
 }
 
-func TestFflLatestRound(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	// Add a second round so we can verify "latest" picks the last one
-	ctx := context.Background()
-	var round2ID int
-	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
-		ids.seasonID).Scan(&round2ID))
-
-	result := execQuery(t, server, `{
-		fflLatestRound {
-			name
-			season { name }
-		}
-	}`)
-
-	require.Empty(t, result.Errors)
-
-	var data struct {
-		FflLatestRound struct {
-			Name   string `json:"name"`
-			Season struct {
-				Name string `json:"name"`
-			} `json:"season"`
-		} `json:"fflLatestRound"`
-	}
-	require.NoError(t, json.Unmarshal(result.Data, &data))
-
-	t.Run("returns the most recently inserted round", func(t *testing.T) {
-		assert.Equal(t, "Round 2", data.FflLatestRound.Name)
-	})
-	t.Run("latest round includes its season", func(t *testing.T) {
-		assert.Equal(t, "Test 2025", data.FflLatestRound.Season.Name)
-	})
-}
-
 func TestFflClubSeason(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)

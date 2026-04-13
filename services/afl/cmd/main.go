@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -14,6 +15,7 @@ import (
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	"xffl/shared/clock"
 	pgevents "xffl/shared/events/pg"
 )
 
@@ -37,10 +39,13 @@ func main() {
 
 	q := sqlcgen.New(pool)
 
+	clk := clockFromEnv()
+
 	queries := application.NewQueries(
+		clk,
 		pg.NewClubRepository(q),
 		pg.NewSeasonRepository(q),
-		pg.NewRoundRepository(q),
+		pg.NewRoundRepository(q, pool),
 		pg.NewMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewClubMatchRepository(q),
@@ -74,4 +79,18 @@ func main() {
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// clockFromEnv returns a FixedClock if CLOCK_OVERRIDE is set (for e2e tests),
+// otherwise a RealClock.
+func clockFromEnv() clock.Clock {
+	if override := os.Getenv("CLOCK_OVERRIDE"); override != "" {
+		t, err := time.Parse(time.RFC3339, override)
+		if err != nil {
+			log.Fatalf("invalid CLOCK_OVERRIDE %q: %v", override, err)
+		}
+		log.Printf("AFL: clock overridden to %s", t.Format(time.RFC3339))
+		return clock.FixedClock{T: t}
+	}
+	return clock.RealClock{}
 }

@@ -16,7 +16,6 @@ type Querier interface {
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
-	FindLatestRound(ctx context.Context) (FindLatestRoundRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)

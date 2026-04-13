@@ -187,13 +187,19 @@ func (r *queryResolver) AflSeason(ctx context.Context, id string) (*AFLSeason, e
 	return convertSeason(season), nil
 }
 
-// AflLatestRound is the resolver for the aflLatestRound field.
-func (r *queryResolver) AflLatestRound(ctx context.Context) (*AFLRound, error) {
-	round, err := r.Queries.GetLatestRound(ctx)
+// AflLiveRound is the resolver for the aflLiveRound field.
+func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error) {
+	result, err := r.Queries.LiveRound(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return convertRound(round), nil
+	if result == nil {
+		return nil, nil
+	}
+	return &AFLLiveRound{
+		Round:     convertRound(result.Round),
+		StartDate: result.FirstMatchTime.UTC().Format("2006-01-02T15:04:05Z"),
+	}, nil
 }
 
 // AflPlayerSeasonStats is the resolver for the aflPlayerSeasonStats field.

@@ -9,7 +9,7 @@ const FFL_OPERATIONS = new Set([
   'GetFFLTeamBuilder',
   'GetFFLSeasonClubs',
   'GetFFLClubSeason',
-  'GetFFLLatestRound',
+  'GetFFLRoundByAflRound',
   'GetFFLSeason',
   'AddFFLPlayerToSeason',
   'RemoveFFLPlayerFromSeason',

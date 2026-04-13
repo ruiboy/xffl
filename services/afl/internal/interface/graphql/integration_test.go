@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	gqlhandler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +19,7 @@ import (
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	"xffl/shared/clock"
 	memevents "xffl/shared/events/memory"
 )
 
@@ -30,12 +32,18 @@ func connectDB(t *testing.T) *pgxpool.Pool {
 
 func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	t.Helper()
+	return setupTestServerWithClock(t, pool, clock.RealClock{})
+}
+
+func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock) *httptest.Server {
+	t.Helper()
 
 	q := sqlcgen.New(pool)
 	queries := application.NewQueries(
+		clk,
 		pg.NewClubRepository(q),
 		pg.NewSeasonRepository(q),
-		pg.NewRoundRepository(q),
+		pg.NewRoundRepository(q, pool),
 		pg.NewMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewClubMatchRepository(q),
@@ -521,71 +529,6 @@ func TestUpdateAFLPlayerMatch_RecalculatesClubMatchScore(t *testing.T) {
 	})
 }
 
-func TestAflLatestRound(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	ctx := context.Background()
-	var round2ID int
-	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
-		ids.seasonID).Scan(&round2ID))
-
-	result := execQuery(t, server, `{ aflLatestRound { name season { name } } }`)
-	require.Empty(t, result.Errors)
-
-	var data struct {
-		AflLatestRound struct {
-			Name   string `json:"name"`
-			Season struct {
-				Name string `json:"name"`
-			} `json:"season"`
-		} `json:"aflLatestRound"`
-	}
-	require.NoError(t, json.Unmarshal(result.Data, &data))
-
-	t.Run("returns the last round by insertion order", func(t *testing.T) {
-		assert.Equal(t, "Round 2", data.AflLatestRound.Name)
-		assert.Equal(t, "Test 2025", data.AflLatestRound.Season.Name)
-	})
-}
-
-func TestAflLatestRound_MultipleSeasons(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	ctx := context.Background()
-	var season2ID, round2ID int
-	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.season (name, league_id) VALUES ('Test 2026', $1) RETURNING id",
-		ids.leagueID).Scan(&season2ID))
-	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
-		season2ID).Scan(&round2ID))
-
-	result := execQuery(t, server, `{ aflLatestRound { name season { name } } }`)
-	require.Empty(t, result.Errors)
-
-	var data struct {
-		AflLatestRound struct {
-			Name   string `json:"name"`
-			Season struct {
-				Name string `json:"name"`
-			} `json:"season"`
-		} `json:"aflLatestRound"`
-	}
-	require.NoError(t, json.Unmarshal(result.Data, &data))
-
-	t.Run("returns the round from the most recent season", func(t *testing.T) {
-		assert.Equal(t, "Test 2026", data.AflLatestRound.Season.Name)
-		assert.Equal(t, "Round 1", data.AflLatestRound.Name)
-	})
-}
-
 func TestAflPlayerSearch(t *testing.T) {
 	pool := connectDB(t)
 	seedTestData(t, pool)
@@ -640,5 +583,110 @@ func TestUpdateAFLPlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 
 	t.Run("returns a graphql error for unknown player season", func(t *testing.T) {
 		assert.NotEmpty(t, result.Errors)
+	})
+}
+
+func TestAflLiveRound(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool) // Round 1, single match at 2025-06-15 14:00:00 UTC = 2025-06-15 23:30 ACST
+
+	// Round 2: first match 2025-06-22 14:00:00 UTC = 2025-06-22 23:30 ACST
+	// midnight Adelaide before that = 2025-06-22 00:00 ACST = 2025-06-21 14:30:00 UTC
+	var round2ID int
+	require.NoError(t, pool.QueryRow(context.Background(),
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
+		ids.seasonID).Scan(&round2ID))
+	_, err := pool.Exec(context.Background(),
+		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'Test Ground', '2025-06-22 14:00:00')",
+		round2ID)
+	require.NoError(t, err)
+
+	mustParseRFC3339 := func(s string) time.Time {
+		t.Helper()
+		tm, err := time.Parse(time.RFC3339, s)
+		require.NoError(t, err)
+		return tm
+	}
+
+	t.Run("returns Round 1 when clock is after the match start", func(t *testing.T) {
+		// 2025-06-16 00:00 UTC — match has started (2025-06-15 14:00 UTC), no upcoming round
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-16T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
+		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
+		assert.Equal(t, "2025-06-15T14:00:00Z", data.AflLiveRound.StartDate)
+	})
+
+	t.Run("returns nil when clock is before any round has started", func(t *testing.T) {
+		// 2025-01-01 00:00 UTC — before Round 1's match on 2025-06-15
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-01-01T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round struct{ Name string } `json:"round"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		assert.Nil(t, data.AflLiveRound)
+	})
+
+	t.Run("returns previous round when between rounds and not yet on next round's Adelaide day", func(t *testing.T) {
+		// 2025-06-18 00:00 UTC — R1 has started, R2 hasn't; midnight Adelaide before R2
+		// is 2025-06-21 14:30 UTC, so we are before the transition window
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-18T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
+		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
+	})
+
+	t.Run("returns upcoming round once past midnight Adelaide on its first match day", func(t *testing.T) {
+		// 2025-06-22 00:00 UTC = 2025-06-22 09:30 ACST — past midnight Adelaide of R2's match day
+		// (midnight ACST crossed at 2025-06-21 14:30 UTC), but R2's first match is still 14 h away
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-22T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
+		assert.Equal(t, "Round 2", data.AflLiveRound.Round.Name)
+		assert.Equal(t, "2025-06-22T14:00:00Z", data.AflLiveRound.StartDate)
 	})
 }

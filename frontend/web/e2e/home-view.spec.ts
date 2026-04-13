@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { setupAflSession } from './helpers'
 
 test.describe('AFL Home view', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/afl')
+    await setupAflSession(page)
   })
 
   test('displays season name in heading', async ({ page }) => {
@@ -38,5 +39,10 @@ test.describe('AFL Home view', () => {
 
   test('navbar has settings cog', async ({ page }) => {
     await expect(page.getByTitle('Settings')).toBeVisible()
+  })
+
+  test('round 3 has the open live-round ring indicator', async ({ page }) => {
+    const round3 = page.locator('main nav').getByRole('link', { name: '3', exact: true })
+    await expect(round3).toHaveClass(/ring-active/)
   })
 })

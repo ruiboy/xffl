@@ -4,22 +4,25 @@ import (
 	"context"
 
 	"xffl/services/afl/internal/domain"
+	"xffl/shared/clock"
 )
 
 // Queries handles all read operations for the AFL service.
 type Queries struct {
-	clubs          domain.ClubRepository
-	seasons        domain.SeasonRepository
-	rounds         domain.RoundRepository
-	matches        domain.MatchRepository
-	clubSeasons    domain.ClubSeasonRepository
-	clubMatches    domain.ClubMatchRepository
-	players        domain.PlayerRepository
-	playerMatches  domain.PlayerMatchRepository
-	playerSeasons  domain.PlayerSeasonRepository
+	clock         clock.Clock
+	clubs         domain.ClubRepository
+	seasons       domain.SeasonRepository
+	rounds        domain.RoundRepository
+	matches       domain.MatchRepository
+	clubSeasons   domain.ClubSeasonRepository
+	clubMatches   domain.ClubMatchRepository
+	players       domain.PlayerRepository
+	playerMatches domain.PlayerMatchRepository
+	playerSeasons domain.PlayerSeasonRepository
 }
 
 func NewQueries(
+	clk clock.Clock,
 	clubs domain.ClubRepository,
 	seasons domain.SeasonRepository,
 	rounds domain.RoundRepository,
@@ -31,6 +34,7 @@ func NewQueries(
 	playerSeasons domain.PlayerSeasonRepository,
 ) *Queries {
 	return &Queries{
+		clock:         clk,
 		clubs:         clubs,
 		seasons:       seasons,
 		rounds:        rounds,
@@ -65,10 +69,6 @@ func (q *Queries) GetRound(ctx context.Context, id int) (domain.Round, error) {
 
 func (q *Queries) GetRounds(ctx context.Context, seasonID int) ([]domain.Round, error) {
 	return q.rounds.FindBySeasonID(ctx, seasonID)
-}
-
-func (q *Queries) GetLatestRound(ctx context.Context) (domain.Round, error) {
-	return q.rounds.FindLatest(ctx)
 }
 
 func (q *Queries) GetMatch(ctx context.Context, id int) (domain.Match, error) {
