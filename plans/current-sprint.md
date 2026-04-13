@@ -56,4 +56,4 @@ Two-step frontend query: (1) `aflLiveRound` → AFL round ID + status; (2) `fflR
 
 ## Revisit at end of sprint
 
-- [ ] `adelaideLoc` in `domain/round.go` — not fully convinced this belongs in domain. Consider whether timezone config belongs in application layer or as a domain constant. Revisit once FFL side is implemented and the full pattern is visible.
+- [x] `adelaideLoc` in `domain/round.go` — resolved: moved to `application/live_round.go` as part of the FindNeighbours refactor. Timezone logic lives in the application layer alongside the `LiveRound` use case.
