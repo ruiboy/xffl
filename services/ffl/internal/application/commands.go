@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"xffl/contracts/events"
 	"xffl/services/ffl/internal/domain"
@@ -224,10 +224,16 @@ func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 		return fmt.Errorf("unmarshal PlayerMatchUpdated: %w", err)
 	}
 
+	slog.DebugContext(ctx, "event received",
+		slog.String("event_type", events.PlayerMatchUpdated),
+		slog.Int("player_match_id", event.PlayerMatchID),
+		slog.Int("player_season_id", event.PlayerSeasonID),
+		slog.Int("round_id", event.RoundID),
+	)
+
 	// Find the FFL round that corresponds to this AFL round.
 	fflRound, err := c.eventRepos.Rounds.FindByAFLRoundID(ctx, event.RoundID)
 	if err != nil {
-		log.Printf("FFL: no round for AFL round %d, skipping", event.RoundID)
 		return nil
 	}
 
@@ -253,21 +259,21 @@ func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 		// Find the FFL player match for this player season in the matching round.
 		pm, err := c.eventRepos.PlayerMatches.FindByPlayerSeasonAndRound(ctx, ps.ID, fflRound.ID)
 		if err != nil {
-			log.Printf("FFL: no player_match for player_season %d in round %d, skipping", ps.ID, fflRound.ID)
+			slog.DebugContext(ctx, "no player_match for player_season in round, skipping", slog.Int("player_season_id", ps.ID), slog.Int("round_id", fflRound.ID))
 			continue
 		}
 
 		// Link to the AFL player match if not already set.
 		if pm.AFLPlayerMatchID == nil {
 			if err := c.eventRepos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, event.PlayerMatchID); err != nil {
-				log.Printf("FFL: failed to set afl_player_match_id on player_match %d: %v", pm.ID, err)
+				slog.ErrorContext(ctx, "failed to set afl_player_match_id on player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}
 
 		// Calculate and store the fantasy score.
 		scored, err := c.CalculateFantasyScore(ctx, pm.ID, stats)
 		if err != nil {
-			log.Printf("FFL: failed to calculate score for player_match %d: %v", pm.ID, err)
+			slog.ErrorContext(ctx, "failed to calculate score for player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			continue
 		}
 
@@ -277,11 +283,11 @@ func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 			Score:         scored.Score,
 		})
 		if err != nil {
-			log.Printf("FFL: failed to marshal FantasyScoreCalculated: %v", err)
+			slog.ErrorContext(ctx, "failed to marshal FantasyScoreCalculated event", slog.Any("error", err))
 			continue
 		}
 		if err := c.dispatcher.Publish(ctx, events.FantasyScoreCalculated, fflPayload); err != nil {
-			log.Printf("FFL: failed to publish FantasyScoreCalculated: %v", err)
+			slog.ErrorContext(ctx, "failed to publish FantasyScoreCalculated event", slog.Any("error", err))
 		}
 	}
 

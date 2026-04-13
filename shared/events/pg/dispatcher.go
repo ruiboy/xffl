@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,6 +52,8 @@ func (d *Dispatcher) Publish(ctx context.Context, eventType string, payload []by
 	if err != nil {
 		return fmt.Errorf("pg dispatch notify: %w", err)
 	}
+
+	slog.DebugContext(ctx, "event published", slog.String("event_type", eventType))
 	return nil
 }
 
@@ -88,7 +90,7 @@ func (d *Dispatcher) Listen(ctx context.Context) error {
 
 		var msg message
 		if err := json.Unmarshal([]byte(notification.Payload), &msg); err != nil {
-			log.Printf("pg dispatch: invalid message: %v", err)
+			slog.ErrorContext(ctx, "pg dispatch: invalid message", slog.Any("error", err))
 			continue
 		}
 
@@ -98,7 +100,7 @@ func (d *Dispatcher) Listen(ctx context.Context) error {
 
 		for _, h := range handlers {
 			if err := h(ctx, msg.Payload); err != nil {
-				log.Printf("pg dispatch: handler error for %s: %v", msg.Type, err)
+				slog.ErrorContext(ctx, "pg dispatch: handler error", slog.String("event_type", msg.Type), slog.Any("error", err))
 			}
 		}
 	}

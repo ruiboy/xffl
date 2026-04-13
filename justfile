@@ -1,5 +1,7 @@
 set dotenv-load := true
 
+log_level := env_var_or_default("LOG_LEVEL", "debug")
+
 # List available recipes
 default:
     @just --list
@@ -32,11 +34,11 @@ dev-logs:
 
 # Run AFL service (port 8080)
 run-afl:
-    cd services/afl && go run ./cmd/main.go
+    cd services/afl && LOG_LEVEL={{log_level}} go run ./cmd/main.go
 
 # Run FFL service (port 8081)
 run-ffl:
-    cd services/ffl && go run ./cmd/main.go
+    cd services/ffl && LOG_LEVEL={{log_level}} go run ./cmd/main.go
 
 # Run Search service (port 8082)
 run-search:
@@ -44,7 +46,7 @@ run-search:
 
 # Run Gateway (port 8090)
 run-gateway:
-    cd services/gateway && go run ./cmd/main.go
+    cd services/gateway && LOG_LEVEL={{log_level}} go run ./cmd/main.go
 
 # Install frontend dependencies (run once before first run-all)
 install-frontend:

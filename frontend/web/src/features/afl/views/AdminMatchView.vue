@@ -3,8 +3,16 @@
     <div v-if="loading" class="text-text-faint">Loading match…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
-      <div class="mb-8">
-        <p class="text-sm text-text-muted mb-2">Admin</p>
+      <div class="mb-6">
+        <div v-if="matchData" class="mb-2">
+          <router-link
+            :to="{ name: 'afl-round', params: { seasonId: props.seasonId, roundId: matchData.roundId } }"
+            class="text-sm text-text-muted hover:text-text transition-colors"
+          >
+            ← Back to round
+          </router-link>
+        </div>
+        <p class="text-sm text-text-muted mb-1">Admin</p>
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
@@ -43,15 +51,17 @@ const props = defineProps<{ seasonId: string; matchId: string }>()
 
 const { result, loading, error } = useQuery(GET_MATCH, () => ({ seasonId: props.seasonId }))
 
-const match = computed(() => {
+const matchData = computed(() => {
   const season = result.value?.aflSeason
   if (!season) return null
   for (const round of season.rounds) {
     const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return found
+    if (found) return { match: found, roundId: round.id as string }
   }
   return null
 })
+
+const match = computed(() => matchData.value?.match ?? null)
 
 const sides = computed(() => {
   if (!match.value) return []

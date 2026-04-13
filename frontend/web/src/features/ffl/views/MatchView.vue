@@ -3,7 +3,15 @@
     <div v-if="loading" class="text-text-faint">Loading match…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
-      <div class="mb-8">
+      <div class="mb-6">
+        <div v-if="matchData" class="mb-2">
+          <router-link
+            :to="{ name: 'ffl-round', params: { seasonId: props.seasonId, roundId: matchData.roundId } }"
+            class="text-sm text-text-muted hover:text-text transition-colors"
+          >
+            ← Back to round
+          </router-link>
+        </div>
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
