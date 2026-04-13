@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	gqlhandler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,10 +32,15 @@ func connectDB(t *testing.T) *pgxpool.Pool {
 
 func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	t.Helper()
+	return setupTestServerWithClock(t, pool, clock.RealClock{})
+}
+
+func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock) *httptest.Server {
+	t.Helper()
 
 	q := sqlcgen.New(pool)
 	queries := application.NewQueries(
-		clock.RealClock{},
+		clk,
 		pg.NewClubRepository(q),
 		pg.NewSeasonRepository(q),
 		pg.NewRoundRepository(q, pool),
@@ -577,5 +583,58 @@ func TestUpdateAFLPlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 
 	t.Run("returns a graphql error for unknown player season", func(t *testing.T) {
 		assert.NotEmpty(t, result.Errors)
+	})
+}
+
+func TestAflLiveRound(t *testing.T) {
+	pool := connectDB(t)
+	seedTestData(t, pool) // Round 1, match at 2025-06-15 14:00:00 UTC = 2025-06-15 23:30 ACST
+	// Adelaide window: midnight 2025-06-15 ACST → midnight 2025-06-16 ACST
+
+	mustParseRFC3339 := func(s string) time.Time {
+		t.Helper()
+		tm, err := time.Parse(time.RFC3339, s)
+		require.NoError(t, err)
+		return tm
+	}
+
+	t.Run("open when clock is within the round window", func(t *testing.T) {
+		// 2025-06-15 12:00 ACST = 2025-06-15 02:30 UTC — inside the window
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-15T02:30:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } status } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound struct {
+				Round  struct{ Name string } `json:"round"`
+				Status string               `json:"status"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
+		assert.Equal(t, "open", data.AflLiveRound.Status)
+	})
+
+	t.Run("closed with the most recently completed round when clock is after the window", func(t *testing.T) {
+		// 2025-06-17 00:00 UTC — after midnight 2025-06-16 ACST (window closed)
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-17T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } status } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound struct {
+				Round  struct{ Name string } `json:"round"`
+				Status string               `json:"status"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
+		assert.Equal(t, "closed", data.AflLiveRound.Status)
 	})
 }
