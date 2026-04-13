@@ -588,8 +588,18 @@ func TestUpdateAFLPlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 
 func TestAflLiveRound(t *testing.T) {
 	pool := connectDB(t)
-	seedTestData(t, pool) // Round 1, match at 2025-06-15 14:00:00 UTC = 2025-06-15 23:30 ACST
-	// Adelaide window: midnight 2025-06-15 ACST → midnight 2025-06-16 ACST
+	ids := seedTestData(t, pool) // Round 1, single match at 2025-06-15 14:00:00 UTC = 2025-06-15 23:30 ACST
+
+	// Round 2: first match 2025-06-22 14:00:00 UTC = 2025-06-22 23:30 ACST
+	// midnight Adelaide before that = 2025-06-22 00:00 ACST = 2025-06-21 14:30:00 UTC
+	var round2ID int
+	require.NoError(t, pool.QueryRow(context.Background(),
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 2', $1) RETURNING id",
+		ids.seasonID).Scan(&round2ID))
+	_, err := pool.Exec(context.Background(),
+		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'Test Ground', '2025-06-22 14:00:00')",
+		round2ID)
+	require.NoError(t, err)
 
 	mustParseRFC3339 := func(s string) time.Time {
 		t.Helper()
@@ -598,43 +608,85 @@ func TestAflLiveRound(t *testing.T) {
 		return tm
 	}
 
-	t.Run("open when clock is within the round window", func(t *testing.T) {
-		// 2025-06-15 12:00 ACST = 2025-06-15 02:30 UTC — inside the window
-		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-15T02:30:00Z")}
+	t.Run("returns Round 1 when clock is after the match start", func(t *testing.T) {
+		// 2025-06-16 00:00 UTC — match has started (2025-06-15 14:00 UTC), no upcoming round
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-16T00:00:00Z")}
 		server := setupTestServerWithClock(t, pool, clk)
 		defer server.Close()
 
-		result := execQuery(t, server, `{ aflLiveRound { round { name } status } }`)
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
 		require.Empty(t, result.Errors)
 
 		var data struct {
-			AflLiveRound struct {
-				Round  struct{ Name string } `json:"round"`
-				Status string               `json:"status"`
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
 			} `json:"aflLiveRound"`
 		}
 		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
 		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
-		assert.Equal(t, "open", data.AflLiveRound.Status)
+		assert.Equal(t, "2025-06-15T14:00:00Z", data.AflLiveRound.StartDate)
 	})
 
-	t.Run("closed with the most recently completed round when clock is after the window", func(t *testing.T) {
-		// 2025-06-17 00:00 UTC — after midnight 2025-06-16 ACST (window closed)
-		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-17T00:00:00Z")}
+	t.Run("returns nil when clock is before any round has started", func(t *testing.T) {
+		// 2025-01-01 00:00 UTC — before Round 1's match on 2025-06-15
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-01-01T00:00:00Z")}
 		server := setupTestServerWithClock(t, pool, clk)
 		defer server.Close()
 
-		result := execQuery(t, server, `{ aflLiveRound { round { name } status } }`)
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
 		require.Empty(t, result.Errors)
 
 		var data struct {
-			AflLiveRound struct {
-				Round  struct{ Name string } `json:"round"`
-				Status string               `json:"status"`
+			AflLiveRound *struct {
+				Round struct{ Name string } `json:"round"`
 			} `json:"aflLiveRound"`
 		}
 		require.NoError(t, json.Unmarshal(result.Data, &data))
+		assert.Nil(t, data.AflLiveRound)
+	})
+
+	t.Run("returns previous round when between rounds and not yet on next round's Adelaide day", func(t *testing.T) {
+		// 2025-06-18 00:00 UTC — R1 has started, R2 hasn't; midnight Adelaide before R2
+		// is 2025-06-21 14:30 UTC, so we are before the transition window
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-18T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
 		assert.Equal(t, "Round 1", data.AflLiveRound.Round.Name)
-		assert.Equal(t, "closed", data.AflLiveRound.Status)
+	})
+
+	t.Run("returns upcoming round once past midnight Adelaide on its first match day", func(t *testing.T) {
+		// 2025-06-22 00:00 UTC = 2025-06-22 09:30 ACST — past midnight Adelaide of R2's match day
+		// (midnight ACST crossed at 2025-06-21 14:30 UTC), but R2's first match is still 14 h away
+		clk := clock.FixedClock{T: mustParseRFC3339("2025-06-22T00:00:00Z")}
+		server := setupTestServerWithClock(t, pool, clk)
+		defer server.Close()
+
+		result := execQuery(t, server, `{ aflLiveRound { round { name } startDate } }`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflLiveRound *struct {
+				Round     struct{ Name string } `json:"round"`
+				StartDate string                `json:"startDate"`
+			} `json:"aflLiveRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.NotNil(t, data.AflLiveRound)
+		assert.Equal(t, "Round 2", data.AflLiveRound.Round.Name)
+		assert.Equal(t, "2025-06-22T14:00:00Z", data.AflLiveRound.StartDate)
 	})
 }
