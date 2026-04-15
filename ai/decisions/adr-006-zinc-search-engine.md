@@ -1,6 +1,7 @@
 ---
-status: accepted
+status: superseded
 date: 2026-03-14
+superseded-by: ADR-015
 scope: infra
 enforceable: false
 ---
