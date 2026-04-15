@@ -53,10 +53,10 @@ fields: player_match_id, score, afl_player_match_id
 - [x] Unit tests for handler payload→document transformation (table-driven: valid payload, malformed JSON, zero values)
 
 ### 4. Infrastructure: Typesense client *(redo — was Zinc, see ADR-015)*
-- [ ] `internal/infrastructure/typesense/client.go` — `Client{host, port, apiKey, protocol, httpClient}`; `EnsureCollection(ctx) error` creates the `documents` collection with schema (fields: `id`, `source`, `type`, `data` as string fields; `source` and `type` as facet fields); `Index(ctx, doc) error` upserts document; `Search(ctx, query) (SearchResult, error)` calls Typesense search endpoint with `q`, `query_by`, `filter_by`
-- [ ] `internal/infrastructure/typesense/repository.go` — wraps `Client`, implements `domain.DocumentRepository`; maps Typesense response to `SearchResult`
-- [ ] Integration tests — use testcontainers (Typesense image: `typesense/typesense:27.1`) to start Typesense; test `Index` then `Search` round-trip; test source/type filtering; test idempotent re-index via upsert
-- [ ] Remove `internal/infrastructure/zinc/` directory
+- [x] `internal/infrastructure/typesense/client.go` — `Client{apiURL, apiKey, collection, httpClient}`; `EnsureCollection(ctx) error` creates the `documents` collection with schema (`source`/`type` as string facets, `.*` auto for data fields); `upsertDoc(ctx, doc) error`; `search(ctx, q, queryBy, filterBy) (*searchResponse, error)`
+- [x] `internal/infrastructure/typesense/repository.go` — wraps `Client`, implements `domain.DocumentRepository`; maps Typesense response to `SearchResult`; uses native `filter_by` (no post-filtering needed)
+- [x] Integration tests — use testcontainers (Typesense image: `typesense/typesense:27.1`) to start Typesense; test `Index` then `Search` round-trip; test source/type filtering; test idempotent re-index via upsert
+- [x] Remove `internal/infrastructure/zinc/` directory
 
 ### 5. Interface: REST handlers
 - [ ] `internal/interface/rest/handler.go` — `Handler{search *application.Search}`; `ServeSearch(w, r)` reads `q`, `source`, `type` query params, calls use case, writes JSON response `{"total": N, "documents": [...]}`

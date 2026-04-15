@@ -1,65 +1,63 @@
-package zinc_test
+package typesense_test
 
 import (
 	"context"
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"time"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"xffl/services/search/internal/domain"
-	zincinfra "xffl/services/search/internal/infrastructure/zinc"
+	ts "xffl/services/search/internal/infrastructure/typesense"
 )
 
-var testBaseURL string
+var testAPIURL string
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "public.ecr.aws/zinclabs/zincsearch:latest",
-			ExposedPorts: []string{"4080/tcp"},
-			Env: map[string]string{
-				"ZINC_FIRST_ADMIN_USER":     "admin",
-				"ZINC_FIRST_ADMIN_PASSWORD": "admin",
-				"ZINC_DATA_PATH":            "/data",
-			},
-			WaitingFor: wait.ForHTTP("/healthz").
-				WithPort("4080/tcp").
+			Image:        "typesense/typesense:27.1",
+			ExposedPorts: []string{"8108/tcp"},
+			Cmd:          []string{"--data-dir=/data", "--api-key=xyz"},
+			Tmpfs:        map[string]string{"/data": "rw"},
+			WaitingFor: wait.ForLog("Peer refresh succeeded").
 				WithStartupTimeout(60 * time.Second),
 		},
 		Started: true,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "start zinc container: %v\n", err)
+		fmt.Fprintf(os.Stderr, "start typesense container: %v\n", err)
 		os.Exit(1)
 	}
 
-	host, err := ctr.Host(ctx)
+	port, err := ctr.MappedPort(ctx, "8108")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "zinc host: %v\n", err)
-		ctr.Terminate(ctx) //nolint:errcheck
-		os.Exit(1)
-	}
-	port, err := ctr.MappedPort(ctx, "4080")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "zinc port: %v\n", err)
+		fmt.Fprintf(os.Stderr, "typesense port: %v\n", err)
 		ctr.Terminate(ctx) //nolint:errcheck
 		os.Exit(1)
 	}
 
-	testBaseURL = fmt.Sprintf("http://%s:%s", host, port.Port())
+	testAPIURL = fmt.Sprintf("http://127.0.0.1:%s", port.Port())
 
-	// Create index with keyword mappings for source/type before any test runs.
-	repo := zincinfra.NewRepository(zincinfra.NewClient(testBaseURL, "admin", "admin"))
-	if err := repo.EnsureIndex(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "ensure zinc index: %v\n", err)
+	// Typesense needs a moment after raft initialization before the API accepts requests.
+	repo := ts.NewRepository(ts.NewClient(testAPIURL, "xyz"))
+	var collErr error
+	for range 5 {
+		if collErr = repo.EnsureCollection(ctx); collErr == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	if collErr != nil {
+		fmt.Fprintf(os.Stderr, "ensure typesense collection: %v\n", collErr)
 		ctr.Terminate(ctx) //nolint:errcheck
 		os.Exit(1)
 	}
@@ -69,13 +67,10 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func newRepo(t *testing.T) *zincinfra.Repository {
+func newRepo(t *testing.T) *ts.Repository {
 	t.Helper()
-	return zincinfra.NewRepository(zincinfra.NewClient(testBaseURL, "admin", "admin"))
+	return ts.NewRepository(ts.NewClient(testAPIURL, "xyz"))
 }
-
-// refreshWait gives Zinc time to make freshly-indexed docs searchable.
-func refreshWait() { time.Sleep(1 * time.Second) }
 
 func TestRepository_IndexAndSearch_RoundTrip(t *testing.T) {
 	ctx := context.Background()
@@ -88,7 +83,6 @@ func TestRepository_IndexAndSearch_RoundTrip(t *testing.T) {
 		Data:   map[string]any{"player_match_id": 100, "kicks": 15, "goals": 3},
 	}
 	require.NoError(t, repo.Index(ctx, doc))
-	refreshWait()
 
 	result, err := repo.Search(ctx, domain.SearchQuery{Source: domain.SourceAFL})
 	require.NoError(t, err)
@@ -123,7 +117,6 @@ func TestRepository_SourceFiltering(t *testing.T) {
 	}
 	require.NoError(t, repo.Index(ctx, aflDoc))
 	require.NoError(t, repo.Index(ctx, fflDoc))
-	refreshWait()
 
 	aflResult, err := repo.Search(ctx, domain.SearchQuery{Source: domain.SourceAFL})
 	require.NoError(t, err)
@@ -156,7 +149,6 @@ func TestRepository_TypeFiltering(t *testing.T) {
 	}
 	require.NoError(t, repo.Index(ctx, pmDoc))
 	require.NoError(t, repo.Index(ctx, fsDoc))
-	refreshWait()
 
 	result, err := repo.Search(ctx, domain.SearchQuery{Type: domain.TypeFantasyScore})
 	require.NoError(t, err)
@@ -177,10 +169,9 @@ func TestRepository_IdempotentReindex(t *testing.T) {
 	}
 	require.NoError(t, repo.Index(ctx, doc))
 
-	// Re-index same doc with updated data — should not error.
+	// Re-index same doc with updated data — upsert should not create a duplicate.
 	doc.Data["kicks"] = 10
 	require.NoError(t, repo.Index(ctx, doc))
-	refreshWait()
 
 	result, err := repo.Search(ctx, domain.SearchQuery{Source: domain.SourceAFL})
 	require.NoError(t, err)
