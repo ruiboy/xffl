@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/search/internal/application"
 	"xffl/services/search/internal/infrastructure/typesense"
-	"xffl/services/search/internal/interface/rest"
+	gql "xffl/services/search/internal/interface/graphql"
 	pgevents "xffl/shared/events/pg"
 )
 
@@ -59,15 +61,17 @@ func main() {
 		}
 	}()
 
-	// REST
-	searchHandler := rest.NewHandler(repo)
+	// GraphQL
+	resolver := &gql.Resolver{Repo: repo}
+	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, "ok")
 	})
-	mux.HandleFunc("/search", searchHandler.ServeSearch)
+	mux.Handle("/", playground.Handler("Search", "/query"))
+	mux.Handle("/query", srv)
 
 	slog.InfoContext(ctx, "Search service starting", slog.String("port", port))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

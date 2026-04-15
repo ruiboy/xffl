@@ -61,19 +61,19 @@ fields: player_match_id, score, afl_player_match_id
 - [x] Remove `internal/infrastructure/zinc/` directory
 
 ### 5. Interface: GraphQL *(redo — was REST, see ADR-002 update)*
-- [ ] `internal/interface/graphql/schema.graphqls` — `search(q: String, source: String, type: String): SearchResult!` query; `SearchResult{total, documents}` and `SearchDocument{id, source, type, data}` types
-- [ ] `gqlgen.yml` + `go generate` — generate resolver scaffold
-- [ ] `internal/interface/graphql/resolver.go` — `Resolver{repo domain.DocumentRepository}`; wire search query to repo
-- [ ] Unit tests for resolver (stub repo, verify query mapping and response shape)
-- [ ] Remove `internal/interface/rest/` (replaced by GraphQL)
+- [x] `api/graphql/schema.graphqls` — `search(q: String, source: String, type: String): SearchResult!` query; `SearchResult{total, documents}` and `SearchDocument{id, source, type, data: JSON}` types
+- [x] `gqlgen.yml` + `go generate` — generated resolver scaffold, models, executor
+- [x] `internal/interface/graphql/resolver.go` — `Resolver{Repo domain.DocumentRepository}`; wire search query to repo
+- [x] Unit tests for resolver (stub repo, verify query mapping and response shape)
+- [x] Remove `internal/interface/rest/` (replaced by GraphQL)
 
 ### 6. Service entrypoint *(update for GraphQL)*
-- [ ] `cmd/main.go` — wire `TypesenseClient → TypesenseRepository → IndexDocument + Handlers + GraphQL server`; read `TYPESENSE_HOST` (default `localhost`), `TYPESENSE_PORT` (default `8108`), `TYPESENSE_API_KEY` (default `xyz`); call `EnsureCollection` on startup; subscribe to both events via pgevents; serve `/query` (GraphQL) + `/` (playground) + `/health`; port 8082
+- [x] `cmd/main.go` — wire `TypesenseClient → TypesenseRepository → IndexDocument + Handlers + GraphQL server`; read `TYPESENSE_HOST` (default `localhost`), `TYPESENSE_PORT` (default `8108`), `TYPESENSE_API_KEY` (default `xyz`); call `EnsureCollection` on startup; subscribe to both events via pgevents; serve `/query` (GraphQL) + `/` (playground) + `/health`; port 8082
 
 ### 7. Gateway: search passthrough
-- [ ] `services/gateway/cmd/main.go` — add `SEARCH_SERVICE_URL` env (default `http://localhost:8082`); add `/search/query` route (same pattern as `/afl/query`, `/ffl/query`)
+- [x] `services/gateway/cmd/main.go` — add `SEARCH_SERVICE_URL` env (default `http://localhost:8082`); add `/search/query` route (same pattern as `/afl/query`, `/ffl/query`)
 
 ### 8. justfile + docker-compose + go.work
-- [ ] `dev/docker-compose.yml` — remove `zinc` service, add `typesense` service (image `typesense/typesense:27.1`, port 8108, API key `xyz`, data dir `/data`)
-- [ ] `justfile` — update comments/echo to reference Typesense instead of Zinc; update port from 4080 to 8108; add `run-search` to `run-all` and `stop-all` (port 8082)
-- [ ] `go.work` — add `./services/search` (if not already present from task 1)
+- [x] `dev/docker-compose.yml` — removed `zinc` service, added `typesense` service (image `typesense/typesense:27.1`, port 8108, API key `xyz`, data volume)
+- [x] `justfile` — updated comments/echo to reference Typesense; added `run-search` to `run-all` and port 8082 to `stop-all`
+- [x] `go.work` — already has `./services/search` from task 1

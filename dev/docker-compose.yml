@@ -17,18 +17,15 @@ services:
       timeout: 3s
       retries: 5
 
-  zinc:
-    image: public.ecr.aws/zinclabs/zincsearch:latest
-    container_name: xffl-zinc
-    environment:
-      ZINC_FIRST_ADMIN_USER: admin
-      ZINC_FIRST_ADMIN_PASSWORD: admin
-      ZINC_DATA_PATH: /data
+  typesense:
+    image: typesense/typesense:27.1
+    container_name: xffl-typesense
+    command: ["--data-dir=/data", "--api-key=${TYPESENSE_API_KEY:-xyz}"]
     ports:
-      - "${ZINC_PORT:-4080}:4080"
+      - "${TYPESENSE_PORT:-8108}:8108"
     volumes:
-      - zincdata:/data
+      - typesensedata:/data
 
 volumes:
   pgdata:
-  zincdata:
+  typesensedata:
