@@ -59,11 +59,12 @@ fields: player_match_id, score, afl_player_match_id
 - [x] Remove `internal/infrastructure/zinc/` directory
 
 ### 5. Interface: REST handlers
-- [ ] `internal/interface/rest/handler.go` — `Handler{search *application.Search}`; `ServeSearch(w, r)` reads `q`, `source`, `type` query params, calls use case, writes JSON response `{"total": N, "documents": [...]}`
-- [ ] `GET /health` in `cmd/main.go` (same pattern as AFL/FFL)
+- [x] `internal/interface/rest/handler.go` — `Handler{repo domain.DocumentRepository}`; `ServeSearch(w, r)` reads `q`, `source`, `type` query params, calls repo, writes JSON response `{"total": N, "documents": [...]}`
+- [x] Unit tests — full params, no params, repo error, method not allowed
+- [x] `GET /health` in `cmd/main.go` (same pattern as AFL/FFL)
 
 ### 6. Service entrypoint
-- [ ] `cmd/main.go` — wire `TypesenseClient → TypesenseRepository → IndexDocument + Search + handlers`; read `TYPESENSE_HOST` (default `localhost`), `TYPESENSE_PORT` (default `8108`), `TYPESENSE_API_KEY` (default `xyz`); call `EnsureCollection` on startup; subscribe to both events; start REST server on port 8082
+- [x] `cmd/main.go` — wire `TypesenseClient → TypesenseRepository → IndexDocument + Handlers + REST Handler`; read `TYPESENSE_HOST` (default `localhost`), `TYPESENSE_PORT` (default `8108`), `TYPESENSE_API_KEY` (default `xyz`); call `EnsureCollection` on startup; subscribe to both events via pgevents; start REST server on port 8082
 
 ### 7. Gateway: search passthrough
 - [ ] `services/gateway/cmd/main.go` — add `SEARCH_SERVICE_URL` env (default `http://localhost:8082`); add `/search` route that strips the `/search` prefix and proxies to Search service; add `GET` to CORS allowed methods
