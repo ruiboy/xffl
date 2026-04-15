@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/search/internal/domain"
@@ -24,6 +25,11 @@ func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("HandlePlayerMatchUpdated: unmarshal: %w", err)
 	}
+
+	slog.DebugContext(ctx, "event received",
+		slog.String("event_type", contractevents.PlayerMatchUpdated),
+		slog.Int("player_match_id", p.PlayerMatchID),
+	)
 
 	doc := domain.SearchDocument{
 		ID:     fmt.Sprintf("afl_player_match_%d", p.PlayerMatchID),
@@ -53,6 +59,12 @@ func (h *Handlers) HandleFantasyScoreCalculated(ctx context.Context, payload []b
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("HandleFantasyScoreCalculated: unmarshal: %w", err)
 	}
+
+	slog.DebugContext(ctx, "event received",
+		slog.String("event_type", contractevents.FantasyScoreCalculated),
+		slog.Int("player_match_id", p.PlayerMatchID),
+		slog.Int("score", p.Score),
+	)
 
 	doc := domain.SearchDocument{
 		ID:     fmt.Sprintf("ffl_fantasy_score_%d", p.PlayerMatchID),

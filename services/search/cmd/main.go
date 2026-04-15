@@ -27,7 +27,7 @@ func main() {
 
 	port := envOr("PORT", "8082")
 	dbURL := envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/xffl?sslmode=disable")
-	tsHost := envOr("TYPESENSE_HOST", "localhost")
+	tsHost := envOr("TYPESENSE_HOST", "127.0.0.1")
 	tsPort := envOr("TYPESENSE_PORT", "8108")
 	tsAPIKey := envOr("TYPESENSE_API_KEY", "xyz")
 

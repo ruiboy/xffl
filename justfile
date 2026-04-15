@@ -42,7 +42,7 @@ run-ffl:
 
 # Run Search service (port 8082)
 run-search:
-    cd services/search && go run ./cmd/main.go
+    cd services/search && LOG_LEVEL={{log_level}} go run ./cmd/main.go
 
 # Run Gateway (port 8090)
 run-gateway:
