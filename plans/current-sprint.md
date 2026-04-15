@@ -35,9 +35,9 @@ fields: player_match_id, score, afl_player_match_id
 ## Tasks
 
 ### 1. Scaffold
-- [ ] Create `services/search/` directory structure: `cmd/`, `internal/domain/`, `internal/application/`, `internal/infrastructure/zinc/`, `internal/interface/rest/`
-- [ ] `services/search/go.mod` — module `xffl/services/search`; import `xffl/contracts/events`, `xffl/shared/events`
-- [ ] Add `./services/search` to `go.work`
+- [x] Create `services/search/` directory structure: `cmd/`, `internal/domain/`, `internal/application/`, `internal/infrastructure/zinc/`, `internal/interface/rest/`
+- [x] `services/search/go.mod` — module `xffl/services/search`; import `xffl/contracts/events`, `xffl/shared/events`
+- [x] Add `./services/search` to `go.work`
 
 ### 2. Domain layer
 - [ ] `internal/domain/document.go` — `SearchDocument{ID, Source, Type, Data map[string]any}` struct; `Source` and `Type` string constants (`SourceAFL`, `SourceFFL`, `TypePlayerMatch`, `TypeFantasyScore`)
