@@ -5,7 +5,7 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | ADR | Status | Enforceable | Decision |
 |-----|--------|-------------|----------|
 | 001 | Accepted | ✅ | AI-optimised monorepo with `ai/` as human-agent interface |
-| 002 | Accepted | ✅ | AFL and FFL expose GraphQL (gqlgen); Search exposes REST |
+| 002 | Accepted | ✅ | All services expose GraphQL (gqlgen) |
 | 003 | Accepted | ✅ | Single PG database (`xffl`), schema isolation (`afl.*`, `ffl.*`); no cross-schema joins |
 | 004 | Accepted | ✅ | PG LISTEN/NOTIFY for events; full JSON payloads; `EventDispatcher` interface in `shared/events/` |
 | 005 | Accepted | ✅ | Four layers per service: Domain → Application → Infrastructure → Interface; dependencies point inward |

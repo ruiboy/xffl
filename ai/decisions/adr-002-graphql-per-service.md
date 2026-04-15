@@ -1,6 +1,6 @@
 ---
 status: accepted
-date: 2026-03-14
+date: 2026-04-16
 scope: interface
 enforceable: true
 rules:
@@ -12,13 +12,15 @@ rules:
 
 ## Context
 
-Each service needs an API. Search uses REST (simple query/response). AFL and FFL need richer query capabilities.
+Each service needs an API. The frontend uses Apollo Client exclusively — all calls route through the gateway as GraphQL queries.
 
 ## Decision
 
-AFL and FFL expose GraphQL endpoints using gqlgen. Search exposes REST.
+All services (AFL, FFL, Search) expose GraphQL endpoints using gqlgen.
 
 ## Rationale
 
+- **Protocol consistency:** Frontend is 100% Apollo/GraphQL. A REST endpoint for Search would introduce a second API pattern (raw `fetch`) alongside the existing Apollo client.
+- **Gateway uniformity:** All service routes through the gateway follow the same proxy pattern (`/{service}/query`), same CORS config.
 - **Why for Hobby:** Type-safe APIs, excellent developer experience with playground/introspection, services testable independently
 - **Scale Path:** Add GraphQL Federation for unified schema, field-level routing, schema stitching
