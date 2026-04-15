@@ -1,59 +1,79 @@
-# Current Sprint — Phase 12: Live Round
+# Current Sprint — Phase 13: Search Service
 
-**Sprint goal:** Compute and expose a "live round" across AFL and FFL services, drive the round nav default and indicator from it, and make the whole thing testable without real-time dependency.
+**Sprint goal:** Build a standalone Search service that subscribes to AFL and FFL events, indexes documents into Typesense, and exposes a GraphQL API for full-text search with source/type filtering.
+
+> **Pivot notes (2026-04-16):**
+> - ADR-015 replaced ZincSearch with Typesense. Tasks 1-3 unaffected. Task 4 redone.
+> - ADR-002 updated: Search now exposes GraphQL (like AFL/FFL) instead of REST, keeping the frontend on a single protocol (Apollo). Task 5 redone.
 
 ## Design decisions
 
-- **Live window**: midnight (Australia/Adelaide) before first game of round → midnight after last game of round. Derived from `MIN`/`MAX` of `afl.match.start_dt` per round.
-- **Fallback**: if no round window is currently open, return the most recently completed round.
-- **`RoundStatus`**: `Open` (window active) / `Closed` (fallback — most recently completed).
-- **Domain owns logic**: DB query returns round + match bounds; midnight-boundary calculation and Open/Closed determination live in Go domain code, not SQL.
-- **Injectable `Clock` interface**: wired at startup. Overridden via `CLOCK_OVERRIDE=<RFC3339>` env var — used by e2e tests to fix time without exposing time-travel on the API.
-- **Cookies**: two JSON cookies — `xffl_afl` and `xffl_ffl` — each `{ seasonId, roundId, roundStatus }`. Refreshed on page load. Trust stale value if query fails.
-- **Nav indicator**: `liveRoundId` in RoundNav is fed from cookie (not URL). Independent of the currently browsed round. `Open` vs `Closed` status can drive different ring styles.
+- **GraphQL, not REST** (ADR-002 updated) — `search(q, source, type)` query via gqlgen, consistent with AFL/FFL. Frontend stays 100% Apollo.
+- **Single Typesense collection** (`documents`) — all documents in one collection with `source` and `type` fields for filtering. Simpler than per-type collections; supports the cross-source search the frontend will need.
+- **Document ID** — `"{source}_{type}_{id}"` (e.g. `"afl_player_match_42"`). Deterministic so re-indexing is idempotent (Typesense upserts by `id`).
+- **Event subscriptions** — same pattern as FFL: `dispatcher.Subscribe(...)` then `go dispatcher.Listen(ctx)`. Subscribes to both `AFL.PlayerMatchUpdated` and `FFL.FantasyScoreCalculated`.
+- **No DB** — Search service has no PostgreSQL schema. Typesense is its only persistence.
+- **Typesense auth** — API key set via `TYPESENSE_API_KEY` env var (default `xyz` for local dev, matching docker-compose).
+- **Testing** — unit tests for payload→document transformation; integration tests against a real Typesense instance via testcontainers.
+- **Gateway passthrough** — `/search/query` proxied to Search service (same pattern as `/afl/query`, `/ffl/query`).
 
-## Decision: FFL live round mapping
+## Document shapes
 
-Two-step frontend query: (1) `aflLiveRound` → AFL round ID + status; (2) `fflRoundByAflRound(aflRoundId)` → FFL round (nullable). If null, show "Cannot determine round to display. Consult your admin." No `fflLatestRound` on home page — it returned the last round by insertion order, which could be a future round.
+### AFL player match (from `AFL.PlayerMatchUpdated`)
+```
+source: "afl"
+type:   "player_match"
+id:     player_match_id
+fields: player_match_id, player_season_id, club_match_id, round_id,
+        kicks, handballs, marks, hitouts, tackles, goals, behinds
+```
+
+### FFL fantasy score (from `FFL.FantasyScoreCalculated`)
+```
+source: "ffl"
+type:   "fantasy_score"
+id:     player_match_id (FFL)
+fields: player_match_id, score, afl_player_match_id
+```
 
 ## Tasks
 
-### 1. Shared: Clock interface
-- [x] Define `Clock` interface in `shared/clock/`
-- [x] `RealClock` implementation wrapping `time.Now()`
-- [x] `FixedClock` implementation for tests
-- [x] `CLOCK_OVERRIDE` env var support: if set at startup, wire `FixedClock`; otherwise `RealClock`
+### 1. Scaffold
+- [x] Create `services/search/` directory structure: `cmd/`, `internal/domain/`, `internal/application/`, `internal/infrastructure/zinc/`, `internal/interface/rest/`
+- [x] `services/search/go.mod` — module `xffl/services/search`; import `xffl/contracts/events`, `xffl/shared/events`
+- [x] Add `./services/search` to `go.work`
 
-### 2. AFL: RoundStatus type + LiveRound use case
-- [x] Add `RoundStatus` type (`Open` / `Closed`) to AFL domain
-- [x] Add `LiveRoundResult` struct: `Round`, `Status RoundStatus`
-- [x] SQLC query: fetch all rounds for a season with `MIN(match.start_dt)` and `MAX(match.start_dt)`
-- [x] `LiveRound(ctx) LiveRoundResult` use case: loads round+match bounds, computes midnight windows in Australia/Adelaide, returns Open if window active, Closed for most recently completed
-- [x] Wire `Clock` into AFL `Queries`
+### 2. Domain layer
+- [x] `internal/domain/document.go` — `SearchDocument{ID, Source, Type, Data map[string]any}` struct; `Source` and `Type` string constants (`SourceAFL`, `SourceFFL`, `TypePlayerMatch`, `TypeFantasyScore`)
+- [x] `internal/domain/query.go` — `SearchQuery{Q, Source, Type string}` and `SearchResult{Total int, Documents []SearchDocument}` structs
+- [x] `internal/domain/repository.go` — `DocumentRepository` interface: `Index(ctx, doc) error` and `Search(ctx, query) (SearchResult, error)`
 
-### 3. AFL: GraphQL
-- [x] Add `aflLiveRound: AFLLiveRound` query to AFL schema
-- [x] Resolver calls `queries.LiveRound(ctx)`
+### 3. Application layer
+- [x] `internal/application/index.go` — `IndexDocument` use case: takes a `SearchDocument`, delegates to `DocumentRepository.Index`
+- [x] `internal/application/search.go` — `Search` use case: takes a `SearchQuery`, delegates to `DocumentRepository.Search`; returns `SearchResult`
+- [x] `internal/application/handlers.go` — `HandlePlayerMatchUpdated(ctx, payload []byte) error` and `HandleFantasyScoreCalculated(ctx, payload []byte) error`; each unmarshal contract payload, build `SearchDocument`, call `IndexDocument`
+- [x] Unit tests for handler payload→document transformation (table-driven: valid payload, malformed JSON, zero values)
 
-### 4 & 5. FFL: expose aflRoundId on FFLRound
-- [x] Add `aflRoundId: ID` to `FFLRound` in FFL GraphQL schema
-- [x] Populate `AflRoundID` in `convertRound`
-- No clock, no use case, no `fflLiveRound` query needed — frontend maps AFL→FFL round client-side using `aflRoundId`
+### 4. Infrastructure: Typesense client *(redo — was Zinc, see ADR-015)*
+- [x] `internal/infrastructure/typesense/client.go` — `Client{apiURL, apiKey, collection, httpClient}`; `EnsureCollection(ctx) error` creates the `documents` collection with schema (`source`/`type` as string facets, `.*` auto for data fields); `upsertDoc(ctx, doc) error`; `search(ctx, q, queryBy, filterBy) (*searchResponse, error)`
+- [x] `internal/infrastructure/typesense/repository.go` — wraps `Client`, implements `domain.DocumentRepository`; maps Typesense response to `SearchResult`; uses native `filter_by` (no post-filtering needed)
+- [x] Integration tests — use testcontainers (Typesense image: `typesense/typesense:27.1`) to start Typesense; test `Index` then `Search` round-trip; test source/type filtering; test idempotent re-index via upsert
+- [x] Remove `internal/infrastructure/zinc/` directory
 
-### 6. E2e test seed data
-- [x] Add AFL Round 3 with `start_dt = 2026-01-15 14:10:00+10:30` to e2e AFL seed
-- [x] Add FFL Round 3 with `afl_round_id` pointing to AFL Round 3 to e2e FFL seed
-- [x] `CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30` wired into both service commands in `playwright.config.ts`
+### 5. Interface: GraphQL *(redo — was REST, see ADR-002 update)*
+- [x] `api/graphql/schema.graphqls` — `search(q: String, source: String, type: String): SearchResult!` query; `SearchResult{total, documents}` and `SearchDocument{id, source, type, data: JSON}` types
+- [x] `gqlgen.yml` + `go generate` — generated resolver scaffold, models, executor
+- [x] `internal/interface/graphql/resolver.go` — `Resolver{Repo domain.DocumentRepository}`; wire search query to repo
+- [x] Unit tests for resolver (stub repo, verify query mapping and response shape)
+- [x] Remove `internal/interface/rest/` (replaced by GraphQL)
 
-### 7. Frontend: state composables
-- [x] Create `useAflState.ts`: manages `xffl_afl` JSON cookie `{ seasonId, roundId, roundStatus }`
-- [x] Refactor `useFflState.ts`: replace flat string refs + `setCurrentSeason` with `xffl_ffl` JSON cookie, same shape
-- [x] On page load: call `liveRound` query for the relevant service, update cookie; trust stale value on failure
+### 6. Service entrypoint *(update for GraphQL)*
+- [x] `cmd/main.go` — wire `TypesenseClient → TypesenseRepository → IndexDocument + Handlers + GraphQL server`; read `TYPESENSE_HOST` (default `localhost`), `TYPESENSE_PORT` (default `8108`), `TYPESENSE_API_KEY` (default `xyz`); call `EnsureCollection` on startup; subscribe to both events via pgevents; serve `/query` (GraphQL) + `/` (playground) + `/health`; port 8082
 
-### 8. Frontend: RoundNav
-- [x] Feed `liveRoundId` from cookie (not URL)
-- [x] Pass `roundStatus` alongside `liveRoundId`; apply distinct ring style for `Open` vs `Closed`
+### 7. Gateway: search passthrough
+- [x] `services/gateway/cmd/main.go` — add `SEARCH_SERVICE_URL` env (default `http://localhost:8082`); add `/search/query` route (same pattern as `/afl/query`, `/ffl/query`)
 
-## Revisit at end of sprint
-
-- [x] `adelaideLoc` in `domain/round.go` — resolved: moved to `application/live_round.go` as part of the FindNeighbours refactor. Timezone logic lives in the application layer alongside the `LiveRound` use case.
+### 8. justfile + docker-compose + go.work
+- [x] `dev/docker-compose.yml` — removed `zinc` service, added `typesense` service (image `typesense/typesense:27.1`, port 8108, API key `xyz`, data volume)
+- [x] `justfile` — updated comments/echo to reference Typesense; added `run-search` to `run-all` and port 8082 to `stop-all`
+- [x] `go.work` — already has `./services/search` from task 1

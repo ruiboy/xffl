@@ -1,0 +1,17 @@
+type Query {
+  search(q: String, source: String, type: String): SearchResult!
+}
+
+type SearchResult {
+  total: Int!
+  documents: [SearchDocument!]!
+}
+
+type SearchDocument {
+  id: ID!
+  source: String!
+  type: String!
+  data: JSON!
+}
+
+scalar JSON

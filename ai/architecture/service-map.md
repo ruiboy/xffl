@@ -4,7 +4,7 @@
 |---------|----------------|------|-----|---------|
 | AFL | AFL | 8080 | GraphQL | AFL clubs, players, match statistics |
 | FFL | FFL | 8081 | GraphQL | Fantasy clubs, players, scoring, ladder |
-| Search | — | 8082 | REST | Full-text search via Zinc |
+| Search | — | 8082 | REST | Full-text search via Typesense |
 | Gateway | — | 8090 | GraphQL | Single entry point for frontend; routes queries to AFL/FFL services, proxies search |
 
 ## Event Flow
@@ -20,7 +20,7 @@ FFL.FantasyScoreCalculated → Search (indexes/updates player)
 
 - **Database:** PostgreSQL — separate schemas (`afl.*`, `ffl.*`)
 - **Events:** PostgreSQL LISTEN/NOTIFY
-- **Search engine:** Zinc (port 4080)
+- **Search engine:** Typesense (port 8108)
 - **Frontend:** Vue 3 + Apollo Client (port 3000)
 
 ## Shared Packages (`shared/`)

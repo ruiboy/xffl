@@ -22,7 +22,7 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevelFromEnv(),
-	})))
+	})).With(slog.String("service", "afl")))
 
 	port := os.Getenv("PORT")
 	if port == "" {

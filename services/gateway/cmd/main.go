@@ -21,7 +21,7 @@ func logLevelFromEnv() slog.Level {
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevelFromEnv(),
-	})))
+	})).With(slog.String("service", "gateway")))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -36,6 +36,11 @@ func main() {
 	fflURL := os.Getenv("FFL_SERVICE_URL")
 	if fflURL == "" {
 		fflURL = "http://localhost:8081"
+	}
+
+	searchURL := os.Getenv("SEARCH_SERVICE_URL")
+	if searchURL == "" {
+		searchURL = "http://localhost:8082"
 	}
 
 	corsOrigin := os.Getenv("CORS_ORIGIN")
@@ -57,6 +62,13 @@ func main() {
 		os.Exit(1)
 	}
 	fflProxy := httputil.NewSingleHostReverseProxy(fflTarget)
+
+	searchTarget, err := url.Parse(searchURL)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid SEARCH_SERVICE_URL", slog.Any("error", err))
+		os.Exit(1)
+	}
+	searchProxy := httputil.NewSingleHostReverseProxy(searchTarget)
 
 	cors := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +101,12 @@ func main() {
 		r.URL.Path = "/query"
 		fflProxy.ServeHTTP(w, r)
 	}))
+	mux.HandleFunc("/search/query", cors(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/query"
+		searchProxy.ServeHTTP(w, r)
+	}))
 
-	slog.InfoContext(ctx, "gateway starting", slog.String("port", port), slog.String("afl_url", aflURL), slog.String("ffl_url", fflURL))
+	slog.InfoContext(ctx, "gateway starting", slog.String("port", port), slog.String("afl_url", aflURL), slog.String("ffl_url", fflURL), slog.String("search_url", searchURL))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		slog.ErrorContext(ctx, "gateway failed", slog.Any("error", err))
 		os.Exit(1)

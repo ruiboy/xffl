@@ -13,7 +13,7 @@ The AFL and FFL GraphQL services are isolated. The frontend must issue separate 
 
 The obvious architectural response is Apollo Federation: each service becomes a subgraph, the gateway composes a supergraph, and the frontend writes a single traversal query. We evaluated this path seriously.
 
-In parallel, the long-term data model calls for a search index (Zinc → Elasticsearch) as the read layer for player stats and aggregations, with event-driven indexing from both AFL and FFL write operations (ADR-006, ADR-004).
+In parallel, the long-term data model calls for a search service as the read layer for player stats and aggregations, with event-driven indexing from both AFL and FFL write operations (ADR-015, ADR-004).
 
 ## Decision
 
@@ -36,5 +36,5 @@ The CQRS split is also a better fit for the domain:
 
 - **Gateway routing stays path-based** — `/afl/query` and `/ffl/query` remain separate endpoints. Frontend routing link should be made explicit (operation-name map) rather than regex-based.
 - **FFL service adds targeted resolvers** — e.g. `fflClubSeason(id: ID!)` so views don't over-fetch (load whole ladder for one club). These are standard GraphQL resolver improvements, not federation.
-- **Search indexing expands** — AFL player match stats (per round, aggregated) are indexed into Zinc/Elasticsearch via events. SquadView and similar views query search for stats.
+- **Search indexing expands** — AFL player match stats (per round, aggregated) are indexed into Typesense via events. SquadView and similar views query search for stats.
 - **Federation remains an option** — if a genuine cross-graph traversal use case emerges that the search index cannot satisfy, federation can be revisited. The services are structured in a way that makes it feasible later.

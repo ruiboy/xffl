@@ -14,7 +14,6 @@ frontend/web/    → Vue 3 SPA (TypeScript, Vite, port 3000)
 contracts/       → Shared event type definitions
 shared/          → Shared Go packages (database, events)
 dev/             → Docker Compose, seed data, dev tooling
-first-cut/       → Legacy prototype (reference only)
 ```
 
 ## Non-Negotiable Rules
@@ -32,7 +31,7 @@ first-cut/       → Legacy prototype (reference only)
 ## Common Commands
 
 ```
-just dev-up          # Start Postgres + Zinc (Docker)
+just dev-up          # Start Postgres + Typesense (Docker)
 just dev-down        # Stop infrastructure
 just dev-reset       # Stop + delete all data
 just dev-seed        # Load test data

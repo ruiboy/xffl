@@ -6,12 +6,12 @@ log_level := env_var_or_default("LOG_LEVEL", "debug")
 default:
     @just --list
 
-# Start local infrastructure (Postgres + Zinc)
+# Start local infrastructure (Postgres + Typesense)
 dev-up:
     docker compose -f dev/docker-compose.yml up -d
     @echo "Waiting for Postgres..."
     @until docker exec xffl-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
-    @echo "Postgres ready on :${DB_PORT:-5432} | Zinc ready on :${ZINC_PORT:-4080}"
+    @echo "Postgres ready on :${DB_PORT:-5432} | Typesense ready on :${TYPESENSE_PORT:-8108}"
 
 # Load test data into Postgres
 dev-seed:
@@ -42,7 +42,7 @@ run-ffl:
 
 # Run Search service (port 8082)
 run-search:
-    cd services/search && go run ./cmd/main.go
+    cd services/search && LOG_LEVEL={{log_level}} go run ./cmd/main.go
 
 # Run Gateway (port 8090)
 run-gateway:
@@ -56,20 +56,21 @@ install-frontend:
 run-frontend: install-frontend
     cd frontend/web && npm run dev
 
-# Run AFL + FFL services, gateway, and frontend together
+# Run AFL + FFL + Search services, gateway, and frontend together
 run-all:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     just run-afl &
     just run-ffl &
+    just run-search &
     just run-gateway &
     just run-frontend &
     wait
 
-# Stop all running services (AFL, FFL, gateway, frontend)
+# Stop all running services (AFL, FFL, Search, gateway, frontend)
 stop-all:
     #!/usr/bin/env bash
-    for port in 8080 8081 8090 3000; do
+    for port in 8080 8081 8082 8090 3000; do
         pid=$(lsof -ti :$port 2>/dev/null)
         if [ -n "$pid" ]; then
             kill $pid 2>/dev/null && echo "Stopped process on :$port (PID $pid)"
