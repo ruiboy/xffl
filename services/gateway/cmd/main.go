@@ -21,7 +21,7 @@ func logLevelFromEnv() slog.Level {
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevelFromEnv(),
-	})))
+	})).With(slog.String("service", "gateway")))
 
 	port := os.Getenv("PORT")
 	if port == "" {
