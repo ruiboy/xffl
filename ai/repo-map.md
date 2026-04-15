@@ -37,6 +37,4 @@ xffl/
 ├── dev/
 │   ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
 │   └── postgres/seed/     → SQL seed files
-│
-└── first-cut/             → Legacy prototype (reference only)
 ```

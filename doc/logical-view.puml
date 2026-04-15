@@ -13,7 +13,7 @@ node "XFFL" {
   database "FFL DB" as ffldb
   queue "AFL Events" as aflqueue
   queue "FFL Events" as fflqueue
-  database "Search Index (Zinc)" as searchindex
+  database "Search Index" as searchindex
 }
 
 vueapp <--> gateway : graphql
@@ -29,7 +29,7 @@ fflservice <-> ffldb
 fflservice --> fflqueue : "events (teams, scores etc)"
 fflqueue --> searchservice
 
-gateway <--> searchservice : rest
+gateway <--> searchservice : graphql
 searchservice <-> searchindex : index / search
 
 

@@ -2,7 +2,7 @@
 
 ## Context
 
-Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests.
+Full stack rebuild (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests.
 
 ## Phase 1: Foundation ✅
 
@@ -140,20 +140,20 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 - [x] Frontend: `useAflState` + refactored `useFflState` — JSON cookies `xffl_afl` / `xffl_ffl` with `{ seasonId, roundId, startDate }`
 - [x] RoundNav: `liveRoundId` from cookie; single `ring-active` indicator (no closed/open distinction)
 
-## Phase 13: Search Service
+## Phase 13: Search Service ✅
 
 **Goal:** Event-driven search indexing
 
-- [ ] Domain layer — SearchDocument, SearchQuery, SearchResult
-- [ ] Application layer — Search, IndexDocument use cases; event handlers for indexing
-- [ ] Infrastructure layer — Zinc REST client, event subscriber
-- [ ] Interface layer — REST API (`GET /search`, `GET /health`)
-- [ ] Add search passthrough to gateway
-- [ ] Tests — unit (document transformation) + integration (Zinc)
+- [x] Domain layer — SearchDocument, SearchQuery, SearchResult
+- [x] Application layer — Search, IndexDocument use cases; event handlers for indexing
+- [x] Infrastructure layer — Typesense client + repository (testcontainers integration tests)
+- [x] Interface layer — GraphQL (`search` query, playground, health)
+- [x] Add search passthrough to gateway (`/search/query`)
+- [x] Tests — unit (payload→document transformation) + integration (Typesense round-trip, filtering, upsert)
 
 ## Phase 14: Search Frontend
 
-**Goal:** Search UI (new feature, not in first-cut)
+**Goal:** Search UI
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Playwright tests
@@ -162,7 +162,7 @@ Rebuilding from scratch using `first-cut/` as reference. Full stack (backend + f
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
-- [ ] Expand Zinc indexing to include AFL player match stats (per-round and aggregated)
+- [ ] Expand Typesense indexing to include AFL player match stats (per-round and aggregated)
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 

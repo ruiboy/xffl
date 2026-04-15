@@ -7,7 +7,7 @@ Multi-service fantasy football application bridging real AFL statistics with fan
 
 The X makes it sound cool.
 
-**Tech stack:** Go, GraphQL, PostgreSQL, Zinc, Vue 3
+**Tech stack:** Go, GraphQL, PostgreSQL, Typesense, Vue 3
 
 ## Architecture
 
@@ -44,7 +44,7 @@ The architecture supports multiple evolution paths:
 - **True Microservices:** Separate databases, independent deployment, service mesh
 - **Event-Driven Scale:** Migrate from PostgreSQL events to cloud messaging (AWS/GCP/Azure)
 - **Event Sourcing:** Add event store, replay capabilities, full audit trails
-- **Search Scale:** Evolve from Zinc to Elasticsearch/OpenSearch clusters
+- **Search Scale:** Evolve from Typesense to Elasticsearch/OpenSearch clusters
 
 See `ai/decisions`.
 
@@ -68,7 +68,7 @@ Prerequisites: Docker, Go 1.25+, Node.js 20+, [just](https://github.com/casey/ju
 
 ```sh
 cp .env.example .env
-just dev-up        # start Postgres + Zinc
+just dev-up        # start Postgres + Typesense
 just dev-seed      # load test data (optional)
 just install-frontend  # install frontend dependencies (first time only)
 ```
