@@ -5,11 +5,10 @@
 ## Tasks
 
 ### Architecture
-- [x] ADR-016: `integrations` schema for ACL identity mapping (external source IDs never on domain entities)
+- [x] ADR-016: ACL identity mapping tables in each service's own schema (e.g. `afl.player_source_map`); no shared integration schema
 - [ ] ADR if any new dependency introduced (e.g. Sheets API client)
 - [ ] Adapters live in `internal/infrastructure/<source>/` within the relevant service
 - [ ] Entry points live in `cmd/ingest/` within the relevant service
-- [ ] Add `integrations` schema init SQL to `dev/postgres/init/`
 
 ### AFL stats integration
 - Source: `https://afltables.com/afl/stats/{year}_stats.txt` — plain CSV, one row per player per match

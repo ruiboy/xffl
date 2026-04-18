@@ -141,6 +141,16 @@ Both services use these in `repository.go`:
 - **Components**: Vue 3 `<script setup>`, TypeScript, feature-folder structure (`features/{afl,ffl}/{api,components,views}`)
 - **Numbers**: `.toFixed(1)` for averages, `tabular-nums` class for alignment
 
+## Recipe: Add an integration (external data source)
+
+See `ai/architecture/integrations.md` for the full pattern (ACL, outbound ports, secondary adapters, identity mapping, cache policy).
+
+Quick checklist:
+1. Define outbound port interface in `internal/application/ports.go`
+2. Create adapter package `internal/infrastructure/<source>/`
+3. Add `afl.` (or `ffl.`) `*_source_map` table to schema SQL
+4. Wire adapter → use case → DB writes → domain events in `cmd/ingest/main.go`
+
 ## Testing
 
 See `ai/architecture/testing.md` for Go testing conventions (stack, patterns, naming).

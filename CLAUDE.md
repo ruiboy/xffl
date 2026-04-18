@@ -53,6 +53,9 @@ just test-e2e        # Playwright e2e tests (self-contained, no dev stack requir
 - `ai/decisions/decisions.md` — ADR index with summary table
 - `ai/architecture/domain.md`, `ai/architecture/service-map.md`
 
+**Before adding an integration (external data source):**
+- `ai/architecture/integrations.md` — ACL pattern, outbound ports, secondary adapters, identity mapping, cache policy
+
 **For development workflow detail:**
 - `ai/prompts/system-prompt.md` — development process (understand → test plan → implement → validate → reflect)
 
