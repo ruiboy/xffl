@@ -14,8 +14,8 @@
 - Source: `https://afltables.com/afl/stats/{year}_stats.txt` — plain CSV, one row per player per match
 - No new dependency needed — Go stdlib `encoding/csv` is sufficient (no ADR required)
 - Cache policy: fetch at most once per week; cache clears Monday (respectful of host)
-- [ ] Add `afl.player_source_map` table (source, external_id, player_id) — per ADR-016
-- [ ] Build team code → club ID mapping (2-letter codes e.g. `SY`, `CA`)
+- [x] Add `afl.xref_afltables_player` table (external_id, player_id) — per ADR-016, in `01_afl_integrations.sql`
+- [x] Build team code → club ID mapping (2-letter codes e.g. `SY`, `CA`)
 - [ ] Define `StatsProvider` outbound port in AFL application layer
 - [ ] Implement `AFLTablesAdapter` in `services/afl/internal/infrastructure/afltables/`
   - Fetch + cache CSV (weekly, cache-bust on Monday)

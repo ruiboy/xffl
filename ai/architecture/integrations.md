@@ -76,7 +76,7 @@ xref_<source>_<entity>   -- e.g. xref_afltables_player
 
 ### Schema file
 
-xref tables live in a dedicated SQL file separate from the core schema (e.g. `dev/postgres/init/01_afl_integrations.sql`). This keeps integration concerns out of the core schema and makes it easy to reason about or replace them independently.
+xref tables live in a dedicated SQL file separate from the core schema (e.g. `dev/postgres/init/03_afl_integrations.sql`). Init files run in filename order, so integration files must come after the schema files they depend on. This keeps integration concerns out of the core schema and makes it easy to reason about or replace them independently.
 
 ### Table definition
 
