@@ -6,11 +6,36 @@ Patterns and decisions for all Go tests in this repo. Read this before writing a
 
 | Layer | Tools |
 |-------|-------|
-| Domain unit tests | `testing` + `testify` (assert/require) |
-| Integration tests (DB) | `testing` + `testify` + `testcontainers-go` |
+| Unit tests | `testing` + `testify` (assert/require) |
+| Integration tests (DB) | `testing` + `testify` + `testcontainers-go` — requires `//go:build integration` |
 
 No other test libraries. Do not add mocks for the database — integration tests hit a real Postgres
 instance via testcontainers.
+
+---
+
+## Build tags — test tiers
+
+Tests are split into two tiers by build tag:
+
+| Tier | Tag | When to use | Command |
+|------|-----|-------------|---------|
+| Unit | *(none)* | No external resources; fast and always safe | `go test ./...` |
+| Integration | `//go:build integration` | Requires Docker (testcontainers) | `go test -tags=integration ./...` |
+
+**Rules:**
+- Any test that starts a testcontainers DB **must** have `//go:build integration`.
+- **Network calls are always mocked** — use `httptest.NewServer` to serve fixture responses. No test ever hits a real external URL.
+- Pure unit tests (domain logic, parsers, cache freshness logic, etc.) have **no tag** and always run.
+- `go test ./...` must be fast and require no external services — CI can run it anywhere.
+
+The `//go:build integration` line goes at the top of the **test file**, before the `package` declaration:
+
+```go
+//go:build integration
+
+package mypkg_test
+```
 
 ---
 
@@ -161,12 +186,12 @@ No skip logic, no connection setup — `TestMain` owns the pool lifecycle.
 ## Running tests
 
 ```bash
-# Domain unit tests (no Docker needed)
-cd services/afl && go test ./internal/domain/...
-
-# Integration tests (requires Docker)
-cd services/afl && go test ./internal/interface/graphql/... -v
-
-# All tests
+# Unit tests only — no Docker, no network (always safe)
 cd services/afl && go test ./...
+
+# Integration tests — requires Docker
+cd services/afl && go test -tags=integration ./...
+
+# Specific package, verbose
+cd services/afl && go test -tags=integration ./internal/interface/graphql/... -v
 ```
