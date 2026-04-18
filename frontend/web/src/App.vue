@@ -18,9 +18,9 @@
           <!-- Squad + Team Builder (always visible on FFL pages once season is known) -->
           <template v-if="isFfl">
             <router-link
-              :to="liveSeasonId ? { name: 'ffl-squad', params: { seasonId: liveSeasonId } } : '/ffl'"
+              :to="liveSeasonId && selectedClubId ? { name: 'ffl-squad', params: { seasonId: liveSeasonId, clubId: selectedClubId } } : '/ffl'"
               class="text-sm transition-colors"
-              :class="liveSeasonId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
+              :class="liveSeasonId && selectedClubId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
             >
               Squad
             </router-link>

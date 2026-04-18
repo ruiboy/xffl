@@ -12,13 +12,14 @@ test.describe('Admin match view', () => {
     await page.goto(adminHref)
   })
 
-  test('displays admin label', async ({ page }) => {
-    await expect(page.getByText('Admin')).toBeVisible()
-  })
-
   test('displays match header with teams', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Adelaide Crows')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Brisbane Lions')
+  })
+
+  test('shows breadcrumb with AFL, season and round', async ({ page }) => {
+    await expect(page.locator('main').getByRole('link', { name: 'AFL 2026' })).toBeVisible()
+    await expect(page.locator('main').getByRole('link', { name: 'Round 1' })).toBeVisible()
   })
 
   test('stats are editable (has input fields)', async ({ page }) => {

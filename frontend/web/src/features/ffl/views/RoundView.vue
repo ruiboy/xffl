@@ -6,7 +6,7 @@
       <Breadcrumb :items="breadcrumbs" />
 
       <h1 class="text-2xl font-bold mb-6">
-        Round {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
+        {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
       </h1>
 
       <RoundNav

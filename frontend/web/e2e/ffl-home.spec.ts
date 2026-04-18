@@ -16,6 +16,16 @@ test.describe('FFL Home', () => {
     await expect(page.getByRole('cell', { name: 'The Howling Cows' })).toBeVisible()
   })
 
+  test('shows FFL breadcrumb on home page', async ({ page }) => {
+    await expect(page.locator('main').getByText('FFL', { exact: true })).toBeVisible()
+  })
+
+  test('club name in ladder links to squad page', async ({ page }) => {
+    await page.getByRole('link', { name: 'Ruiboys' }).first().click()
+    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
+  })
+
   test('displays ladder with percentage column', async ({ page }) => {
     await expect(page.getByRole('columnheader', { name: '%' })).toBeVisible()
   })
@@ -25,14 +35,14 @@ test.describe('FFL Home', () => {
   })
 
   test('displays round selector with ladder icon and round circles', async ({ page }) => {
-    const roundNav = page.locator('main nav')
+    const roundNav = page.locator('main nav').last()
     await expect(roundNav).toBeVisible()
     await expect(roundNav.getByTitle('Ladder')).toBeVisible()
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
   test('round circle navigates to round page', async ({ page }) => {
-    await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
+    await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
     await page.waitForURL(/\/ffl\/seasons\/.*\/rounds\//)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
@@ -53,7 +63,7 @@ test.describe('FFL Home', () => {
   })
 
   test('round 3 has the open live-round ring indicator', async ({ page }) => {
-    const round3 = page.locator('main nav').getByRole('link', { name: '3', exact: true })
+    const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
     await expect(round3).toHaveClass(/ring-active/)
   })
 })

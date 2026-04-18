@@ -22,7 +22,14 @@
         <div v-for="side in sides" :key="side.label">
           <div class="flex items-center gap-2 mb-1">
             <img v-if="side.clubMatch" :src="clubLogoUrl(side.clubMatch.club.name)" :alt="side.clubMatch.club.name" class="w-8 h-8 object-contain" />
-            <h2 class="text-lg font-semibold">{{ side.label }}</h2>
+            <h2 class="text-lg font-semibold">
+              <router-link
+                v-if="side.clubMatch"
+                :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: side.clubMatch.club.id } }"
+                class="hover:text-active transition-colors"
+              >{{ side.label }}</router-link>
+              <span v-else>{{ side.label }}</span>
+            </h2>
             <router-link
               v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
               :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: matchData!.roundId } }"

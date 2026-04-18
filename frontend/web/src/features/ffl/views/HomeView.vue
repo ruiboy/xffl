@@ -19,7 +19,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-text-heading mb-3">Ladder</h2>
-        <LadderTable :ladder="fflRound.season.ladder" />
+        <LadderTable :ladder="fflRound.season.ladder" :season-id="fflRound.season.id" />
       </section>
     </template>
   </div>
