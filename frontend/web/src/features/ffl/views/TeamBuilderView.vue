@@ -4,14 +4,12 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="season">
       <div class="mb-6">
-        <!-- Breadcrumb + round nav -->
-        <div v-if="currentRound" class="flex items-center gap-3 mb-2">
-          <router-link
-            :to="{ name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } }"
-            class="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            ← Back to round
-          </router-link>
+        <Breadcrumb v-if="currentRound" :items="breadcrumbs" />
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold flex items-center gap-3">
+            <img v-if="selectedClubSeason" :src="clubLogoUrl(selectedClubSeason.club.name)" :alt="selectedClubSeason.club.name" class="w-10 h-10 object-contain" />
+            {{ selectedClubSeason?.club.name ?? '' }}<span class="font-normal text-text-muted"> · Team Builder</span>
+          </h1>
           <div class="flex items-center gap-1 ml-auto">
             <router-link
               v-if="prevRound"
@@ -29,9 +27,6 @@
             <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">›</span>
           </div>
         </div>
-        <h1 class="text-2xl font-bold">
-          {{ selectedClubSeason?.club.name ?? '' }}<span v-if="currentRound" class="font-normal text-text-muted"> · {{ currentRound.name }}</span>
-        </h1>
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
@@ -262,6 +257,8 @@ import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_TEAM_BUILDER } from '../api/queries'
 import { SET_FFL_TEAM } from '../api/mutations'
+import Breadcrumb from '../components/Breadcrumb.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
@@ -315,6 +312,21 @@ const currentRound = computed(() =>
   season.value?.rounds.find((r: { id: string }) => r.id === props.roundId) ?? null
 )
 
+const breadcrumbs = computed(() => {
+  if (!season.value || !currentRound.value) return []
+  const crumbs: { label: string; to?: object }[] = [
+    { label: 'FFL' },
+    { label: season.value.name, to: { name: 'home' } },
+    { label: currentRound.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } } },
+  ]
+  if (currentMatch.value) {
+    const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
+    const away = currentMatch.value.awayClubMatch?.club.name ?? '?'
+    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { seasonId: props.seasonId, matchId: currentMatch.value.id } } })
+  }
+  return crumbs
+})
+
 const prevRound = computed(() => {
   const rounds = season.value?.rounds ?? []
   const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
@@ -327,15 +339,22 @@ const nextRound = computed(() => {
   return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
 })
 
-const clubMatch = computed(() => {
+const currentMatch = computed(() => {
   if (!season.value || !selectedClubSeason.value) return null
   const round = season.value.rounds.find((r: { id: string }) => r.id === props.roundId)
   if (!round) return null
   const clubId = selectedClubSeason.value.club.id
-  for (const match of round.matches) {
-    if (match.homeClubMatch?.club.id === clubId) return match.homeClubMatch
-    if (match.awayClubMatch?.club.id === clubId) return match.awayClubMatch
-  }
+  return round.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+    m.homeClubMatch?.club.id === clubId || m.awayClubMatch?.club.id === clubId
+  ) ?? null
+})
+
+const clubMatch = computed(() => {
+  if (!currentMatch.value || !selectedClubSeason.value) return null
+  const clubId = selectedClubSeason.value.club.id
+  const m = currentMatch.value
+  if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch
+  if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch
   return null
 })
 

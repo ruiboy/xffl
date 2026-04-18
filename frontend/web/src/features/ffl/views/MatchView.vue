@@ -4,14 +4,7 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
       <div class="mb-6">
-        <div v-if="matchData" class="mb-2">
-          <router-link
-            :to="{ name: 'ffl-round', params: { seasonId: props.seasonId, roundId: matchData.roundId } }"
-            class="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            ← Back to round
-          </router-link>
-        </div>
+        <Breadcrumb v-if="matchData" :items="breadcrumbs" />
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
@@ -51,6 +44,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
+import Breadcrumb from '../components/Breadcrumb.vue'
 import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
@@ -65,9 +59,18 @@ const matchData = computed(() => {
   if (!season) return null
   for (const round of season.rounds) {
     const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return { match: found, roundId: round.id as string }
+    if (found) return { match: found, roundId: round.id as string, roundName: round.name as string, seasonName: season.name as string }
   }
   return null
+})
+
+const breadcrumbs = computed(() => {
+  if (!matchData.value) return []
+  return [
+    { label: 'FFL' },
+    { label: matchData.value.seasonName, to: { name: 'home' } },
+    { label: matchData.value.roundName, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: matchData.value.roundId } } },
+  ]
 })
 
 const match = computed(() => matchData.value?.match ?? null)

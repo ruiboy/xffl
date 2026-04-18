@@ -119,6 +119,7 @@ export const GET_MATCH = gql`
   query GetMatch($seasonId: ID!) {
     aflSeason(id: $seasonId) {
       id
+      name
       rounds {
         id
         name

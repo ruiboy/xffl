@@ -3,7 +3,8 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <h1 class="text-2xl font-bold mb-4">Home<span class="font-normal text-text-muted"> · {{ data.season.name }}</span></h1>
+      <Breadcrumb :items="[{ label: 'AFL' }]" />
+      <h1 class="text-2xl font-bold mb-6">{{ data.season.name }}</h1>
 
       <RoundNav
         class="mb-8"
@@ -25,6 +26,7 @@ import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_AFL_LIVE_ROUND } from '../api/queries'
 import { useAflState } from '../composables/useAflState'
+import Breadcrumb from '../components/Breadcrumb.vue'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
