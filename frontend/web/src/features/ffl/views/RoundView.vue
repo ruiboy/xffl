@@ -19,19 +19,14 @@
       <section class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
         <div class="space-y-2">
-          <div v-for="match in data.round.matches" :key="match.id">
-            <MatchSummary
-              :match="match"
-              :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
-            />
-            <router-link
-              v-if="myMatch?.id === match.id"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } }"
-              class="mt-1 flex items-center justify-end text-xs text-active hover:text-active-hover transition-colors"
-            >
-              Build Team →
-            </router-link>
-          </div>
+          <MatchSummary
+            v-for="match in data.round.matches"
+            :key="match.id"
+            :match="match"
+            :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            :my-club-id="selectedClubId ?? undefined"
+            :build-team-to="myMatch?.id === match.id ? { name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } } : undefined"
+          />
         </div>
       </section>
 
@@ -93,12 +88,12 @@ const data = computed(() => {
 
 const roundStartDate = computed(() => {
   if (!data.value) return null
-  const times = data.value.round.matches
-    .map((m: { startTime?: string | null }) => m.startTime)
+  const times = (data.value.round.matches as Array<{ startTime?: string | null }>)
+    .map(m => m.startTime)
     .filter((t): t is string => !!t)
-    .map(t => new Date(t))
+    .map((t: string) => new Date(t))
   if (!times.length) return null
-  const earliest = new Date(Math.min(...times.map(t => t.getTime())))
+  const earliest = new Date(Math.min(...times.map((t: Date) => t.getTime())))
   const day = earliest.getDate()
   const month = earliest.toLocaleDateString('en-AU', { month: 'short' })
   const year = String(earliest.getFullYear()).slice(-2)
