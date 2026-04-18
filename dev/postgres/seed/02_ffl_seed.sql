@@ -46,7 +46,7 @@ SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
 
 -- Round 1 (afl_round_id references the AFL round for the same week)
 INSERT INTO ffl.round (name, season_id, afl_round_id) VALUES
-    ('1', (SELECT id FROM ffl.season WHERE name = 'FFL 2026'),
+    ('Round 1', (SELECT id FROM ffl.season WHERE name = 'FFL 2026'),
      (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id WHERE r.name = 'Round 1' AND s.name = 'AFL 2026'));
 
 -- Player seasons — Ruiboys (afl_player_season_id links to the AFL player's season entry)
@@ -57,7 +57,7 @@ FROM ffl.player p
 JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'Ruiboys')
 JOIN ffl.round r ON r.season_id = cs.season_id
-WHERE r.name = '1' AND ap.name IN ('Jordan Dawson', 'Wayne Milera');
+WHERE r.name = 'Round 1' AND ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
 -- Player seasons — The Howling Cows (Henry Smith + Hugh McCluggage assigned to positions;
 -- remaining 6 are squad-only with no player_match, available in the team builder)
@@ -68,7 +68,7 @@ FROM ffl.player p
 JOIN afl.player ap ON p.afl_player_id = ap.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
 JOIN ffl.round r ON r.season_id = cs.season_id
-WHERE r.name = '1' AND ap.name IN (
+WHERE r.name = 'Round 1' AND ap.name IN (
     'Henry Smith', 'Hugh McCluggage'
 );
 
@@ -89,7 +89,7 @@ BEGIN
     -- Insert rounds 2–23 in order (19 = SUPERBYE, 23 = no matches yet)
     -- afl_round_id links each FFL round to its corresponding AFL round
     INSERT INTO ffl.round (name, season_id, afl_round_id)
-    SELECT n::text, v_season_id,
+    SELECT 'Round ' || n::text, v_season_id,
            (SELECT ar.id FROM afl.round ar JOIN afl.season s ON ar.season_id = s.id
             WHERE ar.name = 'Round ' || n::text AND s.name = 'AFL 2026')
     FROM generate_series(2, 23) AS n;
@@ -99,46 +99,46 @@ BEGIN
     -- Insert all matches (rounds 19 and 23 have none)
     FOR rec IN
         SELECT * FROM (VALUES
-            ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
-            ('2',  '2026-03-19 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
-            ('3',  '2026-03-26 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
-            ('3',  '2026-03-26 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
-            ('4',  '2026-04-02 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
-            ('4',  '2026-04-02 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
-            ('5',  '2026-04-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
-            ('5',  '2026-04-09 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
-            ('6',  '2026-04-16 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
-            ('6',  '2026-04-16 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
-            ('7',  '2026-04-23 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
-            ('7',  '2026-04-23 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
-            ('8',  '2026-04-30 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
-            ('8',  '2026-04-30 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
-            ('9',  '2026-05-07 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
-            ('9',  '2026-05-07 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
-            ('10', '2026-05-14 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
-            ('10', '2026-05-14 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
-            ('11', '2026-05-21 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
-            ('11', '2026-05-21 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
-            ('12', '2026-05-28 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
-            ('12', '2026-05-28 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
-            ('13', '2026-06-04 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
-            ('13', '2026-06-04 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
-            ('14', '2026-06-11 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
-            ('14', '2026-06-11 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
-            ('15', '2026-06-18 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
-            ('15', '2026-06-18 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
-            ('16', '2026-06-25 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
-            ('16', '2026-06-25 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
-            ('17', '2026-07-02 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
-            ('17', '2026-07-02 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
-            ('18', '2026-07-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
-            ('18', '2026-07-09 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
-            ('20', '2026-07-23 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
-            ('20', '2026-07-23 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
-            ('21', '2026-07-30 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
-            ('21', '2026-07-30 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
-            ('22', '2026-08-06 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
-            ('22', '2026-08-06 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers')
+            ('Round 2',  '2026-03-19 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('Round 2',  '2026-03-19 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('Round 3',  '2026-03-26 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('Round 3',  '2026-03-26 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('Round 4',  '2026-04-02 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('Round 4',  '2026-04-02 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('Round 5',  '2026-04-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('Round 5',  '2026-04-09 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('Round 6',  '2026-04-16 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('Round 6',  '2026-04-16 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
+            ('Round 7',  '2026-04-23 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
+            ('Round 7',  '2026-04-23 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
+            ('Round 8',  '2026-04-30 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('Round 8',  '2026-04-30 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('Round 9',  '2026-05-07 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('Round 9',  '2026-05-07 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('Round 10', '2026-05-14 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('Round 10', '2026-05-14 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('Round 11', '2026-05-21 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('Round 11', '2026-05-21 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('Round 12', '2026-05-28 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('Round 12', '2026-05-28 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers'),
+            ('Round 13', '2026-06-04 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
+            ('Round 13', '2026-06-04 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
+            ('Round 14', '2026-06-11 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
+            ('Round 14', '2026-06-11 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
+            ('Round 15', '2026-06-18 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('Round 15', '2026-06-18 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('Round 16', '2026-06-25 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('Round 16', '2026-06-25 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('Round 17', '2026-07-02 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('Round 17', '2026-07-02 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('Round 18', '2026-07-09 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),
+            ('Round 18', '2026-07-09 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'The Howling Cows'),
+            ('Round 20', '2026-07-23 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Slashers'),
+            ('Round 20', '2026-07-23 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Cheetahs'),
+            ('Round 21', '2026-07-30 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'The Howling Cows'),
+            ('Round 21', '2026-07-30 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Ruiboys'),
+            ('Round 22', '2026-08-06 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Ruiboys'),
+            ('Round 22', '2026-08-06 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'Slashers')
         ) AS t(round_name, start_dt, venue, home_club, away_club)
     LOOP
         INSERT INTO ffl.match (round_id, match_style, venue, start_dt)

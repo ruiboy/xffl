@@ -35,37 +35,39 @@ func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) 
 }
 
 const findRoundByID = `-- name: FindRoundByID :one
-SELECT id, name, season_id
+SELECT id, name, season_id, afl_round_id
 FROM ffl.round
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindRoundByIDRow struct {
-	ID       int32
-	Name     string
-	SeasonID int32
+	ID         int32
+	Name       string
+	SeasonID   int32
+	AflRoundID *int32
 }
 
 func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error) {
 	row := q.db.QueryRow(ctx, findRoundByID, id)
 	var i FindRoundByIDRow
-	err := row.Scan(&i.ID, &i.Name, &i.SeasonID)
+	err := row.Scan(&i.ID, &i.Name, &i.SeasonID, &i.AflRoundID)
 	return i, err
 }
 
 const findRoundsBySeasonID = `-- name: FindRoundsBySeasonID :many
-SELECT r.id, r.name, r.season_id
+SELECT r.id, r.name, r.season_id, r.afl_round_id
 FROM ffl.round r
 LEFT JOIN ffl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
 WHERE r.season_id = $1 AND r.deleted_at IS NULL
-GROUP BY r.id, r.name, r.season_id
+GROUP BY r.id, r.name, r.season_id, r.afl_round_id
 ORDER BY MIN(m.start_dt) NULLS LAST, r.id
 `
 
 type FindRoundsBySeasonIDRow struct {
-	ID       int32
-	Name     string
-	SeasonID int32
+	ID         int32
+	Name       string
+	SeasonID   int32
+	AflRoundID *int32
 }
 
 func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error) {
@@ -77,7 +79,7 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 	items := []FindRoundsBySeasonIDRow{}
 	for rows.Next() {
 		var i FindRoundsBySeasonIDRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.SeasonID); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.SeasonID, &i.AflRoundID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -7,7 +7,8 @@
       Cannot determine round to display. Consult your admin.
     </div>
     <template v-else-if="fflRound">
-      <h1 class="text-2xl font-bold mb-4">Home<span class="font-normal text-text-muted"> · {{ fflRound.season.name }}</span></h1>
+      <Breadcrumb :items="[{ label: 'FFL' }]" />
+      <h1 class="text-2xl font-bold mb-6">{{ fflRound.season.name }}</h1>
 
       <RoundNav
         class="mb-8"
@@ -18,7 +19,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-text-heading mb-3">Ladder</h2>
-        <LadderTable :ladder="fflRound.season.ladder" />
+        <LadderTable :ladder="fflRound.season.ladder" :season-id="fflRound.season.id" />
       </section>
     </template>
   </div>
@@ -29,6 +30,7 @@ import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_AFL_LIVE_ROUND, GET_FFL_ROUND_BY_AFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
+import Breadcrumb from '../components/Breadcrumb.vue'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 

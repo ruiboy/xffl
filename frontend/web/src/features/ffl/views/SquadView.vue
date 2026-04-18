@@ -1,12 +1,15 @@
 <template>
   <div>
+    <Breadcrumb v-if="clubSeason" :items="breadcrumbs" />
     <div class="mb-6">
-      <h1 class="text-2xl font-bold mb-1">{{ clubSeason?.club.name ?? '' }}</h1>
-      <p class="text-text-muted">{{ clubSeason?.season.name ? clubSeason.season.name + ' Squad' : 'Squad' }}</p>
+      <h1 class="text-2xl font-bold mb-1 flex items-center gap-3">
+        <img v-if="clubSeason" :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
+        {{ clubSeason?.club.name ?? '' }}
+      </h1>
     </div>
 
-    <!-- Manage toggle -->
-    <div class="mb-6 flex items-center gap-4">
+    <!-- Manage toggle — only for the selected club -->
+    <div v-if="isMyClub" class="mb-6 flex items-center gap-4">
       <button
         @click="managing = !managing"
         class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
@@ -14,7 +17,12 @@
           ? 'border-active bg-active text-active-text'
           : 'border-border bg-surface text-text hover:bg-surface-hover'"
       >
-        {{ managing ? 'Done' : 'Manage' }}
+        <span class="flex items-center gap-1.5">
+          <svg v-if="!managing" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+          </svg>
+          {{ managing ? 'Done' : 'Manage' }}
+        </span>
       </button>
       <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
     </div>
@@ -30,7 +38,7 @@
               <thead>
                 <tr class="border-b border-border text-left text-text-muted">
                   <th class="py-2 pr-4 font-medium">Player</th>
-                  <th v-if="managing" class="py-2 px-2 font-medium text-right"></th>
+                  <th v-if="isMyClub && managing" class="py-2 px-2 font-medium text-right"></th>
                 </tr>
               </thead>
               <tbody>
@@ -40,7 +48,7 @@
                   class="border-b border-border-subtle hover:bg-surface-hover"
                 >
                   <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
-                  <td v-if="managing" class="py-2 px-2 text-right">
+                  <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
                     <button
                       @click="removePlayer(row.id)"
                       aria-label="Remove"
@@ -60,7 +68,7 @@
         </div>
 
         <!-- Add player search (manage mode only) -->
-        <div v-if="managing" class="w-72 shrink-0">
+        <div v-if="isMyClub && managing" class="w-72 shrink-0">
           <h2 class="text-lg font-semibold mb-2">Add Player</h2>
           <input
             v-model="searchQuery"
@@ -100,21 +108,33 @@ import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
+import Breadcrumb from '../components/Breadcrumb.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 
-const props = defineProps<{ seasonId: string }>()
+const props = defineProps<{ seasonId: string; clubId: string }>()
 
 const { selectedClubId } = useFflState()
 const managing = ref(false)
 
-// Squad query — driven by global club selection
+const isMyClub = computed(() => !!selectedClubId.value && props.clubId === selectedClubId.value)
+
+// Squad query — driven by route clubId
 const { result: squadResult, loading: squadLoading, error: squadError, refetch: refetchSquad } = useQuery(
   GET_FFL_CLUB_SEASON,
-  () => ({ seasonId: props.seasonId, clubId: selectedClubId.value }),
-  () => ({ enabled: !!selectedClubId.value })
+  () => ({ seasonId: props.seasonId, clubId: props.clubId }),
 )
 
 const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
 const clubSeasonId = computed(() => clubSeason.value?.id ?? '')
+
+const breadcrumbs = computed(() => {
+  if (!clubSeason.value) return []
+  return [
+    { label: 'FFL' },
+    { label: clubSeason.value.season.name, to: { name: 'home' } },
+    { label: clubSeason.value.club.name },
+  ]
+})
 
 const players = computed(() => {
   const nodes = clubSeason.value?.players?.nodes ?? []
@@ -214,7 +234,7 @@ watch(managing, (val) => {
   }
 })
 
-watch(selectedClubId, () => {
-  managing.value = false
+watch(isMyClub, (val) => {
+  if (!val) managing.value = false
 })
 </script>

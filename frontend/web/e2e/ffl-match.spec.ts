@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test'
 
 test.describe('FFL Match', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate: FFL Home → Round 1 → match
+    // Navigate: FFL Home → Round 1 → match (match card is a div, not a link)
     await page.goto('/ffl')
     await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
-    await page.getByRole('link', { name: /Ruiboys.+v.+The Howling Cows/ }).click()
+    await page.locator('.cursor-pointer').filter({ hasText: 'Ruiboys' }).filter({ hasText: 'The Howling Cows' }).click()
+    await page.waitForURL(/\/ffl\/seasons\/.*\/matches\//)
   })
 
   test('displays match header with teams', async ({ page }) => {
@@ -40,13 +41,24 @@ test.describe('FFL Match', () => {
     await expect(page.getByText('Total').first()).toBeVisible()
   })
 
-  test('shows Build Team link in selected club column only', async ({ page }) => {
-    // Selected club is The Howling Cows — link should appear once (in their column)
-    await expect(page.getByRole('link', { name: 'Build Team →' })).toHaveCount(1)
+  test('shows Team Builder button in selected club column only', async ({ page }) => {
+    // Selected club is The Howling Cows — button should appear once (in their column)
+    await expect(page.getByTitle('Team Builder')).toHaveCount(1)
   })
 
-  test('Build Team link navigates to team builder', async ({ page }) => {
-    await page.getByRole('link', { name: 'Build Team →' }).click()
+  test('Team Builder button navigates to team builder', async ({ page }) => {
+    await page.getByTitle('Team Builder').click()
     await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+  })
+
+  test('shows breadcrumb with FFL, season and round', async ({ page }) => {
+    await expect(page.locator('main').getByRole('link', { name: 'FFL 2026' })).toBeVisible()
+    await expect(page.locator('main').getByRole('link', { name: 'Round 1' })).toBeVisible()
+  })
+
+  test('club name links to squad page', async ({ page }) => {
+    await page.locator('main').getByRole('link', { name: 'Ruiboys' }).first().click()
+    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 })

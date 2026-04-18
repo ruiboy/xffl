@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test'
 // Helpers
 async function goToTeamBuilder(page: import('@playwright/test').Page) {
   await page.goto('/ffl')
-  await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
-  await page.getByRole('link', { name: 'Build Team →' }).click()
+  await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
+  await page.getByTitle('Team Builder').click()
   await page.waitForURL(/\/ffl\/.*\/team-builder/)
 }
 
@@ -311,12 +311,16 @@ test.describe('FFL Team Builder', () => {
       await goToTeamBuilder(page)
     })
 
-    test('shows round name in heading', async ({ page }) => {
-      await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
-    })
-
     test('shows club name in heading', async ({ page }) => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
+    })
+
+    test('shows round name in breadcrumb', async ({ page }) => {
+      await expect(page.locator('main').getByRole('link', { name: 'Round 1' })).toBeVisible()
+    })
+
+    test('shows season name in breadcrumb', async ({ page }) => {
+      await expect(page.locator('main').getByRole('link', { name: 'FFL 2026' })).toBeVisible()
     })
   })
 

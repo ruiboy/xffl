@@ -20,14 +20,14 @@ test.describe('AFL Home view', () => {
   })
 
   test('displays round selector with ladder icon and round circles', async ({ page }) => {
-    const roundNav = page.locator('main nav')
+    const roundNav = page.locator('main nav').last()
     await expect(roundNav).toBeVisible()
     await expect(roundNav.getByTitle('Ladder')).toBeVisible()
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
   test('round circle navigates to round page', async ({ page }) => {
-    await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
+    await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
   })
 
@@ -42,7 +42,7 @@ test.describe('AFL Home view', () => {
   })
 
   test('round 3 has the open live-round ring indicator', async ({ page }) => {
-    const round3 = page.locator('main nav').getByRole('link', { name: '3', exact: true })
+    const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
     await expect(round3).toHaveClass(/ring-active/)
   })
 })

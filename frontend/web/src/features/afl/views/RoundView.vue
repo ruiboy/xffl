@@ -3,8 +3,9 @@
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
-      <h1 class="text-2xl font-bold mb-4">
-        {{ data.round.name }}<span class="font-normal text-text-muted"> · {{ data.season.name }}</span>
+      <Breadcrumb :items="[{ label: 'AFL' }, { label: data.season.name, to: { name: 'afl-home' } }]" />
+      <h1 class="text-2xl font-bold mb-6">
+        {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
       </h1>
 
       <RoundNav
@@ -47,6 +48,7 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_ROUND } from '../api/queries'
 import { useAflState } from '../composables/useAflState'
+import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
@@ -93,6 +95,20 @@ interface Match {
   homeClubMatch?: ClubMatch | null
   awayClubMatch?: ClubMatch | null
 }
+
+const roundStartDate = computed(() => {
+  if (!data.value) return null
+  const times = data.value.round.matches
+    .map((m: { startTime?: string | null }) => m.startTime)
+    .filter((t): t is string => !!t)
+    .map(t => new Date(t))
+  if (!times.length) return null
+  const earliest = new Date(Math.min(...times.map(t => t.getTime())))
+  const day = earliest.getDate()
+  const month = earliest.toLocaleDateString('en-AU', { month: 'short' })
+  const year = String(earliest.getFullYear()).slice(-2)
+  return `${day} ${month} '${year}`
+})
 
 const topPlayerStats = computed(() => {
   if (!data.value) return []
