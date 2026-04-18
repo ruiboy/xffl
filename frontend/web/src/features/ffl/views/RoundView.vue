@@ -60,6 +60,12 @@
         </div>
       </section>
 
+      <div v-if="aflRoundTo" class="mt-8">
+        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+          AFL Round ↗
+        </router-link>
+      </div>
+
     </template>
   </div>
 </template>
@@ -69,6 +75,7 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
+import { useAflState } from '../../afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
@@ -76,6 +83,7 @@ import RoundNav from '../components/RoundNav.vue'
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
 const { liveRoundId, selectedClubId } = useFflState()
+const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const data = computed(() => {
@@ -98,6 +106,12 @@ const roundStartDate = computed(() => {
   const month = earliest.toLocaleDateString('en-AU', { month: 'short' })
   const year = String(earliest.getFullYear()).slice(-2)
   return `${day} ${month} '${year}`
+})
+
+const aflRoundTo = computed(() => {
+  const aflRoundId = data.value?.round.aflRoundId
+  if (!aflRoundId || !aflSeasonId.value) return null
+  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
 })
 
 const breadcrumbs = computed(() => {

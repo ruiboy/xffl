@@ -97,7 +97,7 @@ func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]d
 	}
 	out := make([]domain.Round, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}
+		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}
 	}
 	return out, nil
 }
@@ -107,7 +107,7 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	if err != nil {
 		return domain.Round{}, err
 	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID)}, nil
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}, nil
 }
 
 func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {

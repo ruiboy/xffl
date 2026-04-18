@@ -158,6 +158,7 @@ export const GET_FFL_SEASON = gql`
       rounds {
         id
         name
+        aflRoundId
         matches {
           id
           venue

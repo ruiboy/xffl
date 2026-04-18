@@ -47,6 +47,12 @@
           <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
       </div>
+
+      <div v-if="aflRoundTo" class="mt-8">
+        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+          AFL Round ↗
+        </router-link>
+      </div>
     </template>
   </div>
 </template>
@@ -59,10 +65,12 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
+import { useAflState } from '../../afl/composables/useAflState'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
 
 const { selectedClubId } = useFflState()
+const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
 
 const matchData = computed(() => {
@@ -70,7 +78,7 @@ const matchData = computed(() => {
   if (!season) return null
   for (const round of season.rounds) {
     const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return { match: found, roundId: round.id as string, roundName: round.name as string, seasonName: season.name as string }
+    if (found) return { match: found, roundId: round.id as string, roundName: round.name as string, seasonName: season.name as string, aflRoundId: round.aflRoundId as string | null }
   }
   return null
 })
@@ -90,6 +98,12 @@ const isMyClubMatch = computed(() => {
   if (!match.value || !selectedClubId.value) return false
   return match.value.homeClubMatch?.club.id === selectedClubId.value ||
     match.value.awayClubMatch?.club.id === selectedClubId.value
+})
+
+const aflRoundTo = computed(() => {
+  const aflRoundId = matchData.value?.aflRoundId
+  if (!aflRoundId || !aflSeasonId.value) return null
+  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
 })
 
 const sides = computed(() => {
