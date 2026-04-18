@@ -16,8 +16,8 @@
 - Cache policy: fetch at most once per week; cache clears Monday (respectful of host)
 - [x] Add `afl.xref_afltables_player` table (external_id, player_id) — per ADR-016, in `01_afl_integrations.sql`
 - [x] Build team code → club ID mapping (2-letter codes e.g. `SY`, `CA`)
-- [ ] Define `StatsProvider` outbound port in AFL application layer
-- [ ] Implement `AFLTablesAdapter` in `services/afl/internal/infrastructure/afltables/`
+- [x] Define `StatsProvider` outbound port in AFL application layer
+- [x] Implement `AFLTablesAdapter` in `services/afl/internal/infrastructure/afltables/`
   - Fetch + cache CSV (weekly, cache-bust on Monday)
   - Parse rows → domain PlayerMatch stats
   - Upsert by `(afl_player_id, round)` for idempotency
