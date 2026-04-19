@@ -25,7 +25,7 @@ dev/             → Docker Compose, seed data, dev tooling
 4. **TDD** — write failing tests first, then minimal implementation.
 5. **No new dependencies/services/infra without an ADR.**
 6. **When unclear, ask** — propose options, wait for confirmation.
-7. **Never commit or push without permission** — do not run `git commit` or `git push` unless the user explicitly asks. Each commit requires separate, explicit approval. "Move on" or "next task" does not mean "commit".
+7. **Never commit or push without permission** — do not run `git commit` or `git push` unless the user explicitly asks. Each commit requires separate, explicit approval. Permission to commit once does not authorise subsequent commits. "Move on", "next task", "do it", or completing work does not mean "commit".
 8. **Update sprint doc immediately** — check off items in `plans/current-sprint.md` as soon as each task or sub-task is completed. Do not batch updates.
 
 ## Common Commands
@@ -55,6 +55,7 @@ just test-e2e        # Playwright e2e tests (self-contained, no dev stack requir
 
 **Before adding an integration (external data source):**
 - `ai/architecture/integrations.md` — ACL pattern, outbound ports, secondary adapters, identity mapping, cache policy
+- `ai/architecture/historical-import.md` — two-phase reconcile → import pattern, xref tables, fuzzy player matching, FFL parallel
 
 **For development workflow detail:**
 - `ai/prompts/system-prompt.md` — development process (understand → test plan → implement → validate → reflect)

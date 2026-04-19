@@ -1,3 +1,4 @@
+
 # Roadmap
 
 ## Context
@@ -166,7 +167,54 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 16: Deployment
+## Phase 16: Historical AFL Data — afltables (2024–present)
+
+**Goal:** Load real AFL player match stats into the domain for 2024 onward using afltables.com. Establishes the canonical player roster and the reconciliation tooling all future imports will reuse.
+
+Pattern: two-phase reconcile → import (see `ai/architecture/historical-import.md`).
+
+- [ ] Restore `afl.xref_afltables_player` xref table
+- [ ] Build `dev/import/afl_historical/main.go` — `--reconcile` + import modes; Levenshtein player matching
+- [ ] Run reconciliation; review and commit `reconcile.csv`
+- [ ] Import into dev DB; verify data; run against prod
+- [ ] Wipe 2026 fake fixture and replace with real 2024/2025 data
+
+## Phase 17: Historical AFL Data — prior years (TBD source, ~2012–2023)
+
+**Goal:** Extend AFL player match stats back to ~2012 using a second source (to be identified). Player identity reconciliation against the roster established in Phase 16.
+
+- [ ] Identify source and assess data quality
+- [ ] Evaluate whether a new ADR is needed (new dependency or protocol)
+- [ ] Build parser / fetcher for source (in `services/afl/internal/infrastructure/<source>/` if reusable, else `dev/import/`)
+- [ ] Add `afl.xref_<source>_player` xref table
+- [ ] Build `dev/import/<source>/main.go` — reconcile against existing `afl.player` roster; import
+- [ ] Review and commit `reconcile.csv`; import into dev then prod
+
+## Phase 18: Historical AFL Data — early years (TBD source, 1998–2011)
+
+**Goal:** Complete the AFL historical record back to 1998. A third source is likely needed given data availability. Same pattern as Phases 16–17; reconciliation is against the cumulative roster.
+
+- [ ] Identify source; assess data quality and completeness
+- [ ] Build import tooling following the same pattern
+- [ ] Reconcile player names against full existing roster; import
+
+## Phase 19: Historical FFL Data
+
+**Goal:** Load all historical FFL team submissions, match results, and player season records. This is the FFL parallel of Phases 16–18 and uses the identical two-phase reconciliation pattern.
+
+Notes:
+- FFL player names will not exactly match AFL player names — a Levenshtein reconciliation step links `ffl.player` records to `afl.player` records after both are loaded
+- FFL scoring rules have changed over time; historical scores are imported as-recorded, not recalculated
+- No `FFL.FantasyScoreCalculated` events are fired on import
+
+- [ ] Identify where historical FFL data lives and its format (per round, per team)
+- [ ] Build `dev/import/ffl_historical/main.go` — reconcile + import modes
+- [ ] Add `ffl.xref_<source>_player` xref table as needed
+- [ ] Run FFL player reconciliation; then run AFL↔FFL player linkage reconciliation
+- [ ] Import match results and player season records into dev then prod
+- [ ] Verify ladder standings, scores, and player history post-import
+
+## Phase 20: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
@@ -174,6 +222,5 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 ## Future Ideas
 
 - Fully feature the UX
-- Pull AFL player stats from some source
+- Live AFL data source for ongoing weekly stats (TBD — afltables may serve for weekly reconciliation once historical load is complete)
 - Mobile app
-- Add start timestamps to season/round/match so ordering uses real dates instead of IDs

@@ -6,14 +6,29 @@ import (
 	"io"
 	"log/slog"
 	"strconv"
-
-	"xffl/services/afl/internal/application"
 )
+
+// PlayerMatchStats represents a single player's stats for one match as
+// parsed from the afltables CSV format.
+type PlayerMatchStats struct {
+	ExternalPlayerID string // afltables' own numeric player ID
+	PlayerName       string
+	ClubName         string // canonical afl.club.name, resolved from team code
+	RoundName        string // e.g. "Round 1", "Opening Round"
+	SeasonYear       int
+	Kicks            int
+	Handballs        int
+	Marks            int
+	Hitouts          int
+	Tackles          int
+	Goals            int
+	Behinds          int
+}
 
 // parseCSV reads the afltables stats CSV and returns one PlayerMatchStats per
 // data row. Rows with unrecognised club codes or round labels are skipped with
 // a warning — they do not cause the whole parse to fail.
-func parseCSV(r io.Reader, year int) ([]application.PlayerMatchStats, error) {
+func parseCSV(r io.Reader, year int) ([]PlayerMatchStats, error) {
 	reader := csv.NewReader(r)
 	reader.LazyQuotes = true
 
@@ -30,7 +45,7 @@ func parseCSV(r io.Reader, year int) ([]application.PlayerMatchStats, error) {
 		return nil, err
 	}
 
-	var results []application.PlayerMatchStats
+	var results []PlayerMatchStats
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -82,21 +97,21 @@ func buildIndex(header []string) (columnIndex, error) {
 	}, nil
 }
 
-func parseRow(record []string, idx columnIndex, year int) (application.PlayerMatchStats, bool) {
+func parseRow(record []string, idx columnIndex, year int) (PlayerMatchStats, bool) {
 	clubCode := record[idx.team]
 	clubName, ok := ClubNameForCode(clubCode)
 	if !ok {
 		slog.Warn("afltables: skipping row with unknown club code", "code", clubCode, "player", record[idx.player])
-		return application.PlayerMatchStats{}, false
+		return PlayerMatchStats{}, false
 	}
 
 	roundName, ok := roundNameForCode(record[idx.round])
 	if !ok {
 		slog.Warn("afltables: skipping row with unrecognised round", "round", record[idx.round], "player", record[idx.player])
-		return application.PlayerMatchStats{}, false
+		return PlayerMatchStats{}, false
 	}
 
-	return application.PlayerMatchStats{
+	return PlayerMatchStats{
 		ExternalPlayerID: record[idx.id],
 		PlayerName:       record[idx.player],
 		ClubName:         clubName,

@@ -125,12 +125,6 @@ The adapter does not publish events directly. It calls the application use case,
 
 ## One-time imports (historical data)
 
-Historical data imports follow the same adapter + use case pattern, but the entry point lives under `dev/` rather than `cmd/ingest/` — it is a migration tool, not a production binary.
+Historical data imports are a distinct pattern from production adapters. They live under `dev/import/` and are never run in production infrastructure. They use a two-phase reconcile → import flow to resolve external player identities to domain IDs via xref tables.
 
-```
-dev/import/
-  ffl_historical/
-    main.go      ← one-time import script
-```
-
-Once run and verified, these can be archived or deleted.
+See `ai/architecture/historical-import.md` for the full pattern, fuzzy matching strategy, and source conventions.

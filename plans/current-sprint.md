@@ -5,24 +5,22 @@
 ## Tasks
 
 ### Architecture
-- [x] ADR-016: ACL identity mapping tables in each service's own schema (e.g. `afl.player_source_map`); no shared integration schema
+- [x] ADR-016: ACL identity mapping tables in each service's own schema; no shared integration schema
 - [ ] ADR if any new dependency introduced (e.g. Sheets API client)
-- [x] Adapters live in `internal/infrastructure/<source>/` within the relevant service
-- [x] Entry points live in `cmd/ingest/` within the relevant service
 
-### AFL stats integration
-- Source: `https://afltables.com/afl/stats/{year}_stats.txt` — plain CSV, one row per player per match
-- No new dependency needed — Go stdlib `encoding/csv` is sufficient (no ADR required)
-- Cache policy: fetch at most once per week; cache clears Monday (respectful of host)
-- [x] Add `afl.xref_afltables_player` table (external_id, player_id) — per ADR-016, in `01_afl_integrations.sql`
-- [x] Build team code → club ID mapping (2-letter codes e.g. `SY`, `CA`)
-- [x] Define `StatsProvider` outbound port in AFL application layer
-- [x] Implement `AFLTablesAdapter` in `services/afl/internal/infrastructure/afltables/`
-  - Fetch + cache CSV (weekly, cache-bust on Monday)
-  - Parse rows → domain PlayerMatch stats
-  - Upsert by `(afl_player_id, round)` for idempotency
-- [ ] Wire adapter → AFL DB writes → fires `AFL.PlayerMatchUpdated` events
-- [ ] `cmd/ingest/` entry point (manual trigger; can be put on a cron later)
+### AFL historical stats import (one-time dev tool)
+- Source: `https://afltables.com/afl/stats/{year}_stats.txt` — plain CSV, one row per player per match; covers 2024–present
+- Entry point: `dev/import/afl_historical/main.go` — not a production binary (see `ai/architecture/historical-import.md`)
+- Two-phase: `--reconcile` outputs `dev/import/afl_historical/reconcile.csv` for human review; default run imports using that file
+- xref table `afl.xref_afltables_player` (external_id → afl.player.id) is the durable identity mapping
+- No events fired; no production caching needed
+- [x] Build team code → club name mapping (`services/afl/internal/infrastructure/afltables/clubs.go`)
+- [x] Build CSV parser (`services/afl/internal/infrastructure/afltables/parser.go`)
+- [ ] Restore `afl.xref_afltables_player` table — `dev/postgres/init/03_afl_integrations.sql`
+- [ ] Build `dev/import/afl_historical/main.go` — `--reconcile` mode and import mode
+- [ ] Run `--reconcile` against dev DB; review and complete `reconcile.csv`; commit it
+- [ ] Import into dev DB; verify player/match counts and spot-check stats
+- [ ] Run against prod DB (wipe 2026 fake data first)
 
 ### FFL team submissions integration
 - [ ] Identify nominated sources (Google Sheets, email, form, etc.)
