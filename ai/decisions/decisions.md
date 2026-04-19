@@ -19,3 +19,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 013 | Accepted | — | No graph federation; CQRS split: GraphQL for writes/structure, search index for player stats reads |
 | 014 | Accepted | ✅ | Cursor-based Connection pagination for list fields; PageInfo in common.graphqls; no offset/limit |
 | 015 | Accepted | — | Typesense replaces ZincSearch; Apache 2.0, vector search path, LLM planner talks to domain not engine |
+| 016 | Accepted | ✅ | ACL identity mapping: xref tables per source per entity (e.g. `afl.xref_<source>_player`); owned by adapters/import tools; no FK to core schema; no shared integration schema |
