@@ -25868,4 +25868,13 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
+-- Jamarra Ugle-Hagan is on the GCS 2026 roster but has not played yet (no afltables row)
+INSERT INTO afl.player_season (player_id, club_season_id)
+SELECT p.id, cs.id
+FROM afl.player p
+JOIN afl.club_season cs ON cs.season_id = (SELECT id FROM afl.season WHERE name = 'AFL 2026')
+JOIN afl.club c ON cs.club_id = c.id
+WHERE p.name = 'Jamarra Ugle-Hagan' AND c.name = 'Gold Coast Suns'
+ON CONFLICT (player_id, club_season_id) DO NOTHING;
+
 COMMIT;

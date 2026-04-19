@@ -51,36 +51,6 @@ JOIN afl.league l ON s.league_id = l.id
 WHERE l.name = 'AFL' AND s.name = 'AFL 2026'
 ON CONFLICT (club_id, season_id) DO NOTHING;
 
--- Players: 2 per test team
-INSERT INTO afl.player (name) VALUES
-('Jordan Dawson'),
-('Wayne Milera'),
-('Henry Smith'),
-('Hugh McCluggage')
-ON CONFLICT DO NOTHING;
-
--- Player seasons — Adelaide
-INSERT INTO afl.player_season (player_id, club_season_id)
-SELECT p.id, cs.id
-FROM afl.player p, afl.club_season cs
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.season s ON cs.season_id = s.id
-JOIN afl.league l ON s.league_id = l.id
-WHERE p.name IN ('Jordan Dawson', 'Wayne Milera')
-  AND c.name = 'Adelaide Crows' AND l.name = 'AFL' AND s.name = 'AFL 2026'
-ON CONFLICT (player_id, club_season_id) DO NOTHING;
-
--- Player seasons — Brisbane
-INSERT INTO afl.player_season (player_id, club_season_id)
-SELECT p.id, cs.id
-FROM afl.player p, afl.club_season cs
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.season s ON cs.season_id = s.id
-JOIN afl.league l ON s.league_id = l.id
-WHERE p.name IN ('Henry Smith', 'Hugh McCluggage')
-  AND c.name = 'Brisbane Lions' AND l.name = 'AFL' AND s.name = 'AFL 2026'
-ON CONFLICT (player_id, club_season_id) DO NOTHING;
-
 -- All 25 rounds: Opening Round + Rounds 1–24
 INSERT INTO afl.round (season_id, name)
 SELECT s.id, r.name
@@ -377,81 +347,5 @@ BEGIN
     RAISE NOTICE 'matches inserted: %', v_match_count;
     RAISE NOTICE 'club_matches inserted: %', v_cm_count;
 END $$;
-
--- Test player_match data for FFL score computation testing
--- Round 1: Collingwood Magpies vs Adelaide Crows @ MCG (Adelaide away)
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 18, 12, 6, 0, 4, 2, 1
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Jordan Dawson' AND c.name = 'Adelaide Crows' AND r.name = 'Round 1'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
-
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 22, 15, 4, 0, 6, 0, 2
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Wayne Milera' AND c.name = 'Adelaide Crows' AND r.name = 'Round 1'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
-
--- Round 1: Sydney Swans vs Brisbane Lions @ SCG (Brisbane away)
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 20, 16, 5, 0, 8, 3, 2
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Henry Smith' AND c.name = 'Brisbane Lions' AND r.name = 'Round 1'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
-
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 16, 10, 7, 0, 5, 1, 3
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Hugh McCluggage' AND c.name = 'Brisbane Lions' AND r.name = 'Round 1'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
-
--- Round 2: Adelaide Crows vs Western Bulldogs @ Adelaide Oval
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 15, 10, 8, 0, 3, 1, 2
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Jordan Dawson' AND c.name = 'Adelaide Crows' AND r.name = 'Round 2'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
-
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', 25, 11, 5, 0, 8, 1, 0
-FROM afl.player_season ps
-JOIN afl.player p ON ps.player_id = p.id
-JOIN afl.club_season cs ON ps.club_season_id = cs.id
-JOIN afl.club c ON cs.club_id = c.id
-JOIN afl.club_match cm ON cm.club_season_id = cs.id
-JOIN afl.match m ON cm.match_id = m.id
-JOIN afl.round r ON m.round_id = r.id
-WHERE p.name = 'Wayne Milera' AND c.name = 'Adelaide Crows' AND r.name = 'Round 2'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
 COMMIT;

@@ -15,7 +15,6 @@
 - 2026: player stats for completed rounds only — existing 2026 fixture structure is valid, keep it
 - [x] Generate `dev/postgres/seed/03_afl_historical.sql` from the 3 CSV files
 - [x] Load into dev DB; verify player/match counts and spot-check stats
-- [ ] Run against prod DB
 
 ## Up next
 - Phase 15: Database backup — `pg_dump` → compress → upload; verify restore
