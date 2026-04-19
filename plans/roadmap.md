@@ -1,4 +1,3 @@
-
 # Roadmap
 
 ## Context
@@ -152,22 +151,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] Add search passthrough to gateway (`/search/query`)
 - [x] Tests — unit (payload→document transformation) + integration (Typesense round-trip, filtering, upsert)
 
-## Phase 14: Search Frontend
-
-**Goal:** Search UI
-
-- [ ] Search view — full-text search with filters (source, type)
-- [ ] Playwright tests
-
-## Phase 15: CQRS Player Stats Read Model
-
-**Goal:** Move player stats reads to the search index (ADR-013)
-
-- [ ] Expand Typesense indexing to include AFL player match stats (per-round and aggregated)
-- [ ] SquadView: replace AFL GraphQL stats query with search index query
-- [ ] Apply pattern to other stat-heavy views as they are built
-
-## Phase 16: Historical AFL Data — afltables (2024–present)
+## Phase 14: Historical AFL Data — afltables (2024–present)
 
 **Goal:** Load real AFL player match stats into the domain for 2024 onward using afltables.com. Establishes the canonical player roster and the reconciliation tooling all future imports will reuse.
 
@@ -179,28 +163,9 @@ Pattern: two-phase reconcile → import (see `ai/architecture/historical-import.
 - [ ] Import into dev DB; verify data; run against prod
 - [ ] Wipe 2026 fake fixture and replace with real 2024/2025 data
 
-## Phase 17: Historical AFL Data — prior years (TBD source, ~2012–2023)
+## Phase 15: Historical FFL Data
 
-**Goal:** Extend AFL player match stats back to ~2012 using a second source (to be identified). Player identity reconciliation against the roster established in Phase 16.
-
-- [ ] Identify source and assess data quality
-- [ ] Evaluate whether a new ADR is needed (new dependency or protocol)
-- [ ] Build parser / fetcher for source (in `services/afl/internal/infrastructure/<source>/` if reusable, else `dev/import/`)
-- [ ] Add `afl.xref_<source>_player` xref table
-- [ ] Build `dev/import/<source>/main.go` — reconcile against existing `afl.player` roster; import
-- [ ] Review and commit `reconcile.csv`; import into dev then prod
-
-## Phase 18: Historical AFL Data — early years (TBD source, 1998–2011)
-
-**Goal:** Complete the AFL historical record back to 1998. A third source is likely needed given data availability. Same pattern as Phases 16–17; reconciliation is against the cumulative roster.
-
-- [ ] Identify source; assess data quality and completeness
-- [ ] Build import tooling following the same pattern
-- [ ] Reconcile player names against full existing roster; import
-
-## Phase 19: Historical FFL Data
-
-**Goal:** Load all historical FFL team submissions, match results, and player season records. This is the FFL parallel of Phases 16–18 and uses the identical two-phase reconciliation pattern.
+**Goal:** Load all historical FFL team submissions, match results, and player season records. Uses the same two-phase reconciliation pattern as Phase 14.
 
 Notes:
 - FFL player names will not exactly match AFL player names — a Levenshtein reconciliation step links `ffl.player` records to `afl.player` records after both are loaded
@@ -214,7 +179,30 @@ Notes:
 - [ ] Import match results and player season records into dev then prod
 - [ ] Verify ladder standings, scores, and player history post-import
 
-## Phase 20: Deployment
+## Phase 16: Search Frontend
+
+**Goal:** Search UI
+
+- [ ] Search view — full-text search with filters (source, type)
+- [ ] Playwright tests
+
+## Phase 17: CQRS Player Stats Read Model
+
+**Goal:** Move player stats reads to the search index (ADR-013)
+
+- [ ] Expand Typesense indexing to include AFL player match stats (per-round and aggregated)
+- [ ] SquadView: replace AFL GraphQL stats query with search index query
+- [ ] Apply pattern to other stat-heavy views as they are built
+
+## Phase 18: Historical AFL Data — prior years (TBD sources, 1998–2023)
+
+**Goal:** Complete the AFL historical record back to 1998 using one or more sources to be identified. Reconciliation is against the cumulative player roster from Phase 14.
+
+- [ ] Identify sources and assess data quality for each year range
+- [ ] Evaluate whether new ADRs are needed (new dependencies or protocols)
+- [ ] For each source: build parser/fetcher, add `afl.xref_<source>_player` xref table, build import tool, reconcile and commit `reconcile.csv`, import into dev then prod
+
+## Phase 19: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)

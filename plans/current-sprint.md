@@ -10,7 +10,7 @@
 
 ### AFL historical stats import (one-time dev tool)
 - Source: `https://afltables.com/afl/stats/{year}_stats.txt` — plain CSV, one row per player per match; covers 2024–present
-- Entry point: `dev/import/afl_historical/main.go` — not a production binary (see `ai/architecture/historical-import.md`)
+- Entry point: `dev/import/afl_historical/main.go` — not a production binary (Phase 14; see `ai/architecture/historical-import.md`)
 - Two-phase: `--reconcile` outputs `dev/import/afl_historical/reconcile.csv` for human review; default run imports using that file
 - xref table `afl.xref_afltables_player` (external_id → afl.player.id) is the durable identity mapping
 - No events fired; no production caching needed
