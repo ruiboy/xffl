@@ -36,5 +36,6 @@ xffl/
 │
 ├── dev/
 │   ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
-│   └── postgres/seed/     → SQL seed files
+│   ├── postgres/seed/     → SQL seed files
+│   └── import/            → One-time historical import scripts (dev tools, not production)
 ```

@@ -143,13 +143,18 @@ Both services use these in `repository.go`:
 
 ## Recipe: Add an integration (external data source)
 
-See `ai/architecture/integrations.md` for the full pattern (ACL, outbound ports, secondary adapters, identity mapping, cache policy).
+See `ai/architecture/integrations.md` for the production adapter pattern (ACL, outbound ports, secondary adapters, cache policy) and `ai/architecture/historical-import.md` for the historical import pattern (two-phase reconcile → import, xref tables, fuzzy player matching).
 
-Quick checklist:
-1. Define outbound port interface in `internal/application/ports.go`
+**Production adapter** (recurring, scheduled):
+1. Define outbound port interface in `internal/application/`
 2. Create adapter package `internal/infrastructure/<source>/`
-3. Add `afl.` (or `ffl.`) `*_source_map` table to schema SQL
+3. Add `xref_<source>_<entity>` table to `dev/postgres/init/<n>_<service>_integrations.sql`
 4. Wire adapter → use case → DB writes → domain events in `cmd/ingest/main.go`
+
+**Historical import** (one-time dev tool):
+1. Add `xref_<source>_<entity>` table to `dev/postgres/init/<n>_<service>_integrations.sql`
+2. Build `dev/import/<source>/main.go` with `--reconcile` and import modes
+3. Run reconciliation, review and commit `reconcile.csv`, then import
 
 ## Testing
 
