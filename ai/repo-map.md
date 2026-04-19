@@ -34,8 +34,7 @@ xffl/
 │   ├── database/          → DB connection helper
 │   └── events/            → EventDispatcher interface + PG LISTEN/NOTIFY + in-memory
 │
-├── dev/
-│   ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
-│   ├── postgres/seed/     → SQL seed files
-│   └── import/            → One-time historical import scripts (dev tools, not production)
+└── dev/
+    ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
+    └── postgres/seed/     → SQL seed files
 ```
