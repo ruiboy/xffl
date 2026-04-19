@@ -143,7 +143,7 @@ Both services use these in `repository.go`:
 
 ## Recipe: Add an integration (external data source)
 
-See `ai/architecture/integrations.md` for the production adapter pattern (ACL, outbound ports, secondary adapters, cache policy) and `ai/architecture/historical-import.md` for the historical import pattern (two-phase reconcile → import, xref tables, fuzzy player matching).
+See `ai/architecture/integrations.md` for the production adapter pattern (ACL, outbound ports, secondary adapters, cache policy).
 
 **Production adapter** (recurring, scheduled):
 1. Define outbound port interface in `internal/application/`
