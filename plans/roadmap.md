@@ -221,3 +221,4 @@ Notes:
 - Fully feature the UX
 - Live AFL data source for ongoing weekly stats (TBD — afltables may serve for weekly reconciliation once historical load is complete)
 - Mobile app
+- Backup remote destination — currently rclone local. Leaning GCS (Workload Identity for k8s) or AWS S3 (account exists). Decide when deployment target is clearer.

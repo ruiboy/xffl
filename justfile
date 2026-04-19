@@ -111,6 +111,15 @@ test-all:
     just test-ffl
     just test-e2e
 
+# Back up Postgres to backups/ (set BACKUP_REMOTE=rclone-remote:bucket/path to also upload)
+backup-db:
+    @bash dev/backup/backup.sh
+
+# Restore Postgres from a backup file (defaults to latest in backups/)
+restore-db file="":
+    #!/usr/bin/env bash
+    bash dev/backup/restore.sh {{file}}
+
 # Snapshot AI control plane context for sharing or LLM ingestion
 ai-snapshot:
     bash dev/ai-snapshot.sh
