@@ -40,6 +40,8 @@ just run-afl         # AFL service only (port 8080)
 just run-gateway     # Gateway only (port 8090)
 just run-frontend    # Frontend only (port 3000)
 just test-e2e        # Playwright e2e tests (self-contained, no dev stack required)
+just backup-db       # pg_dump → backups/postgres_TIMESTAMP.sql.gz (uploads if BACKUP_REMOTE set)
+just restore-db      # Restore latest backup into dev DB (pass file= to specify a file)
 ```
 
 ## Before Coding — Read These (tiered)
