@@ -151,28 +151,58 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] Add search passthrough to gateway (`/search/query`)
 - [x] Tests — unit (payload→document transformation) + integration (Typesense round-trip, filtering, upsert)
 
-## Phase 14: Historical AFL Data — afltables (2024–present)
+## Phase 14: Historical AFL Data — afltables (2024–present) ✅
 
-**Goal:** Load real AFL player match stats into the domain for 2024 onward using afltables.com. Establishes the canonical player roster and the reconciliation tooling all future imports will reuse.
+**Goal:** Load real AFL player match stats into the domain for 2024 onward using afltables.com. Establishes the canonical player roster.
 
-Pattern: two-phase reconcile → import (see `ai/architecture/historical-import.md`).
+- [x] Generate `dev/postgres/seed/03_afl_historical.sql` directly from afltables CSV files (810 players, 21942 player_match rows)
+- [x] Seed FFL Ruiboys squad (30 players) in `04_ffl_players.sql`
+- [x] Load into dev DB; verify player/match counts and spot-check stats
 
-- [ ] Restore `afl.xref_afltables_player` xref table
-- [ ] Build `dev/import/afl_historical/main.go` — `--reconcile` + import modes; Levenshtein player matching
-- [ ] Run reconciliation; review and commit `reconcile.csv`
-- [ ] Import into dev DB; verify data; run against prod
-- [ ] Wipe 2026 fake fixture and replace with real 2024/2025 data
+## Phase 15: Database Backup ✅
 
-## Phase 15: Database Backup
+**Goal:** Persist DB state durably outside the dev lifecycle.
 
-**Goal:** Persist DB state durably outside the dev lifecycle. Once historical data is loaded it must survive `dev-reset`, machine loss, or accidental wipes. Backup runs after each major data loading phase and on a regular schedule thereafter.
+- [x] `just backup-db` — `pg_dump --data-only | gzip` → timestamped local file; uploads via rclone if `BACKUP_REMOTE` set
+- [x] `just restore-db` — reset dev DB, restore from backup, verify row counts
+- [x] Restore verified end-to-end (810 players, 21942 player_match, 30 ffl players)
 
-- [ ] Choose cloud backup location (e.g. S3, GCS, Backblaze B2)
-- [ ] Script `pg_dump` → compress → upload to chosen location
-- [ ] Verify restore works end-to-end from backup
-- [ ] Run first backup after AFL historical data is loaded and verified
+## Phase 16: 2026 FFL Data Import
 
-## Phase 16: Historical FFL Data
+**Goal:** Seed real 2026 FFL data — starting with one round to validate the pipeline, then all completed rounds.
+
+- [ ] Identify 2026 FFL data source and format (per round, per team)
+- [ ] Import Round 1: team submissions, match result, player scores — verify against known outcomes
+- [ ] Import all remaining completed rounds
+- [ ] Verify ladder standings and scores post-import
+
+## Phase 17: UX Improvements
+
+**Goal:** Richer, faster frontend — more detailed stats, new player and team pages, and meaningful performance improvements as data volume grows.
+
+- [ ] Player pages — career stats, season history, club timeline
+- [ ] Team pages — squad, round-by-round scores, season summary
+- [ ] Other season pages (TBD based on usage)
+- [ ] Richer stat data surfaced in existing views
+- [ ] Performance: audit page load times; break up monolithic GraphQL queries to fetch only what the current page needs; evaluate DataLoader pattern on backend for N+1 query elimination
+
+## Phase 18: Search Frontend + Index Enrichment
+
+**Goal:** Search UI backed by an enriched Typesense index with whatever data the UX needs.
+
+- [ ] Search view — full-text search with filters (source, type)
+- [ ] Expand search index as needed to support UX data requirements (player stats, aggregates, etc.)
+- [ ] Playwright tests
+
+## Phase 19: Historical AFL Data — prior years (TBD sources, 1998–2023)
+
+**Goal:** Complete the AFL historical record back to 1998 using one or more sources to be identified. Reconciliation is against the cumulative player roster from Phase 14.
+
+- [ ] Identify sources and assess data quality for each year range
+- [ ] Evaluate whether new ADRs are needed (new dependencies or protocols)
+- [ ] For each source: build parser/fetcher, add `afl.xref_<source>_player` xref table, build import tool, reconcile and commit `reconcile.csv`, import into dev then prod
+
+## Phase 20: Historical FFL Data
 
 **Goal:** Load all historical FFL team submissions, match results, and player season records. Uses the same two-phase reconciliation pattern as Phase 14.
 
@@ -185,17 +215,10 @@ Notes:
 - [ ] Build `dev/import/ffl_historical/main.go` — reconcile + import modes
 - [ ] Add `ffl.xref_<source>_player` xref table as needed
 - [ ] Run FFL player reconciliation; then run AFL↔FFL player linkage reconciliation
-- [ ] Import match results and player season records into dev then prod
+- [ ] Import match results and player season records
 - [ ] Verify ladder standings, scores, and player history post-import
 
-## Phase 17: Search Frontend
-
-**Goal:** Search UI
-
-- [ ] Search view — full-text search with filters (source, type)
-- [ ] Playwright tests
-
-## Phase 18: CQRS Player Stats Read Model
+## Phase 21: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -203,15 +226,7 @@ Notes:
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 19: Historical AFL Data — prior years (TBD sources, 1998–2023)
-
-**Goal:** Complete the AFL historical record back to 1998 using one or more sources to be identified. Reconciliation is against the cumulative player roster from Phase 14.
-
-- [ ] Identify sources and assess data quality for each year range
-- [ ] Evaluate whether new ADRs are needed (new dependencies or protocols)
-- [ ] For each source: build parser/fetcher, add `afl.xref_<source>_player` xref table, build import tool, reconcile and commit `reconcile.csv`, import into dev then prod
-
-## Phase 20: Deployment
+## Phase 22: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
@@ -221,4 +236,4 @@ Notes:
 - Fully feature the UX
 - Live AFL data source for ongoing weekly stats (TBD — afltables may serve for weekly reconciliation once historical load is complete)
 - Mobile app
-- Backup remote destination — currently rclone local. Leaning GCS (Workload Identity for k8s) or AWS S3 (account exists). Decide when deployment target is clearer.
+- Backup remote destination — choose cloud storage (recommend rclone: supports S3, GCS, B2 with a single consistent interface). Decide when deployment target is clearer.
