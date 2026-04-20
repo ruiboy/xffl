@@ -36,5 +36,6 @@ xffl/
 │
 └── dev/
     ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
+    ├── backup/            → backup.sh + restore.sh (pg_dump → gzip; rclone upload if BACKUP_REMOTE set)
     └── postgres/seed/     → SQL seed files
 ```
