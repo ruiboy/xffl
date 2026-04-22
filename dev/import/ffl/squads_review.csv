@@ -1,0 +1,121 @@
+ffl_club,squad_name,afl_club_code,afl_club,matched_name,afl_player_id,confidence
+Cheetahs,Lachlan McAndrew,Adel,Adelaide Crows,Lachlan McAndrew,460,exact
+Cheetahs,Darcy Fogarty,Adel,Adelaide Crows,Darcy Fogarty,169,exact
+Cheetahs,Will Ashcroft,Bris,Brisbane Lions,Will Ashcroft,774,exact
+Cheetahs,Lachie Neale,Bris,Brisbane Lions,Lachie Neale,450,exact
+Cheetahs,Nick Haynes,Carl,Carlton Blues,Nick Haynes,587,exact
+Cheetahs,Nick Newman,Carl,Carlton Blues,Nic Newman,582,fuzzy
+Cheetahs,Caleb Serong,Freo,Fremantle Dockers,Caleb Serong,100,exact
+Cheetahs,Tanner Bruhn,Geel,Geelong Cats,Tanner Bruhn,708,exact
+Cheetahs,Matthew Rowell,GC,Gold Coast Suns,Matt Rowell,533,fuzzy
+Cheetahs,Ben King,GC,Gold Coast Suns,Ben King,56,exact
+Cheetahs,Kieren Briggs,GWS,Greater Western Sydney Giants,Kieren Briggs,440,exact
+Cheetahs,Clayton Oliver,GWS,Greater Western Sydney Giants,Clayton Oliver,135,exact
+Cheetahs,Lloyd Meek,Haw,Hawthorn Hawks,Lloyd Meek,490,exact
+Cheetahs,Tristan Xerri,NM,North Melbourne Kangaroos,Tristan Xerri,760,exact
+Cheetahs,Harry Sheezel,NM,North Melbourne Kangaroos,Harry Sheezel,246,exact
+Cheetahs,Colby McKercher,NM,North Melbourne Kangaroos,Colby McKercher,138,exact
+Cheetahs,Nick Larkey,NM,North Melbourne Kangaroos,Nick Larkey,590,exact
+Cheetahs,Trent Rivers,Melb,Melbourne Demons,Trent Rivers,759,exact
+Cheetahs,Jayden Short,Rich,Richmond Tigers,Jayden Short,367,exact
+Cheetahs,Sam Lalor,Rich,Richmond Tigers,Sam Lalor,676,exact
+Cheetahs,Jack Sinclair,SK,St Kilda Saints,Jack Sinclair,301,exact
+Cheetahs,Hugo Garcia,SK,St Kilda Saints,Hugo Garcia,264,exact
+Cheetahs,Mattaes Phillipou,SK,St Kilda Saints,Mattaes Phillipou,535,exact
+Cheetahs,Errol Gulden,Syd,Sydney Swans,Errol Gulden,205,exact
+Cheetahs,James Rowbottom,Syd,Sydney Swans,James Rowbottom,346,exact
+Cheetahs,Isaac Heeney,Syd,Sydney Swans,Isaac Heeney,269,exact
+Cheetahs,Charlie Curnow,Syd,Sydney Swans,Charlie Curnow,122,exact
+Cheetahs,Tim English,WB,Western Bulldogs,Tim English,715,exact
+Cheetahs,Aaron Naughton,WB,Western Bulldogs,Aaron Naughton,3,exact
+Cheetahs,Ryley Sanders,WB,Western Bulldogs,Ryley Sanders,658,exact
+The Howling Cows,Jordan Dawson,Adel,Adelaide Crows,Jordan Dawson,397,exact
+The Howling Cows,Riley Thilthorpe,Adel,Adelaide Crows,Riley Thilthorpe,644,exact
+The Howling Cows,Jacob Weitering,Carl,Carlton Blues,Jacob Weitering,317,exact
+The Howling Cows,Darcy Cameron,Col,Collingwood Magpies,Darcy Cameron,168,exact
+The Howling Cows,Nick Daicos,Col,Collingwood Magpies,Nick Daicos,586,exact
+The Howling Cows,Jamie Elliott,Col,Collingwood Magpies,Jamie Elliott,352,exact
+The Howling Cows,Will Setterfield,Ess,Essendon Bombers,Will Setterfield,786,no_2026_season
+The Howling Cows,Mason Redman,Ess,Essendon Bombers,Mason Redman,525,exact
+The Howling Cows,Luke Ryan,Freo,Fremantle Dockers,Luke Ryan,509,exact
+The Howling Cows,Tom Stewart,Geel,Geelong Cats,Tom Stewart,756,exact
+The Howling Cows,Touk Miller,GC,Gold Coast Suns,Touk Miller,757,exact
+The Howling Cows,Noah Anderson,GC,Gold Coast Suns,Noah Anderson,596,exact
+The Howling Cows,Christian Petracca,GC,Gold Coast Suns,Christian Petracca,132,exact
+The Howling Cows,John Noble,GC,Gold Coast Suns,John Noble,392,exact
+The Howling Cows,Toby Greene,GWS,Greater Western Sydney Giants,Toby Greene,722,exact
+The Howling Cows,Harrison Himmelberg,GWS,Greater Western Sydney Giants,Harry Himmelberg,236,fuzzy
+The Howling Cows,Jesse Hogan,GWS,Greater Western Sydney Giants,Jesse Hogan,379,exact
+The Howling Cows,Jack Gunston,Haw,Hawthorn Hawks,Jack Gunston,287,exact
+The Howling Cows,Jack Steele,Melb,Melbourne Demons,Jack Steele,302,exact
+The Howling Cows,Jordon Sweet,Port,Port Adelaide Power,Jordon Sweet,401,exact
+The Howling Cows,Zak Butters,Port,Port Adelaide Power,Zak Butters,804,exact
+The Howling Cows,Connor Rozee,Port,Port Adelaide Power,Connor Rozee,143,exact
+The Howling Cows,Oliver Wines,Port,Port Adelaide Power,Ollie Wines,611,fuzzy
+The Howling Cows,Toby Nankervis,Rich,Richmond Tigers,Toby Nankervis,725,exact
+The Howling Cows,Jacob Hopper,Rich,Richmond Tigers,Jacob Hopper,312,exact
+The Howling Cows,Rowan Marshall,SK,St Kilda Saints,Rowan Marshall,651,exact
+The Howling Cows,Jake Lloyd,Syd,Sydney Swans,Jake Lloyd,330,exact
+The Howling Cows,Nick Blakey,Syd,Sydney Swans,Nick Blakey,583,exact
+The Howling Cows,Jack Graham,WC,West Coast Eagles,Jack Graham,286,exact
+The Howling Cows,Marcus Bontempelli,WB,Western Bulldogs,Marcus Bontempelli,517,exact
+Ruiboys,Reilly O'Brien,Adel,Adelaide Crows,Reilly OBrien,633,fuzzy
+Ruiboys,Taylor Walker,Adel,Adelaide Crows,Taylor Walker,711,exact
+Ruiboys,Henry Smith,Bris,Brisbane Lions,Henry Smith,256,no_2026_season
+Ruiboys,Hugh McCluggage,Bris,Brisbane Lions,Hugh McCluggage,263,exact
+Ruiboys,Dayne Zorko,Bris,Brisbane Lions,Dayne Zorko,182,exact
+Ruiboys,Harris Andrews,Bris,Brisbane Lions,Harris Andrews,228,exact
+Ruiboys,George Hewett,Carl,Carlton Blues,George Hewett,221,exact
+Ruiboys,Cooper Lord,Carl,Carlton Blues,Cooper Lord,150,exact
+Ruiboys,Ned Long,Col,Collingwood Magpies,Ned Long,576,exact
+Ruiboys,Josh Daicos,Col,Collingwood Magpies,Josh Daicos,404,exact
+Ruiboys,Jye Caldwell,Ess,Essendon Bombers,Jye Caldwell,427,exact
+Ruiboys,Luke Jackson,Freo,Fremantle Dockers,Luke Jackson,504,exact
+Ruiboys,Tom Atkins,Geel,Geelong Cats,Tom Atkins,729,exact
+Ruiboys,Jeremy Cameron,Geel,Geelong Cats,Jeremy Cameron,373,exact
+Ruiboys,Alex Davies,GC,Gold Coast Suns,Alex Davies,11,exact
+Ruiboys,Jamarra Ugale-Hagan,GC,Gold Coast Suns,Jamarra Ugle-Hagan,338,fuzzy
+Ruiboys,Lachlan Ash,GWS,Greater Western Sydney Giants,Lachie Ash,445,fuzzy
+Ruiboys,Connor Idun,GWS,Greater Western Sydney Giants,Connor Idun,140,exact
+Ruiboys,Karl Amon,Haw,Hawthorn Hawks,Karl Amon,436,exact
+Ruiboys,Tom Powell,NM,North Melbourne Kangaroos,Tom Powell,753,exact
+Ruiboys,Max Gawn,Melb,Melbourne Demons,Max Gawn,544,exact
+Ruiboys,Willem Drew,Port,Port Adelaide Power,Willem Drew,788,exact
+Ruiboys,Mitchell Georgiades,Port,Port Adelaide Power,Mitch Georgiades,560,fuzzy
+Ruiboys,Tim Taranto,Rich,Richmond Tigers,Tim Taranto,718,exact
+Ruiboys,Jackson Macrae,SK,St Kilda Saints,Jack Macrae,294,fuzzy
+Ruiboys,Marcus Windhager,SK,St Kilda Saints,Marcus Windhager,518,exact
+Ruiboys,Callum Wilkie,SK,St Kilda Saints,Callum Wilkie,108,exact
+Ruiboys,Matthew Kennedy,WB,Western Bulldogs,Matthew Kennedy,540,exact
+Ruiboys,Sam Darcy,WB,Western Bulldogs,Sam Darcy,665,exact
+Ruiboys,Bailey Dale,WB,Western Bulldogs,Bailey Dale,42,exact
+Slashers,Josh Dunkley,Bris,Brisbane Lions,Josh Dunkley,407,exact
+Slashers,Logan Morris,Bris,Brisbane Lions,Logan Morris,494,exact
+Slashers,Marc Pittonet,Carl,Carlton Blues,Marc Pittonet,516,exact
+Slashers,Patrick Cripps,Carl,Carlton Blues,Patrick Cripps,622,exact
+Slashers,Sam Walsh,Carl,Carlton Blues,Sam Walsh,683,exact
+Slashers,Harry McKay,Carl,Carlton Blues,Harry McKay,238,exact
+Slashers,Jagga Smith,Carl,Carlton Blues,Jagga Smith,321,exact
+Slashers,Zach Merrett,Ess,Essendon Bombers,Zach Merrett,800,exact
+Slashers,Darcy Parish,Ess,Essendon Bombers,Darcy Parish,175,exact
+Slashers,Andrew McGrath,Ess,Essendon Bombers,Andrew McGrath,23,exact
+Slashers,Andrew Brayshaw,Freo,Fremantle Dockers,Andrew Brayshaw,21,exact
+Slashers,Patrick Voss,Freo,Fremantle Dockers,Patrick Voss,626,exact
+Slashers,Bailey Smith,Geel,Geelong Cats,Bailey Smith,47,exact
+Slashers,Max Holmes,Geel,Geelong Cats,Max Holmes,548,exact
+Slashers,Jarrod Witts,GC,Gold Coast Suns,Jarrod Witts,355,exact
+Slashers,Finn Callaghan,GWS,Greater Western Sydney Giants,Finn Callaghan,212,exact
+Slashers,Lachie Whitfield,GWS,Greater Western Sydney Giants,Lachie Whitfield,453,exact
+Slashers,Aaron Cadman,GWS,Greater Western Sydney Giants,Aaron Cadman,1,exact
+Slashers,Jai Newcombe,Haw,Hawthorn Hawks,Jai Newcombe,323,exact
+Slashers,Conor Nash,Haw,Hawthorn Hawks,Conor Nash,145,exact
+Slashers,James Sicily,Haw,Hawthorn Hawks,James Sicily,347,exact
+Slashers,Christian Salem,Melb,Melbourne Demons,Christian Salem,133,exact
+Slashers,Tom De Koning,StK,St Kilda Saints,Tom De Koning,737,exact
+Slashers,Nasiah Wanganeen-Milera,SK,St Kilda Saints,Nasiah Wanganeen-Milera,570,exact
+Slashers,Sam Flanders,StK,St Kilda Saints,Sam Flanders,673,exact
+Slashers,Brodie Grundy,Syd,Sydney Swans,Brodie Grundy,88,exact
+Slashers,Jake Waterman,WC,West Coast Eagles,Jake Waterman,336,exact
+Slashers,Tom Liberatore,WB,Western Bulldogs,Tom Liberatore,746,exact
+Slashers,Ed Richards,WB,Western Bulldogs,Ed Richards,196,exact
+Slashers,Joel Freijah,WB,Western Bulldogs,Joel Freijah,389,exact

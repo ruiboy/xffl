@@ -1,0 +1,89 @@
+round,team,player_name,afl_club,position,backup_positions,interchange_position,score,notes
+3,Cheetahs,Ben King,GC,goals,,,25,raw goals stat: 5 × 5 = 25
+3,Cheetahs,Aaron Naughton,WB,goals,,,15,raw goals stat: 3 × 5 = 15
+3,Cheetahs,Nick Larkey,NM,goals,,,10,raw goals stat: 2 × 5 = 10
+3,Cheetahs,Tanner Bruhn,Geel,kicks,,,9,
+3,Cheetahs,Colby McKercher,NM,kicks,,,22,
+3,Cheetahs,Sam Lalor,Rich,kicks,,,13,
+3,Cheetahs,Jack Sinclair,StK,kicks,,,17,
+3,Cheetahs,Caleb Serong,Freo,handballs,,,12,
+3,Cheetahs,Lachie Neale,Bris,handballs,,,10,
+3,Cheetahs,Ryley Sanders,WB,handballs,,,15,
+3,Cheetahs,Clayton Oliver,GWS,handballs,,,26,
+3,Cheetahs,Dan Houston,Col,marks,,,10,raw marks stat: 5 × 2 = 10
+3,Cheetahs,Jayden Short,Rich,marks,,,20,raw marks stat: 10 × 2 = 20
+3,Cheetahs,James Rowbottom,Syd,tackles,,,32,raw tackles stat: 8 × 4 = 32
+3,Cheetahs,Tristan Xerri,NM,tackles,,,4,raw tackles stat: 1 × 4 = 4
+3,Cheetahs,Lachlan McAndrew,Adel,hitouts,,,40,
+3,Cheetahs,Tim English,WB,hitouts,,,30,
+3,Cheetahs,Will Ashcroft,Bris,star,,,75,
+3,Cheetahs,Harry Sheezel,NM,bench,,star,,
+3,Cheetahs,Hugo Garcia,StK,bench,"tackles,kicks",,,
+3,Cheetahs,Darcy Fogarty,Adel,bench,"goals,marks",,,
+3,Cheetahs,Lloyd Meek,Haw,bench,"hitouts,handballs",,,
+3,Ruiboys,Jeremy Cameron,Geel,goals,,,0,
+3,Ruiboys,Sam Darcy,WB,goals,,,10,
+3,Ruiboys,Mitch Georgiades,PA,goals,,,15,
+3,Ruiboys,Dayne Zorko,Bris,kicks,,,21,
+3,Ruiboys,Lachie Ash,GWS,kicks,,,18,
+3,Ruiboys,Bailey Dale,WB,kicks,,,13,
+3,Ruiboys,Josh Daicos,Coll,kicks,,,21,
+3,Ruiboys,George Hewett,Carl,handballs,,,9,
+3,Ruiboys,Tim Taranto,Rich,handballs,,,17,
+3,Ruiboys,Alex Davies,GCS,handballs,,,13,
+3,Ruiboys,Marcus Windhager,SK,handballs,,,2,
+3,Ruiboys,Callum Wilkie,SK,marks,,,18,
+3,Ruiboys,Connor Idun,GWS,marks,,,14,
+3,Ruiboys,Tom Atkins,Geel,tackles,,,32,
+3,Ruiboys,Ned Long,Coll,tackles,,,40,
+3,Ruiboys,Max Gawn,Melb,hitouts,,,55,
+3,Ruiboys,Luke Jackson,Fre,hitouts,,,28,
+3,Ruiboys,Jye Caldwell,Ess,star,,,55,"starter score 49; interchange/sub used, slot score = 55"
+3,Ruiboys,Matthew Kennedy,WB,bench,,star,,
+3,Ruiboys,Willem Drew,PA,bench,"tackles,handballs",,,
+3,Ruiboys,Karl Amon,Haw,bench,"goals,hitouts",,,
+3,Ruiboys,Tom Powell,NM,bench,"kicks,marks",,,
+3,THC,Thilthorpe,AD,goals,,,5,explicit multiplier x1 shown
+3,THC,Hogan,GWS,goals,,,0,
+3,THC,Gunston,HAW,goals,,,20,explicit multiplier x4 shown
+3,THC,Himmelberg,GWS,marks,,,12,
+3,THC,Weitering,CAR,marks,,,12,
+3,THC,L Ryan,FR,kicks,,,13,
+3,THC,T Greene,GWS,kicks,,,8,
+3,THC,Anderson,GCS,kicks,,,16,AV (averages) annotation stripped
+3,THC,Stewart,GEE,kicks,,,21,
+3,THC,Davies-Uniacke,NM,handballs,,,15,
+3,THC,Miller,GWS,handballs,,,17,
+3,THC,Wines,PA,handballs,,,0,DNP; sub contributed 11 pts
+3,THC,N Daicos,COL,handballs,,,16,
+3,THC,Graham,WCE,tackles,,,36,explicit multiplier x9 shown
+3,THC,Steele,MEL,tackles,,,60,explicit multiplier x15 shown
+3,THC,Cameron,COL,hitouts,,,17,
+3,THC,Sweet,PA,hitouts,,,37,
+3,THC,M Bontempelli,WB,star,,,57,AV (averages) annotation stripped
+3,THC,Z Butters,PA,bench,,star,,interchange player (star)
+3,THC,Elliott,COL,bench,"goals,marks",,,
+3,THC,Noble,GCS,bench,"kicks,handballs",,13,AV (averages) annotation stripped
+3,THC,Visentini,PA,bench,"tackles,hitouts",,,
+3,Slashers,J Waterman,WC,goals,,,20,
+3,Slashers,H McKay,Carl,goals,,,5,
+3,Slashers,L Morris,BL,goals,,,10,
+3,Slashers,B Smith,Geel,kicks,,,25,
+3,Slashers,C Salem,Melb,kicks,,,13,
+3,Slashers,E Richards,WB,kicks,,,17,
+3,Slashers,N Wanganeen-Milera,SK,kicks,,,19,
+3,Slashers,J Smith,Carl,handballs,,,12,
+3,Slashers,S Walsh,Carl,handballs,,,18,
+3,Slashers,P Cripps,Carl,handballs,,,14,
+3,Slashers,F Callaghan,GWS,handballs,,,21,
+3,Slashers,J Sicily,Haw,marks,,,16,
+3,Slashers,L Whitfield,GWS,marks,,,14,
+3,Slashers,J Dunkley,BL,tackles,,,20,
+3,Slashers,T Liberatore,WB,tackles,,,20,
+3,Slashers,B Grundy,Syd,hitouts,,,34,
+3,Slashers,J Witts,GC,hitouts,,,45,
+3,Slashers,M Holmes,Gel,star,,,62,
+3,Slashers,A Brayshaw,Fre,bench,,star,,interchange player; no score (interchange not assumed to have occurred)
+3,Slashers,Z Merrett,Ess,bench,"kicks,goals",,,
+3,Slashers,Tom De Koning,SK,bench,"hitouts,marks",,,
+3,Slashers,C Nash,Haw,bench,"tackles,handballs",,,

@@ -227,7 +227,7 @@ def parse_ruiboys_player(line: str, position: str, team: str, round_: int) -> Op
     """
     line = line.strip()
     # Split on dash/endash separator
-    m = re.match(r'^(.+?)\s*[–\-]\s*([A-Z][a-zA-Z]+)\s+(.*)', line)
+    m = re.match(r'^(.+?)\s*[–\-]\s*([A-Z][a-zA-Z]+)\s*(.*)', line)
     if not m:
         return None
 
@@ -568,7 +568,7 @@ def parse_block(round_: int, team: str, lines: list[str]) -> tuple[list[PlayerRo
                 continue
         if (is_thc or is_slashers) and not score_total:
             bare_score = re.match(r'^(\d{3,})\s*$', line)
-            if bare_score and not current_position:
+            if bare_score and not current_position and not MEMBER_NUM_RE.match(line):
                 score_total = bare_score.group(1)
                 continue
 
@@ -777,6 +777,8 @@ def detect_team(block: str) -> Optional[str]:
             return 'THC'
         if re.match(r'^\s*(GOALS?|KICKS?|MARKS?|TACKLES?|HITOUTS?|HB|STAR)\s*=\s*\d+', line, re.I):
             return 'THC'
+        if re.match(r'^\s*THC[-–]', line, re.I):  # "THC- what's left of em" etc.
+            return 'THC'
     for line in lines[:8]:
         if re.search(r'\bCHEETAHS?\b', line, re.I):
             return 'Cheetahs'
@@ -825,6 +827,9 @@ def main():
 
         lines = block.strip().split('\n')
         players, score_row = parse_block(round_, team, lines)
+        # Treat score of 0 with no player scores as a pre-round placeholder
+        if score_row.score == '0' and not any(p.score for p in players):
+            score_row.score = ''
         all_players.extend(players)
         all_scores.append(score_row)
 

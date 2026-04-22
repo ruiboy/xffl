@@ -1,0 +1,66 @@
+round,team,player_name,afl_club,position,backup_positions,interchange_position,score,notes
+4,Cheetahs,Ben King,GC,goals,,,15,raw goals stat: 3 × 5 = 15
+4,Cheetahs,Aaron Naughton,WB,goals,,,15,raw goals stat: 3 × 5 = 15
+4,Cheetahs,Nick Larkey,NM,goals,,,10,raw goals stat: 2 × 5 = 10
+4,Cheetahs,Tanner Bruhn,Geel,kicks,,,14,
+4,Cheetahs,Colby McKercher,NM,kicks,,,18,
+4,Cheetahs,Jayden Short,Rich,kicks,,,19,
+4,Cheetahs,Jack Sinclair,StK,kicks,,,21,
+4,Cheetahs,Caleb Serong,Freo,handballs,,,11,
+4,Cheetahs,Lachie Neale,Bris,handballs,,,13,
+4,Cheetahs,Ryley Sanders,WB,handballs,,,24,
+4,Cheetahs,Clayton Oliver,GWS,handballs,,,20,
+4,Cheetahs,Dan Houston,Col,marks,,,12,raw marks stat: 6 × 2 = 12
+4,Cheetahs,Nick Newman,Carl,marks,,,18,raw marks stat: 9 × 2 = 18
+4,Cheetahs,James Rowbottom,Syd,tackles,,,16,raw tackles stat: 4 × 4 = 16
+4,Cheetahs,Matthew Rowell,GC,tackles,,,12,raw tackles stat: 3 × 4 = 12
+4,Cheetahs,Lachlan McAndrew,Adel,hitouts,,,31,
+4,Cheetahs,Tim English,WB,hitouts,,,16,
+4,Cheetahs,Will Ashcroft,Bris,star,,,57,
+4,Cheetahs,Harry Sheezel,NM,bench,,star,,
+4,Cheetahs,Hugo Garcia,StK,bench,"tackles,handballs",,,
+4,Cheetahs,Isaac Heeney,Syd,bench,"goals,kicks",,,"raw stats shown for bench player: 4,16"
+4,Cheetahs,Lloyd Meek,Haw,bench,"hitouts,marks",,,
+4,Slashers,J Waterman,WC,goals,,,5,
+4,Slashers,J Treacy,Fre,goals,,,10,
+4,Slashers,L Morris,BL,goals,,,15,
+4,Slashers,B Smith,Geel,kicks,,,22,
+4,Slashers,C Salem,Melb,kicks,,,15,
+4,Slashers,E Richards,WB,kicks,,,0,DNP; Merrett subbed in for 15 pts
+4,Slashers,N Wanganeen-Milera,SK,kicks,,,17,
+4,Slashers,J Smith,Carl,handballs,,,10,
+4,Slashers,S Walsh,Carl,handballs,,,9,
+4,Slashers,P Cripps,Carl,handballs,,,10,
+4,Slashers,F Callaghan,GWS,handballs,,,15,
+4,Slashers,J Sicily,Haw,marks,,,10,
+4,Slashers,L Whitfield,GWS,marks,,,10,
+4,Slashers,J Dunkley,BL,tackles,,,12,
+4,Slashers,C Nash,Haw,tackles,,,32,
+4,Slashers,B Grundy,Syd,hitouts,,,33,
+4,Slashers,J Witts,GC,hitouts,,,21,
+4,Slashers,M Holmes,Geel,star,,,70,interchange occurred: Brayshaw 70 > starter 55; slot score = 70
+4,Slashers,A Brayshaw,Fre,bench,,star,,interchange player; score 70
+4,Slashers,Z Merrett,Ess,bench,"kicks,goals",,,
+4,Slashers,Tom De Koning,SK,bench,"hitouts,marks",,,
+4,Ruiboys,Jeremy Cameron,Geel,goals,,,5,
+4,Ruiboys,Sam Darcy,WB,goals,,,15,
+4,Ruiboys,Mitch Georgiades,PA,goals,,,10,
+4,Ruiboys,Dayne Zorko,Bris,kicks,,,23,
+4,Ruiboys,Lachie Ash,GWS,kicks,,,21,
+4,Ruiboys,Bailey Dale,WB,kicks,,,17,
+4,Ruiboys,Josh Daicos,Coll,kicks,,,19,
+4,Ruiboys,George Hewett,Carl,handballs,,,12,
+4,Ruiboys,Matthew Kennedy,WB,handballs,,,22,
+4,Ruiboys,Alex Davies,GCS,handballs,,,5,
+4,Ruiboys,Willem Drew,PA,handballs,,,6,
+4,Ruiboys,Callum Wilkie,SK,marks,,,20,
+4,Ruiboys,Connor Idun,GWS,marks,,,14,
+4,Ruiboys,Tom Atkins,Geel,tackles,,,12,
+4,Ruiboys,Ned Long,Coll,tackles,,,12,
+4,Ruiboys,Max Gawn,Melb,hitouts,,,32,
+4,Ruiboys,Luke Jackson,Fre,hitouts,,,26,
+4,Ruiboys,Tim Taranto,Rich,star,,,50,"starter score 40; interchange/sub used, slot score = 50"
+4,Ruiboys,Jye Caldwell,Ess,bench,,star,,
+4,Ruiboys,Tom Powell,NM,bench,"tackles,handballs",,16,
+4,Ruiboys,Taylor Walker,Adel,bench,"goals,hitouts",,,
+4,Ruiboys,Marcus Windhager,SK,bench,"kicks,marks",,,raw stats shown: 16\12
