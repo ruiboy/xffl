@@ -42,7 +42,7 @@
             </router-link>
           </div>
           <p class="text-sm text-text-muted mb-3">
-            Fantasy score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
+            Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
           <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
