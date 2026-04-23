@@ -167,15 +167,17 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] `just restore-db` — reset dev DB, restore from backup, verify row counts
 - [x] Restore verified end-to-end (810 players, 21942 player_match, 30 ffl players)
 
-## Phase 16: 2026 FFL Data Import
+## Phase 16: 2026 FFL Data Import ✅
 
 **Goal:** Seed real 2026 FFL data for rounds 1–5 (R6 squads only, no scores yet).
 
 - [x] Identify data source — Tapatalk forum posts (manual copy-paste)
 - [x] Build `dev/import/ffl/parse_forum.py` — parses all 4 team formats → `*_teams.csv` + `*_scores.csv`
-- [x] Parse and validate R1–R5 (88 player rows/round); R6 squads parsed (no scores)
-- [ ] Insert parsed data into DB — stopgap seed SQL, or defer to Phase 18 Go use case
-- [ ] Verify ladder standings and scores post-import
+- [x] Parse and validate R1–R6 (88 player rows/round); R6 squads parsed (no scores)
+- [x] `resolve_squads.py` + `import_round_teams.py` — stopgap Python importers; seed SQL 04–06 generated with name-based subqueries (no hardcoded IDs)
+- [x] 120 FFL players + 4 mid-season trades seeded; R1–R5 player_match + scores inserted
+- [x] `dev-seed` runs all 6 seed files end-to-end (idempotent)
+- [x] Verify ladder standings and scores post-import
 
 ## Phase 17: UX Improvements
 

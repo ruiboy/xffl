@@ -12,7 +12,7 @@
 - [x] Build `dev/import/ffl/import_round_teams.py` — matches CSV players to player_seasons, generates/applies player_match + club_match score SQL
 - [x] Add 4 mid-season trades to `dev/postgres/seed/05_ffl_trades.sql` (Houston, Davies-Uniacke, Visentini, Josh Treacy)
 - [x] Insert round team selections (ffl.player_match) + scores (ffl.club_match) for R1–R5 — 437 statements applied, 22 players/team across all rounds
-- [ ] Verify ladder standings and scores post-import
+- [x] Verify ladder standings and scores post-import — data confirmed correct by user
 
 ## Up next
 - Phase 17: UX Improvements
