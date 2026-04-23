@@ -30,33 +30,29 @@
         </div>
       </section>
 
-      <section v-if="topScorers.length > 0" class="mb-8">
-        <h2 class="text-lg font-semibold text-text-heading mb-3">Top Fantasy Scorers</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-border text-left text-text-muted">
-                <th class="py-2 pr-4 font-medium w-8">#</th>
-                <th class="py-2 pr-4 font-medium">Player</th>
-                <th class="py-2 px-2 font-medium">Club</th>
-                <th class="py-2 px-2 font-medium">Position</th>
-                <th class="py-2 px-2 font-medium text-right">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(player, index) in topScorers"
-                :key="index"
-                class="border-b border-border-subtle hover:bg-surface-hover"
-              >
-                <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
-                <td class="py-2 pr-4 font-medium">{{ player.name }}</td>
-                <td class="py-2 px-2 text-text-muted">{{ player.club }}</td>
-                <td class="py-2 px-2 text-text-muted capitalize">{{ player.position ?? '—' }}</td>
-                <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ player.score }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <section v-if="Object.keys(topScorersByPosition).length > 0" class="mb-8">
+        <h2 class="text-lg font-semibold text-text-heading mb-4">Top Scorers</h2>
+        <div class="space-y-4">
+          <div v-for="(row, rowIndex) in TOP_SCORERS_ROWS" :key="rowIndex" class="grid grid-cols-4 gap-4">
+            <div v-for="pos in row" :key="pos" v-show="topScorersByPosition[pos]"
+              class="rounded-lg border border-border bg-surface-raised px-3 py-3"
+            >
+              <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">{{ POSITION_LABELS[pos] }}</p>
+              <div class="space-y-2">
+                <div
+                  v-for="(player, i) in topScorersByPosition[pos]?.players ?? []"
+                  :key="i"
+                  class="flex items-baseline justify-between gap-2"
+                >
+                  <div class="flex items-center gap-2 min-w-0">
+                    <img :src="clubLogoUrl(player.club)" :alt="player.club" class="w-5 h-5 object-contain shrink-0" />
+                    <span class="text-sm font-medium truncate">{{ player.name }}<template v-if="pos === 'all'"><span class="ml-2 text-text-faint font-normal text-xs">{{ POSITION_LABELS[player.position] }}</span></template></span>
+                  </div>
+                  <span class="text-sm tabular-nums font-semibold shrink-0">{{ player.score }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -79,6 +75,7 @@ import { useAflState } from '../../afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
@@ -147,21 +144,47 @@ interface Match {
   awayClubMatch?: ClubMatch | null
 }
 
-const topScorers = computed(() => {
-  if (!data.value) return []
+const POSITION_LABELS: Record<string, string> = {
+  all: 'All',
+  goals: 'Goals', kicks: 'Kicks', handballs: 'Handballs',
+  marks: 'Marks', tackles: 'Tackles', hitouts: 'Hitouts', star: 'Star',
+}
 
-  const all: { name: string; club: string; position: string | null; score: number }[] = []
+const TOP_SCORERS_ROWS = [
+  ['all', 'star', 'hitouts', 'tackles'],
+  ['kicks', 'handballs', 'marks', 'goals'],
+] as const
+
+type ScorerEntry = { name: string; club: string; score: number; position: string }
+
+const topScorersByPosition = computed(() => {
+  if (!data.value) return {} as Record<string, { label: string; players: ScorerEntry[] }>
+
+  const grouped: Record<string, ScorerEntry[]> = {}
   for (const match of data.value.round.matches as Match[]) {
     for (const side of [match.homeClubMatch, match.awayClubMatch]) {
       if (!side) continue
       for (const pm of side.playerMatches) {
-        if (pm.status === 'played') {
-          all.push({ name: pm.player.name, club: side.club.name, position: pm.position, score: pm.score })
+        if (pm.status === 'played' && pm.position) {
+          ;(grouped[pm.position] ??= []).push({ name: pm.player.name, club: side.club.name, score: pm.score, position: pm.position })
         }
       }
     }
   }
 
-  return all.sort((a, b) => b.score - a.score).slice(0, 10)
+  const result: Record<string, { label: string; players: ScorerEntry[] }> = {}
+
+  const allPlayers = Object.values(grouped).flat().sort((a, b) => b.score - a.score).slice(0, 3)
+  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers }
+
+  for (const pos of TOP_SCORERS_ROWS.flat().filter(p => p !== 'all')) {
+    if (grouped[pos]?.length) {
+      result[pos] = {
+        label: POSITION_LABELS[pos],
+        players: grouped[pos].sort((a, b) => b.score - a.score).slice(0, 5),
+      }
+    }
+  }
+  return result
 })
 </script>

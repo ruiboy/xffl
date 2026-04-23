@@ -67,7 +67,10 @@
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-text-heading">Team</h2>
-            <span class="text-sm tabular-nums">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
+            <div class="flex items-center gap-3">
+              <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
+              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+            </div>
           </div>
         </div>
 
@@ -78,7 +81,9 @@
             <!-- Starter position groups -->
             <div v-for="pos in positions" :key="pos.key" class="mb-6">
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-semibold uppercase tracking-wider text-text-faint">{{ pos.label }}</h3>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-text-faint">
+                  {{ pos.label }}<span v-if="positionTotal(pos.key) > 0" class="normal-case font-normal ml-3">({{ positionTotal(pos.key) }})</span>
+                </h3>
               </div>
               <div class="space-y-1">
                 <div
@@ -118,6 +123,15 @@
                         <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
                       </svg>
                     </button>
+                  </div>
+                  <div v-else-if="slot.player" class="flex items-center shrink-0 w-44">
+                    <span class="w-16 shrink-0">
+                      <StatusBadge v-if="slot.player.status" :status="slot.player.status" />
+                    </span>
+                    <template v-if="slot.player.status === 'played'">
+                      <span class="flex-1 text-right text-xs tabular-nums text-text-faint pr-2">{{ positionFormula(pos.key, slot.player.score ?? 0) ?? '' }}</span>
+                      <span class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -177,16 +191,24 @@
                       </button>
                     </template>
                     <template v-else-if="slot.player">
-                      <template v-if="slot.positions[0]">
-                        <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
-                          {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
+                      <div class="flex items-center w-44 shrink-0">
+                        <span class="w-16 shrink-0">
+                          <StatusBadge v-if="slot.player.status" :status="slot.player.status" />
                         </span>
-                      </template>
-                      <template v-if="slot.positions[1]">
-                        <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
-                          {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
-                        </span>
-                      </template>
+                        <div class="flex items-center gap-1 flex-1 justify-end">
+                          <template v-if="slot.positions[0]">
+                            <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
+                              {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
+                            </span>
+                          </template>
+                          <template v-if="slot.positions[1]">
+                            <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
+                              {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
+                            </span>
+                          </template>
+                          <span v-if="slot.player.status === 'played'" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
+                        </div>
+                      </div>
                     </template>
                   </div>
                 </div>
@@ -263,7 +285,9 @@ import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_TEAM_BUILDER } from '../api/queries'
 import { SET_FFL_TEAM } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
+import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { positionFormula } from '../utils/scoring'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
@@ -286,6 +310,8 @@ const nonStarPositions = positions.filter(p => p.key !== 'star')
 interface SquadPlayer {
   id: string
   name: string
+  score: number | null
+  status: string | null
 }
 
 interface Slot {
@@ -368,6 +394,8 @@ const squad = computed<SquadPlayer[]>(() => {
   return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string } }) => ({
     id: r.id,
     name: r.player.name,
+    score: null,
+    status: null,
   }))
 })
 
@@ -427,7 +455,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
 
   let dualIndex = 0
   for (const pm of cm.playerMatches) {
-    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name }
+    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name, score: pm.score ?? null, status: pm.status ?? null }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (!isBench) {
@@ -489,6 +517,11 @@ const starterCount = computed(() => {
 })
 
 const benchCount = computed(() => benchDualSlots.value.filter(s => s.player).length)
+
+const positionTotal = (key: PositionKey): number =>
+  teamSlots.value[key].reduce((sum: number, s: Slot) => sum + (s.player?.score ?? 0), 0)
+
+const grandTotal = computed(() => clubMatch.value?.score ?? 0)
 
 const benchDualFull = computed(() => benchDualSlots.value.every(s => s.player !== null))
 
