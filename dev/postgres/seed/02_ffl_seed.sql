@@ -67,6 +67,8 @@ BEGIN
     -- Insert all matches (rounds 19 and 23 have none)
     FOR rec IN
         SELECT * FROM (VALUES
+            ('Round 1',  '2026-03-13 00:00:00+00'::timestamptz, 'Savanna Park',  'Cheetahs',         'The Howling Cows'),
+            ('Round 1',  '2026-03-13 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Ruiboys'),
             ('Round 2',  '2026-03-19 00:00:00+00'::timestamptz, 'Rui Dome',      'Ruiboys',          'Cheetahs'),
             ('Round 2',  '2026-03-19 00:00:00+00'::timestamptz, 'Moo Meadow',    'The Howling Cows', 'Slashers'),
             ('Round 3',  '2026-03-26 00:00:00+00'::timestamptz, 'The Slash Pit', 'Slashers',         'Cheetahs'),

@@ -167,14 +167,17 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] `just restore-db` — reset dev DB, restore from backup, verify row counts
 - [x] Restore verified end-to-end (810 players, 21942 player_match, 30 ffl players)
 
-## Phase 16: 2026 FFL Data Import
+## Phase 16: 2026 FFL Data Import ✅
 
-**Goal:** Seed real 2026 FFL data — starting with one round to validate the pipeline, then all completed rounds.
+**Goal:** Seed real 2026 FFL data for rounds 1–5 (R6 squads only, no scores yet).
 
-- [ ] Identify 2026 FFL data source and format (per round, per team)
-- [ ] Import Round 1: team submissions, match result, player scores — verify against known outcomes
-- [ ] Import all remaining completed rounds
-- [ ] Verify ladder standings and scores post-import
+- [x] Identify data source — Tapatalk forum posts (manual copy-paste)
+- [x] Build `dev/import/ffl/parse_forum.py` — parses all 4 team formats → `*_teams.csv` + `*_scores.csv`
+- [x] Parse and validate R1–R6 (88 player rows/round); R6 squads parsed (no scores)
+- [x] `resolve_squads.py` + `import_round_teams.py` — stopgap Python importers; seed SQL 04–06 generated with name-based subqueries (no hardcoded IDs)
+- [x] 120 FFL players + 4 mid-season trades seeded; R1–R5 player_match + scores inserted
+- [x] `dev-seed` runs all 6 seed files end-to-end (idempotent)
+- [x] Verify ladder standings and scores post-import
 
 ## Phase 17: UX Improvements
 
@@ -186,7 +189,61 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Richer stat data surfaced in existing views
 - [ ] Performance: audit page load times; break up monolithic GraphQL queries to fetch only what the current page needs; evaluate DataLoader pattern on backend for N+1 query elimination
 
-## Phase 18: Search Frontend + Index Enrichment
+## Phase 18: Data Management — Import Infrastructure
+
+**Goal:** Build recurring data flows for team submissions, AFL stats, score reconciliation, historical backfill, and season setup. All Go; ports-and-adapters throughout; Twirp for cross-service calls.
+
+- [ ] ADR — Twirp for cross-service communication
+- [ ] Step 4 — `ImportRoundTeams` use case + `ForumPostParser` + `PlayerResolver` + review screen
+- [ ] Step 5 — `ImportAFLStats` use case + first `StatsParser` adapter
+- [ ] Step 6 — Score reconciliation UI + `ScoreParser`
+- [ ] Step 7 — Historical backfill validation
+- [ ] Step 1 — `ImportAFLSeasonPlayers` use case + AFL admin review screen
+- [ ] Step 2 — `ImportFLSquad` use case + FFL admin review screen
+- [ ] Step 3 — In-season trade UI
+
+**Cross-cutting decisions:**
+- All Go — no Python in production; single binary deployment
+- `TeamParser`, `StatsParser`, `PlayerResolver` are application-layer interfaces; adapters live in infrastructure — input source never touches use case logic
+- FFL service calls AFL service via **Twirp** to resolve `afl_player_id` and look up players; proto definitions in `contracts/`
+- `PlayerResolver` uses club code to narrow candidates before fuzzy name matching; confidence threshold gates auto-commit vs. review queue
+- ADR required for Twirp before implementation begins
+
+**Step 1 — AFL season player import** (once/season)
+- **UX:** Admin page in AFL frontend — proposed matches + new players for accept/reject
+- **Use case:** `ImportAFLSeasonPlayers` (AFL service); triggered by CLI (`just import-afl-season`)
+- Fuzzy-match names+club against existing `afl.player`; flag low-confidence; create new records for unmatched
+
+**Step 2 — FFL squad import** (once/season)
+- **UX:** Admin page in FFL frontend — proposed player mappings for accept/reject
+- **Use case:** `ImportFLSquad` (FFL service); triggered by CLI (`just import-ffl-squad`)
+- Resolve AFL player IDs via Twirp; create `ffl.player` + `ffl.player_season` records
+
+**Step 3 — In-season player trades** (frequent)
+- **UX:** UI in FFL frontend
+- Updates `ffl.player_season` (from/to round); uses existing domain/use case layer
+
+**Step 4 — Round team submission** (every round; implement first)
+- **UX:** Copy-paste raw text into FFL frontend, or triggered by cron/email
+- **Use case:** `ImportRoundTeams` (FFL service) — parse → resolve players → write `ffl.player_match` → fire events
+- `TeamParser` interface; `ForumPostParser` adapter (port of `parse_forum.py`); swappable for future sources
+- `PlayerResolver` interface; fuzzy name+club → `player_season_id` via Twirp
+- Low-confidence matches surface in FFL admin review screen; retire `parse_forum.py`
+
+**Step 5 — AFL stats import** (many times/round)
+- **UX:** Automated
+- **Use case:** `ImportAFLStats` (AFL service) — parse stats → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
+- `StatsParser` interface; first adapter for chosen data source (scrape or file)
+
+**Step 6 — Score reconciliation** (every round)
+- **UX:** FFL frontend — submitted scores vs calculated scores side by side; human resolves
+- `ScoreParser` interface; `ForumPostParser` adapter for submitted scores
+
+**Step 7 — Historical backfill** (one-time per historical season)
+- **UX:** CLI
+- Same `ImportRoundTeams` use case as step 4; validate old forum formats are handled
+
+## Phase 19: Search Frontend + Index Enrichment
 
 **Goal:** Search UI backed by an enriched Typesense index with whatever data the UX needs.
 
@@ -194,7 +251,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Expand search index as needed to support UX data requirements (player stats, aggregates, etc.)
 - [ ] Playwright tests
 
-## Phase 19: Historical AFL Data — prior years (TBD sources, 1998–2023)
+## Phase 20: Historical AFL Data — prior years (TBD sources, 1998–2023)
 
 **Goal:** Complete the AFL historical record back to 1998 using one or more sources to be identified. Reconciliation is against the cumulative player roster from Phase 14.
 
@@ -202,7 +259,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Evaluate whether new ADRs are needed (new dependencies or protocols)
 - [ ] For each source: build parser/fetcher, add `afl.xref_<source>_player` xref table, build import tool, reconcile and commit `reconcile.csv`, import into dev then prod
 
-## Phase 20: Historical FFL Data
+## Phase 21: Historical FFL Data
 
 **Goal:** Load all historical FFL team submissions, match results, and player season records. Uses the same two-phase reconciliation pattern as Phase 14.
 
@@ -218,7 +275,7 @@ Notes:
 - [ ] Import match results and player season records
 - [ ] Verify ladder standings, scores, and player history post-import
 
-## Phase 21: CQRS Player Stats Read Model
+## Phase 22: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -226,7 +283,7 @@ Notes:
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 22: Deployment
+## Phase 23: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
