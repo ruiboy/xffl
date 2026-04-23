@@ -3,12 +3,15 @@
 BEGIN;
 
 -- Add to afl.player (absent from historical data due to injury/omission)
-INSERT INTO afl.player (name) VALUES
+-- afl.player has no unique constraint on name, so use WHERE NOT EXISTS
+INSERT INTO afl.player (name)
+SELECT v.name FROM (VALUES
     ('Dan Houston'),
     ('Luke Davies-Uniacke'),
     ('Dante Visentini'),
     ('Josh Treacy')
-ON CONFLICT DO NOTHING;
+) AS v(name)
+WHERE NOT EXISTS (SELECT 1 FROM afl.player WHERE name = v.name);
 
 -- Add to ffl.player
 INSERT INTO ffl.player (afl_player_id, drv_name)

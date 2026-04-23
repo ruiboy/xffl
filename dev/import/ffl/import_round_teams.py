@@ -51,20 +51,32 @@ def fetch_squad(conn) -> dict[str, list[dict]]:
     return result
 
 
-def fetch_club_matches(conn) -> dict[tuple, int]:
-    """Return {(round_name, ffl_club_name): club_match_id} for FFL 2026."""
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT r.name, c.name, cm.id
-            FROM ffl.club_match cm
-            JOIN ffl.club_season cs ON cm.club_season_id = cs.id
-            JOIN ffl.club c ON cs.club_id = c.id
-            JOIN ffl.match m ON cm.match_id = m.id
-            JOIN ffl.round r ON m.round_id = r.id
-            JOIN ffl.season s ON r.season_id = s.id
-            WHERE s.name = 'FFL 2026'
-        """)
-        return {(row[0], row[1]): row[2] for row in cur.fetchall()}
+def _club_match_subquery(round_name: str, ffl_club: str) -> str:
+    """SQL subquery that resolves club_match_id by name — no hardcoded IDs."""
+    return (
+        f"(SELECT cm.id FROM ffl.club_match cm"
+        f" JOIN ffl.club_season cs ON cm.club_season_id = cs.id"
+        f" JOIN ffl.club c ON cs.club_id = c.id"
+        f" JOIN ffl.match m ON cm.match_id = m.id"
+        f" JOIN ffl.round r ON m.round_id = r.id"
+        f" JOIN ffl.season s ON r.season_id = s.id"
+        f" WHERE r.name = '{round_name}' AND c.name = '{ffl_club}' AND s.name = 'FFL 2026')"
+    )
+
+
+def _player_season_subquery(drv_name: str, ffl_club: str) -> str:
+    """SQL subquery that resolves player_season_id by drv_name — no hardcoded IDs.
+    Uses ffl.player.drv_name directly to avoid afl.player name duplicates."""
+    n = drv_name.replace("'", "''")
+    c = ffl_club.replace("'", "''")
+    return (
+        f"(SELECT fps.id FROM ffl.player_season fps"
+        f" JOIN ffl.player fp ON fp.id = fps.player_id"
+        f" JOIN ffl.club_season cs ON fps.club_season_id = cs.id"
+        f" JOIN ffl.club c ON cs.club_id = c.id"
+        f" JOIN ffl.season s ON cs.season_id = s.id"
+        f" WHERE fp.drv_name = '{n}' AND c.name = '{c}' AND s.name = 'FFL 2026')"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -148,80 +160,67 @@ def read_scores(round_num: int) -> dict[str, int | None]:
 # SQL generation
 # ---------------------------------------------------------------------------
 
-def generate_sql(lines: list[str], squad: dict, club_matches: dict) -> list[str]:
+def generate_sql(warnings: list[str], squad: dict) -> list[str]:
     """
-    Returns list of SQL statements. Appends warnings to lines for unresolved players.
+    Returns list of SQL statements. All IDs resolved by name — no hardcoded integers.
+    Appends warnings to the provided list for unresolved players.
     """
     stmts = []
-    # group team CSVs by round
-    by_round: dict[int, list[dict]] = {}
-    for rn in ROUNDS:
-        rows = read_teams(rn)
-        by_round[rn] = rows
 
     for rn in ROUNDS:
-        rows = by_round[rn]
+        rows = read_teams(rn)
         scores = read_scores(rn)
         round_name = f"Round {rn}"
         stmts.append(f"-- Round {rn}")
 
-        # club_match score updates
+        # club_match score updates — subquery by round + club name
         for team_label, score in scores.items():
             ffl_club = TEAM_TO_CLUB.get(team_label)
             if not ffl_club:
-                lines.append(f"WARN R{rn}: unknown team label '{team_label}' in scores")
+                warnings.append(f"WARN R{rn}: unknown team label '{team_label}' in scores")
                 continue
             if score is None:
                 continue
-            cm_id = club_matches.get((round_name, ffl_club))
-            if not cm_id:
-                lines.append(f"WARN R{rn}: no club_match for {ffl_club}")
-                continue
-            stmts.append(
-                f"UPDATE ffl.club_match SET drv_score = {score} WHERE id = {cm_id};"
-            )
+            cm_sq = _club_match_subquery(round_name, ffl_club.replace("'", "''"))
+            stmts.append(f"UPDATE ffl.club_match SET drv_score = {score} WHERE id = {cm_sq};")
 
-        # player_match inserts
+        # player_match inserts — subqueries for both club_match_id and player_season_id
         for row in rows:
-            rn2 = int(row['round'])
-            if rn2 != rn:
+            if int(row['round']) != rn:
                 continue
             team_label = row['team'].strip()
             ffl_club = TEAM_TO_CLUB.get(team_label)
             if not ffl_club:
-                lines.append(f"WARN R{rn}: unknown team '{team_label}'")
-                continue
-
-            cm_id = club_matches.get((round_name, ffl_club))
-            if not cm_id:
-                lines.append(f"WARN R{rn}: no club_match for {ffl_club}")
+                warnings.append(f"WARN R{rn}: unknown team '{team_label}'")
                 continue
 
             csv_name = row['player_name'].strip()
-            club_squad = squad.get(ffl_club, [])
-            match = match_player(csv_name, club_squad)
-            if not match:
-                lines.append(f"WARN R{rn} [{ffl_club}]: no match for '{csv_name}'")
+            matched = match_player(csv_name, squad.get(ffl_club, []))
+            if not matched:
+                warnings.append(f"WARN R{rn} [{ffl_club}]: no match for '{csv_name}'")
                 continue
 
-            ps_id = match['player_season_id']
-            position = row.get('position', '').strip() or 'NULL'
+            afl_name = matched['name']
+            position = row.get('position', '').strip() or None
             backup = row.get('backup_positions', '').strip() or None
             interchange = row.get('interchange_position', '').strip() or None
             score_raw = row.get('score', '').strip()
             score = int(score_raw) if score_raw else 0
 
-            position_sql = f"'{position}'" if position != 'NULL' else 'NULL'
-            backup_sql = f"'{backup}'" if backup else 'NULL'
-            interchange_sql = f"'{interchange}'" if interchange else 'NULL'
+            pos_sql = f"'{position}'" if position else 'NULL'
+            bak_sql = f"'{backup}'" if backup else 'NULL'
+            ich_sql = f"'{interchange}'" if interchange else 'NULL'
+
+            cm_sq = _club_match_subquery(round_name, ffl_club.replace("'", "''"))
+            ps_sq = _player_season_subquery(afl_name, ffl_club)
 
             stmts.append(
-                f"INSERT INTO ffl.player_match "
-                f"(club_match_id, player_season_id, status, position, backup_positions, interchange_position, drv_score) "
-                f"VALUES ({cm_id}, {ps_id}, 'played', {position_sql}, {backup_sql}, {interchange_sql}, {score}) "
-                f"ON CONFLICT (player_season_id, club_match_id) DO UPDATE SET "
-                f"status='played', position={position_sql}, backup_positions={backup_sql}, "
-                f"interchange_position={interchange_sql}, drv_score={score};"
+                f"INSERT INTO ffl.player_match"
+                f" (club_match_id, player_season_id, status, position, backup_positions, interchange_position, drv_score)"
+                f" VALUES ({cm_sq}, {ps_sq}, 'played', {pos_sql}, {bak_sql}, {ich_sql}, {score})"
+                f" ON CONFLICT (player_season_id, club_match_id) DO UPDATE SET"
+                f" status='played', position={pos_sql}, backup_positions={bak_sql},"
+                f" interchange_position={ich_sql}, drv_score={score};"
             )
 
         stmts.append("")
@@ -240,10 +239,10 @@ def main():
 
     conn = psycopg2.connect(DB_DSN)
     squad = fetch_squad(conn)
-    club_matches = fetch_club_matches(conn)
+    conn.close()
 
     warnings: list[str] = []
-    stmts = generate_sql(warnings, squad, club_matches)
+    stmts = generate_sql(warnings, squad)
 
     if warnings:
         print("WARNINGS:", file=sys.stderr)
@@ -251,16 +250,17 @@ def main():
             print(f"  {w}", file=sys.stderr)
 
     if args.apply:
-        with conn.cursor() as cur:
+        conn2 = psycopg2.connect(DB_DSN)
+        with conn2.cursor() as cur:
             cur.execute("BEGIN;")
             for stmt in stmts:
                 s = stmt.strip()
                 if s and not s.startswith('--'):
                     cur.execute(s)
             cur.execute("COMMIT;")
-        conn.close()
-        rows = len([s for s in stmts if s.strip().startswith('INSERT') or s.strip().startswith('UPDATE')])
-        print(f"Applied {rows} statements.")
+        conn2.close()
+        n = len([s for s in stmts if s.strip().startswith('INSERT') or s.strip().startswith('UPDATE')])
+        print(f"Applied {n} statements.")
     else:
         conn.close()
         print("BEGIN;")
