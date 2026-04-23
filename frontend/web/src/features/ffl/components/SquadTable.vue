@@ -6,14 +6,14 @@
           <th class="py-2 pr-4 font-medium">Player</th>
           <th class="py-2 px-2 font-medium">Status</th>
           <th class="py-2 px-2 font-medium text-right">Score</th>
-          <th class="py-2 px-2 font-medium w-8"></th>
         </tr>
       </thead>
       <tbody>
         <template v-for="(group, i) in starterGroups" :key="group.position">
           <tr>
-            <td colspan="4" class="pb-1 text-xs font-semibold uppercase tracking-wider text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
-              {{ group.label }}
+            <td colspan="3" class="pb-1 text-xs font-semibold uppercase tracking-wider text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
+              <span>{{ group.label }}</span>
+              <span class="pl-3">({{ group.total }})</span>
             </td>
           </tr>
           <tr
@@ -24,19 +24,12 @@
             <td class="py-2 pr-4 font-medium">{{ pm.player.name }}</td>
             <td class="py-2 px-2"><StatusBadge :status="pm.status" /></td>
             <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ pm.score }}</td>
-            <td class="py-2 px-2"></td>
-          </tr>
-          <tr>
-            <td class="py-1 pr-4"></td>
-            <td></td>
-            <td class="py-1 px-2 text-right tabular-nums text-sm font-semibold text-text-muted">{{ group.total }}</td>
-            <td></td>
           </tr>
         </template>
 
         <template v-if="bench.length > 0">
           <tr>
-            <td colspan="4" class="pt-5 pb-2 text-xs font-semibold uppercase tracking-wider text-text-faint">Bench</td>
+            <td colspan="3" class="pt-5 pb-2 text-xs font-semibold uppercase tracking-wider text-text-faint">Bench</td>
           </tr>
           <tr
             v-for="pm in bench"
@@ -44,12 +37,11 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4 font-medium text-text-muted">{{ pm.player.name }}</td>
-            <td class="py-2 px-2"><StatusBadge :status="pm.status" /></td>
-            <td class="py-2 px-2 text-right tabular-nums">{{ pm.score }}</td>
-            <td class="py-2 px-2">
+            <td class="py-2 px-2"><StatusBadge :status="pm.status" />
               <span v-if="isSubActivated(pm)" class="text-xs text-green-500" title="Substitution activated">SUB</span>
               <span v-else-if="isInterchangeActivated(pm)" class="text-xs text-blue-500" title="Interchange activated">INT</span>
             </td>
+            <td class="py-2 px-2 text-right tabular-nums">{{ pm.score }}</td>
           </tr>
         </template>
       </tbody>
@@ -58,7 +50,6 @@
           <td class="py-2 pr-4">Total</td>
           <td></td>
           <td class="py-2 px-2 text-right tabular-nums">{{ total }}</td>
-          <td></td>
         </tr>
       </tfoot>
     </table>
