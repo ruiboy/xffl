@@ -32,29 +32,7 @@
 
       <section v-if="Object.keys(topScorersByPosition).length > 0" class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-4">Top Scorers</h2>
-        <div class="grid grid-cols-3 gap-4 items-stretch">
-          <!-- ALL: left col, spans all rows -->
-          <div v-if="topScorersByPosition['all']"
-            class="row-span-4 rounded-lg border border-border bg-surface-raised px-3 py-3 overflow-hidden"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">All</p>
-            <div class="space-y-2">
-              <div
-                v-for="(player, i) in topScorersByPosition['all'].players.slice(0, 23)"
-                :key="i"
-                class="flex items-center justify-between gap-2"
-              >
-                <div class="flex items-center gap-2 min-w-0">
-                  <img :src="clubLogoUrl(player.club)" :alt="player.club" class="w-5 h-5 object-contain shrink-0" />
-                  <span class="text-sm font-medium truncate">{{ player.name }}</span>
-                  <span class="ml-1 text-text-faint font-normal text-xs shrink-0">{{ POSITION_LABELS[player.position] }}</span>
-                </div>
-                <span class="text-sm tabular-nums font-semibold shrink-0">{{ player.score }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 7 position cards filling cols 2–3 -->
+        <div class="grid grid-cols-3 gap-4">
           <template v-for="pos in TOP_SCORERS_POSITIONS" :key="pos">
             <div
               v-if="topScorersByPosition[pos]"
@@ -170,12 +148,11 @@ interface Match {
 }
 
 const POSITION_LABELS: Record<string, string> = {
-  all: 'All',
   goals: 'Goals', kicks: 'Kicks', handballs: 'Handballs',
   marks: 'Marks', tackles: 'Tackles', hitouts: 'Hitouts', star: 'Star',
 }
 
-const TOP_SCORERS_POSITIONS = ['star', 'hitouts', 'tackles', 'kicks', 'handballs', 'marks', 'goals'] as const
+const TOP_SCORERS_POSITIONS = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
 
 type ScorerEntry = { name: string; club: string; score: number; position: string }
 
@@ -195,9 +172,6 @@ const topScorersByPosition = computed(() => {
   }
 
   const result: Record<string, { label: string; players: ScorerEntry[] }> = {}
-
-  const allPlayers = Object.values(grouped).flat().sort((a, b) => b.score - a.score)
-  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers }
 
   for (const pos of TOP_SCORERS_POSITIONS) {
     if (grouped[pos]?.length) {
