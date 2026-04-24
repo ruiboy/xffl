@@ -3,7 +3,7 @@
     class="flex items-center rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors cursor-pointer"
     @click="router.push(to)"
   >
-    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 w-full font-medium">
+    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 w-full max-w-xl font-medium">
       <!-- Home -->
       <div class="flex items-center gap-2">
         <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
