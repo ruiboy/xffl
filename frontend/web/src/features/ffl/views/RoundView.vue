@@ -40,7 +40,7 @@
             <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">All</p>
             <div class="space-y-2">
               <div
-                v-for="(player, i) in topScorersByPosition['all'].players.slice(0, showAllScorers ? undefined : 23)"
+                v-for="(player, i) in topScorersByPosition['all'].players.slice(0, 23)"
                 :key="i"
                 class="flex items-center justify-between gap-2"
               >
@@ -77,18 +77,7 @@
             </div>
           </template>
         </div>
-        <div v-if="topScorersByPosition['all']" class="mt-2">
-          <button
-            v-if="!showAllScorers && topScorersByPosition['all'].players.length > 23"
-            class="text-xs text-text-muted hover:text-text transition-colors"
-            @click="showAllScorers = true"
-          >More…</button>
-          <button
-            v-if="showAllScorers"
-            class="text-xs text-text-muted hover:text-text transition-colors"
-            @click="showAllScorers = false"
-          >Collapse…</button>
-        </div>
+
       </section>
 
       <div v-if="aflRoundTo" class="mt-8">
@@ -102,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
@@ -114,7 +103,6 @@ import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
 
-const showAllScorers = ref(false)
 
 const { liveRoundId, selectedClubId } = useFflState()
 const { liveSeasonId: aflSeasonId } = useAflState()
