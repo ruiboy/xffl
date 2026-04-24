@@ -81,8 +81,8 @@
             <!-- Starter position groups -->
             <div v-for="pos in positions" :key="pos.key" class="mb-6">
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-semibold uppercase tracking-wider text-text-faint">
-                  {{ pos.label }}<span v-if="positionTotal(pos.key) > 0" class="normal-case font-normal ml-3">({{ positionTotal(pos.key) }})</span>
+                <h3 class="text-sm font-semibold text-text-faint">
+                  {{ pos.label }}<span v-if="positionTotal(pos.key) > 0" class="font-normal ml-3">({{ positionTotal(pos.key) }})</span>
                 </h3>
               </div>
               <div class="space-y-1">
@@ -139,7 +139,7 @@
 
             <!-- Bench -->
             <div class="mb-6">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-text-faint mb-2">Bench</h3>
+              <h3 class="text-sm font-semibold text-text-faint mb-2">Bench</h3>
 
               <div v-for="(slot, index) in benchDualSlots" :key="index" class="mb-1">
                 <div

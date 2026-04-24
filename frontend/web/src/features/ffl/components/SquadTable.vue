@@ -11,7 +11,7 @@
       <tbody>
         <template v-for="(group, i) in starterGroups" :key="group.position">
           <tr>
-            <td colspan="3" class="pb-1 text-xs font-semibold uppercase tracking-wider text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
+            <td colspan="3" class="pb-1 text-xs font-semibold text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
               <span>{{ group.label }}</span>
               <span class="pl-3">({{ group.total }})</span>
             </td>
@@ -29,7 +29,7 @@
 
         <template v-if="bench.length > 0">
           <tr>
-            <td colspan="3" class="pt-5 pb-2 text-xs font-semibold uppercase tracking-wider text-text-faint">Bench</td>
+            <td colspan="3" class="pt-5 pb-2 text-xs font-semibold text-text-faint">Bench</td>
           </tr>
           <tr
             v-for="pm in bench"

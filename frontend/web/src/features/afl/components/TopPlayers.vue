@@ -8,7 +8,6 @@
         class="flex items-center justify-between text-sm"
       >
         <span>
-          <span class="text-text-muted tabular-nums mr-2">{{ index + 1 }}.</span>
           <span class="font-medium">{{ entry.name }}</span>
           <span class="text-text-muted ml-1">({{ entry.club }})</span>
         </span>

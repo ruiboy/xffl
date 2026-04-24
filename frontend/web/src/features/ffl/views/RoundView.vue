@@ -32,14 +32,14 @@
 
       <section v-if="Object.keys(topScorersByPosition).length > 0" class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-4">Top Scorers</h2>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-4 gap-6">
           <template v-for="pos in TOP_SCORERS_POSITIONS" :key="pos">
             <div
               v-if="topScorersByPosition[pos]"
-              class="px-3 py-3"
+              class=""
             >
-              <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">{{ POSITION_LABELS[pos] }}</p>
-              <div class="space-y-2">
+              <p class="text-sm font-semibold text-text-faint mb-2">{{ POSITION_LABELS[pos] }}</p>
+              <div class="space-y-1">
                 <div
                   v-for="(player, i) in topScorersByPosition[pos].players.slice(0, 4)"
                   :key="i"
