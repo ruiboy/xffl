@@ -32,27 +32,50 @@
 
       <section v-if="Object.keys(topScorersByPosition).length > 0" class="mb-8">
         <h2 class="text-lg font-semibold text-text-heading mb-4">Top Scorers</h2>
-        <div class="space-y-4">
-          <div v-for="(row, rowIndex) in TOP_SCORERS_ROWS" :key="rowIndex" class="grid grid-cols-4 gap-4">
-            <div v-for="pos in row" :key="pos" v-show="topScorersByPosition[pos]"
+        <div class="grid grid-cols-3 gap-4 items-stretch">
+          <!-- ALL: left col, spans all rows -->
+          <div v-if="topScorersByPosition['all']"
+            class="row-span-4 rounded-lg border border-border bg-surface-raised px-3 py-3 overflow-hidden"
+          >
+            <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">All</p>
+            <div class="space-y-2">
+              <div
+                v-for="(player, i) in topScorersByPosition['all'].players"
+                :key="i"
+                class="flex items-center justify-between gap-2"
+              >
+                <div class="flex items-center gap-2 min-w-0">
+                  <img :src="clubLogoUrl(player.club)" :alt="player.club" class="w-5 h-5 object-contain shrink-0" />
+                  <span class="text-sm font-medium truncate">{{ player.name }}</span>
+                  <span class="ml-1 text-text-faint font-normal text-xs shrink-0">{{ POSITION_LABELS[player.position] }}</span>
+                </div>
+                <span class="text-sm tabular-nums font-semibold shrink-0">{{ player.score }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7 position cards filling cols 2–3 -->
+          <template v-for="pos in TOP_SCORERS_POSITIONS" :key="pos">
+            <div
+              v-if="topScorersByPosition[pos]"
               class="rounded-lg border border-border bg-surface-raised px-3 py-3"
             >
               <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">{{ POSITION_LABELS[pos] }}</p>
               <div class="space-y-2">
                 <div
-                  v-for="(player, i) in topScorersByPosition[pos]?.players ?? []"
+                  v-for="(player, i) in topScorersByPosition[pos].players"
                   :key="i"
-                  class="flex items-baseline justify-between gap-2"
+                  class="flex items-center justify-between gap-2"
                 >
                   <div class="flex items-center gap-2 min-w-0">
                     <img :src="clubLogoUrl(player.club)" :alt="player.club" class="w-5 h-5 object-contain shrink-0" />
-                    <span class="text-sm font-medium truncate">{{ player.name }}<template v-if="pos === 'all'"><span class="ml-2 text-text-faint font-normal text-xs">{{ POSITION_LABELS[player.position] }}</span></template></span>
+                    <span class="text-sm font-medium truncate">{{ player.name }}</span>
                   </div>
                   <span class="text-sm tabular-nums font-semibold shrink-0">{{ player.score }}</span>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </section>
 
@@ -150,10 +173,7 @@ const POSITION_LABELS: Record<string, string> = {
   marks: 'Marks', tackles: 'Tackles', hitouts: 'Hitouts', star: 'Star',
 }
 
-const TOP_SCORERS_ROWS = [
-  ['all', 'star', 'hitouts', 'tackles'],
-  ['kicks', 'handballs', 'marks', 'goals'],
-] as const
+const TOP_SCORERS_POSITIONS = ['star', 'hitouts', 'tackles', 'kicks', 'handballs', 'marks', 'goals'] as const
 
 type ScorerEntry = { name: string; club: string; score: number; position: string }
 
@@ -174,10 +194,10 @@ const topScorersByPosition = computed(() => {
 
   const result: Record<string, { label: string; players: ScorerEntry[] }> = {}
 
-  const allPlayers = Object.values(grouped).flat().sort((a, b) => b.score - a.score).slice(0, 3)
-  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers }
+  const allPlayers = Object.values(grouped).flat().sort((a, b) => b.score - a.score)
+  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers.slice(0, 25) }
 
-  for (const pos of TOP_SCORERS_ROWS.flat().filter(p => p !== 'all')) {
+  for (const pos of TOP_SCORERS_POSITIONS) {
     if (grouped[pos]?.length) {
       result[pos] = {
         label: POSITION_LABELS[pos],
