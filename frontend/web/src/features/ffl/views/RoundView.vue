@@ -36,7 +36,7 @@
           <template v-for="pos in TOP_SCORERS_POSITIONS" :key="pos">
             <div
               v-if="topScorersByPosition[pos]"
-              class="rounded-lg border border-border bg-surface-raised px-3 py-3"
+              class="px-3 py-3"
             >
               <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">{{ POSITION_LABELS[pos] }}</p>
               <div class="space-y-2">
