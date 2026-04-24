@@ -40,7 +40,7 @@
             <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">All</p>
             <div class="space-y-2">
               <div
-                v-for="(player, i) in topScorersByPosition['all'].players"
+                v-for="(player, i) in topScorersByPosition['all'].players.slice(0, showAllScorers ? undefined : 23)"
                 :key="i"
                 class="flex items-center justify-between gap-2"
               >
@@ -63,7 +63,7 @@
               <p class="text-xs font-semibold uppercase tracking-wider text-text-faint mb-3">{{ POSITION_LABELS[pos] }}</p>
               <div class="space-y-2">
                 <div
-                  v-for="(player, i) in topScorersByPosition[pos].players"
+                  v-for="(player, i) in topScorersByPosition[pos].players.slice(0, 4)"
                   :key="i"
                   class="flex items-center justify-between gap-2"
                 >
@@ -76,6 +76,18 @@
               </div>
             </div>
           </template>
+        </div>
+        <div v-if="topScorersByPosition['all']" class="mt-2">
+          <button
+            v-if="!showAllScorers && topScorersByPosition['all'].players.length > 23"
+            class="text-xs text-text-muted hover:text-text transition-colors"
+            @click="showAllScorers = true"
+          >More…</button>
+          <button
+            v-if="showAllScorers"
+            class="text-xs text-text-muted hover:text-text transition-colors"
+            @click="showAllScorers = false"
+          >Collapse…</button>
         </div>
       </section>
 
@@ -90,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
@@ -101,6 +113,8 @@ import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
+
+const showAllScorers = ref(false)
 
 const { liveRoundId, selectedClubId } = useFflState()
 const { liveSeasonId: aflSeasonId } = useAflState()
@@ -195,13 +209,13 @@ const topScorersByPosition = computed(() => {
   const result: Record<string, { label: string; players: ScorerEntry[] }> = {}
 
   const allPlayers = Object.values(grouped).flat().sort((a, b) => b.score - a.score)
-  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers.slice(0, 25) }
+  if (allPlayers.length) result['all'] = { label: 'All', players: allPlayers }
 
   for (const pos of TOP_SCORERS_POSITIONS) {
     if (grouped[pos]?.length) {
       result[pos] = {
         label: POSITION_LABELS[pos],
-        players: grouped[pos].sort((a, b) => b.score - a.score).slice(0, 5),
+        players: grouped[pos].sort((a, b) => b.score - a.score),
       }
     }
   }
