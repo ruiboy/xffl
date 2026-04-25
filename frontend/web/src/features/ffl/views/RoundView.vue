@@ -2,16 +2,16 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
-    <template v-else-if="data">
+    <template v-else-if="round">
       <Breadcrumb :items="breadcrumbs" />
 
       <h1 class="text-2xl font-bold mb-6">
-        {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
+        {{ round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
       </h1>
 
       <RoundNav
         class="mb-8"
-        :rounds="data.season.rounds"
+        :rounds="season?.rounds ?? []"
         :live-round-id="liveRoundId"
         :season-id="props.seasonId"
       />
@@ -20,7 +20,7 @@
         <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
         <div class="space-y-2">
           <MatchSummary
-            v-for="match in data.round.matches"
+            v-for="match in round.matches"
             :key="match.id"
             :match="match"
             :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_FFL_SEASON } from '../api/queries'
+import { GET_FFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import { useAflState } from '../../afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -84,19 +84,14 @@ const props = defineProps<{ seasonId: string; roundId: string }>()
 
 const { liveRoundId, selectedClubId } = useFflState()
 const { liveSeasonId: aflSeasonId } = useAflState()
-const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
+const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
-const data = computed(() => {
-  const season = result.value?.fflSeason
-  if (!season) return null
-  const round = season.rounds.find((r: { id: string }) => r.id === props.roundId)
-  if (!round) return null
-  return { season, round }
-})
+const round = computed(() => result.value?.fflRound ?? null)
+const season = computed(() => round.value?.season ?? null)
 
 const roundStartDate = computed(() => {
-  if (!data.value) return null
-  const times = (data.value.round.matches as Array<{ startTime?: string | null }>)
+  if (!round.value) return null
+  const times = (round.value.matches as Array<{ startTime?: string | null }>)
     .map(m => m.startTime)
     .filter((t): t is string => !!t)
     .map((t: string) => new Date(t))
@@ -109,22 +104,22 @@ const roundStartDate = computed(() => {
 })
 
 const aflRoundTo = computed(() => {
-  const aflRoundId = data.value?.round.aflRoundId
+  const aflRoundId = round.value?.aflRoundId
   if (!aflRoundId || !aflSeasonId.value) return null
   return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
 })
 
 const breadcrumbs = computed(() => {
-  if (!data.value) return []
+  if (!season.value) return []
   return [
     { label: 'FFL' },
-    { label: data.value.season.name, to: { name: 'home' } },
+    { label: season.value.name, to: { name: 'home' } },
   ]
 })
 
 const myMatch = computed(() => {
-  if (!data.value || !selectedClubId.value) return null
-  return data.value.round.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+  if (!round.value || !selectedClubId.value) return null
+  return round.value.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
     m.homeClubMatch?.club.id === selectedClubId.value ||
     m.awayClubMatch?.club.id === selectedClubId.value
   ) ?? null
@@ -157,10 +152,10 @@ const TOP_SCORERS_POSITIONS = ['goals', 'kicks', 'handballs', 'marks', 'tackles'
 type ScorerEntry = { name: string; club: string; score: number; position: string }
 
 const topScorersByPosition = computed(() => {
-  if (!data.value) return {} as Record<string, { label: string; players: ScorerEntry[] }>
+  if (!round.value) return {} as Record<string, { label: string; players: ScorerEntry[] }>
 
   const grouped: Record<string, ScorerEntry[]> = {}
-  for (const match of data.value.round.matches as Match[]) {
+  for (const match of round.value.matches as Match[]) {
     for (const side of [match.homeClubMatch, match.awayClubMatch]) {
       if (!side) continue
       for (const pm of side.playerMatches) {

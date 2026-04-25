@@ -4,7 +4,7 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="match">
       <div class="mb-6">
-        <Breadcrumb v-if="matchData" :items="breadcrumbs" />
+        <Breadcrumb v-if="round" :items="breadcrumbs" />
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
           {{ match.homeClubMatch?.club.name ?? '—' }}
@@ -32,7 +32,7 @@
             </h2>
             <router-link
               v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: matchData!.roundId } }"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: round!.id } }"
               title="Team Builder"
               class="rounded p-1 text-active hover:bg-active/10 transition-colors"
             >
@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_FFL_SEASON } from '../api/queries'
+import { GET_FFL_MATCH } from '../api/queries'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
@@ -70,28 +70,19 @@ const props = defineProps<{ seasonId: string; matchId: string }>()
 
 const { selectedClubId } = useFflState()
 const { liveSeasonId: aflSeasonId } = useAflState()
-const { result, loading, error } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
+const { result, loading, error } = useQuery(GET_FFL_MATCH, () => ({ id: props.matchId }))
 
-const matchData = computed(() => {
-  const season = result.value?.fflSeason
-  if (!season) return null
-  for (const round of season.rounds) {
-    const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return { match: found, roundId: round.id as string, roundName: round.name as string, seasonName: season.name as string, aflRoundId: round.aflRoundId as string | null }
-  }
-  return null
-})
+const match = computed(() => result.value?.fflMatch ?? null)
+const round = computed(() => match.value?.round ?? null)
 
 const breadcrumbs = computed(() => {
-  if (!matchData.value) return []
+  if (!match.value || !round.value) return []
   return [
     { label: 'FFL' },
-    { label: matchData.value.seasonName, to: { name: 'home' } },
-    { label: matchData.value.roundName, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: matchData.value.roundId } } },
+    { label: round.value.season.name, to: { name: 'home' } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: round.value.id } } },
   ]
 })
-
-const match = computed(() => matchData.value?.match ?? null)
 
 const isMyClubMatch = computed(() => {
   if (!match.value || !selectedClubId.value) return false
@@ -100,7 +91,7 @@ const isMyClubMatch = computed(() => {
 })
 
 const aflRoundTo = computed(() => {
-  const aflRoundId = matchData.value?.aflRoundId
+  const aflRoundId = round.value?.aflRoundId
   if (!aflRoundId || !aflSeasonId.value) return null
   return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
 })

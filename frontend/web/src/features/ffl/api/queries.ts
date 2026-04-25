@@ -141,6 +141,138 @@ export const GET_AFL_LIVE_ROUND = gql`
   }
 `
 
+export const GET_FFL_ROUND = gql`
+  query GetFFLRound($id: ID!) {
+    fflRound(id: $id) {
+      id
+      name
+      aflRoundId
+      season {
+        id
+        name
+        rounds { id name aflRoundId }
+      }
+      matches {
+        id
+        venue
+        startTime
+        result
+        homeClubMatch {
+          id
+          club { id name }
+          score
+          playerMatches {
+            id
+            playerSeasonId
+            player { name }
+            position
+            status
+            backupPositions
+            interchangePosition
+            score
+          }
+        }
+        awayClubMatch {
+          id
+          club { id name }
+          score
+          playerMatches {
+            id
+            playerSeasonId
+            player { name }
+            position
+            status
+            backupPositions
+            interchangePosition
+            score
+          }
+        }
+      }
+    }
+  }
+`
+
+export const GET_FFL_MATCH = gql`
+  query GetFFLMatch($id: ID!) {
+    fflMatch(id: $id) {
+      id
+      venue
+      result
+      round {
+        id
+        name
+        aflRoundId
+        season { id name rounds { id name } }
+      }
+      homeClubMatch {
+        id
+        club { id name }
+        score
+        playerMatches {
+          id
+          playerSeasonId
+          player { name }
+          position
+          status
+          backupPositions
+          interchangePosition
+          score
+        }
+      }
+      awayClubMatch {
+        id
+        club { id name }
+        score
+        playerMatches {
+          id
+          playerSeasonId
+          player { name }
+          position
+          status
+          backupPositions
+          interchangePosition
+          score
+        }
+      }
+    }
+  }
+`
+
+export const GET_FFL_SEASON_POSITIONS = gql`
+  query GetFFLSeasonPositions($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      rounds {
+        id
+        name
+        matches {
+          id
+          homeClubMatch {
+            id
+            playerMatches {
+              id
+              playerSeasonId
+              position
+              backupPositions
+              interchangePosition
+            }
+          }
+          awayClubMatch {
+            id
+            playerMatches {
+              id
+              playerSeasonId
+              position
+              backupPositions
+              interchangePosition
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const GET_FFL_SEASON = gql`
   query GetFFLSeason($id: ID!) {
     fflSeason(id: $id) {

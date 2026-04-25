@@ -59,6 +59,7 @@ type FFLMatch struct {
 	Venue         *string       `json:"venue,omitempty"`
 	StartTime     *string       `json:"startTime,omitempty"`
 	Result        *string       `json:"result,omitempty"`
+	Round         *FFLRound     `json:"round"`
 	HomeClubMatch *FFLClubMatch `json:"homeClubMatch,omitempty"`
 	AwayClubMatch *FFLClubMatch `json:"awayClubMatch,omitempty"`
 }

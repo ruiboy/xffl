@@ -131,7 +131,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON } from '../api/queries'
+import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -177,7 +177,7 @@ const players = computed(() => {
 
 // --- Round history ---
 
-const { result: seasonResult } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
+const { result: seasonResult } = useQuery(GET_FFL_SEASON_POSITIONS, () => ({ id: props.seasonId }))
 
 const rounds = computed(() => seasonResult.value?.fflSeason?.rounds ?? [])
 
@@ -221,7 +221,7 @@ function roundLabel(name: string): string {
 const groupedPlayers = computed(() => {
   type P = typeof players.value[number]
   const buckets = new Map<string | null, P[]>(
-    [...POSITION_ORDER.map(p => [p, []] as [string, SquadPlayer[]]), [null, []]]
+    [...POSITION_ORDER.map(p => [p, []] as [string, P[]]), [null, []]]
   )
   for (const p of players.value) {
     const pos = primaryPosition(p.id, playerRoundMap.value, rounds.value)
