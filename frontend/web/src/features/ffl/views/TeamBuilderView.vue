@@ -33,7 +33,7 @@
               :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: selectedClubSeason.club.id } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
             >
-              <IconMap class="w-4 h-4" />
+              <IconSquad class="w-4 h-4" />
               Squad
             </router-link>
           </div>
@@ -64,7 +64,7 @@
             class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
           >
             <span class="flex items-center gap-1.5">
-              <IconPencil class="w-3.5 h-3.5" />
+              <IconManage class="w-3.5 h-3.5" />
               Manage
             </span>
           </button>
@@ -128,7 +128,7 @@
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
                       @click="removeFromTeam(pos.key, index)"
                     >
-                      <IconTrash class="w-3.5 h-3.5" />
+                      <IconBin class="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div v-else-if="slot.player" class="flex items-center shrink-0 w-44">
@@ -295,9 +295,9 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
-import IconMap from '../components/IconMap.vue'
-import IconPencil from '../components/IconPencil.vue'
-import IconTrash from '../components/IconTrash.vue'
+import IconSquad from '../components/icons/IconSquad.vue'
+import IconManage from '../components/icons/IconManage.vue'
+import IconBin from '../components/icons/IconBin.vue'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()

@@ -36,7 +36,7 @@
               title="Team Builder"
               class="rounded p-1 text-active hover:bg-active/10 transition-colors"
             >
-              <IconWrench class="w-4 h-4" />
+              <IconTeamBuilder class="w-4 h-4" />
             </router-link>
           </div>
           <p class="text-sm text-text-muted mb-3">
@@ -63,7 +63,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
-import IconWrench from '../components/IconWrench.vue'
+import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
 import { useAflState } from '../../afl/composables/useAflState'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()

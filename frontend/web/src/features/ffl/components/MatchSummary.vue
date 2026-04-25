@@ -12,7 +12,7 @@
         title="Team Builder"
         class="rounded p-1 text-active hover:bg-active/10 transition-colors"
       >
-        <IconWrench class="w-4 h-4" />
+        <IconTeamBuilder class="w-4 h-4" />
       </button>
       <span class="text-text-faint">v</span>
       <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
@@ -23,7 +23,7 @@
         title="Team Builder"
         class="rounded p-1 text-active hover:bg-active/10 transition-colors"
       >
-        <IconWrench class="w-4 h-4" />
+        <IconTeamBuilder class="w-4 h-4" />
       </button>
     </div>
     <span v-if="hasScores" class="text-sm tabular-nums text-text-muted font-semibold">
@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import { clubLogoUrl } from '../utils/clubLogos'
-import IconWrench from './IconWrench.vue'
+import IconTeamBuilder from './icons/IconTeamBuilder.vue'
 
 interface ClubMatch {
   id: string

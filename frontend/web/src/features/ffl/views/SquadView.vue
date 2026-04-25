@@ -11,7 +11,7 @@
         :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: liveRoundId } }"
         class="ml-auto flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
       >
-        <IconWrench class="w-4 h-4" />
+        <IconTeamBuilder class="w-4 h-4" />
         Team Builder
       </router-link>
     </div>
@@ -26,7 +26,7 @@
           : 'border-border bg-surface text-text hover:bg-surface-hover'"
       >
         <span class="flex items-center gap-1.5">
-          <IconPencil v-if="!managing" class="w-3.5 h-3.5" />
+          <IconManage v-if="!managing" class="w-3.5 h-3.5" />
           {{ managing ? 'Done' : 'Manage' }}
         </span>
       </button>
@@ -82,7 +82,7 @@
                         class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
                         :disabled="removingId === row.id"
                       >
-                        <IconTrash class="w-3.5 h-3.5" />
+                        <IconBin class="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -135,9 +135,9 @@ import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON } from '../api/
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
-import IconWrench from '../components/IconWrench.vue'
-import IconPencil from '../components/IconPencil.vue'
-import IconTrash from '../components/IconTrash.vue'
+import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
+import IconManage from '../components/icons/IconManage.vue'
+import IconBin from '../components/icons/IconBin.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 
