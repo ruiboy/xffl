@@ -10,7 +10,12 @@ import (
 )
 
 func NewPool(ctx context.Context, connString string) (*pgxpool.Pool, error) {
-	return pgxpool.New(ctx, connString)
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+	config.ConnConfig.Tracer = QueryCountTracer{}
+	return pgxpool.NewWithConfig(ctx, config)
 }
 
 // DB provides transactional access to repositories.

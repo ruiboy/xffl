@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
@@ -71,6 +72,16 @@ func main() {
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		ctx = pg.WithQueryCounter(ctx)
+		rh := next(ctx)
+		return func(ctx context.Context) *graphql.Response {
+			resp := rh(ctx)
+			op := graphql.GetOperationContext(ctx)
+			slog.DebugContext(ctx, "db queries", slog.String("op", op.OperationName), slog.Int64("count", pg.QueryCount(ctx)))
+			return resp
+		}
+	})
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
