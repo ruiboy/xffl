@@ -10,7 +10,13 @@
             <img v-if="selectedClubSeason" :src="clubLogoUrl(selectedClubSeason.club.name)" :alt="selectedClubSeason.club.name" class="w-10 h-10 object-contain" />
             {{ selectedClubSeason?.club.name ?? '' }}<span class="font-normal text-text-muted"> · Team Builder</span>
           </h1>
-          <div class="flex items-center gap-1 ml-auto">
+          <div class="flex items-center gap-3 ml-auto">
+            <router-link
+              v-if="selectedClubSeason"
+              :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: selectedClubSeason.club.id } }"
+              class="text-sm text-text-muted hover:text-text transition-colors"
+            >Squad</router-link>
+            <div class="flex items-center gap-1">
             <router-link
               v-if="prevRound"
               :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: prevRound.id } }"
@@ -25,6 +31,7 @@
               title="Next round"
             >›</router-link>
             <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">›</span>
+            </div>
           </div>
         </div>
       </div>

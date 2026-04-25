@@ -1,14 +1,22 @@
 <template>
   <div>
     <Breadcrumb v-if="clubSeason" :items="breadcrumbs" />
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold mb-1 flex items-center gap-3">
+    <div class="mb-6 flex items-center">
+      <h1 class="text-2xl font-bold flex items-center gap-3">
         <img v-if="clubSeason" :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
         {{ clubSeason?.club.name ?? '' }}
       </h1>
+      <router-link
+        v-if="isMyClub && liveRoundId"
+        :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: liveRoundId } }"
+        class="ml-auto flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+      >
+        <IconWrench class="w-4 h-4" />
+        Team Builder
+      </router-link>
     </div>
 
-    <!-- Manage toggle — only for the selected club -->
+    <!-- Manage toggle + Team Builder link — only for the selected club -->
     <div v-if="isMyClub" class="mb-6 flex items-center gap-4">
       <button
         @click="managing = !managing"
@@ -131,12 +139,13 @@ import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON } from '../api/
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
+import IconWrench from '../components/IconWrench.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 
 const props = defineProps<{ seasonId: string; clubId: string }>()
 
-const { selectedClubId } = useFflState()
+const { selectedClubId, liveRoundId } = useFflState()
 const managing = ref(false)
 
 const isMyClub = computed(() => !!selectedClubId.value && props.clubId === selectedClubId.value)
