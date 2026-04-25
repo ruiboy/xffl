@@ -15,16 +15,25 @@
 
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
-          <!-- Squad + Team Builder (always visible on FFL pages once season is known) -->
           <template v-if="isFfl">
             <router-link
-              :to="liveSeasonId && selectedClubId ? { name: 'ffl-squad', params: { seasonId: liveSeasonId, clubId: selectedClubId } } : '/ffl'"
-              class="text-sm transition-colors"
-              :class="liveSeasonId && selectedClubId ? 'text-text-muted hover:text-text' : 'text-text-faint pointer-events-none'"
+              v-if="selectedClubId && liveRoundId && liveSeasonId"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: liveSeasonId, roundId: liveRoundId } }"
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+              title="Team Builder"
             >
+              <IconTeamBuilder class="w-4 h-4" />
+              Team Builder
+            </router-link>
+            <router-link
+              v-if="selectedClubId && liveSeasonId"
+              :to="{ name: 'ffl-squad', params: { seasonId: liveSeasonId, clubId: selectedClubId } }"
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+              title="Squad"
+            >
+              <IconSquad class="w-4 h-4" />
               Squad
             </router-link>
-            <!-- Club selector -->
             <ClubSelector
               v-if="clubs.length > 0"
               :model-value="selectedClubId"
@@ -80,10 +89,12 @@ import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
+import IconTeamBuilder from '@/features/ffl/components/icons/IconTeamBuilder.vue'
+import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
-const { selectedClubId, liveSeasonId, setClub } = useFflState()
+const { selectedClubId, liveSeasonId, liveRoundId, setClub } = useFflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))

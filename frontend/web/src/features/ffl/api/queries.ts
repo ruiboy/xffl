@@ -23,6 +23,7 @@ export const GET_FFL_TEAM_BUILDER = gql`
           homeClubMatch {
             id
             club { id name }
+            score
             playerMatches {
               id
               playerSeasonId
@@ -37,6 +38,7 @@ export const GET_FFL_TEAM_BUILDER = gql`
           awayClubMatch {
             id
             club { id name }
+            score
             playerMatches {
               id
               playerSeasonId

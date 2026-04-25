@@ -1,22 +1,6 @@
 <template>
   <nav class="flex flex-wrap gap-2">
     <router-link
-      :to="{ name: 'home' }"
-      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-      :class="isHome
-        ? 'bg-active text-active-text'
-        : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
-      title="Ladder"
-    >
-      <svg class="w-4 h-4" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-        <line x1="2" y1="1" x2="2" y2="13"/>
-        <line x1="10" y1="1" x2="10" y2="13"/>
-        <line x1="2" y1="4" x2="10" y2="4"/>
-        <line x1="2" y1="7" x2="10" y2="7"/>
-        <line x1="2" y1="10" x2="10" y2="10"/>
-      </svg>
-    </router-link>
-    <router-link
       v-for="round in rounds"
       :key="round.id"
       :to="{ name: 'ffl-round', params: { seasonId, roundId: round.id } }"
@@ -41,13 +25,12 @@ interface Round {
   name: string
 }
 
-const props = defineProps<{
+defineProps<{
   rounds: Round[]
   seasonId: string
   liveRoundId: string
 }>()
 
 const route = useRoute()
-const isHome = computed(() => route.name === 'home')
 const activeRoundId = computed(() => route.params.roundId as string | undefined)
 </script>
