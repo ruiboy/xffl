@@ -13,6 +13,7 @@ type PlayerSeasonRepository interface {
 	FindByClubSeasonID(ctx context.Context, clubSeasonID int) ([]PlayerSeason, error)
 	FindByID(ctx context.Context, id int) (PlayerSeason, error)
 	FindByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int) ([]PlayerSeason, error)
+	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
 	Create(ctx context.Context, playerID int, clubSeasonID int) (PlayerSeason, error)
 	Delete(ctx context.Context, id int) error
 }

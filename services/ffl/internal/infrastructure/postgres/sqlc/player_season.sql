@@ -1,3 +1,9 @@
+-- name: FindPlayersByPlayerSeasonIDs :many
+SELECT ps.id AS player_season_id, p.id AS player_id, p.drv_name AS player_name
+FROM ffl.player_season ps
+JOIN ffl.player p ON p.id = ps.player_id
+WHERE ps.id = ANY(@player_season_ids::int[]) AND ps.deleted_at IS NULL;
+
 -- name: FindPlayerSeasonsByClubSeasonID :many
 SELECT id, player_id, club_season_id, afl_player_season_id
 FROM ffl.player_season

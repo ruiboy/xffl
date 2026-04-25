@@ -74,6 +74,22 @@ func (r *ClubRepository) FindByID(ctx context.Context, id int) (domain.Club, err
 	return domain.Club{ID: int(row.ID), Name: row.Name}, nil
 }
 
+func (r *ClubRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.Club, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindClubsByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]domain.Club, len(rows))
+	for _, row := range rows {
+		out[int(row.ID)] = domain.Club{ID: int(row.ID), Name: row.Name}
+	}
+	return out, nil
+}
+
 // --- Season ---
 
 type SeasonRepository struct{ q *sqlcgen.Queries }
@@ -534,4 +550,20 @@ func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.P
 		FromRoundID:  int32PtrToIntPtr(row.FromRoundID),
 		ToRoundID:    int32PtrToIntPtr(row.ToRoundID),
 	}, nil
+}
+
+func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]domain.Player, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayersByPlayerSeasonIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]domain.Player, len(rows))
+	for _, row := range rows {
+		out[int(row.PlayerSeasonID)] = domain.Player{ID: int(row.PlayerID), Name: row.PlayerName}
+	}
+	return out, nil
 }

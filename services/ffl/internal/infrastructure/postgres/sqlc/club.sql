@@ -8,3 +8,8 @@ ORDER BY name;
 SELECT id, name
 FROM ffl.club
 WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: FindClubsByIDs :many
+SELECT id, name
+FROM ffl.club
+WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;

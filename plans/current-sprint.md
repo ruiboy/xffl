@@ -16,7 +16,7 @@
 - [ ] Player pages — career stats, season history, club timeline
 - [ ] Team pages — squad, round-by-round scores, season summary
 - [ ] Richer stat data surfaced in existing views
-- [x] Performance: break up monolithic GraphQL queries — FFL (done); AFL RoundView + MatchView (done); DataLoader pattern for N+1 elimination (pending)
+- [x] Performance: break up monolithic GraphQL queries — FFL (done); AFL RoundView + MatchView (done); N+1 batch fix for AFL/FFL PlayerMatches + Ladder resolvers (done); query count logging via pgx tracer (done)
 
 ## Ideas
 

@@ -19,13 +19,17 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int, len(pms))
+	for i, pm := range pms {
+		ids[i] = pm.PlayerSeasonID
+	}
+	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*FFLPlayerMatch, len(pms))
 	for i, pm := range pms {
-		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = convertPlayerMatch(pm, player)
+		result[i] = convertPlayerMatch(pm, players[pm.PlayerSeasonID])
 	}
 	return result, nil
 }
@@ -40,13 +44,17 @@ func (r *fFLClubSeasonResolver) Players(ctx context.Context, obj *FFLClubSeason,
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int, len(playerSeasons))
+	for i, ps := range playerSeasons {
+		ids[i] = ps.ID
+	}
+	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	nodes := make([]*FFLPlayerSeason, len(playerSeasons))
 	for i, ps := range playerSeasons {
-		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
-		if err != nil {
-			return nil, err
-		}
-		nodes[i] = convertPlayerSeason(ps, player)
+		nodes[i] = convertPlayerSeason(ps, players[ps.ID])
 	}
 	return &FFLPlayerSeasonConnection{
 		Nodes:      nodes,
@@ -147,13 +155,17 @@ func (r *fFLSeasonResolver) Ladder(ctx context.Context, obj *FFLSeason) ([]*FFLC
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int, len(clubSeasons))
+	for i, cs := range clubSeasons {
+		ids[i] = cs.ClubID
+	}
+	clubs, err := r.Queries.GetClubsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*FFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
-		club, err := r.Queries.GetClubForClubSeason(ctx, cs.ID)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = convertClubSeason(cs, club, season)
+		result[i] = convertClubSeason(cs, clubs[cs.ClubID], season)
 	}
 	return result, nil
 }

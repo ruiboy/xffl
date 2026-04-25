@@ -20,13 +20,17 @@ func (r *aFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *AFLClubMa
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int, len(pms))
+	for i, pm := range pms {
+		ids[i] = pm.PlayerSeasonID
+	}
+	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*AFLPlayerMatch, len(pms))
 	for i, pm := range pms {
-		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = convertPlayerMatch(pm, player)
+		result[i] = convertPlayerMatch(pm, players[pm.PlayerSeasonID])
 	}
 	return result, nil
 }
@@ -136,13 +140,17 @@ func (r *aFLSeasonResolver) Ladder(ctx context.Context, obj *AFLSeason) ([]*AFLC
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int, len(clubSeasons))
+	for i, cs := range clubSeasons {
+		ids[i] = cs.ClubID
+	}
+	clubs, err := r.Queries.GetClubsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*AFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
-		club, err := r.Queries.GetClub(ctx, cs.ClubID)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = convertClubSeason(cs, club)
+		result[i] = convertClubSeason(cs, clubs[cs.ClubID])
 	}
 	return result, nil
 }
