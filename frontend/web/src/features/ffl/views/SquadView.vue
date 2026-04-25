@@ -132,7 +132,7 @@ import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/muta
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import { POSITION_LETTERS, POSITION_COLORS } from '../utils/scoring'
+import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 
 const props = defineProps<{ seasonId: string; clubId: string }>()
 
@@ -174,8 +174,6 @@ const { result: seasonResult } = useQuery(GET_FFL_SEASON, () => ({ id: props.sea
 
 const rounds = computed(() => seasonResult.value?.fflSeason?.rounds ?? [])
 
-interface RoundEntry { position: string | null; isBench: boolean }
-
 const playerRoundMap = computed((): Map<string, Map<string, RoundEntry>> => {
   const map = new Map<string, Map<string, RoundEntry>>()
   for (const round of rounds.value) {
@@ -213,33 +211,13 @@ function roundLabel(name: string): string {
 
 // --- Position grouping (recency-weighted) ---
 
-const POSITION_ORDER = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
-const POSITION_LABEL: Record<string, string> = {
-  goals: 'Goals', kicks: 'Kicks', handballs: 'Handballs',
-  marks: 'Marks', tackles: 'Tackles', hitouts: 'Hitouts', star: 'Star',
-}
-
-function primaryPosition(playerSeasonId: string): string | null {
-  const entries = playerRoundMap.value.get(playerSeasonId)
-  if (!entries) return null
-  const tally: Record<string, number> = {}
-  rounds.value.forEach((round, idx) => {
-    const e = entries.get(round.id)
-    if (!e || e.isBench || !e.position) return
-    tally[e.position] = (tally[e.position] ?? 0) + (idx + 1)
-  })
-  const entries2 = Object.entries(tally)
-  if (!entries2.length) return null
-  return entries2.sort((a, b) => b[1] - a[1])[0][0]
-}
-
 const groupedPlayers = computed(() => {
   type P = typeof players.value[number]
   const buckets = new Map<string | null, P[]>(
     [...POSITION_ORDER.map(p => [p, []] as [string, SquadPlayer[]]), [null, []]]
   )
   for (const p of players.value) {
-    const pos = primaryPosition(p.id)
+    const pos = primaryPosition(p.id, playerRoundMap.value, rounds.value)
     buckets.get(POSITION_ORDER.includes(pos as typeof POSITION_ORDER[number]) ? pos : null)!.push(p)
   }
   return [...POSITION_ORDER, null].flatMap(pos => {

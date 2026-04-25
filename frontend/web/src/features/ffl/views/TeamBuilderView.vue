@@ -287,7 +287,7 @@ import { SET_FFL_TEAM } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import { positionFormula } from '../utils/scoring'
+import { positionFormula } from '../utils/position'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
