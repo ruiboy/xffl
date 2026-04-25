@@ -38,29 +38,51 @@
               <thead>
                 <tr class="border-b border-border text-left text-text-muted">
                   <th class="py-2 pr-4 font-medium">Player</th>
+                  <th v-if="!managing" class="py-2">
+                    <div class="flex gap-0.5">
+                      <span
+                        v-for="round in rounds"
+                        :key="round.id"
+                        class="w-5 text-center text-[10px] text-text-faint font-normal"
+                      >{{ roundLabel(round.name) }}</span>
+                    </div>
+                  </th>
                   <th v-if="isMyClub && managing" class="py-2 px-2 font-medium text-right"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="row in players"
-                  :key="row.id"
-                  class="border-b border-border-subtle hover:bg-surface-hover"
-                >
-                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
-                  <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
-                    <button
-                      @click="removePlayer(row.id)"
-                      aria-label="Remove"
-                      class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
-                      :disabled="removingId === row.id"
-                    >
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
+                <template v-for="(group, gi) in groupedPlayers" :key="group.pos ?? 'bench'">
+                  <tr v-if="gi > 0"><td colspan="2" class="pt-3"></td></tr>
+                  <tr
+                    v-for="row in group.players"
+                    :key="row.id"
+                    class="border-b border-border-subtle hover:bg-surface-hover"
+                  >
+                    <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                    <td v-if="!managing" class="py-2">
+                      <div class="flex gap-0.5">
+                        <span
+                          v-for="round in rounds"
+                          :key="round.id"
+                          class="w-5 text-center text-xs font-mono inline-block"
+                          :class="roundColor(row.id, round.id)"
+                        >{{ roundLetter(row.id, round.id) }}</span>
+                      </div>
+                    </td>
+                    <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
+                      <button
+                        @click="removePlayer(row.id)"
+                        aria-label="Remove"
+                        class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
+                        :disabled="removingId === row.id"
+                      >
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                          <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -105,11 +127,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS } from '../api/queries'
+import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { POSITION_LETTERS, POSITION_COLORS } from '../utils/scoring'
 
 const props = defineProps<{ seasonId: string; clubId: string }>()
 
@@ -142,6 +165,87 @@ const players = computed(() => {
     const lastA = a.player.name.split(' ').pop()?.toLowerCase() ?? ''
     const lastB = b.player.name.split(' ').pop()?.toLowerCase() ?? ''
     return lastA.localeCompare(lastB)
+  })
+})
+
+// --- Round history ---
+
+const { result: seasonResult } = useQuery(GET_FFL_SEASON, () => ({ id: props.seasonId }))
+
+const rounds = computed(() => seasonResult.value?.fflSeason?.rounds ?? [])
+
+interface RoundEntry { position: string | null; isBench: boolean }
+
+const playerRoundMap = computed((): Map<string, Map<string, RoundEntry>> => {
+  const map = new Map<string, Map<string, RoundEntry>>()
+  for (const round of rounds.value) {
+    for (const match of round.matches ?? []) {
+      for (const side of [match.homeClubMatch, match.awayClubMatch]) {
+        if (!side) continue
+        for (const pm of side.playerMatches ?? []) {
+          const isBench = pm.backupPositions != null || pm.interchangePosition != null
+          if (!map.has(pm.playerSeasonId)) map.set(pm.playerSeasonId, new Map())
+          map.get(pm.playerSeasonId)!.set(round.id, { position: pm.position ?? null, isBench })
+        }
+      }
+    }
+  }
+  return map
+})
+
+function roundLetter(playerSeasonId: string, roundId: string): string {
+  const e = playerRoundMap.value.get(playerSeasonId)?.get(roundId)
+  if (!e) return '–'
+  if (e.isBench) return 'B'
+  return e.position ? (POSITION_LETTERS[e.position] ?? '?') : '–'
+}
+
+function roundColor(playerSeasonId: string, roundId: string): string {
+  const e = playerRoundMap.value.get(playerSeasonId)?.get(roundId)
+  if (!e) return 'text-text-faint'
+  if (e.isBench) return 'text-text-muted'
+  return e.position ? (POSITION_COLORS[e.position] ?? 'text-text') : 'text-text-faint'
+}
+
+function roundLabel(name: string): string {
+  return name.replace(/\D+/g, '')
+}
+
+// --- Position grouping (recency-weighted) ---
+
+const POSITION_ORDER = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
+const POSITION_LABEL: Record<string, string> = {
+  goals: 'Goals', kicks: 'Kicks', handballs: 'Handballs',
+  marks: 'Marks', tackles: 'Tackles', hitouts: 'Hitouts', star: 'Star',
+}
+
+function primaryPosition(playerSeasonId: string): string | null {
+  const entries = playerRoundMap.value.get(playerSeasonId)
+  if (!entries) return null
+  const tally: Record<string, number> = {}
+  rounds.value.forEach((round, idx) => {
+    const e = entries.get(round.id)
+    if (!e || e.isBench || !e.position) return
+    tally[e.position] = (tally[e.position] ?? 0) + (idx + 1)
+  })
+  const entries2 = Object.entries(tally)
+  if (!entries2.length) return null
+  return entries2.sort((a, b) => b[1] - a[1])[0][0]
+}
+
+const groupedPlayers = computed(() => {
+  type P = typeof players.value[number]
+  const buckets = new Map<string | null, P[]>(
+    [...POSITION_ORDER.map(p => [p, []] as [string, SquadPlayer[]]), [null, []]]
+  )
+  for (const p of players.value) {
+    const pos = primaryPosition(p.id)
+    buckets.get(POSITION_ORDER.includes(pos as typeof POSITION_ORDER[number]) ? pos : null)!.push(p)
+  }
+  return [...POSITION_ORDER, null].flatMap(pos => {
+    const group = buckets.get(pos) ?? []
+    if (!group.length) return []
+    return [{ pos, label: pos ? POSITION_LABEL[pos] : 'Bench / Unassigned', players: group }]
   })
 })
 
