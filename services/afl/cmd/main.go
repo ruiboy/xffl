@@ -74,6 +74,7 @@ func main() {
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)
+		ctx = gql.InjectLoaders(ctx, gql.NewLoaders(queries))
 		rh := next(ctx)
 		return func(ctx context.Context) *graphql.Response {
 			resp := rh(ctx)

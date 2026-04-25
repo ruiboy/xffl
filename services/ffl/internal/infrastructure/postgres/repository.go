@@ -182,6 +182,30 @@ func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, e
 	}, nil
 }
 
+func (r *MatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.Match, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindMatchesByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]domain.Match, len(rows))
+	for _, row := range rows {
+		out[int(row.ID)] = domain.Match{
+			ID:        int(row.ID),
+			RoundID:   int(row.RoundID),
+			Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
+			Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
+			Venue:     row.Venue,
+			StartTime: row.StartDt.Time,
+			Result:    domain.MatchResult(row.DrvResult),
+		}
+	}
+	return out, nil
+}
+
 func (r *MatchRepository) FindByIDWithDetails(ctx context.Context, id int) (domain.Match, error) {
 	match, err := r.FindByID(ctx, id)
 	if err != nil {

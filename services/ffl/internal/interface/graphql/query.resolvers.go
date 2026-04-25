@@ -19,17 +19,14 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, len(pms))
-	for i, pm := range pms {
-		ids[i] = pm.PlayerSeasonID
-	}
-	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
+	loaders := LoadersFromCtx(ctx)
 	result := make([]*FFLPlayerMatch, len(pms))
 	for i, pm := range pms {
-		result[i] = convertPlayerMatch(pm, players[pm.PlayerSeasonID])
+		player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, *player)
 	}
 	return result, nil
 }
@@ -44,17 +41,14 @@ func (r *fFLClubSeasonResolver) Players(ctx context.Context, obj *FFLClubSeason,
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, len(playerSeasons))
-	for i, ps := range playerSeasons {
-		ids[i] = ps.ID
-	}
-	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
+	loaders := LoadersFromCtx(ctx)
 	nodes := make([]*FFLPlayerSeason, len(playerSeasons))
 	for i, ps := range playerSeasons {
-		nodes[i] = convertPlayerSeason(ps, players[ps.ID])
+		player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, ps.ID)
+		if err != nil {
+			return nil, err
+		}
+		nodes[i] = convertPlayerSeason(ps, *player)
 	}
 	return &FFLPlayerSeasonConnection{
 		Nodes:      nodes,
@@ -69,7 +63,7 @@ func (r *fFLMatchResolver) HomeClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +87,7 @@ func (r *fFLMatchResolver) AwayClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -155,17 +149,14 @@ func (r *fFLSeasonResolver) Ladder(ctx context.Context, obj *FFLSeason) ([]*FFLC
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, len(clubSeasons))
-	for i, cs := range clubSeasons {
-		ids[i] = cs.ClubID
-	}
-	clubs, err := r.Queries.GetClubsByIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
+	loaders := LoadersFromCtx(ctx)
 	result := make([]*FFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
-		result[i] = convertClubSeason(cs, clubs[cs.ClubID], season)
+		club, err := loaders.ClubByID.Load(ctx, cs.ClubID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertClubSeason(cs, *club, season)
 	}
 	return result, nil
 }
@@ -346,27 +337,3 @@ type fFLMatchResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }
 type fFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *fFLMatchResolver) Round(ctx context.Context, obj *FFLMatch) (*FFLRound, error) {
-	matchID, err := fromID(obj.ID)
-	if err != nil {
-		return nil, err
-	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
-	if err != nil {
-		return nil, err
-	}
-	round, err := r.Queries.GetRound(ctx, match.RoundID)
-	if err != nil {
-		return nil, err
-	}
-	return convertRound(round), nil
-}
-*/

@@ -20,17 +20,14 @@ func (r *aFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *AFLClubMa
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, len(pms))
-	for i, pm := range pms {
-		ids[i] = pm.PlayerSeasonID
-	}
-	players, err := r.Queries.GetPlayersForPlayerSeasonIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
+	loaders := LoadersFromCtx(ctx)
 	result := make([]*AFLPlayerMatch, len(pms))
 	for i, pm := range pms {
-		result[i] = convertPlayerMatch(pm, players[pm.PlayerSeasonID])
+		player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, *player)
 	}
 	return result, nil
 }
@@ -41,7 +38,7 @@ func (r *aFLMatchResolver) Round(ctx context.Context, obj *AFLMatch) (*AFLRound,
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +55,7 @@ func (r *aFLMatchResolver) HomeClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +79,7 @@ func (r *aFLMatchResolver) AwayClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.Queries.GetMatch(ctx, matchID)
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -140,17 +137,14 @@ func (r *aFLSeasonResolver) Ladder(ctx context.Context, obj *AFLSeason) ([]*AFLC
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, len(clubSeasons))
-	for i, cs := range clubSeasons {
-		ids[i] = cs.ClubID
-	}
-	clubs, err := r.Queries.GetClubsByIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
+	loaders := LoadersFromCtx(ctx)
 	result := make([]*AFLClubSeason, len(clubSeasons))
 	for i, cs := range clubSeasons {
-		result[i] = convertClubSeason(cs, clubs[cs.ClubID])
+		club, err := loaders.ClubByID.Load(ctx, cs.ClubID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertClubSeason(cs, *club)
 	}
 	return result, nil
 }
