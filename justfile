@@ -81,9 +81,9 @@ stop-all:
         fi
     done
 
-# Run AFL service tests
+# Run AFL service tests (includes integration tests via testcontainers)
 test-afl:
-    cd services/afl && go test ./...
+    cd services/afl && go test -tags integration ./...
 
 # Run FFL service tests
 test-ffl:
