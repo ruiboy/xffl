@@ -26,9 +26,7 @@
           : 'border-border bg-surface text-text hover:bg-surface-hover'"
       >
         <span class="flex items-center gap-1.5">
-          <svg v-if="!managing" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
-          </svg>
+          <IconPencil v-if="!managing" class="w-3.5 h-3.5" />
           {{ managing ? 'Done' : 'Manage' }}
         </span>
       </button>
@@ -84,9 +82,7 @@
                         class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
                         :disabled="removingId === row.id"
                       >
-                        <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                          <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                        </svg>
+                        <IconTrash class="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -140,6 +136,8 @@ import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/muta
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import IconWrench from '../components/IconWrench.vue'
+import IconPencil from '../components/IconPencil.vue'
+import IconTrash from '../components/IconTrash.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 

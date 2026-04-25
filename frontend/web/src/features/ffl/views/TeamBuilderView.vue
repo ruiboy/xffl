@@ -11,27 +11,31 @@
             {{ selectedClubSeason?.club.name ?? '' }}<span class="font-normal text-text-muted"> · Team Builder</span>
           </h1>
           <div class="flex items-center gap-3 ml-auto">
+            <div class="flex items-center gap-1 rounded-lg border border-border px-1">
+              <router-link
+                v-if="prevRound"
+                :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: prevRound.id } }"
+                class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
+                title="Previous round"
+              >‹</router-link>
+              <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">‹</span>
+              <span class="text-sm text-text-muted tabular-nums">{{ currentRound?.name }}</span>
+              <router-link
+                v-if="nextRound"
+                :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: nextRound.id } }"
+                class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
+                title="Next round"
+              >›</router-link>
+              <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">›</span>
+            </div>
             <router-link
               v-if="selectedClubSeason"
               :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: selectedClubSeason.club.id } }"
-              class="text-sm text-text-muted hover:text-text transition-colors"
-            >Squad</router-link>
-            <div class="flex items-center gap-1">
-            <router-link
-              v-if="prevRound"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: prevRound.id } }"
-              class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
-              title="Previous round"
-            >‹</router-link>
-            <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">‹</span>
-            <router-link
-              v-if="nextRound"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: nextRound.id } }"
-              class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
-              title="Next round"
-            >›</router-link>
-            <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">›</span>
-            </div>
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+            >
+              <IconMap class="w-4 h-4" />
+              Squad
+            </router-link>
           </div>
         </div>
       </div>
@@ -60,9 +64,7 @@
             class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
           >
             <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
-              </svg>
+              <IconPencil class="w-3.5 h-3.5" />
               Manage
             </span>
           </button>
@@ -126,9 +128,7 @@
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
                       @click="removeFromTeam(pos.key, index)"
                     >
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                      </svg>
+                      <IconTrash class="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div v-else-if="slot.player" class="flex items-center shrink-0 w-44">
@@ -295,6 +295,9 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
+import IconMap from '../components/IconMap.vue'
+import IconPencil from '../components/IconPencil.vue'
+import IconTrash from '../components/IconTrash.vue'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ seasonId: string; roundId: string }>()
