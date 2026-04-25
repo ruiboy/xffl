@@ -46,7 +46,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_MATCH } from '../api/queries'
+import { GET_AFL_MATCH } from '../api/queries'
 import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
@@ -56,16 +56,17 @@ const props = defineProps<{ seasonId: string; matchId: string }>()
 
 const managing = ref(false)
 
-const { result, loading, error } = useQuery(GET_MATCH, () => ({ seasonId: props.seasonId }))
+const { result, loading, error } = useQuery(GET_AFL_MATCH, () => ({ matchId: props.matchId }))
 
 const matchData = computed(() => {
-  const season = result.value?.aflSeason
-  if (!season) return null
-  for (const round of season.rounds) {
-    const found = round.matches.find((m: { id: string }) => m.id === props.matchId)
-    if (found) return { match: found, roundId: round.id as string, roundName: round.name as string, seasonName: season.name as string }
+  const m = result.value?.aflMatch
+  if (!m) return null
+  return {
+    match: m,
+    roundId: m.round.id as string,
+    roundName: m.round.name as string,
+    seasonName: m.round.season.name as string,
   }
-  return null
 })
 
 const breadcrumbs = computed(() => {

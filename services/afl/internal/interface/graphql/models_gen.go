@@ -37,6 +37,7 @@ type AFLMatch struct {
 	Venue         *string       `json:"venue,omitempty"`
 	StartTime     *string       `json:"startTime,omitempty"`
 	Result        *string       `json:"result,omitempty"`
+	Round         *AFLRound     `json:"round"`
 	HomeClubMatch *AFLClubMatch `json:"homeClubMatch,omitempty"`
 	AwayClubMatch *AFLClubMatch `json:"awayClubMatch,omitempty"`
 }

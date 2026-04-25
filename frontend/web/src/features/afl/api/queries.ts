@@ -56,58 +56,62 @@ export const GET_AFL_LIVE_ROUND = gql`
   }
 `
 
-export const GET_ROUND = gql`
-  query GetRound($seasonId: ID!) {
-    aflSeason(id: $seasonId) {
+export const GET_AFL_ROUND = gql`
+  query GetAFLRound($roundId: ID!) {
+    aflRound(id: $roundId) {
       id
       name
-      rounds {
+      season {
         id
         name
-        matches {
+        rounds {
           id
-          venue
-          startTime
-          result
-          homeClubMatch {
+          name
+        }
+      }
+      matches {
+        id
+        venue
+        startTime
+        result
+        homeClubMatch {
+          id
+          club { id name }
+          score
+          playerMatches {
             id
-            club { id name }
+            playerSeasonId
+            player { id name }
+            status
+            kicks
+            handballs
+            marks
+            hitouts
+            tackles
+            goals
+            behinds
+            disposals
             score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              status
-              kicks
-              handballs
-              marks
-              hitouts
-              tackles
-              goals
-              behinds
-              disposals
-              score
-            }
           }
-          awayClubMatch {
+        }
+        awayClubMatch {
+          id
+          club { id name }
+          score
+          playerMatches {
             id
-            club { id name }
+            playerSeasonId
+            player { id name }
+            status
+            kicks
+            handballs
+            marks
+            hitouts
+            tackles
+            goals
+            behinds
+            disposals
             score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              status
-              kicks
-              handballs
-              marks
-              hitouts
-              tackles
-              goals
-              behinds
-              disposals
-              score
-            }
           }
         }
       }
@@ -115,61 +119,58 @@ export const GET_ROUND = gql`
   }
 `
 
-export const GET_MATCH = gql`
-  query GetMatch($seasonId: ID!) {
-    aflSeason(id: $seasonId) {
+export const GET_AFL_MATCH = gql`
+  query GetAFLMatch($matchId: ID!) {
+    aflMatch(id: $matchId) {
       id
-      name
-      rounds {
+      venue
+      startTime
+      result
+      round {
         id
         name
-        matches {
+        season { id name }
+      }
+      homeClubMatch {
+        id
+        club { id name }
+        rushedBehinds
+        score
+        playerMatches {
           id
-          venue
-          startTime
-          result
-          homeClubMatch {
-            id
-            club { id name }
-            rushedBehinds
-            score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              status
-              kicks
-              handballs
-              marks
-              hitouts
-              tackles
-              goals
-              behinds
-              disposals
-              score
-            }
-          }
-          awayClubMatch {
-            id
-            club { id name }
-            rushedBehinds
-            score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              status
-              kicks
-              handballs
-              marks
-              hitouts
-              tackles
-              goals
-              behinds
-              disposals
-              score
-            }
-          }
+          playerSeasonId
+          player { id name }
+          status
+          kicks
+          handballs
+          marks
+          hitouts
+          tackles
+          goals
+          behinds
+          disposals
+          score
+        }
+      }
+      awayClubMatch {
+        id
+        club { id name }
+        rushedBehinds
+        score
+        playerMatches {
+          id
+          playerSeasonId
+          player { id name }
+          status
+          kicks
+          handballs
+          marks
+          hitouts
+          tackles
+          goals
+          behinds
+          disposals
+          score
         }
       }
     }

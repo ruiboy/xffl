@@ -73,6 +73,7 @@ type ComplexityRoot struct {
 		HomeClubMatch func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Result        func(childComplexity int) int
+		Round         func(childComplexity int) int
 		StartTime     func(childComplexity int) int
 		Venue         func(childComplexity int) int
 	}
@@ -132,8 +133,10 @@ type ComplexityRoot struct {
 		AflClub              func(childComplexity int, id string) int
 		AflClubs             func(childComplexity int) int
 		AflLiveRound         func(childComplexity int) int
+		AflMatch             func(childComplexity int, id string) int
 		AflPlayerSearch      func(childComplexity int, query string) int
 		AflPlayerSeasonStats func(childComplexity int, ids []string) int
+		AflRound             func(childComplexity int, id string) int
 		AflSeason            func(childComplexity int, id string) int
 		AflSeasons           func(childComplexity int) int
 	}
@@ -143,6 +146,7 @@ type AFLClubMatchResolver interface {
 	PlayerMatches(ctx context.Context, obj *AFLClubMatch) ([]*AFLPlayerMatch, error)
 }
 type AFLMatchResolver interface {
+	Round(ctx context.Context, obj *AFLMatch) (*AFLRound, error)
 	HomeClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
 	AwayClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
 }
@@ -163,6 +167,8 @@ type QueryResolver interface {
 	AflSeasons(ctx context.Context) ([]*AFLSeason, error)
 	AflSeason(ctx context.Context, id string) (*AFLSeason, error)
 	AflLiveRound(ctx context.Context) (*AFLLiveRound, error)
+	AflRound(ctx context.Context, id string) (*AFLRound, error)
+	AflMatch(ctx context.Context, id string) (*AFLMatch, error)
 	AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error)
 	AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error)
 }
@@ -317,6 +323,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLMatch.Result(childComplexity), true
+	case "AFLMatch.round":
+		if e.ComplexityRoot.AFLMatch.Round == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLMatch.Round(childComplexity), true
 	case "AFLMatch.startTime":
 		if e.ComplexityRoot.AFLMatch.StartTime == nil {
 			break
@@ -562,6 +574,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AflLiveRound(childComplexity), true
+	case "Query.aflMatch":
+		if e.ComplexityRoot.Query.AflMatch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_aflMatch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AflMatch(childComplexity, args["id"].(string)), true
 	case "Query.aflPlayerSearch":
 		if e.ComplexityRoot.Query.AflPlayerSearch == nil {
 			break
@@ -584,6 +607,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AflPlayerSeasonStats(childComplexity, args["ids"].([]string)), true
+	case "Query.aflRound":
+		if e.ComplexityRoot.Query.AflRound == nil {
+			break
+		}
+
+		args, err := ec.field_Query_aflRound_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AflRound(childComplexity, args["id"].(string)), true
 	case "Query.aflSeason":
 		if e.ComplexityRoot.Query.AflSeason == nil {
 			break
@@ -709,6 +743,8 @@ input UpdateAFLPlayerMatchInput {
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
   aflLiveRound: AFLLiveRound
+  aflRound(id: ID!): AFLRound
+  aflMatch(id: ID!): AFLMatch
   aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
   aflPlayerSearch(query: String!): [AFLPlayer!]!
 }
@@ -759,6 +795,7 @@ type AFLMatch {
   venue: String
   startTime: String
   result: String
+  round: AFLRound!
   homeClubMatch: AFLClubMatch
   awayClubMatch: AFLClubMatch
 }
@@ -839,6 +876,17 @@ func (ec *executionContext) field_Query_aflClub_args(ctx context.Context, rawArg
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_aflMatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_aflPlayerSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -858,6 +906,17 @@ func (ec *executionContext) field_Query_aflPlayerSeasonStats_args(ctx context.Co
 		return nil, err
 	}
 	args["ids"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_aflRound_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1607,6 +1666,45 @@ func (ec *executionContext) fieldContext_AFLMatch_result(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLMatch_round(ctx context.Context, field graphql.CollectedField, obj *AFLMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLMatch_round,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AFLMatch().Round(ctx, obj)
+		},
+		nil,
+		ec.marshalNAFLRound2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRound,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLMatch_round(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLMatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLRound_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AFLRound_name(ctx, field)
+			case "season":
+				return ec.fieldContext_AFLRound_season(ctx, field)
+			case "matches":
+				return ec.fieldContext_AFLRound_matches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLRound", field.Name)
 		},
 	}
 	return fc, nil
@@ -2525,6 +2623,8 @@ func (ec *executionContext) fieldContext_AFLRound_matches(_ context.Context, fie
 				return ec.fieldContext_AFLMatch_startTime(ctx, field)
 			case "result":
 				return ec.fieldContext_AFLMatch_result(ctx, field)
+			case "round":
+				return ec.fieldContext_AFLMatch_round(ctx, field)
 			case "homeClubMatch":
 				return ec.fieldContext_AFLMatch_homeClubMatch(ctx, field)
 			case "awayClubMatch":
@@ -2954,6 +3054,114 @@ func (ec *executionContext) fieldContext_Query_aflLiveRound(_ context.Context, f
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLLiveRound", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_aflRound(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_aflRound,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AflRound(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAFLRound2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRound,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_aflRound(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLRound_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AFLRound_name(ctx, field)
+			case "season":
+				return ec.fieldContext_AFLRound_season(ctx, field)
+			case "matches":
+				return ec.fieldContext_AFLRound_matches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLRound", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_aflRound_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_aflMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_aflMatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AflMatch(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAFLMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLMatch,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_aflMatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLMatch_id(ctx, field)
+			case "venue":
+				return ec.fieldContext_AFLMatch_venue(ctx, field)
+			case "startTime":
+				return ec.fieldContext_AFLMatch_startTime(ctx, field)
+			case "result":
+				return ec.fieldContext_AFLMatch_result(ctx, field)
+			case "round":
+				return ec.fieldContext_AFLMatch_round(ctx, field)
+			case "homeClubMatch":
+				return ec.fieldContext_AFLMatch_homeClubMatch(ctx, field)
+			case "awayClubMatch":
+				return ec.fieldContext_AFLMatch_awayClubMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLMatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_aflMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -5000,6 +5208,42 @@ func (ec *executionContext) _AFLMatch(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._AFLMatch_startTime(ctx, field, obj)
 		case "result":
 			out.Values[i] = ec._AFLMatch_result(ctx, field, obj)
+		case "round":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLMatch_round(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "homeClubMatch":
 			field := field
 
@@ -5718,6 +5962,44 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "aflRound":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_aflRound(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "aflMatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_aflMatch(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "aflPlayerSeasonStats":
 			field := field
 
@@ -6292,6 +6574,10 @@ func (ec *executionContext) marshalNAFLPlayerSeasonStats2ᚖxfflᚋservicesᚋaf
 	return ec._AFLPlayerSeasonStats(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAFLRound2xfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRound(ctx context.Context, sel ast.SelectionSet, v AFLRound) graphql.Marshaler {
+	return ec._AFLRound(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNAFLRound2ᚕᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRoundᚄ(ctx context.Context, sel ast.SelectionSet, v []*AFLRound) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -6616,6 +6902,20 @@ func (ec *executionContext) marshalOAFLLiveRound2ᚖxfflᚋservicesᚋaflᚋinte
 		return graphql.Null
 	}
 	return ec._AFLLiveRound(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAFLMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLMatch(ctx context.Context, sel ast.SelectionSet, v *AFLMatch) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AFLMatch(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAFLRound2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLRound(ctx context.Context, sel ast.SelectionSet, v *AFLRound) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AFLRound(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
