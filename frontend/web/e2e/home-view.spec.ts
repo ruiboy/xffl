@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { setupAflSession } from './helpers'
 
 test.describe('AFL Home view', () => {

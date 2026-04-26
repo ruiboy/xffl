@@ -1,16 +1,18 @@
 -- AFL e2e test seed data (idempotent — safe to re-run)
 BEGIN;
 
--- Clear existing data (nullify match FKs first to break circular ref)
-UPDATE afl.match SET home_club_match_id = NULL, away_club_match_id = NULL;
-DELETE FROM afl.player_match;
-DELETE FROM afl.club_match;
-DELETE FROM afl.match;
-DELETE FROM afl.round;
-DELETE FROM afl.player_season;
-DELETE FROM afl.club_season;
-DELETE FROM afl.season;
-DELETE FROM afl.player;
+-- Clear existing data and reset identity sequences so re-runs produce stable IDs.
+-- CASCADE handles circular FKs between match and club_match.
+TRUNCATE TABLE
+    afl.player_match,
+    afl.player_season,
+    afl.club_match,
+    afl.match,
+    afl.round,
+    afl.club_season,
+    afl.season,
+    afl.player
+RESTART IDENTITY CASCADE;
 
 -- League (unique on name)
 INSERT INTO afl.league (name) VALUES ('AFL') ON CONFLICT (name) DO NOTHING;
