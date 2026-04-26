@@ -50,7 +50,12 @@ type FindRoundByIDRow struct {
 func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error) {
 	row := q.db.QueryRow(ctx, findRoundByID, id)
 	var i FindRoundByIDRow
-	err := row.Scan(&i.ID, &i.Name, &i.SeasonID, &i.AflRoundID)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.SeasonID,
+		&i.AflRoundID,
+	)
 	return i, err
 }
 
@@ -79,7 +84,12 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 	items := []FindRoundsBySeasonIDRow{}
 	for rows.Next() {
 		var i FindRoundsBySeasonIDRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.SeasonID, &i.AflRoundID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.SeasonID,
+			&i.AflRoundID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

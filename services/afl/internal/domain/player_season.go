@@ -12,4 +12,5 @@ type PlayerSeason struct {
 
 type PlayerSeasonRepository interface {
 	FindByID(ctx context.Context, id int) (PlayerSeason, error)
+	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
 }

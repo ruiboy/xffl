@@ -58,3 +58,34 @@ func (q *Queries) FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, 
 	err := row.Scan(&i.ID, &i.Name)
 	return i, err
 }
+
+const findClubsByIDs = `-- name: FindClubsByIDs :many
+SELECT id, name
+FROM afl.club
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+`
+
+type FindClubsByIDsRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findClubsByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindClubsByIDsRow{}
+	for rows.Next() {
+		var i FindClubsByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

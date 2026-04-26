@@ -49,4 +49,5 @@ type MatchRepository interface {
 	FindByRoundID(ctx context.Context, roundID int) ([]Match, error)
 	FindByID(ctx context.Context, id int) (Match, error)
 	FindByIDWithDetails(ctx context.Context, id int) (Match, error)
+	FindByIDs(ctx context.Context, ids []int) (map[int]Match, error)
 }

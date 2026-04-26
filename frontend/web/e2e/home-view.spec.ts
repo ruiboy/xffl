@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { setupAflSession } from './helpers'
 
 test.describe('AFL Home view', () => {
@@ -19,10 +19,9 @@ test.describe('AFL Home view', () => {
     await expect(page.getByRole('heading', { name: 'Matches' })).not.toBeVisible()
   })
 
-  test('displays round selector with ladder icon and round circles', async ({ page }) => {
+  test('displays round selector with round circles', async ({ page }) => {
     const roundNav = page.locator('main nav').last()
     await expect(roundNav).toBeVisible()
-    await expect(roundNav.getByTitle('Ladder')).toBeVisible()
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 

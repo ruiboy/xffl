@@ -35,3 +35,36 @@ func (q *Queries) FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlaye
 	)
 	return i, err
 }
+
+const findPlayersByPlayerSeasonIDs = `-- name: FindPlayersByPlayerSeasonIDs :many
+SELECT ps.id AS player_season_id, p.id AS player_id, p.name AS player_name
+FROM afl.player_season ps
+JOIN afl.player p ON p.id = ps.player_id
+WHERE ps.id = ANY($1::int[]) AND ps.deleted_at IS NULL
+`
+
+type FindPlayersByPlayerSeasonIDsRow struct {
+	PlayerSeasonID int32
+	PlayerID       int32
+	PlayerName     string
+}
+
+func (q *Queries) FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error) {
+	rows, err := q.db.Query(ctx, findPlayersByPlayerSeasonIDs, playerSeasonIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayersByPlayerSeasonIDsRow{}
+	for rows.Next() {
+		var i FindPlayersByPlayerSeasonIDsRow
+		if err := rows.Scan(&i.PlayerSeasonID, &i.PlayerID, &i.PlayerName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

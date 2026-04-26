@@ -81,13 +81,13 @@ stop-all:
         fi
     done
 
-# Run AFL service tests
+# Run AFL service tests (includes integration tests via testcontainers)
 test-afl:
-    cd services/afl && go test ./...
+    cd services/afl && go test -tags integration ./...
 
 # Run FFL service tests
 test-ffl:
-    cd services/ffl && go test ./...
+    cd services/ffl && go test -tags integration ./...
 
 # Run e2e tests in a fully isolated environment (dev stack may remain running)
 test-e2e:
@@ -103,6 +103,9 @@ test-e2e:
     until docker exec xffl-postgres-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
     echo "Test Postgres ready"
 
+    # If npx (or npm run) is blocked on your machine, swap the command below for:
+    #   ./node_modules/.bin/playwright test
+    # (after running `npm ci` in frontend/web at least once to populate node_modules).
     (cd frontend/web && npx playwright test); STATUS=$?
 
     docker compose -p xffl-test -f dev/docker-compose.test.yml down

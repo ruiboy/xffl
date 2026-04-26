@@ -1,10 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('FFL Round', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    // Click round circle "1" in the round selector (main nav)
     await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
+    // Wait for round data to load before running assertions
+    await expect(page.getByRole('heading', { name: 'Matches' })).toBeVisible({ timeout: 15000 })
   })
 
   test('displays round name in heading', async ({ page }) => {
@@ -15,15 +16,14 @@ test.describe('FFL Round', () => {
     await expect(page.locator('main').getByRole('link', { name: 'FFL 2026' })).toBeVisible()
   })
 
-  test('displays round selector above matches', async ({ page }) => {
+  test('displays round selector with round circles', async ({ page }) => {
     const roundNav = page.locator('main nav').last()
     await expect(roundNav).toBeVisible()
-    await expect(roundNav.getByTitle('Ladder')).toBeVisible()
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
-  test('ladder icon navigates back to home', async ({ page }) => {
-    await page.locator('main nav').last().getByTitle('Ladder').click()
+  test('FFL breadcrumb link navigates back to home', async ({ page }) => {
+    await page.locator('main').getByRole('link', { name: 'FFL 2026' }).click()
     await expect(page).toHaveURL('/ffl')
   })
 
@@ -33,18 +33,21 @@ test.describe('FFL Round', () => {
     await expect(matchCard).toBeVisible()
   })
 
-  test('displays top fantasy scorers', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Top Fantasy Scorers' })).toBeVisible()
-    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible()
-    await expect(page.getByRole('columnheader', { name: 'Score' })).toBeVisible()
+  test('displays top scorers grouped by position', async ({ page }) => {
+    const topScorers = page.locator('section', { has: page.getByRole('heading', { name: 'Top Scorers' }) })
+    await expect(topScorers).toBeVisible()
+    // Grid layout by position — no table column headers
+    await expect(page.getByRole('columnheader', { name: 'Player' })).not.toBeAttached()
+    // At least one position label appears inside the section
+    await expect(topScorers.locator('p').filter({ hasText: /Goals|Kicks|Handballs|Marks|Tackles|Hitouts|Star/ }).first()).toBeVisible()
   })
 
   test('shows Team Builder button for selected club match', async ({ page }) => {
-    await expect(page.getByTitle('Team Builder')).toBeVisible()
+    await expect(page.locator('main').getByTitle('Team Builder')).toBeVisible()
   })
 
   test('Team Builder button navigates to team builder', async ({ page }) => {
-    await page.getByTitle('Team Builder').click()
+    await page.locator('main').getByTitle('Team Builder').click()
     await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
   })
 

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { setupFflSession } from './helpers'
 
 test.describe('FFL Home', () => {
@@ -34,10 +34,9 @@ test.describe('FFL Home', () => {
     await expect(page.getByRole('heading', { name: 'Matches' })).not.toBeVisible()
   })
 
-  test('displays round selector with ladder icon and round circles', async ({ page }) => {
+  test('displays round selector with round circles', async ({ page }) => {
     const roundNav = page.locator('main nav').last()
     await expect(roundNav).toBeVisible()
-    await expect(roundNav.getByTitle('Ladder')).toBeVisible()
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
@@ -58,8 +57,15 @@ test.describe('FFL Home', () => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
 
-  test('navbar does not have a Team Builder link', async ({ page }) => {
-    await expect(page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' })).not.toBeVisible()
+  test('global nav shows Team Builder and Squad links', async ({ page }) => {
+    const topNav = page.getByRole('navigation').first()
+    await expect(topNav.getByRole('link', { name: 'Team Builder' })).toBeVisible()
+    await expect(topNav.getByRole('link', { name: 'Squad' })).toBeVisible()
+  })
+
+  test('global Team Builder link navigates to team builder for live round', async ({ page }) => {
+    await page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' }).click()
+    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
   })
 
   test('round 3 has the open live-round ring indicator', async ({ page }) => {

@@ -195,3 +195,59 @@ cd services/afl && go test -tags=integration ./...
 # Specific package, verbose
 cd services/afl && go test -tags=integration ./internal/interface/graphql/... -v
 ```
+
+---
+
+## Frontend e2e tests (Playwright)
+
+Playwright drives the Vue SPA against a real backend stack (Postgres + AFL + FFL + gateway + Vite dev server). The runtime is isolated from the dev stack — a separate test Postgres on `:5433` plus its own service ports are spun up for the run and torn down at the end.
+
+### Stack
+
+| Layer | Tools |
+|-------|-------|
+| Browser | Playwright (`@playwright/test`), Chromium only |
+| Backend | Real AFL/FFL/gateway processes via Playwright `webServer` |
+| Database | `postgres:16-alpine` via `dev/docker-compose.test.yml` (port 5433, data on tmpfs) |
+
+Run with `just test-e2e` — the recipe brings up the test Postgres container, copies schema files into the seed dir, and Playwright spawns the rest.
+
+### Structure
+
+```
+frontend/web/e2e/
+  *.spec.ts              → test specs (one per feature)
+  fixtures.ts            → extends Playwright `test` with the auto seed-reset fixture
+  helpers/reset-db.ts    → resetDb() — replays seed files via `docker exec psql`
+  helpers.ts             → shared page helpers (setupFflSession, setupAflSession)
+  global-setup.ts        → minimal — DB seeding happens at container start
+```
+
+### Per-test data isolation
+
+Every test starts from a freshly seeded database. The auto fixture in `fixtures.ts` runs `resetDb()` before each test; specs don't need to opt in beyond using the right import.
+
+How it works:
+
+- **Seed files** at `dev/postgres/test-e2e/{03_afl_seed,04_ffl_seed}.sql` use `TRUNCATE … RESTART IDENTITY CASCADE` so re-runs produce stable IDs (a Save Team test soft-deleting `player_season.id=3` cannot leak into the next test's view of the world).
+- **`resetDb()`** in `helpers/reset-db.ts` shells out via `docker exec` to `psql`, replaying both seed files. Async; throws with captured stderr on failure.
+- **Fixture** in `fixtures.ts` is `test.extend({ resetSeed: [..., { auto: true }] })` — fires before every test in every spec that imports from this module.
+
+### Import convention
+
+```ts
+import { test, expect } from './fixtures'
+```
+
+Not `@playwright/test`. The fixture only fires if you import the extended `test`. Mutating specs do **not** need an explicit `beforeEach(resetDb)` — the auto fixture covers it.
+
+### Concurrency
+
+`workers: 1` in `playwright.config.ts`. Tests run sequentially because the AFL/FFL/gateway/Vite stack spawned by `webServer` is shared across workers. Per-worker DB isolation (Playwright's documented pattern via `workerIndex`) would also need per-worker stacks (services on `8180+workerIndex` etc., DB cloned from a Postgres template per worker) — a real rearchitecture, deferred until parallel runtime is worth the cost. The rationale lives in a comment on the `workers` line; do not change without revisiting that.
+
+### When to write an e2e vs a Go integration test
+
+- **Go integration test** when you're verifying a resolver/repository/SQL query behaves correctly given DB state. Faster, hermetic per package, runs without a browser.
+- **e2e test** when you're verifying user-visible UI behaviour — navigation, render output, mutations triggered from the page. Anything that requires the SPA + Apollo + the gateway path belongs here.
+
+If a test could plausibly be either, prefer the Go integration test — it's an order of magnitude faster.

@@ -35,6 +35,8 @@ models:
         resolver: true
   AFLMatch:
     fields:
+      round:
+        resolver: true
       homeClubMatch:
         resolver: true
       awayClubMatch:

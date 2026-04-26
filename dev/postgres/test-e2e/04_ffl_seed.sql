@@ -1,16 +1,18 @@
 -- FFL e2e test seed data (idempotent — safe to re-run)
 BEGIN;
 
--- Clear existing data (nullify match FKs first to break circular ref)
-UPDATE ffl.match SET home_club_match_id = NULL, away_club_match_id = NULL;
-DELETE FROM ffl.player_match;
-DELETE FROM ffl.player_season;
-DELETE FROM ffl.club_match;
-DELETE FROM ffl.match;
-DELETE FROM ffl.round;
-DELETE FROM ffl.club_season;
-DELETE FROM ffl.season;
-DELETE FROM ffl.player;
+-- Clear existing data and reset identity sequences so re-runs produce stable IDs.
+-- CASCADE handles circular FKs between match and club_match.
+TRUNCATE TABLE
+    ffl.player_match,
+    ffl.player_season,
+    ffl.club_match,
+    ffl.match,
+    ffl.round,
+    ffl.club_season,
+    ffl.season,
+    ffl.player
+RESTART IDENTITY CASCADE;
 
 -- League (unique on name)
 INSERT INTO ffl.league (name) VALUES ('FFL')

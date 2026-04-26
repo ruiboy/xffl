@@ -47,6 +47,55 @@ func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow
 	return i, err
 }
 
+const findMatchesByIDs = `-- name: FindMatchesByIDs :many
+SELECT id, round_id,
+       COALESCE(home_club_match_id, 0) AS home_club_match_id,
+       COALESCE(away_club_match_id, 0) AS away_club_match_id,
+       COALESCE(venue, '') AS venue,
+       COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
+       COALESCE(drv_result, '') AS drv_result
+FROM ffl.match
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+`
+
+type FindMatchesByIDsRow struct {
+	ID              int32
+	RoundID         int32
+	HomeClubMatchID int32
+	AwayClubMatchID int32
+	Venue           string
+	StartDt         pgtype.Timestamptz
+	DrvResult       string
+}
+
+func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findMatchesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindMatchesByIDsRow{}
+	for rows.Next() {
+		var i FindMatchesByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoundID,
+			&i.HomeClubMatchID,
+			&i.AwayClubMatchID,
+			&i.Venue,
+			&i.StartDt,
+			&i.DrvResult,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findMatchesByRoundID = `-- name: FindMatchesByRoundID :many
 SELECT id, round_id,
        COALESCE(home_club_match_id, 0) AS home_club_match_id,

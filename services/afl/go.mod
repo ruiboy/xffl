@@ -9,6 +9,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
 	github.com/vektah/gqlparser/v2 v2.5.32
+	github.com/vikstrous/dataloadgen v0.0.10
 )
 
 require (

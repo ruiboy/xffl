@@ -1,3 +1,5 @@
+//go:build integration
+
 package graphql_test
 
 import (
@@ -55,7 +57,12 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
-	return httptest.NewServer(srv)
+	// inject per-request loaders via HTTP middleware
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := gql.InjectLoaders(r.Context(), gql.NewLoaders(queries))
+		srv.ServeHTTP(w, r.WithContext(ctx))
+	})
+	return httptest.NewServer(h)
 }
 
 // fixture
@@ -395,6 +402,115 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 		require.NotNil(t, pm.Position)
 		assert.Equal(t, "goals", *pm.Position)
 		assert.Equal(t, 15, pm.Score)
+	})
+}
+
+func TestFflRound(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	roundID := fmt.Sprintf("%d", ids.roundID)
+	result := execQuery(t, server, `{
+		fflRound(id: "`+roundID+`") {
+			id
+			name
+			season { id name }
+			matches { venue }
+		}
+	}`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		FflRound struct {
+			ID     string `json:"id"`
+			Name   string `json:"name"`
+			Season struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"season"`
+			Matches []struct {
+				Venue string `json:"venue"`
+			} `json:"matches"`
+		} `json:"fflRound"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("returns the correct round", func(t *testing.T) {
+		assert.Equal(t, roundID, data.FflRound.ID)
+		assert.Equal(t, "Round 1", data.FflRound.Name)
+	})
+	t.Run("round includes season breadcrumb", func(t *testing.T) {
+		assert.Equal(t, "Test 2025", data.FflRound.Season.Name)
+	})
+	t.Run("round includes its matches", func(t *testing.T) {
+		require.Len(t, data.FflRound.Matches, 1)
+		assert.Equal(t, "Test Ground", data.FflRound.Matches[0].Venue)
+	})
+}
+
+func TestFflMatch(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	matchID := fmt.Sprintf("%d", ids.matchID)
+	result := execQuery(t, server, `{
+		fflMatch(id: "`+matchID+`") {
+			id
+			venue
+			round {
+				id
+				name
+				season { id name }
+			}
+			homeClubMatch { club { name } score }
+			awayClubMatch { club { name } score }
+		}
+	}`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		FflMatch struct {
+			ID    string `json:"id"`
+			Venue string `json:"venue"`
+			Round struct {
+				ID     string `json:"id"`
+				Name   string `json:"name"`
+				Season struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"season"`
+			} `json:"round"`
+			HomeClubMatch *struct {
+				Club  struct{ Name string } `json:"club"`
+				Score int                   `json:"score"`
+			} `json:"homeClubMatch"`
+			AwayClubMatch *struct {
+				Club  struct{ Name string } `json:"club"`
+				Score int                   `json:"score"`
+			} `json:"awayClubMatch"`
+		} `json:"fflMatch"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("returns the correct match", func(t *testing.T) {
+		assert.Equal(t, matchID, data.FflMatch.ID)
+		assert.Equal(t, "Test Ground", data.FflMatch.Venue)
+	})
+	t.Run("round breadcrumb is correct", func(t *testing.T) {
+		assert.Equal(t, "Round 1", data.FflMatch.Round.Name)
+		assert.Equal(t, "Test 2025", data.FflMatch.Round.Season.Name)
+	})
+	t.Run("club matches are resolved via loaders", func(t *testing.T) {
+		require.NotNil(t, data.FflMatch.HomeClubMatch)
+		assert.Equal(t, "Test Eagles", data.FflMatch.HomeClubMatch.Club.Name)
+		assert.Equal(t, 85, data.FflMatch.HomeClubMatch.Score)
+		require.NotNil(t, data.FflMatch.AwayClubMatch)
+		assert.Equal(t, "Test Lions", data.FflMatch.AwayClubMatch.Club.Name)
+		assert.Equal(t, 72, data.FflMatch.AwayClubMatch.Score)
 	})
 }
 
