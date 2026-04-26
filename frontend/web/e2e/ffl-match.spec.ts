@@ -19,14 +19,18 @@ test.describe('FFL Match', () => {
   })
 
   test('displays fantasy scores', async ({ page }) => {
-    await expect(page.getByText('Fantasy score:')).toHaveCount(2)
+    await expect(page.getByText('Score:')).toHaveCount(2)
   })
 
   test('displays squad table with player columns', async ({ page }) => {
     await expect(page.getByRole('columnheader', { name: 'Player' }).first()).toBeVisible()
-    await expect(page.getByRole('columnheader', { name: 'Position' }).first()).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Status' }).first()).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Score' }).first()).toBeVisible()
+  })
+
+  test('squad table groups players by position with subtotals', async ({ page }) => {
+    // SquadTable now groups starters by position (Goals, Kicks, etc.) with subtotals
+    await expect(page.getByText('Goals').first()).toBeVisible()
   })
 
   test('displays Ruiboys players', async ({ page }) => {

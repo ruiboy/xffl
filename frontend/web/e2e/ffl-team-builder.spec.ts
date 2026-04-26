@@ -4,7 +4,9 @@ import { test, expect } from '@playwright/test'
 async function goToTeamBuilder(page: import('@playwright/test').Page) {
   await page.goto('/ffl')
   await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-  await page.getByTitle('Team Builder').click()
+  // Wait for round data to load; use main-scoped selector to avoid matching the global nav link
+  await expect(page.getByRole('heading', { name: 'Matches' })).toBeVisible({ timeout: 15000 })
+  await page.locator('main').getByTitle('Team Builder').click()
   await page.waitForURL(/\/ffl\/.*\/team-builder/)
 }
 
@@ -321,6 +323,20 @@ test.describe('FFL Team Builder', () => {
 
     test('shows season name in breadcrumb', async ({ page }) => {
       await expect(page.locator('main').getByRole('link', { name: 'FFL 2026' })).toBeVisible()
+    })
+
+    test('shows current round name in header nav', async ({ page }) => {
+      // Round name is shown in the prev/next round navigator in the header
+      await expect(page.locator('main').getByText('Round 1').first()).toBeVisible()
+    })
+
+    test('header has Squad link', async ({ page }) => {
+      await expect(page.locator('main').getByRole('link', { name: 'Squad' })).toBeVisible()
+    })
+
+    test('Squad link in header navigates to squad page', async ({ page }) => {
+      await page.locator('main').getByRole('link', { name: 'Squad' }).click()
+      await expect(page).toHaveURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
     })
   })
 
