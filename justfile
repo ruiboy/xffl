@@ -103,7 +103,10 @@ test-e2e:
     until docker exec xffl-postgres-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
     echo "Test Postgres ready"
 
-    (cd frontend/web && ./node_modules/.bin/playwright test); STATUS=$?
+    # If npx (or npm run) is blocked on your machine, swap the command below for:
+    #   ./node_modules/.bin/playwright test
+    # (after running `npm ci` in frontend/web at least once to populate node_modules).
+    (cd frontend/web && npx playwright test); STATUS=$?
 
     docker compose -p xffl-test -f dev/docker-compose.test.yml down
     rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql

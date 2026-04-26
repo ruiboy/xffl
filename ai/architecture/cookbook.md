@@ -158,7 +158,20 @@ See `ai/architecture/integrations.md` for the production adapter pattern (ACL, o
 
 ## Testing
 
-See `ai/architecture/testing.md` for Go testing conventions (stack, patterns, naming).
+See `ai/architecture/testing.md` for full conventions — Go (unit/integration) and frontend e2e (Playwright).
 
 - **Frontend type check**: `cd frontend/web && npx vue-tsc --noEmit`
 - **E2E**: `just test-e2e` (self-contained — starts its own isolated stack)
+
+## Recipe: Add a new e2e spec
+
+1. Create `frontend/web/e2e/<feature>.spec.ts`.
+2. Import from the project fixtures, **not** `@playwright/test`:
+   ```ts
+   import { test, expect } from './fixtures'
+   ```
+3. Optional: import shared helpers (`setupFflSession`, `setupAflSession`) from `./helpers`.
+4. **Do not** add `beforeEach(resetDb)` — the auto fixture in `fixtures.ts` resets the DB before every test, including for destructive specs.
+5. Run: `just test-e2e`.
+
+See `ai/architecture/testing.md` (Frontend e2e tests) for the isolation model, the `workers: 1` rationale, and when to prefer a Go integration test instead.
