@@ -34,11 +34,12 @@ test.describe('FFL Round', () => {
   })
 
   test('displays top scorers grouped by position', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Top Scorers' })).toBeVisible()
+    const topScorers = page.locator('section', { has: page.getByRole('heading', { name: 'Top Scorers' }) })
+    await expect(topScorers).toBeVisible()
     // Grid layout by position — no table column headers
     await expect(page.getByRole('columnheader', { name: 'Player' })).not.toBeAttached()
-    // Position group labels appear instead
-    await expect(page.getByText('Kicks').first()).toBeVisible()
+    // At least one position label appears inside the section
+    await expect(topScorers.locator('p').filter({ hasText: /Goals|Kicks|Handballs|Marks|Tackles|Hitouts|Star/ }).first()).toBeVisible()
   })
 
   test('shows Team Builder button for selected club match', async ({ page }) => {

@@ -87,7 +87,7 @@ test-afl:
 
 # Run FFL service tests
 test-ffl:
-    cd services/ffl && go test ./...
+    cd services/ffl && go test -tags integration ./...
 
 # Run e2e tests in a fully isolated environment (dev stack may remain running)
 test-e2e:
