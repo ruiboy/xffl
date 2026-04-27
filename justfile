@@ -81,6 +81,10 @@ stop-all:
         fi
     done
 
+# Generate Twirp + protobuf Go code from contracts/proto/ → contracts/gen/
+proto-gen:
+    buf generate
+
 # Run AFL service tests (includes integration tests via testcontainers)
 test-afl:
     cd services/afl && go test -tags integration ./...

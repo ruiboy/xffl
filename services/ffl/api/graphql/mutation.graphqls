@@ -7,6 +7,13 @@ type Mutation {
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
   addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
+
+  # Data ops: parse a forum post and resolve players against the squad.
+  # Returns a parse result for review — no DB writes.
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
+
+  # Data ops: confirm a reviewed parse result and write to the database.
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 }
 
 input AddFFLSquadPlayerInput {

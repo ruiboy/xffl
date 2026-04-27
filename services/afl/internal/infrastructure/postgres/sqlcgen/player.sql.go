@@ -27,6 +27,77 @@ func (q *Queries) FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDR
 	return i, err
 }
 
+const findPlayersByIDs = `-- name: FindPlayersByIDs :many
+SELECT id, name
+FROM afl.player
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+ORDER BY id
+`
+
+type FindPlayersByIDsRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findPlayersByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayersByIDsRow{}
+	for rows.Next() {
+		var i FindPlayersByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const findPlayersByIDsWithClub = `-- name: FindPlayersByIDsWithClub :many
+SELECT DISTINCT ON (p.id)
+    p.id,
+    p.name,
+    COALESCE(c.name, '') AS club_name
+FROM afl.player p
+LEFT JOIN afl.player_season ps ON ps.player_id = p.id AND ps.deleted_at IS NULL
+LEFT JOIN afl.club_season cs ON cs.id = ps.club_season_id AND cs.deleted_at IS NULL
+LEFT JOIN afl.club c ON c.id = cs.club_id AND c.deleted_at IS NULL
+WHERE p.id = ANY($1::int[]) AND p.deleted_at IS NULL
+ORDER BY p.id, ps.id DESC
+`
+
+type FindPlayersByIDsWithClubRow struct {
+	ID       int32
+	Name     string
+	ClubName string
+}
+
+func (q *Queries) FindPlayersByIDsWithClub(ctx context.Context, ids []int32) ([]FindPlayersByIDsWithClubRow, error) {
+	rows, err := q.db.Query(ctx, findPlayersByIDsWithClub, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayersByIDsWithClubRow{}
+	for rows.Next() {
+		var i FindPlayersByIDsWithClubRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.ClubName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchPlayersByName = `-- name: SearchPlayersByName :many
 SELECT id, name
 FROM afl.player

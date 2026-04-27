@@ -15,6 +15,8 @@ import (
 	"xffl/services/ffl/internal/application"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/forum"
+	"xffl/services/ffl/internal/infrastructure/rpc"
 	gql "xffl/services/ffl/internal/interface/graphql"
 	pgevents "xffl/shared/events/pg"
 )
@@ -80,7 +82,19 @@ func main() {
 		}
 	}()
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands}
+	aflBaseURL := os.Getenv("AFL_BASE_URL")
+	if aflBaseURL == "" {
+		aflBaseURL = "http://localhost:8080"
+	}
+
+	dataOps := application.NewDataOpsCommands(
+		db,
+		rpc.NewAFLPlayerLookup(aflBaseURL),
+		forum.NewLevenshteinResolver(),
+		forum.NewParser(),
+	)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

@@ -1,0 +1,39 @@
+CHEETAHS 362
+GOALS
+Ben King (GC) 2
+Aaron Naughton (WB) 1
+Nick Larkey (NM) 4
+0 35
+KICKS
+Colby McKercher (NM) 11
+Dan Houston (Col) 14
+Jayden Short (Rich) 14
+Jack Sinclair (StK) 23
+0 62
+HANDBALLS
+Caleb Serong (Freo) 10
+Lachie Neale (Bris) 16
+Ryley Sanders (WB) 18
+Clayton Oliver (GWS) 18
+0 62
+MARKS
+Nick Haynes (Carl) 7
+Nick Newman (Carl) 7
+0 28
+TACKLES
+James Rowbottom (Syd) 4
+Matthew Rowell (GC) 10
+0 56
+HITOUTS
+Lachlan McAndrew (Adel) 30
+Tristan Xerri (NM) 24
+0 54
+STAR
+Will Ashcroft (Bris) 65
+0 65
+BENCH
+Harry Sheezel (NM) * *
+Hugo Garcia (StK) T/H T/H
+Charlie Curnow (Syd) G/K G/K
+Lloyd Meek (Haw) R/M R/M
+Interchange = * *

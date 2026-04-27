@@ -15,8 +15,7 @@ type ClubMatch struct {
 
 // Score computes the total fantasy score for this club match.
 //
-// A player is a starter if they occupy a position slot (no BackupPositions or
-// InterchangePosition). Multiple players can occupy the same position (e.g. 3
+// A player is a starter if they occupy a position slot (BackupPositions == nil). Multiple players can occupy the same position (e.g. 3
 // goal kickers). Each starter slot is scored independently.
 //
 // Rules applied in order:

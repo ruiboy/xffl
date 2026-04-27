@@ -58,6 +58,9 @@ just restore-db      # Restore latest backup into dev DB (pass file= to specify 
 **Before adding an integration (external data source):**
 - `ai/architecture/integrations.md` — ACL pattern, outbound ports, secondary adapters, cache policy
 
+**Before writing tests:**
+- `ai/architecture/testing.md` — testify (assert/require), build tags, unit vs integration, e2e isolation model
+
 **For development workflow detail:**
 - `ai/prompts/system-prompt.md` — development process (understand → test plan → implement → validate → reflect)
 

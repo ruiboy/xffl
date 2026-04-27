@@ -127,11 +127,12 @@ Hard rules enforced by `domain.ValidateTeam()`:
 
 | Role | How to identify |
 |------|----------------|
-| **Starter** | `BackupPositions == nil && InterchangePosition == nil` |
-| **Bench** | `BackupPositions != nil \|\| InterchangePosition != nil` |
+| **Starter** | `BackupPositions == nil` |
+| **Bench** | `BackupPositions != nil` |
+| **Interchange** (bench subtype) | `BackupPositions != nil && InterchangePosition != nil` |
 
-- **BackupPositions** — comma-separated list of positions this bench player can substitute into (`"star"` for backup star; two non-star positions for dual-position bench).
-- **InterchangePosition** — the single position this bench player can freely interchange with their starter (see interchange rules below).
+- **BackupPositions** — comma-separated list of positions this bench player can substitute into (`"star"` for bench star; two non-star positions for dual-position bench).
+- **InterchangePosition** — the position this bench player comes on in when interchanging. Must be one of their own `BackupPositions`. A player cannot have `InterchangePosition` set without `BackupPositions`.
 
 ### FFL Player and AFL linkage
 

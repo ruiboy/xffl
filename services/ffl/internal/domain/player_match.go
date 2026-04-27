@@ -71,9 +71,10 @@ type PlayerMatch struct {
 	AFLPlayerMatchID    *int
 }
 
-// isBench returns true if this player is on the bench (has backup or interchange positions).
+// isBench returns true if this player is on the bench (has backup positions).
+// InterchangePosition is always co-present with BackupPositions.
 func (pm PlayerMatch) isBench() bool {
-	return pm.BackupPositions != nil || pm.InterchangePosition != nil
+	return pm.BackupPositions != nil
 }
 
 // CalculateScore computes the fantasy score for this player based on their
@@ -115,8 +116,10 @@ func ValidateTeam(entries []UpsertPlayerMatchParams) error {
 	interchangeCount := 0
 
 	for _, e := range entries {
-		isBench := e.BackupPositions != nil || e.InterchangePosition != nil
-		if isBench {
+		if e.InterchangePosition != nil && e.BackupPositions == nil {
+			return fmt.Errorf("team: interchange position requires backup positions to be set")
+		}
+		if e.BackupPositions != nil {
 			benchPlayers = append(benchPlayers, e)
 			if e.InterchangePosition != nil {
 				interchangeCount++
@@ -188,12 +191,15 @@ func ValidateTeam(entries []UpsertPlayerMatchParams) error {
 		return fmt.Errorf("team: at most 1 interchange position allowed, got %d", interchangeCount)
 	}
 
-	// Rule 7: interchange position must be a recognised Position.
+	// Rule 7: interchange position must be a recognised Position and one of the player's own backup positions.
 	for _, bp := range benchPlayers {
 		if bp.InterchangePosition != nil {
 			pos := Position(*bp.InterchangePosition)
 			if _, ok := PositionSlots[pos]; !ok {
 				return fmt.Errorf("team: interchange position %q is not a valid position", pos)
+			}
+			if !containsPosition(*bp.BackupPositions, pos) {
+				return fmt.Errorf("team: interchange position %q is not one of this player's backup positions", pos)
 			}
 		}
 	}

@@ -95,3 +95,44 @@ type FFLPlayerMatch {
   interchangePosition: String
   score: Int!
 }
+
+# --- Data ops types ---
+
+input ParseFFLTeamSubmissionInput {
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+type ParseFFLTeamSubmissionResult {
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type ResolvedPlayer {
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input ConfirmFFLTeamSubmissionInput {
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input ConfirmedFFLPlayerInput {
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
