@@ -14,7 +14,7 @@ Create or update a GitHub PR (also called an MR) for the current branch.
 
 ## Writing the PR body
 
-**Title:** one short phrase (under 60 chars), no period. Describes the feature or fix, not the implementation.
+**Title:** short imperative phrase (under 60 chars), no period. Describes what the branch does, not how or why. No sprint names, phase numbers, ticket references, or other ephemeral identifiers.
 
 **Body structure:**
 
