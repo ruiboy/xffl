@@ -163,8 +163,137 @@ func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSq
 	return convertPlayerSeason(ps, player), nil
 }
 
-// ParseTeamSubmission is the resolver for the parseTeamSubmission field.
-func (r *mutationResolver) ParseTeamSubmission(ctx context.Context, input ParseTeamSubmissionInput) (*ParseTeamSubmissionResult, error) {
+// ParseFFLTeamSubmission is the resolver for the parseFFLTeamSubmission field.
+func (r *mutationResolver) ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error) {
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	_ = clubMatchID // passed back to client for use in confirmFFLTeamSubmission
+
+	playerSeasons, err := r.Queries.GetPlayerSeasons(ctx, clubSeasonID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch squad: %w", err)
+	}
+
+	aflIDToPlayerSeasonID := make(map[int]int, len(playerSeasons))
+	for _, ps := range playerSeasons {
+		p, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+		if err != nil {
+			return nil, err
+		}
+		aflIDToPlayerSeasonID[p.AFLPlayerID] = ps.ID
+	}
+
+	candidates, err := r.DataOps.LookupCandidates(ctx, aflIDToPlayerSeasonID)
+	if err != nil {
+		return nil, fmt.Errorf("lookup candidates: %w", err)
+	}
+
+	result, err := r.DataOps.ParseTeamSubmission(ctx, application.ParseTeamSubmissionParams{
+		ClubSeasonID: clubSeasonID,
+		TeamName:     input.TeamName,
+		Post:         input.Post,
+	}, playerSeasons, candidates)
+	if err != nil {
+		return nil, err
+	}
+
+	resolvedGQL := make([]*ResolvedPlayer, len(result.ResolvedPlayers))
+	for i, rp := range result.ResolvedPlayers {
+		var psID *string
+		var resolvedName, resolvedClub *string
+		if rp.PlayerSeasonID != 0 {
+			id := toID(rp.PlayerSeasonID)
+			psID = &id
+			name := rp.BestMatch.Candidate.Name
+			resolvedName = &name
+			club := rp.BestMatch.Candidate.Club
+			resolvedClub = &club
+		}
+		resolvedGQL[i] = &ResolvedPlayer{
+			ParsedName:          rp.Parsed.Name,
+			ClubHint:            rp.Parsed.ClubHint,
+			ResolvedName:        resolvedName,
+			ResolvedClub:        resolvedClub,
+			Position:            rp.Parsed.Position,
+			BackupPositions:     rp.Parsed.BackupPositions,
+			InterchangePosition: rp.Parsed.InterchangePosition,
+			Score:               rp.Parsed.Score,
+			Notes:               rp.Parsed.Notes,
+			PlayerSeasonID:      psID,
+			Confidence:          rp.BestMatch.Confidence,
+		}
+	}
+
+	needsReview := make([]int, len(result.NeedsReview))
+	copy(needsReview, result.NeedsReview)
+
+	return &ParseFFLTeamSubmissionResult{
+		ResolvedPlayers: resolvedGQL,
+		NeedsReview:     needsReview,
+	}, nil
+}
+
+// ConfirmFFLTeamSubmission is the resolver for the confirmFFLTeamSubmission field.
+func (r *mutationResolver) ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+
+	resolved := make([]application.ResolvedPlayer, 0, len(input.Players))
+	for _, p := range input.Players {
+		psID, err := fromID(p.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		parsed := application.ParsedPlayerRow{
+			Position: p.Position,
+			Score:    p.Score,
+		}
+		if p.BackupPositions != nil {
+			parsed.BackupPositions = *p.BackupPositions
+		}
+		if p.InterchangePosition != nil {
+			parsed.InterchangePosition = *p.InterchangePosition
+		}
+		resolved = append(resolved, application.ResolvedPlayer{
+			Parsed:         parsed,
+			PlayerSeasonID: psID,
+			Confident:      true,
+		})
+	}
+
+	pms, err := r.DataOps.ImportRoundTeams(ctx, application.ImportRoundTeamsParams{
+		ClubMatchID:     clubMatchID,
+		ResolvedPlayers: resolved,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
+}
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+/*
+	func (r *mutationResolver) ParseTeamSubmission(ctx context.Context, input ParseTeamSubmissionInput) (*ParseTeamSubmissionResult, error) {
 	clubSeasonID, err := fromID(input.ClubSeasonID)
 	if err != nil {
 		return nil, err
@@ -241,8 +370,6 @@ func (r *mutationResolver) ParseTeamSubmission(ctx context.Context, input ParseT
 		NeedsReview:     needsReview,
 	}, nil
 }
-
-// ConfirmTeamSubmission is the resolver for the confirmTeamSubmission field.
 func (r *mutationResolver) ConfirmTeamSubmission(ctx context.Context, input ConfirmTeamSubmissionInput) ([]*FFLPlayerMatch, error) {
 	clubMatchID, err := fromID(input.ClubMatchID)
 	if err != nil {
@@ -290,8 +417,4 @@ func (r *mutationResolver) ConfirmTeamSubmission(ctx context.Context, input Conf
 	}
 	return result, nil
 }
-
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }
+*/

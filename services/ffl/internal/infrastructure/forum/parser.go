@@ -149,8 +149,16 @@ func parseBlock(team string, lines []string) []application.ParsedPlayerRow {
 			continue
 		}
 
-		// "Interchange = *" informational line
+		// "Interchange = * *" — for Cheetahs, marks the bench star player as interchange
 		if regexp.MustCompile(`(?i)^Interchange\s*=\s*\*`).MatchString(line) {
+			if isCheetahs {
+				for i := len(rows) - 1; i >= 0; i-- {
+					if rows[i].BackupPositions == "star" {
+						rows[i].InterchangePosition = "star"
+						break
+					}
+				}
+			}
 			continue
 		}
 
@@ -246,7 +254,7 @@ func parseSlashers(line, position string) *application.ParsedPlayerRow {
 			s := extractScore(m[2])
 			return &application.ParsedPlayerRow{
 				Name: n, ClubHint: club, Position: position,
-				InterchangePosition: "star", Score: s,
+				BackupPositions: "star", InterchangePosition: "star", Score: s,
 			}
 		}
 	}
@@ -352,7 +360,7 @@ func parseTHC(line, position string, inIC bool) *application.ParsedPlayerRow {
 			n, club, score, notes := thcNameScore(strings.TrimSpace(m[1]))
 			return &application.ParsedPlayerRow{
 				Name: n, ClubHint: club, Position: "bench",
-				InterchangePosition: "star", Score: score, Notes: notes,
+				BackupPositions: "star", InterchangePosition: "star", Score: score, Notes: notes,
 			}
 		}
 		// "*= Name CLUB= score"
@@ -360,7 +368,7 @@ func parseTHC(line, position string, inIC bool) *application.ParsedPlayerRow {
 			n, club, score, notes := thcNameScore(strings.TrimSpace(m[1]))
 			return &application.ParsedPlayerRow{
 				Name: n, ClubHint: club, Position: "bench",
-				InterchangePosition: "star", Score: score, Notes: notes,
+				BackupPositions: "star", InterchangePosition: "star", Score: score, Notes: notes,
 			}
 		}
 		// "K/HB- Name CLUB"
@@ -443,8 +451,11 @@ func normalisePosition(raw string) string {
 func decodeBenchCode(code string) (backupPositions, interchangePosition string) {
 	code = strings.TrimSpace(code)
 	upper := strings.ToUpper(code)
-	if upper == "*" || strings.ReplaceAll(strings.ReplaceAll(upper, " ", ""), "(INT)", "") == "*" {
-		return "", "star"
+	if upper == "*" {
+		return "star", ""
+	}
+	if strings.ReplaceAll(strings.ReplaceAll(upper, " ", ""), "(INT)", "") == "*" {
+		return "star", "star"
 	}
 	parts := strings.Split(upper, "/")
 	var positions []string

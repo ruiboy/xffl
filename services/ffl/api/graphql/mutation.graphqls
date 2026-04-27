@@ -10,10 +10,10 @@ type Mutation {
 
   # Data ops: parse a forum post and resolve players against the squad.
   # Returns a parse result for review — no DB writes.
-  parseTeamSubmission(input: ParseTeamSubmissionInput!): ParseTeamSubmissionResult!
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
 
   # Data ops: confirm a reviewed parse result and write to the database.
-  confirmTeamSubmission(input: ConfirmTeamSubmissionInput!): [FFLPlayerMatch!]!
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 }
 
 input AddFFLSquadPlayerInput {

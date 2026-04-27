@@ -124,10 +124,10 @@ type ComplexityRoot struct {
 		AddFFLPlayerToSeason      func(childComplexity int, input AddFFLPlayerToSeasonInput) int
 		AddFFLSquadPlayer         func(childComplexity int, input AddFFLSquadPlayerInput) int
 		CalculateFFLFantasyScore  func(childComplexity int, input CalculateFFLFantasyScoreInput) int
-		ConfirmTeamSubmission     func(childComplexity int, input ConfirmTeamSubmissionInput) int
+		ConfirmFFLTeamSubmission  func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
 		CreateFFLPlayer           func(childComplexity int, input CreateFFLPlayerInput) int
 		DeleteFFLPlayer           func(childComplexity int, id string) int
-		ParseTeamSubmission       func(childComplexity int, input ParseTeamSubmissionInput) int
+		ParseFFLTeamSubmission    func(childComplexity int, input ParseFFLTeamSubmissionInput) int
 		RemoveFFLPlayerFromSeason func(childComplexity int, id string) int
 		SetFFLTeam                func(childComplexity int, input SetFFLTeamInput) int
 		UpdateFFLPlayer           func(childComplexity int, input UpdateFFLPlayerInput) int
@@ -138,7 +138,7 @@ type ComplexityRoot struct {
 		HasNextPage func(childComplexity int) int
 	}
 
-	ParseTeamSubmissionResult struct {
+	ParseFFLTeamSubmissionResult struct {
 		NeedsReview     func(childComplexity int) int
 		ResolvedPlayers func(childComplexity int) int
 	}
@@ -198,8 +198,8 @@ type MutationResolver interface {
 	CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error)
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
 	AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error)
-	ParseTeamSubmission(ctx context.Context, input ParseTeamSubmissionInput) (*ParseTeamSubmissionResult, error)
-	ConfirmTeamSubmission(ctx context.Context, input ConfirmTeamSubmissionInput) ([]*FFLPlayerMatch, error)
+	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
+	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
 }
 type QueryResolver interface {
 	FflClubs(ctx context.Context) ([]*FFLClub, error)
@@ -582,17 +582,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CalculateFFLFantasyScore(childComplexity, args["input"].(CalculateFFLFantasyScoreInput)), true
-	case "Mutation.confirmTeamSubmission":
-		if e.ComplexityRoot.Mutation.ConfirmTeamSubmission == nil {
+	case "Mutation.confirmFFLTeamSubmission":
+		if e.ComplexityRoot.Mutation.ConfirmFFLTeamSubmission == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_confirmTeamSubmission_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_confirmFFLTeamSubmission_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.ConfirmTeamSubmission(childComplexity, args["input"].(ConfirmTeamSubmissionInput)), true
+		return e.ComplexityRoot.Mutation.ConfirmFFLTeamSubmission(childComplexity, args["input"].(ConfirmFFLTeamSubmissionInput)), true
 	case "Mutation.createFFLPlayer":
 		if e.ComplexityRoot.Mutation.CreateFFLPlayer == nil {
 			break
@@ -615,17 +615,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteFFLPlayer(childComplexity, args["id"].(string)), true
-	case "Mutation.parseTeamSubmission":
-		if e.ComplexityRoot.Mutation.ParseTeamSubmission == nil {
+	case "Mutation.parseFFLTeamSubmission":
+		if e.ComplexityRoot.Mutation.ParseFFLTeamSubmission == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_parseTeamSubmission_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_parseFFLTeamSubmission_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.ParseTeamSubmission(childComplexity, args["input"].(ParseTeamSubmissionInput)), true
+		return e.ComplexityRoot.Mutation.ParseFFLTeamSubmission(childComplexity, args["input"].(ParseFFLTeamSubmissionInput)), true
 	case "Mutation.removeFFLPlayerFromSeason":
 		if e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason == nil {
 			break
@@ -673,18 +673,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.PageInfo.HasNextPage(childComplexity), true
 
-	case "ParseTeamSubmissionResult.needsReview":
-		if e.ComplexityRoot.ParseTeamSubmissionResult.NeedsReview == nil {
+	case "ParseFFLTeamSubmissionResult.needsReview":
+		if e.ComplexityRoot.ParseFFLTeamSubmissionResult.NeedsReview == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ParseTeamSubmissionResult.NeedsReview(childComplexity), true
-	case "ParseTeamSubmissionResult.resolvedPlayers":
-		if e.ComplexityRoot.ParseTeamSubmissionResult.ResolvedPlayers == nil {
+		return e.ComplexityRoot.ParseFFLTeamSubmissionResult.NeedsReview(childComplexity), true
+	case "ParseFFLTeamSubmissionResult.resolvedPlayers":
+		if e.ComplexityRoot.ParseFFLTeamSubmissionResult.ResolvedPlayers == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ParseTeamSubmissionResult.ResolvedPlayers(childComplexity), true
+		return e.ComplexityRoot.ParseFFLTeamSubmissionResult.ResolvedPlayers(childComplexity), true
 
 	case "Query.fflClub":
 		if e.ComplexityRoot.Query.FflClub == nil {
@@ -860,12 +860,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAddFFLPlayerToSeasonInput,
 		ec.unmarshalInputAddFFLSquadPlayerInput,
 		ec.unmarshalInputCalculateFFLFantasyScoreInput,
-		ec.unmarshalInputConfirmTeamSubmissionInput,
-		ec.unmarshalInputConfirmedPlayerInput,
+		ec.unmarshalInputConfirmFFLTeamSubmissionInput,
+		ec.unmarshalInputConfirmedFFLPlayerInput,
 		ec.unmarshalInputCreateFFLPlayerInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLTeamPlayerInput,
-		ec.unmarshalInputParseTeamSubmissionInput,
+		ec.unmarshalInputParseFFLTeamSubmissionInput,
 		ec.unmarshalInputSetFFLTeamInput,
 		ec.unmarshalInputUpdateFFLPlayerInput,
 	)
@@ -960,10 +960,10 @@ var sources = []*ast.Source{
 
   # Data ops: parse a forum post and resolve players against the squad.
   # Returns a parse result for review — no DB writes.
-  parseTeamSubmission(input: ParseTeamSubmissionInput!): ParseTeamSubmissionResult!
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
 
   # Data ops: confirm a reviewed parse result and write to the database.
-  confirmTeamSubmission(input: ConfirmTeamSubmissionInput!): [FFLPlayerMatch!]!
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 }
 
 input AddFFLSquadPlayerInput {
@@ -1109,14 +1109,14 @@ type FFLPlayerMatch {
 
 # --- Data ops types ---
 
-input ParseTeamSubmissionInput {
+input ParseFFLTeamSubmissionInput {
   clubSeasonId: ID!
   clubMatchId: ID!
   teamName: String!
   post: String!
 }
 
-type ParseTeamSubmissionResult {
+type ParseFFLTeamSubmissionResult {
   resolvedPlayers: [ResolvedPlayer!]!
   needsReview: [Int!]!
 }
@@ -1135,12 +1135,12 @@ type ResolvedPlayer {
   confidence: Float!
 }
 
-input ConfirmTeamSubmissionInput {
+input ConfirmFFLTeamSubmissionInput {
   clubMatchId: ID!
-  players: [ConfirmedPlayerInput!]!
+  players: [ConfirmedFFLPlayerInput!]!
 }
 
-input ConfirmedPlayerInput {
+input ConfirmedFFLPlayerInput {
   playerSeasonId: ID!
   position: String!
   backupPositions: String
@@ -1209,10 +1209,10 @@ func (ec *executionContext) field_Mutation_calculateFFLFantasyScore_args(ctx con
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_confirmTeamSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_confirmFFLTeamSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNConfirmTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmTeamSubmissionInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNConfirmFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmFFLTeamSubmissionInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1242,10 +1242,10 @@ func (ec *executionContext) field_Mutation_deleteFFLPlayer_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_parseTeamSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_parseFFLTeamSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseTeamSubmissionInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3496,24 +3496,24 @@ func (ec *executionContext) fieldContext_Mutation_addFFLSquadPlayer(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_parseTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_parseTeamSubmission,
+		ec.fieldContext_Mutation_parseFFLTeamSubmission,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ParseTeamSubmission(ctx, fc.Args["input"].(ParseTeamSubmissionInput))
+			return ec.Resolvers.Mutation().ParseFFLTeamSubmission(ctx, fc.Args["input"].(ParseFFLTeamSubmissionInput))
 		},
 		nil,
-		ec.marshalNParseTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseTeamSubmissionResult,
+		ec.marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionResult,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_parseTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3522,11 +3522,11 @@ func (ec *executionContext) fieldContext_Mutation_parseTeamSubmission(ctx contex
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "resolvedPlayers":
-				return ec.fieldContext_ParseTeamSubmissionResult_resolvedPlayers(ctx, field)
+				return ec.fieldContext_ParseFFLTeamSubmissionResult_resolvedPlayers(ctx, field)
 			case "needsReview":
-				return ec.fieldContext_ParseTeamSubmissionResult_needsReview(ctx, field)
+				return ec.fieldContext_ParseFFLTeamSubmissionResult_needsReview(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ParseTeamSubmissionResult", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ParseFFLTeamSubmissionResult", field.Name)
 		},
 	}
 	defer func() {
@@ -3536,22 +3536,22 @@ func (ec *executionContext) fieldContext_Mutation_parseTeamSubmission(ctx contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_parseTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_parseFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_confirmTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_confirmTeamSubmission,
+		ec.fieldContext_Mutation_confirmFFLTeamSubmission,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ConfirmTeamSubmission(ctx, fc.Args["input"].(ConfirmTeamSubmissionInput))
+			return ec.Resolvers.Mutation().ConfirmFFLTeamSubmission(ctx, fc.Args["input"].(ConfirmFFLTeamSubmissionInput))
 		},
 		nil,
 		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
@@ -3560,7 +3560,7 @@ func (ec *executionContext) _Mutation_confirmTeamSubmission(ctx context.Context,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_confirmTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3595,7 +3595,7 @@ func (ec *executionContext) fieldContext_Mutation_confirmTeamSubmission(ctx cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_confirmTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_confirmFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3660,12 +3660,12 @@ func (ec *executionContext) fieldContext_PageInfo_endCursor(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _ParseTeamSubmissionResult_resolvedPlayers(ctx context.Context, field graphql.CollectedField, obj *ParseTeamSubmissionResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _ParseFFLTeamSubmissionResult_resolvedPlayers(ctx context.Context, field graphql.CollectedField, obj *ParseFFLTeamSubmissionResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ParseTeamSubmissionResult_resolvedPlayers,
+		ec.fieldContext_ParseFFLTeamSubmissionResult_resolvedPlayers,
 		func(ctx context.Context) (any, error) {
 			return obj.ResolvedPlayers, nil
 		},
@@ -3676,9 +3676,9 @@ func (ec *executionContext) _ParseTeamSubmissionResult_resolvedPlayers(ctx conte
 	)
 }
 
-func (ec *executionContext) fieldContext_ParseTeamSubmissionResult_resolvedPlayers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ParseFFLTeamSubmissionResult_resolvedPlayers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ParseTeamSubmissionResult",
+		Object:     "ParseFFLTeamSubmissionResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3713,12 +3713,12 @@ func (ec *executionContext) fieldContext_ParseTeamSubmissionResult_resolvedPlaye
 	return fc, nil
 }
 
-func (ec *executionContext) _ParseTeamSubmissionResult_needsReview(ctx context.Context, field graphql.CollectedField, obj *ParseTeamSubmissionResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _ParseFFLTeamSubmissionResult_needsReview(ctx context.Context, field graphql.CollectedField, obj *ParseFFLTeamSubmissionResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ParseTeamSubmissionResult_needsReview,
+		ec.fieldContext_ParseFFLTeamSubmissionResult_needsReview,
 		func(ctx context.Context) (any, error) {
 			return obj.NeedsReview, nil
 		},
@@ -3729,9 +3729,9 @@ func (ec *executionContext) _ParseTeamSubmissionResult_needsReview(ctx context.C
 	)
 }
 
-func (ec *executionContext) fieldContext_ParseTeamSubmissionResult_needsReview(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ParseFFLTeamSubmissionResult_needsReview(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ParseTeamSubmissionResult",
+		Object:     "ParseFFLTeamSubmissionResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -6254,8 +6254,8 @@ func (ec *executionContext) unmarshalInputCalculateFFLFantasyScoreInput(ctx cont
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputConfirmTeamSubmissionInput(ctx context.Context, obj any) (ConfirmTeamSubmissionInput, error) {
-	var it ConfirmTeamSubmissionInput
+func (ec *executionContext) unmarshalInputConfirmFFLTeamSubmissionInput(ctx context.Context, obj any) (ConfirmFFLTeamSubmissionInput, error) {
+	var it ConfirmFFLTeamSubmissionInput
 	if obj == nil {
 		return it, nil
 	}
@@ -6281,7 +6281,7 @@ func (ec *executionContext) unmarshalInputConfirmTeamSubmissionInput(ctx context
 			it.ClubMatchID = data
 		case "players":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("players"))
-			data, err := ec.unmarshalNConfirmedPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedPlayerInputᚄ(ctx, v)
+			data, err := ec.unmarshalNConfirmedFFLPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedFFLPlayerInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6291,8 +6291,8 @@ func (ec *executionContext) unmarshalInputConfirmTeamSubmissionInput(ctx context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputConfirmedPlayerInput(ctx context.Context, obj any) (ConfirmedPlayerInput, error) {
-	var it ConfirmedPlayerInput
+func (ec *executionContext) unmarshalInputConfirmedFFLPlayerInput(ctx context.Context, obj any) (ConfirmedFFLPlayerInput, error) {
+	var it ConfirmedFFLPlayerInput
 	if obj == nil {
 		return it, nil
 	}
@@ -6467,8 +6467,8 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputParseTeamSubmissionInput(ctx context.Context, obj any) (ParseTeamSubmissionInput, error) {
-	var it ParseTeamSubmissionInput
+func (ec *executionContext) unmarshalInputParseFFLTeamSubmissionInput(ctx context.Context, obj any) (ParseFFLTeamSubmissionInput, error) {
+	var it ParseFFLTeamSubmissionInput
 	if obj == nil {
 		return it, nil
 	}
@@ -7485,16 +7485,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "parseTeamSubmission":
+		case "parseFFLTeamSubmission":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_parseTeamSubmission(ctx, field)
+				return ec._Mutation_parseFFLTeamSubmission(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "confirmTeamSubmission":
+		case "confirmFFLTeamSubmission":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_confirmTeamSubmission(ctx, field)
+				return ec._Mutation_confirmFFLTeamSubmission(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -7563,24 +7563,24 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var parseTeamSubmissionResultImplementors = []string{"ParseTeamSubmissionResult"}
+var parseFFLTeamSubmissionResultImplementors = []string{"ParseFFLTeamSubmissionResult"}
 
-func (ec *executionContext) _ParseTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, obj *ParseTeamSubmissionResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, parseTeamSubmissionResultImplementors)
+func (ec *executionContext) _ParseFFLTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, obj *ParseFFLTeamSubmissionResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, parseFFLTeamSubmissionResultImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ParseTeamSubmissionResult")
+			out.Values[i] = graphql.MarshalString("ParseFFLTeamSubmissionResult")
 		case "resolvedPlayers":
-			out.Values[i] = ec._ParseTeamSubmissionResult_resolvedPlayers(ctx, field, obj)
+			out.Values[i] = ec._ParseFFLTeamSubmissionResult_resolvedPlayers(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		case "needsReview":
-			out.Values[i] = ec._ParseTeamSubmissionResult_needsReview(ctx, field, obj)
+			out.Values[i] = ec._ParseFFLTeamSubmissionResult_needsReview(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8308,19 +8308,19 @@ func (ec *executionContext) unmarshalNCalculateFFLFantasyScoreInput2xfflᚋservi
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNConfirmTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmTeamSubmissionInput(ctx context.Context, v any) (ConfirmTeamSubmissionInput, error) {
-	res, err := ec.unmarshalInputConfirmTeamSubmissionInput(ctx, v)
+func (ec *executionContext) unmarshalNConfirmFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmFFLTeamSubmissionInput(ctx context.Context, v any) (ConfirmFFLTeamSubmissionInput, error) {
+	res, err := ec.unmarshalInputConfirmFFLTeamSubmissionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNConfirmedPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedPlayerInputᚄ(ctx context.Context, v any) ([]*ConfirmedPlayerInput, error) {
+func (ec *executionContext) unmarshalNConfirmedFFLPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedFFLPlayerInputᚄ(ctx context.Context, v any) ([]*ConfirmedFFLPlayerInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
 	var err error
-	res := make([]*ConfirmedPlayerInput, len(vSlice))
+	res := make([]*ConfirmedFFLPlayerInput, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNConfirmedPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedPlayerInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNConfirmedFFLPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedFFLPlayerInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -8328,8 +8328,8 @@ func (ec *executionContext) unmarshalNConfirmedPlayerInput2ᚕᚖxfflᚋservices
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNConfirmedPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedPlayerInput(ctx context.Context, v any) (*ConfirmedPlayerInput, error) {
-	res, err := ec.unmarshalInputConfirmedPlayerInput(ctx, v)
+func (ec *executionContext) unmarshalNConfirmedFFLPlayerInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmedFFLPlayerInput(ctx context.Context, v any) (*ConfirmedFFLPlayerInput, error) {
+	res, err := ec.unmarshalInputConfirmedFFLPlayerInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -8688,23 +8688,23 @@ func (ec *executionContext) marshalNPageInfo2ᚖxfflᚋservicesᚋfflᚋinternal
 	return ec._PageInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNParseTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseTeamSubmissionInput(ctx context.Context, v any) (ParseTeamSubmissionInput, error) {
-	res, err := ec.unmarshalInputParseTeamSubmissionInput(ctx, v)
+func (ec *executionContext) unmarshalNParseFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionInput(ctx context.Context, v any) (ParseFFLTeamSubmissionInput, error) {
+	res, err := ec.unmarshalInputParseFFLTeamSubmissionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNParseTeamSubmissionResult2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, v ParseTeamSubmissionResult) graphql.Marshaler {
-	return ec._ParseTeamSubmissionResult(ctx, sel, &v)
+func (ec *executionContext) marshalNParseFFLTeamSubmissionResult2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, v ParseFFLTeamSubmissionResult) graphql.Marshaler {
+	return ec._ParseFFLTeamSubmissionResult(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNParseTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, v *ParseTeamSubmissionResult) graphql.Marshaler {
+func (ec *executionContext) marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionResult(ctx context.Context, sel ast.SelectionSet, v *ParseFFLTeamSubmissionResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._ParseTeamSubmissionResult(ctx, sel, v)
+	return ec._ParseFFLTeamSubmissionResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNResolvedPlayer2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐResolvedPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*ResolvedPlayer) graphql.Marshaler {

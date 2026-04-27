@@ -98,14 +98,14 @@ type FFLPlayerMatch {
 
 # --- Data ops types ---
 
-input ParseTeamSubmissionInput {
+input ParseFFLTeamSubmissionInput {
   clubSeasonId: ID!
   clubMatchId: ID!
   teamName: String!
   post: String!
 }
 
-type ParseTeamSubmissionResult {
+type ParseFFLTeamSubmissionResult {
   resolvedPlayers: [ResolvedPlayer!]!
   needsReview: [Int!]!
 }
@@ -124,12 +124,12 @@ type ResolvedPlayer {
   confidence: Float!
 }
 
-input ConfirmTeamSubmissionInput {
+input ConfirmFFLTeamSubmissionInput {
   clubMatchId: ID!
-  players: [ConfirmedPlayerInput!]!
+  players: [ConfirmedFFLPlayerInput!]!
 }
 
-input ConfirmedPlayerInput {
+input ConfirmedFFLPlayerInput {
   playerSeasonId: ID!
   position: String!
   backupPositions: String

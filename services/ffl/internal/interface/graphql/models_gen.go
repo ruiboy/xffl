@@ -23,12 +23,12 @@ type CalculateFFLFantasyScoreInput struct {
 	Hitouts       int    `json:"hitouts"`
 }
 
-type ConfirmTeamSubmissionInput struct {
-	ClubMatchID string                  `json:"clubMatchId"`
-	Players     []*ConfirmedPlayerInput `json:"players"`
+type ConfirmFFLTeamSubmissionInput struct {
+	ClubMatchID string                     `json:"clubMatchId"`
+	Players     []*ConfirmedFFLPlayerInput `json:"players"`
 }
 
-type ConfirmedPlayerInput struct {
+type ConfirmedFFLPlayerInput struct {
 	PlayerSeasonID      string  `json:"playerSeasonId"`
 	Position            string  `json:"position"`
 	BackupPositions     *string `json:"backupPositions,omitempty"`
@@ -141,14 +141,14 @@ type PageInfo struct {
 	EndCursor   *string `json:"endCursor,omitempty"`
 }
 
-type ParseTeamSubmissionInput struct {
+type ParseFFLTeamSubmissionInput struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 	ClubMatchID  string `json:"clubMatchId"`
 	TeamName     string `json:"teamName"`
 	Post         string `json:"post"`
 }
 
-type ParseTeamSubmissionResult struct {
+type ParseFFLTeamSubmissionResult struct {
 	ResolvedPlayers []*ResolvedPlayer `json:"resolvedPlayers"`
 	NeedsReview     []int             `json:"needsReview"`
 }

@@ -96,19 +96,19 @@ func TestClubMatch_Score_InterchangeSwap(t *testing.T) {
 		{"interchange swaps when bench outscores starter", ClubMatch{
 			PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 8},
-				{Status: stat(PlayerMatchStatusPlayed), Score: 15, InterchangePosition: strPtr("kicks")},
+				{Status: stat(PlayerMatchStatusPlayed), Score: 15, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
 			},
 		}, 15}, // bench (15) replaces kicks starter (8)
 		{"interchange does not swap when starter outscores bench", ClubMatch{
 			PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 20},
-				{Status: stat(PlayerMatchStatusPlayed), Score: 10, InterchangePosition: strPtr("kicks")},
+				{Status: stat(PlayerMatchStatusPlayed), Score: 10, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
 			},
 		}, 20}, // starter (20) stays
 		{"interchange does not swap when scores equal", ClubMatch{
 			PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 10},
-				{Status: stat(PlayerMatchStatusPlayed), Score: 10, InterchangePosition: strPtr("kicks")},
+				{Status: stat(PlayerMatchStatusPlayed), Score: 10, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
 			},
 		}, 10}, // no swap on tie
 	}
@@ -174,7 +174,7 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 				PlayerMatches: []PlayerMatch{
 					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 5},
 					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 20},
-					{Status: stat(PlayerMatchStatusPlayed), Score: 15, InterchangePosition: strPtr("kicks")},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 15, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
 				},
 			},
 			want: 35, // bench (15) replaces the 5-score slot; 20-score slot unaffected
@@ -185,7 +185,7 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 				PlayerMatches: []PlayerMatch{
 					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 20},
 					{Position: pos(PositionKicks), Status: stat(PlayerMatchStatusPlayed), Score: 25},
-					{Status: stat(PlayerMatchStatusPlayed), Score: 15, InterchangePosition: strPtr("kicks")},
+					{Status: stat(PlayerMatchStatusPlayed), Score: 15, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
 				},
 			},
 			want: 45, // bench (15) beats neither starter

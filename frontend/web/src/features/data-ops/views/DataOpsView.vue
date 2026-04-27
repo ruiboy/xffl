@@ -175,9 +175,9 @@ import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS } from '../api/queries'
 import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
-import { POSITION_COLORS, POSITION_SLOTS } from '@/features/ffl/utils/position'
+import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 
-const { liveSeasonId } = useFflState()
+const { liveSeasonId, liveRoundId } = useFflState()
 
 // ---- Season data ----
 const { result: seasonResult, loading: loadingSeasonData, error: seasonError } = useQuery(
@@ -190,7 +190,7 @@ const season = computed(() => seasonResult.value?.fflSeason ?? null)
 
 // ---- Selections ----
 const selectedClubSeasonId = ref('')
-const selectedRoundId = ref('')
+const selectedRoundId = ref(liveRoundId.value)
 const teamName = ref('')
 const post = ref('')
 
@@ -255,7 +255,7 @@ async function onParse() {
         post: post.value,
       },
     })
-    const data = res?.data?.parseTeamSubmission
+    const data = res?.data?.parseFFLTeamSubmission
     if (!data) throw new Error('No result returned')
     resolvedPlayers.value = data.resolvedPlayers
     needsReview.value = data.needsReview
@@ -295,7 +295,7 @@ const compositionWarnings = computed(() => {
   }
   return Object.entries(POSITION_SLOTS)
     .filter(([pos, expected]) => (counts[pos] ?? 0) !== expected)
-    .map(([pos, expected]) => `${pos} ${counts[pos] ?? 0}/${expected}`)
+    .map(([pos, expected]) => `${POSITION_LABEL[pos] ?? pos} ${counts[pos] ?? 0}/${expected}`)
 })
 
 async function onConfirm() {
@@ -319,7 +319,7 @@ async function onConfirm() {
         players,
       },
     })
-    const saved = res?.data?.confirmTeamSubmission ?? []
+    const saved = res?.data?.confirmFFLTeamSubmission ?? []
     confirmSuccess.value = `Imported ${saved.length} player records.`
     imported.value = true
   } catch (e: any) {
@@ -331,9 +331,15 @@ async function onConfirm() {
 
 // ---- Display helpers ----
 function displayPosition(rp: ResolvedPlayer): string {
-  if (rp.backupPositions) return `bench (${rp.backupPositions})`
-  if (rp.interchangePosition) return `bench ★`
-  return rp.position
+  if (rp.backupPositions) {
+    const labels = rp.backupPositions.split(',').map(p => {
+      const key = p.trim()
+      const label = POSITION_LABEL[key] ?? key
+      return key === rp.interchangePosition ? `${label} (Int)` : label
+    }).join(', ')
+    return `Bench - ${labels}`
+  }
+  return POSITION_LABEL[rp.position] ?? rp.position
 }
 
 function confidenceBadge(confidence: number): string {

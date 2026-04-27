@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 
 export const PARSE_TEAM_SUBMISSION = gql`
-  mutation ParseTeamSubmission($input: ParseTeamSubmissionInput!) {
-    parseTeamSubmission(input: $input) {
+  mutation ParseFFLTeamSubmission($input: ParseFFLTeamSubmissionInput!) {
+    parseFFLTeamSubmission(input: $input) {
       resolvedPlayers {
         parsedName
         clubHint
@@ -22,8 +22,8 @@ export const PARSE_TEAM_SUBMISSION = gql`
 `
 
 export const CONFIRM_TEAM_SUBMISSION = gql`
-  mutation ConfirmTeamSubmission($input: ConfirmTeamSubmissionInput!) {
-    confirmTeamSubmission(input: $input) {
+  mutation ConfirmFFLTeamSubmission($input: ConfirmFFLTeamSubmissionInput!) {
+    confirmFFLTeamSubmission(input: $input) {
       id
       playerSeasonId
       player { id name }
