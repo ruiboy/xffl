@@ -1,10 +1,9 @@
 ---
-name: pr
-description: Create or update a GitHub PR for the current branch with a one-sentence overview and bulleted change summary readable in under a minute
-disable-model-invocation: true
+name: create-mr
+description: Create or update a GitHub PR/MR for the current branch with a one-sentence overview and bulleted change summary readable in under a minute. Triggered by /create-mr or when the user says "create MR", "create PR", "open MR", "open PR", "update MR", "update PR".
 ---
 
-Create or update a GitHub PR for the current branch.
+Create or update a GitHub PR (also called an MR) for the current branch.
 
 ## Steps
 
