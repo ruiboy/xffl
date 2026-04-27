@@ -64,10 +64,20 @@ Dependencies point inward; never outward. Business logic has zero framework depe
 - Tolerate architectural redundancy — the service structure may be ahead of current needs. Prioritise features over further separation. Restructure only when pain is felt.
 
 ### Agent Behaviour
-- **Never commit unless explicitly asked.** The user will say "commit", "commit that", "commit and push", etc. Do not auto-commit after completing work — the user needs to review diffs first.
+- **Never commit unless explicitly asked.** Do not auto-commit after completing work — the user needs to review diffs first. Permission to commit once is not permisson to keep committing.
 - When requirements are unclear: Ask a question, propose possible options, wait for confirmation before implementing.
 - Do not modify `ai/` files unless explicitly instructed.
 - Agents may check off items in `plans/current-sprint.md` as work is completed. Material changes to roadmap or sprint scope require discussion with the user.
+
+### Source of Truth Hierarchy
+
+When instructions conflict, resolve in this order:
+
+1. `ai/architecture/principles.md` + `ai/decisions/` — foundational rules and ADRs
+2. `CLAUDE.md` — root agent instructions; references and delegates to the above
+3. `ai/prompts/system-prompt.md` — workflow detail; must not contradict the above
+
+If code conflicts with architecture or ADRs, propose a fix rather than silently drifting.
 
 ## Service Layout
 

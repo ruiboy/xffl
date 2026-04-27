@@ -179,15 +179,16 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] `dev-seed` runs all 6 seed files end-to-end (idempotent)
 - [x] Verify ladder standings and scores post-import
 
-## Phase 17: UX Improvements
+## Phase 17: UX Improvements ✅
 
 **Goal:** Richer, faster frontend — more detailed stats, new player and team pages, and meaningful performance improvements as data volume grows.
 
-- [ ] Player pages — career stats, season history, club timeline
-- [ ] Team pages — squad, round-by-round scores, season summary
-- [ ] Other season pages (TBD based on usage)
-- [ ] Richer stat data surfaced in existing views
-- [ ] Performance: audit page load times; break up monolithic GraphQL queries to fetch only what the current page needs; evaluate DataLoader pattern on backend for N+1 query elimination
+- [x] Performance: break up monolithic GraphQL queries — FFL (done); AFL RoundView + MatchView (done); N+1 batch fix for AFL/FFL PlayerMatches + Ladder resolvers (done); query count logging via pgx tracer (done)
+- [x] DataLoader pattern (ADR-017) — per-request `Loaders` struct injected via context; `vikstrous/dataloadgen`
+- [x] FFL Team Builder UX — player scores alongside names, position group totals, grand total in team summary bar, status badges, scoring formula for multiplier positions (`utils/scoring.ts`)
+- [x] AFL MatchView — Manage button icon
+- [x] E2e test isolation — per-test DB reset via auto worker fixture (`fixtures.ts`); `TRUNCATE … RESTART IDENTITY CASCADE` for stable IDs; `helpers/reset-db.ts` via `docker exec`; `workers: 1`; restored `ffl-team-builder.spec.ts`
+- [x] E2e docs — `ai/architecture/testing.md` Playwright section; cookbook recipe for adding new specs
 
 ## Phase 18: Data Management — Import Infrastructure
 
@@ -275,7 +276,16 @@ Notes:
 - [ ] Import match results and player season records
 - [ ] Verify ladder standings, scores, and player history post-import
 
-## Phase 22: CQRS Player Stats Read Model
+## Phase 22: UX — Player & Team Pages
+
+**Goal:** Player and team detail pages with career stats, season history, and richer stat data across existing views.
+
+- [ ] Player pages — career stats, season history, club timeline
+- [ ] Team pages — squad, round-by-round scores, season summary
+- [ ] Other season pages (TBD based on usage)
+- [ ] Richer stat data surfaced in existing views
+
+## Phase 23: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -283,7 +293,7 @@ Notes:
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 23: Deployment
+## Phase 24: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
