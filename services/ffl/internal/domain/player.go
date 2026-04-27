@@ -3,7 +3,8 @@ package domain
 import "context"
 
 type Player struct {
-	ID          int
+	ID int
+	// To be deleted - this is a denromalised value that will be retired.
 	Name        string
 	AFLPlayerID int
 }
