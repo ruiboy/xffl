@@ -27,6 +27,38 @@ func (q *Queries) FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDR
 	return i, err
 }
 
+const findPlayersByIDs = `-- name: FindPlayersByIDs :many
+SELECT id, name
+FROM afl.player
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+ORDER BY id
+`
+
+type FindPlayersByIDsRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findPlayersByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayersByIDsRow{}
+	for rows.Next() {
+		var i FindPlayersByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchPlayersByName = `-- name: SearchPlayersByName :many
 SELECT id, name
 FROM afl.player

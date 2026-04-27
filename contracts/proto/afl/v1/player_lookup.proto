@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package afl.v1;
+
+option go_package = "xffl/contracts/gen/afl/v1;aflv1";
+
+service PlayerLookup {
+  rpc LookupPlayers(LookupPlayersRequest) returns (LookupPlayersResponse);
+}
+
+message LookupPlayersRequest {
+  repeated int32 afl_player_ids = 1;
+}
+
+message LookupPlayersResponse {
+  repeated PlayerInfo players = 1;
+}
+
+message PlayerInfo {
+  int32 id    = 1;
+  string name = 2;
+}

@@ -12,10 +12,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
+	aflv1 "xffl/contracts/gen/afl/v1"
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
+	rpcsrv "xffl/services/afl/internal/interface/twirp"
 	"xffl/shared/clock"
 	pgevents "xffl/shared/events/pg"
 )
@@ -84,6 +86,9 @@ func main() {
 		}
 	})
 
+	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q))
+	twirpHandler := aflv1.NewPlayerLookupServer(playerLookup)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -91,6 +96,7 @@ func main() {
 	})
 	mux.Handle("/", playground.Handler("AFL", "/query"))
 	mux.Handle("/query", srv)
+	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
 
 	slog.InfoContext(ctx, "AFL service starting", slog.String("port", port))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

@@ -37,14 +37,14 @@
 - Step 4: candidate pool is built via a batch Twirp call to AFL service (names for squad `afl_player_id`s) — not from `ffl.player.drv_name`
 - API is two-step: parse call returns parsed result + confidence scores for user review; separate confirm mutation writes `ffl.club_match` + `ffl.player_match` records to DB
 
-- [ ] Twirp: proto + buf toolchain; batch `PlayerLookup` handler on AFL service; FFL `infrastructure/rpc/` adapter (prerequisite for candidate pool)
-- [ ] `TeamParser` port interface (application layer)
-- [ ] `PlayerResolver` port interface (application layer)
-- [ ] `ParseTeamSubmission` use case — parse post → resolve players against squad via Twirp → return result with confidence scores (no DB writes)
-- [ ] `ImportRoundTeams` use case — write `ffl.club_match` + `ffl.player_match` records → fire events (confirm step)
-- [ ] `ForumPostParser` adapter (infrastructure) — port of `parse_forum.py`
-- [ ] FFL GraphQL: `parseTeamSubmission` mutation → returns parse result with confidence scores
-- [ ] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
+- [x] Twirp: proto + buf toolchain; batch `PlayerLookup` handler on AFL service; FFL `infrastructure/rpc/` adapter (prerequisite for candidate pool)
+- [x] `TeamParser` port interface (application layer)
+- [x] `PlayerResolver` port interface (application layer)
+- [x] `ParseTeamSubmission` use case — parse post → resolve players against squad via Twirp → return result with confidence scores (no DB writes)
+- [x] `ImportRoundTeams` use case — write `ffl.club_match` + `ffl.player_match` records → fire events (confirm step)
+- [x] `ForumPostParser` adapter (infrastructure) — port of `parse_forum.py`
+- [x] FFL GraphQL: `parseTeamSubmission` mutation → returns parse result with confidence scores
+- [x] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
 - [ ] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
 - [ ] Retire `parse_forum.py`
 

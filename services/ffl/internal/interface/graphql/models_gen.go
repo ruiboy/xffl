@@ -23,6 +23,19 @@ type CalculateFFLFantasyScoreInput struct {
 	Hitouts       int    `json:"hitouts"`
 }
 
+type ConfirmTeamSubmissionInput struct {
+	ClubMatchID string                  `json:"clubMatchId"`
+	Players     []*ConfirmedPlayerInput `json:"players"`
+}
+
+type ConfirmedPlayerInput struct {
+	PlayerSeasonID      string  `json:"playerSeasonId"`
+	Position            string  `json:"position"`
+	BackupPositions     *string `json:"backupPositions,omitempty"`
+	InterchangePosition *string `json:"interchangePosition,omitempty"`
+	Score               *int    `json:"score,omitempty"`
+}
+
 type CreateFFLPlayerInput struct {
 	Name        string `json:"name"`
 	AflPlayerID string `json:"aflPlayerId"`
@@ -128,7 +141,31 @@ type PageInfo struct {
 	EndCursor   *string `json:"endCursor,omitempty"`
 }
 
+type ParseTeamSubmissionInput struct {
+	ClubSeasonID string `json:"clubSeasonId"`
+	ClubMatchID  string `json:"clubMatchId"`
+	TeamName     string `json:"teamName"`
+	Post         string `json:"post"`
+}
+
+type ParseTeamSubmissionResult struct {
+	ResolvedPlayers []*ResolvedPlayer `json:"resolvedPlayers"`
+	NeedsReview     []int             `json:"needsReview"`
+}
+
 type Query struct {
+}
+
+type ResolvedPlayer struct {
+	ParsedName          string  `json:"parsedName"`
+	ClubHint            string  `json:"clubHint"`
+	Position            string  `json:"position"`
+	BackupPositions     string  `json:"backupPositions"`
+	InterchangePosition string  `json:"interchangePosition"`
+	Score               *int    `json:"score,omitempty"`
+	Notes               string  `json:"notes"`
+	PlayerSeasonID      *string `json:"playerSeasonId,omitempty"`
+	Confidence          float64 `json:"confidence"`
 }
 
 type SetFFLTeamInput struct {
