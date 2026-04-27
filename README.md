@@ -48,9 +48,9 @@ The architecture supports multiple evolution paths:
 
 See `ai/decisions`.
 
-## AI Control Plane
+## AI Context
 
-The `ai/` directory is a declarative interface between human architectural intent and AI implementation. Any AI tool can read it — not tied to a specific agent or framework.
+The shared context AI agents read before working in this codebase — architecture, decisions, and operating rules.
 
 | Doc                                  | Purpose                                             |
 |--------------------------------------|-----------------------------------------------------|
@@ -60,7 +60,6 @@ The `ai/` directory is a declarative interface between human architectural inten
 | [ai/decisions/](ai/decisions/)       | Architecture Decision Records                       |
 | [ai/prompts/](ai/prompts/)           | Agent operating instructions                        |
 
-See [ai/architecture/control-plane.md](ai/architecture/control-plane.md) for the full design.
 
 ## Getting Started
 
