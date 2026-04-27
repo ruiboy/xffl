@@ -46,6 +46,7 @@
 - [x] FFL GraphQL: `parseTeamSubmission` mutation → returns parse result with confidence scores
 - [x] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
 - [x] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
+- [x] Tests: 4 parser unit tests (one per format) + 1 GraphQL integration test (Ruiboys parse+confirm) + 1 e2e golden path
 - [ ] Retire `parse_forum.py`
 
 ### Step 5 — AFL stats import *(many times/round — automated)*
