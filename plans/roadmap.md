@@ -203,46 +203,6 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Step 2 — `ImportFLSquad` use case + FFL admin review screen
 - [ ] Step 3 — In-season trade UI
 
-**Cross-cutting decisions:**
-- All Go — no Python in production; single binary deployment
-- `TeamParser`, `StatsParser`, `PlayerResolver` are application-layer interfaces; adapters live in infrastructure — input source never touches use case logic
-- FFL service calls AFL service via **Twirp** to resolve `afl_player_id` and look up players; proto definitions in `contracts/`
-- `PlayerResolver` uses club code to narrow candidates before fuzzy name matching; confidence threshold gates auto-commit vs. review queue
-- ADR required for Twirp before implementation begins
-
-**Step 1 — AFL season player import** (once/season)
-- **UX:** Admin page in AFL frontend — proposed matches + new players for accept/reject
-- **Use case:** `ImportAFLSeasonPlayers` (AFL service); triggered by CLI (`just import-afl-season`)
-- Fuzzy-match names+club against existing `afl.player`; flag low-confidence; create new records for unmatched
-
-**Step 2 — FFL squad import** (once/season)
-- **UX:** Admin page in FFL frontend — proposed player mappings for accept/reject
-- **Use case:** `ImportFLSquad` (FFL service); triggered by CLI (`just import-ffl-squad`)
-- Resolve AFL player IDs via Twirp; create `ffl.player` + `ffl.player_season` records
-
-**Step 3 — In-season player trades** (frequent)
-- **UX:** UI in FFL frontend
-- Updates `ffl.player_season` (from/to round); uses existing domain/use case layer
-
-**Step 4 — Round team submission** (every round; implement first)
-- **UX:** Copy-paste raw text into FFL frontend, or triggered by cron/email
-- **Use case:** `ImportRoundTeams` (FFL service) — parse → resolve players → write `ffl.player_match` → fire events
-- `TeamParser` interface; `ForumPostParser` adapter (port of `parse_forum.py`); swappable for future sources
-- `PlayerResolver` interface; fuzzy name+club → `player_season_id` via Twirp
-- Low-confidence matches surface in FFL admin review screen; retire `parse_forum.py`
-
-**Step 5 — AFL stats import** (many times/round)
-- **UX:** Automated
-- **Use case:** `ImportAFLStats` (AFL service) — parse stats → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
-- `StatsParser` interface; first adapter for chosen data source (scrape or file)
-
-**Step 6 — Score reconciliation** (every round)
-- **UX:** FFL frontend — submitted scores vs calculated scores side by side; human resolves
-- `ScoreParser` interface; `ForumPostParser` adapter for submitted scores
-
-**Step 7 — Historical backfill** (one-time per historical season)
-- **UX:** CLI
-- Same `ImportRoundTeams` use case as step 4; validate old forum formats are handled
 
 ## Phase 19: Search Frontend + Index Enrichment
 
