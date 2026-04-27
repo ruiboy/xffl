@@ -17,6 +17,14 @@
         <div class="ml-auto flex items-center gap-4">
           <template v-if="isFfl">
             <router-link
+              :to="{ name: 'ffl-data-ops' }"
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+              title="Data Ops"
+            >
+              <IconDataOps class="w-4 h-4" />
+              Data Ops
+            </router-link>
+            <router-link
               v-if="selectedClubId && liveRoundId && liveSeasonId"
               :to="{ name: 'ffl-team-builder', params: { seasonId: liveSeasonId, roundId: liveRoundId } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
@@ -91,6 +99,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 import IconTeamBuilder from '@/features/ffl/components/icons/IconTeamBuilder.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()

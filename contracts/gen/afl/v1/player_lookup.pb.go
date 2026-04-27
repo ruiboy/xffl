@@ -113,6 +113,7 @@ type PlayerInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	ClubName      string                 `protobuf:"bytes,3,opt,name=club_name,json=clubName,proto3" json:"club_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -161,6 +162,13 @@ func (x *PlayerInfo) GetName() string {
 	return ""
 }
 
+func (x *PlayerInfo) GetClubName() string {
+	if x != nil {
+		return x.ClubName
+	}
+	return ""
+}
+
 var File_afl_v1_player_lookup_proto protoreflect.FileDescriptor
 
 const file_afl_v1_player_lookup_proto_rawDesc = "" +
@@ -169,11 +177,12 @@ const file_afl_v1_player_lookup_proto_rawDesc = "" +
 	"\x14LookupPlayersRequest\x12$\n" +
 	"\x0eafl_player_ids\x18\x01 \x03(\x05R\faflPlayerIds\"E\n" +
 	"\x15LookupPlayersResponse\x12,\n" +
-	"\aplayers\x18\x01 \x03(\v2\x12.afl.v1.PlayerInfoR\aplayers\"0\n" +
+	"\aplayers\x18\x01 \x03(\v2\x12.afl.v1.PlayerInfoR\aplayers\"M\n" +
 	"\n" +
 	"PlayerInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name2\\\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
+	"\tclub_name\x18\x03 \x01(\tR\bclubName2\\\n" +
 	"\fPlayerLookup\x12L\n" +
 	"\rLookupPlayers\x12\x1c.afl.v1.LookupPlayersRequest\x1a\x1d.afl.v1.LookupPlayersResponseB!Z\x1fxffl/contracts/gen/afl/v1;aflv1b\x06proto3"
 

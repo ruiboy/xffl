@@ -165,6 +165,8 @@ type ComplexityRoot struct {
 		ParsedName          func(childComplexity int) int
 		PlayerSeasonID      func(childComplexity int) int
 		Position            func(childComplexity int) int
+		ResolvedClub        func(childComplexity int) int
+		ResolvedName        func(childComplexity int) int
 		Score               func(childComplexity int) int
 	}
 }
@@ -828,6 +830,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ResolvedPlayer.Position(childComplexity), true
+	case "ResolvedPlayer.resolvedClub":
+		if e.ComplexityRoot.ResolvedPlayer.ResolvedClub == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ResolvedPlayer.ResolvedClub(childComplexity), true
+	case "ResolvedPlayer.resolvedName":
+		if e.ComplexityRoot.ResolvedPlayer.ResolvedName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ResolvedPlayer.ResolvedName(childComplexity), true
 	case "ResolvedPlayer.score":
 		if e.ComplexityRoot.ResolvedPlayer.Score == nil {
 			break
@@ -1110,6 +1124,8 @@ type ParseTeamSubmissionResult {
 type ResolvedPlayer {
   parsedName: String!
   clubHint: String!
+  resolvedName: String
+  resolvedClub: String
   position: String!
   backupPositions: String!
   interchangePosition: String!
@@ -3672,6 +3688,10 @@ func (ec *executionContext) fieldContext_ParseTeamSubmissionResult_resolvedPlaye
 				return ec.fieldContext_ResolvedPlayer_parsedName(ctx, field)
 			case "clubHint":
 				return ec.fieldContext_ResolvedPlayer_clubHint(ctx, field)
+			case "resolvedName":
+				return ec.fieldContext_ResolvedPlayer_resolvedName(ctx, field)
+			case "resolvedClub":
+				return ec.fieldContext_ResolvedPlayer_resolvedClub(ctx, field)
 			case "position":
 				return ec.fieldContext_ResolvedPlayer_position(ctx, field)
 			case "backupPositions":
@@ -4362,6 +4382,64 @@ func (ec *executionContext) _ResolvedPlayer_clubHint(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_ResolvedPlayer_clubHint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResolvedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResolvedPlayer_resolvedName(ctx context.Context, field graphql.CollectedField, obj *ResolvedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResolvedPlayer_resolvedName,
+		func(ctx context.Context) (any, error) {
+			return obj.ResolvedName, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResolvedPlayer_resolvedName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResolvedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResolvedPlayer_resolvedClub(ctx context.Context, field graphql.CollectedField, obj *ResolvedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResolvedPlayer_resolvedClub,
+		func(ctx context.Context) (any, error) {
+			return obj.ResolvedClub, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResolvedPlayer_resolvedClub(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ResolvedPlayer",
 		Field:      field,
@@ -7808,6 +7886,10 @@ func (ec *executionContext) _ResolvedPlayer(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "resolvedName":
+			out.Values[i] = ec._ResolvedPlayer_resolvedName(ctx, field, obj)
+		case "resolvedClub":
+			out.Values[i] = ec._ResolvedPlayer_resolvedClub(ctx, field, obj)
 		case "position":
 			out.Values[i] = ec._ResolvedPlayer_position(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

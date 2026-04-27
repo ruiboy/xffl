@@ -21,7 +21,7 @@ func (s *playerLookupServer) LookupPlayers(ctx context.Context, req *aflv1.Looku
 		ids[i] = int(id)
 	}
 
-	players, err := s.players.FindByIDs(ctx, ids)
+	players, err := s.players.FindByIDsWithClub(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +29,9 @@ func (s *playerLookupServer) LookupPlayers(ctx context.Context, req *aflv1.Looku
 	infos := make([]*aflv1.PlayerInfo, len(players))
 	for i, p := range players {
 		infos[i] = &aflv1.PlayerInfo{
-			Id:   int32(p.ID),
-			Name: p.Name,
+			Id:       int32(p.ID),
+			Name:     p.Name,
+			ClubName: p.ClubName,
 		}
 	}
 

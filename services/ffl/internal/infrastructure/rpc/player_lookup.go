@@ -34,6 +34,7 @@ func (a *AFLPlayerLookup) LookupPlayers(ctx context.Context, aflPlayerIDs []int)
 		candidates[i] = application.PlayerCandidate{
 			AFLPlayerID: int(p.Id),
 			Name:        p.Name,
+			Club:        p.ClubName,
 		}
 	}
 	return candidates, nil

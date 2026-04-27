@@ -113,6 +113,8 @@ type ParseTeamSubmissionResult {
 type ResolvedPlayer {
   parsedName: String!
   clubHint: String!
+  resolvedName: String
+  resolvedClub: String
   position: String!
   backupPositions: String!
   interchangePosition: String!

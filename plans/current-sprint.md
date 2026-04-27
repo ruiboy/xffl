@@ -45,7 +45,7 @@
 - [x] `ForumPostParser` adapter (infrastructure) — port of `parse_forum.py`
 - [x] FFL GraphQL: `parseTeamSubmission` mutation → returns parse result with confidence scores
 - [x] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
-- [ ] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
+- [x] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
 - [ ] Retire `parse_forum.py`
 
 ### Step 5 — AFL stats import *(many times/round — automated)*

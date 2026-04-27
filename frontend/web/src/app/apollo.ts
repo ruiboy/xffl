@@ -19,6 +19,9 @@ const FFL_OPERATIONS = new Set([
   'RemoveFFLPlayerFromSeason',
   'AddFFLSquadPlayer',
   'SetFFLTeam',
+  'GetFFLDataOps',
+  'ParseTeamSubmission',
+  'ConfirmTeamSubmission',
 ])
 
 const routingLink = new ApolloLink((operation, forward) => {

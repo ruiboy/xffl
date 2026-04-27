@@ -159,6 +159,8 @@ type Query struct {
 type ResolvedPlayer struct {
 	ParsedName          string  `json:"parsedName"`
 	ClubHint            string  `json:"clubHint"`
+	ResolvedName        *string `json:"resolvedName,omitempty"`
+	ResolvedClub        *string `json:"resolvedClub,omitempty"`
 	Position            string  `json:"position"`
 	BackupPositions     string  `json:"backupPositions"`
 	InterchangePosition string  `json:"interchangePosition"`

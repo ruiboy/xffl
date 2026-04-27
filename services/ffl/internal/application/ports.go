@@ -7,6 +7,7 @@ type PlayerCandidate struct {
 	PlayerID    int
 	AFLPlayerID int
 	Name        string
+	Club        string // AFL club name from afl.club
 }
 
 // PlayerMatch is the result of resolving a parsed name against a candidate pool.

@@ -449,6 +449,22 @@ func (r *PlayerRepository) FindByIDs(ctx context.Context, ids []int) ([]domain.P
 	return players, nil
 }
 
+func (r *PlayerRepository) FindByIDsWithClub(ctx context.Context, ids []int) ([]domain.PlayerWithClub, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayersByIDsWithClub(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	players := make([]domain.PlayerWithClub, len(rows))
+	for i, row := range rows {
+		players[i] = domain.PlayerWithClub{ID: int(row.ID), Name: row.Name, ClubName: row.ClubName}
+	}
+	return players, nil
+}
+
 func (r *PlayerRepository) Search(ctx context.Context, query string) ([]domain.Player, error) {
 	rows, err := r.q.SearchPlayersByName(ctx, &query)
 	if err != nil {

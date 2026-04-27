@@ -76,6 +76,7 @@ func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSea
 			PlayerID:    psID, // player_season_id in squad context
 			AFLPlayerID: f.AFLPlayerID,
 			Name:        f.Name,
+			Club:        f.Club,
 		})
 	}
 	return candidates, nil

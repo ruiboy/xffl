@@ -209,13 +209,20 @@ func (r *mutationResolver) ParseTeamSubmission(ctx context.Context, input ParseT
 	resolvedGQL := make([]*ResolvedPlayer, len(result.ResolvedPlayers))
 	for i, rp := range result.ResolvedPlayers {
 		var psID *string
+		var resolvedName, resolvedClub *string
 		if rp.PlayerSeasonID != 0 {
 			id := toID(rp.PlayerSeasonID)
 			psID = &id
+			name := rp.BestMatch.Candidate.Name
+			resolvedName = &name
+			club := rp.BestMatch.Candidate.Club
+			resolvedClub = &club
 		}
 		resolvedGQL[i] = &ResolvedPlayer{
 			ParsedName:          rp.Parsed.Name,
 			ClubHint:            rp.Parsed.ClubHint,
+			ResolvedName:        resolvedName,
+			ResolvedClub:        resolvedClub,
 			Position:            rp.Parsed.Position,
 			BackupPositions:     rp.Parsed.BackupPositions,
 			InterchangePosition: rp.Parsed.InterchangePosition,
