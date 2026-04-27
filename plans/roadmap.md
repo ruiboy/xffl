@@ -202,7 +202,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] AFL season player import
 - [ ] FFL squad import
 - [ ] FFL In-season player trades
-- [ ] Remove `ffl.player.drv_name` — drop column from schema, remove from domain entity and all resolvers; update frontend to fetch player names via AFL service or search index (deferred until frontend is ready)
+- [ ] Close out
 
 ## Phase 19: Search Frontend + Index Enrichment
 

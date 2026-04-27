@@ -47,7 +47,6 @@
 - [x] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
 - [x] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
 - [x] Tests: 4 parser unit tests (one per format) + 1 GraphQL integration test (Ruiboys parse+confirm) + 1 e2e golden path
-- [ ] Retire `parse_forum.py`
 
 ### Step 5 — AFL stats import *(many times/round — automated)*
 
@@ -84,3 +83,8 @@
 
 - [ ] FFL frontend UI for trade management
 - [ ] Updates `ffl.player_season` (from/to round) via existing domain/use case layer
+
+### Close out
+
+- [ ] Retire `parse_forum.py`
+- [ ] Remove `ffl.player.drv_name` — drop column from schema, remove from domain entity and all resolvers; update frontend to fetch player names via AFL service or search index (deferred until frontend is ready)
