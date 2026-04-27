@@ -37,45 +37,47 @@
 - Step 4: candidate pool is built via a batch Twirp call to AFL service (names for squad `afl_player_id`s) — not from `ffl.player.drv_name`
 - API is two-step: parse call returns parsed result + confidence scores for user review; separate confirm mutation writes `ffl.club_match` + `ffl.player_match` records to DB
 
+- [ ] Twirp: proto + buf toolchain; batch `PlayerLookup` handler on AFL service; FFL `infrastructure/rpc/` adapter (prerequisite for candidate pool)
 - [ ] `TeamParser` port interface (application layer)
 - [ ] `PlayerResolver` port interface (application layer)
-- [ ] `ImportRoundTeams` use case — parse → resolve players → write `ffl.player_match` → fire events
+- [ ] `ParseTeamSubmission` use case — parse post → resolve players against squad via Twirp → return result with confidence scores (no DB writes)
+- [ ] `ImportRoundTeams` use case — write `ffl.club_match` + `ffl.player_match` records → fire events (confirm step)
 - [ ] `ForumPostParser` adapter (infrastructure) — port of `parse_forum.py`
-- [ ] FFL GraphQL mutation to trigger import; returns parse result with confidence scores
-- [ ] Frontend: `features/data-ops/` — paste form, review table for low-confidence matches, confirm mutation
+- [ ] FFL GraphQL: `parseTeamSubmission` mutation → returns parse result with confidence scores
+- [ ] FFL GraphQL: `confirmTeamSubmission` mutation → calls `ImportRoundTeams`
+- [ ] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
 - [ ] Retire `parse_forum.py`
 
 ### Step 5 — AFL stats import *(many times/round — automated)*
 
 - [ ] `StatsParser` port interface (application layer)
-- [ ] `ImportAFLStats` use case — parse stats → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
+- [ ] `ImportAFLStats` use case — parse stats → resolve player names via `PlayerResolver` (candidate pool = `afl.player` records for that club) → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
 - [ ] First `StatsParser` adapter for chosen data source (scrape or file)
 
 ### Step 6 — Score reconciliation *(every round)*
 
-- [ ] `ScoreParser` port interface (application layer)
-- [ ] `ForumPostParser` adapter for submitted scores
+- `ForumPostParser` already extracts player scores (Step 4); no new parser needed
+- [ ] `ReconcileScores` use case — compare imported player scores against calculated `drv_score` values; surface discrepancies
 - [ ] FFL frontend — submitted scores vs calculated scores side by side; human resolves
 
 ### Step 7 — Historical backfill *(one-time per historical season — CLI)*
 
+- Reuses `ForumPostParser` and `ImportRoundTeams` from Step 4 unchanged
 - [ ] Validate old forum formats work with `ForumPostParser`
-- [ ] CLI command that runs `ImportRoundTeams` use case over historical data
+- [ ] CLI command that runs `ParseTeamSubmission` + `ImportRoundTeams` over historical data (one round at a time)
 
 ### Step 1 — AFL season player import *(once/season)*
 
-- [ ] `ImportAFLSeasonPlayers` use case (AFL service) — fuzzy-match names+club against `afl.player`; flag low-confidence; create new records for unmatched
+- [ ] `ImportAFLSeasonPlayers` use case (AFL service) — fuzzy-match names+club via `PlayerResolver` (candidate pool = existing `afl.player` records); flag low-confidence; create new records for unmatched
 - [ ] `just import-afl-season` CLI trigger
 - [ ] AFL frontend admin page — proposed matches + new players for accept/reject
 
 ### Step 2 — FFL squad import *(once/season)*
 
+- Twirp infrastructure (proto, AFL handler, FFL adapter) already in place from Step 4
 - [ ] `ImportFLSquad` use case (FFL service) — resolve AFL player IDs via Twirp; create `ffl.player` + `ffl.player_season` records
 - [ ] `just import-ffl-squad` CLI trigger
 - [ ] FFL frontend admin page — proposed player mappings for accept/reject
-- [ ] Twirp proto + `buf` toolchain (`contracts/proto/afl/v1/`, `contracts/gen/`, `just proto-gen`)
-- [ ] AFL Twirp server — player lookup handler mounted at `/twirp/`
-- [ ] FFL `infrastructure/rpc/` adapter implementing `PlayerLookup` port
 
 ### Step 3 — In-season player trades *(frequent)*
 
