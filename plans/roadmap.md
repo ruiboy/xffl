@@ -194,7 +194,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 
 **Goal:** Build recurring data flows for team submissions, AFL stats, score reconciliation, historical backfill, and season setup. All Go; ports-and-adapters throughout; Twirp for cross-service calls.
 
-- [ ] ADR — Twirp for cross-service communication
+- [x] ADR — Twirp for cross-service communication
 - [ ] Step 4 — `ImportRoundTeams` use case + `ForumPostParser` + `PlayerResolver` + review screen
 - [ ] Step 5 — `ImportAFLStats` use case + first `StatsParser` adapter
 - [ ] Step 6 — Score reconciliation UI + `ScoreParser`
