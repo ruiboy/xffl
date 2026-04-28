@@ -10,7 +10,17 @@ type PlayerSeason struct {
 	ToRoundID    *int
 }
 
+// PlayerSeasonWithPlayer combines a player_season record with its player's name.
+// Used to build candidate pools for fuzzy name matching during stats import.
+type PlayerSeasonWithPlayer struct {
+	PlayerSeasonID int
+	PlayerID       int
+	ClubSeasonID   int
+	Name           string
+}
+
 type PlayerSeasonRepository interface {
 	FindByID(ctx context.Context, id int) (PlayerSeason, error)
 	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
+	FindByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int) ([]PlayerSeasonWithPlayer, error)
 }

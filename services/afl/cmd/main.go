@@ -16,6 +16,7 @@ import (
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/afl/internal/infrastructure/footywire"
 	gql "xffl/services/afl/internal/interface/graphql"
 	rpcsrv "xffl/services/afl/internal/interface/twirp"
 	"xffl/shared/clock"
@@ -72,7 +73,23 @@ func main() {
 	db := pg.NewDB(pool)
 	commands := application.NewCommands(db, dispatcher)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands}
+	footywireClient := footywire.NewFootywireClient()
+	dataOps := application.NewDataOpsCommands(
+		db,
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubRepository(q),
+		pg.NewRoundRepository(q, pool),
+		pg.NewPlayerSeasonRepository(q),
+		pg.NewMatchSourceMapRepository(q),
+		footywireClient,
+		footywireClient,
+		footywire.NewLevenshteinResolver(),
+		dispatcher,
+	)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

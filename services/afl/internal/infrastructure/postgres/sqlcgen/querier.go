@@ -18,6 +18,7 @@ type Querier interface {
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
+	FindMatchSourceMapByMatchID(ctx context.Context, arg FindMatchSourceMapByMatchIDParams) (FindMatchSourceMapByMatchIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)
@@ -25,6 +26,7 @@ type Querier interface {
 	FindPlayerMatchStatsByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayerMatchStatsByPlayerSeasonIDsRow, error)
 	FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error)
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
+	FindPlayerSeasonsByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDWithPlayerRow, error)
 	FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error)
 	FindPlayersByIDsWithClub(ctx context.Context, ids []int32) ([]FindPlayersByIDsWithClubRow, error)
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
@@ -33,7 +35,10 @@ type Querier interface {
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
+	UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
+	UpdateMatchImportStatus(ctx context.Context, arg UpdateMatchImportStatusParams) error
+	UpsertMatchSourceMap(ctx context.Context, arg UpsertMatchSourceMapParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }
 

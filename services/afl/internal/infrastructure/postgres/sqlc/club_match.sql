@@ -14,6 +14,12 @@ SET drv_score = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdateClubMatchRushedBehinds :exec
+UPDATE afl.club_match
+SET rushed_behinds = $2,
+    updated_at     = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: FindRoundIDByClubMatchID :one
 SELECT m.round_id
 FROM afl.match m

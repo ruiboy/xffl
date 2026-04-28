@@ -1,5 +1,21 @@
 import gql from 'graphql-tag'
 
+export const GET_AFL_ROUND_STATS = gql`
+  query GetAFLRoundStats($roundId: ID!) {
+    aflRound(id: $roundId) {
+      id
+      name
+      matches {
+        id
+        statsImportStatus
+        statsImportedAt
+        homeClubMatch { id club { id name } }
+        awayClubMatch { id club { id name } }
+      }
+    }
+  }
+`
+
 export const GET_FFL_DATA_OPS = gql`
   query GetFFLDataOps($seasonId: ID!) {
     fflSeason(id: $seasonId) {

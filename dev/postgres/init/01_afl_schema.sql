@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS afl.match (
     away_club_match_id INTEGER,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
+    stats_import_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
+    stats_imported_at TIMESTAMP WITH TIME ZONE,
     drv_result VARCHAR(50)
 );
 
@@ -165,3 +167,16 @@ CREATE INDEX IF NOT EXISTS idx_afl_club_match_deleted_at ON afl.club_match(delet
 CREATE INDEX IF NOT EXISTS idx_afl_player_deleted_at ON afl.player(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_season_deleted_at ON afl.player_season(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_match_deleted_at ON afl.player_match(deleted_at);
+
+-- Data Ops
+
+-- ACL identity mapping table for FootyWire match IDs (per ADR-016: no FK to core schema)
+CREATE TABLE IF NOT EXISTS afl.match_source_map (
+    source      TEXT NOT NULL,
+    external_id TEXT NOT NULL,
+    match_id    INTEGER NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (source, external_id),
+    CONSTRAINT uni_afl_match_source_map_match UNIQUE (source, match_id)
+);

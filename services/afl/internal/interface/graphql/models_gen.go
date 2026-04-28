@@ -33,13 +33,15 @@ type AFLLiveRound struct {
 }
 
 type AFLMatch struct {
-	ID            string        `json:"id"`
-	Venue         *string       `json:"venue,omitempty"`
-	StartTime     *string       `json:"startTime,omitempty"`
-	Result        *string       `json:"result,omitempty"`
-	Round         *AFLRound     `json:"round"`
-	HomeClubMatch *AFLClubMatch `json:"homeClubMatch,omitempty"`
-	AwayClubMatch *AFLClubMatch `json:"awayClubMatch,omitempty"`
+	ID                string        `json:"id"`
+	Venue             *string       `json:"venue,omitempty"`
+	StartTime         *string       `json:"startTime,omitempty"`
+	Result            *string       `json:"result,omitempty"`
+	StatsImportStatus string        `json:"statsImportStatus"`
+	StatsImportedAt   *string       `json:"statsImportedAt,omitempty"`
+	Round             *AFLRound     `json:"round"`
+	HomeClubMatch     *AFLClubMatch `json:"homeClubMatch,omitempty"`
+	AwayClubMatch     *AFLClubMatch `json:"awayClubMatch,omitempty"`
 }
 
 type AFLPlayer struct {
@@ -87,6 +89,14 @@ type AFLSeason struct {
 	Name   string           `json:"name"`
 	Ladder []*AFLClubSeason `json:"ladder"`
 	Rounds []*AFLRound      `json:"rounds"`
+}
+
+type ImportAFLMatchStatsResult struct {
+	MatchID         string `json:"matchId"`
+	HomeClubName    string `json:"homeClubName"`
+	AwayClubName    string `json:"awayClubName"`
+	HomePlayerCount int    `json:"homePlayerCount"`
+	AwayPlayerCount int    `json:"awayPlayerCount"`
 }
 
 type Mutation struct {

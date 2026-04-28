@@ -6,4 +6,5 @@ import "xffl/services/afl/internal/application"
 type Resolver struct {
 	Queries  *application.Queries
 	Commands *application.Commands
+	DataOps  *application.DataOpsCommands
 }

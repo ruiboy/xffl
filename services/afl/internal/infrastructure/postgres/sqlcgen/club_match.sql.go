@@ -90,6 +90,23 @@ func (q *Queries) FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32
 	return round_id, err
 }
 
+const updateClubMatchRushedBehinds = `-- name: UpdateClubMatchRushedBehinds :exec
+UPDATE afl.club_match
+SET rushed_behinds = $2,
+    updated_at     = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchRushedBehindsParams struct {
+	ID            int32
+	RushedBehinds *int32
+}
+
+func (q *Queries) UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchRushedBehinds, arg.ID, arg.RushedBehinds)
+	return err
+}
+
 const updateClubMatchScore = `-- name: UpdateClubMatchScore :exec
 UPDATE afl.club_match
 SET drv_score = $2,
