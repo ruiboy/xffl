@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,7 +38,7 @@ func (c *FootywireClient) ParseMatch(ctx context.Context, mid string) (applicati
 		return application.MatchStats{}, fmt.Errorf("fetch match stats page: %w", err)
 	}
 	defer body.Close()
-	return ParseMatchStatsHTML(body)
+	return ParseMatchStatsHTML(ctx, body)
 }
 
 // FindMatchMid scrapes the fixture list to find the FootyWire match ID for the given
@@ -49,7 +50,7 @@ func (c *FootywireClient) FindMatchMid(ctx context.Context, roundName, homeClub,
 		return "", fmt.Errorf("fetch fixture list: %w", err)
 	}
 	defer body.Close()
-	return ParseFixtureMid(body, roundName, homeClub, awayClub)
+	return ParseFixtureMid(ctx, body, roundName, homeClub, awayClub)
 }
 
 func (c *FootywireClient) fetch(ctx context.Context, url string) (io.ReadCloser, error) {
@@ -78,36 +79,52 @@ func (c *FootywireClient) fetch(ctx context.Context, url string) (io.ReadCloser,
 //
 // Column detection is done by matching the header row, so the parser is robust
 // to column reordering. If the actual page structure differs from this model,
-// adjust the selectors in collectStatsTable.
-func ParseMatchStatsHTML(r io.Reader) (application.MatchStats, error) {
+// The page has a Team|Q1|Q2|Q3|Q4|Final score table and two separate player
+// stats tables (one per club, home first). Club names and team totals come from
+// the score table; player rows come from the stats tables.
+func ParseMatchStatsHTML(ctx context.Context, r io.Reader) (application.MatchStats, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
 		return application.MatchStats{}, fmt.Errorf("parse HTML: %w", err)
 	}
 
+	scoreTable := findScoreTable(doc)
+	if scoreTable == nil {
+		return application.MatchStats{}, fmt.Errorf("could not find score summary table (Team|Q1..Final)")
+	}
+	homeClub, awayClub, homeGoals, homeBehinds, awayGoals, awayBehinds, err := parseScoreTable(scoreTable)
+	if err != nil {
+		return application.MatchStats{}, fmt.Errorf("parse score table: %w", err)
+	}
+	slog.DebugContext(ctx, "score parsed",
+		slog.String("home", homeClub), slog.Int("homeGoals", homeGoals), slog.Int("homeBehinds", homeBehinds),
+		slog.String("away", awayClub), slog.Int("awayGoals", awayGoals), slog.Int("awayBehinds", awayBehinds),
+	)
+
 	tables := findStatsTables(doc)
+	slog.DebugContext(ctx, "player stats tables found", slog.Int("count", len(tables)))
 	if len(tables) < 2 {
-		return application.MatchStats{}, fmt.Errorf("expected 2 stats tables, found %d", len(tables))
+		return application.MatchStats{}, fmt.Errorf("expected 2 player stats tables, found %d", len(tables))
 	}
 
-	home, err := parseStatsTable(tables[0])
+	homePlayers, err := parsePlayerRows(tables[0], homeClub)
 	if err != nil {
-		return application.MatchStats{}, fmt.Errorf("parse home stats: %w", err)
+		return application.MatchStats{}, fmt.Errorf("parse home player stats: %w", err)
 	}
-	away, err := parseStatsTable(tables[1])
+	awayPlayers, err := parsePlayerRows(tables[1], awayClub)
 	if err != nil {
-		return application.MatchStats{}, fmt.Errorf("parse away stats: %w", err)
+		return application.MatchStats{}, fmt.Errorf("parse away player stats: %w", err)
 	}
 
-	var stats application.MatchStats
-	stats.HomeClubName = home.clubName
-	stats.HomeTeamGoals = home.goals
-	stats.HomeTeamBehinds = home.behinds
-	stats.AwayClubName = away.clubName
-	stats.AwayTeamGoals = away.goals
-	stats.AwayTeamBehinds = away.behinds
-	stats.Players = append(home.players, away.players...)
-	return stats, nil
+	return application.MatchStats{
+		HomeClubName:    homeClub,
+		HomeTeamGoals:   homeGoals,
+		HomeTeamBehinds: homeBehinds,
+		AwayClubName:    awayClub,
+		AwayTeamGoals:   awayGoals,
+		AwayTeamBehinds: awayBehinds,
+		Players:         append(homePlayers, awayPlayers...),
+	}, nil
 }
 
 // ParseFixtureMid parses the FootyWire fixture list page and returns the mid
@@ -116,13 +133,13 @@ func ParseMatchStatsHTML(r io.Reader) (application.MatchStats, error) {
 // FootyWire's fixture list groups matches by round in tables. Each match row
 // contains links to ft_match_statistics?mid=XXXXX. We look for the round
 // section and then find the row whose home/away club cells match our clubs.
-func ParseFixtureMid(r io.Reader, roundName, homeClub, awayClub string) (string, error) {
+func ParseFixtureMid(ctx context.Context, r io.Reader, roundName, homeClub, awayClub string) (string, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
 		return "", fmt.Errorf("parse HTML: %w", err)
 	}
 
-	mid := findMidInFixture(doc, roundName, homeClub, awayClub)
+	mid := findMidInFixture(ctx, doc, roundName, homeClub, awayClub)
 	if mid == "" {
 		return "", fmt.Errorf("match not found: round=%q home=%q away=%q", roundName, homeClub, awayClub)
 	}
@@ -131,17 +148,86 @@ func ParseFixtureMid(r io.Reader, roundName, homeClub, awayClub string) (string,
 
 // ---- internal parsing helpers ----
 
-type tableStats struct {
-	clubName string
-	goals    int
-	behinds  int
-	players  []application.PlayerStats
+// findScoreTable finds the Team|Q1|Q2|Q3|Q4|Final summary table.
+func findScoreTable(doc *html.Node) *html.Node {
+	var result *html.Node
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if result != nil {
+			return
+		}
+		if n.Type == html.ElementNode && n.Data == "table" && isScoreTable(n) {
+			result = n
+			return
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(doc)
+	return result
 }
 
-// findStatsTables returns the two <table> nodes that contain player stats.
-// FootyWire uses <table class="ft"> for both stats tables; we select the ones
-// that contain a column header row with "K" and "HB" cells.
-func findStatsTables(n *html.Node) []*html.Node {
+// isScoreTable returns true when the table's first row has both "Team" and "Final" cells.
+func isScoreTable(table *html.Node) bool {
+	rows := tableRows(table)
+	if len(rows) < 3 {
+		return false
+	}
+	hasTeam, hasFinal := false, false
+	for _, cell := range rowCells(rows[0]) {
+		switch strings.TrimSpace(textContent(cell)) {
+		case "Team":
+			hasTeam = true
+		case "Final":
+			hasFinal = true
+		}
+	}
+	return hasTeam && hasFinal
+}
+
+// parseScoreTable extracts home/away club names and final-quarter goals.behinds.
+func parseScoreTable(table *html.Node) (homeClub, awayClub string, homeGoals, homeBehinds, awayGoals, awayBehinds int, err error) {
+	rows := tableRows(table)
+	if len(rows) < 3 {
+		err = fmt.Errorf("score table has %d rows, need at least 3", len(rows))
+		return
+	}
+	colIdx := buildColIndex(rowCells(rows[0]))
+	q4Idx, ok := colIdx["Q4"]
+	if !ok {
+		err = fmt.Errorf("score table missing Q4 column")
+		return
+	}
+	parseCells := func(row *html.Node) (club string, goals, behinds int) {
+		cells := rowCells(row)
+		if len(cells) == 0 {
+			return
+		}
+		club = strings.TrimSpace(textContent(cells[0]))
+		if q4Idx < len(cells) {
+			goals, behinds = parseGoalsBehinds(strings.TrimSpace(textContent(cells[q4Idx])))
+		}
+		return
+	}
+	homeClub, homeGoals, homeBehinds = parseCells(rows[1])
+	awayClub, awayGoals, awayBehinds = parseCells(rows[2])
+	return
+}
+
+// parseGoalsBehinds parses "9.6" → (9, 6). Returns zeros on bad input.
+func parseGoalsBehinds(s string) (goals, behinds int) {
+	parts := strings.SplitN(s, ".", 2)
+	if len(parts) == 2 {
+		goals, _ = strconv.Atoi(parts[0])
+		behinds, _ = strconv.Atoi(parts[1])
+	}
+	return
+}
+
+// findStatsTables returns all <table> nodes whose own rows (not in nested tables)
+// contain a cell with text exactly "K" (Kicks column header).
+func findStatsTables(doc *html.Node) []*html.Node {
 	var tables []*html.Node
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
@@ -154,75 +240,63 @@ func findStatsTables(n *html.Node) []*html.Node {
 			walk(c)
 		}
 	}
-	walk(n)
+	walk(doc)
 	return tables
 }
 
-// isStatsTable returns true when the table contains a header row with both "K" and "HB" cells.
+// isStatsTable returns true when one of the table's own cells (not in nested tables)
+// has text exactly "K". Uses tableRows so outer layout tables that merely contain
+// a stats table inside a cell are not matched.
 func isStatsTable(table *html.Node) bool {
-	var found bool
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		if found {
-			return
-		}
-		if n.Type == html.ElementNode && (n.Data == "th" || n.Data == "td") {
-			text := strings.TrimSpace(textContent(n))
-			if text == "K" || text == "HB" {
-				found = true
-				return
+	for _, row := range tableRows(table) {
+		for _, cell := range rowCells(row) {
+			if strings.TrimSpace(textContent(cell)) == "K" {
+				return true
 			}
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walk(c)
-		}
 	}
-	walk(table)
-	return found
+	return false
 }
 
-func parseStatsTable(table *html.Node) (tableStats, error) {
+// parsePlayerRows extracts player stats from a player stats table.
+// The table must have a header row containing "K"; club name is injected from
+// the score table rather than parsed from a heading row.
+func parsePlayerRows(table *html.Node, clubName string) ([]application.PlayerStats, error) {
 	rows := tableRows(table)
-	if len(rows) < 2 {
-		return tableStats{}, fmt.Errorf("too few rows in stats table")
-	}
 
-	var ts tableStats
-
-	// First row: club heading with score "Goals.Behinds (Total)" embedded in text.
-	headingText := strings.TrimSpace(textContent(rows[0]))
-	ts.clubName, ts.goals, ts.behinds = parseClubHeading(headingText)
-
-	// Find the header row (contains "K" cell) to build column index map.
 	var colIdx map[string]int
 	var dataRows []*html.Node
-	for i, row := range rows[1:] {
-		cells := rowCells(row)
-		idx := buildColIndex(cells)
+	for i, row := range rows {
+		idx := buildColIndex(rowCells(row))
 		if _, ok := idx["K"]; ok {
 			colIdx = idx
-			dataRows = rows[i+2:] // rows after the header
+			dataRows = rows[i+1:]
 			break
 		}
 	}
 	if colIdx == nil {
-		return tableStats{}, fmt.Errorf("could not find column header row in stats table")
+		return nil, fmt.Errorf("could not find column header row in player stats table for %q", clubName)
 	}
 
+	// "Player" column is first on the real page; fall back to index 0.
+	nameIdx := 0
+	if i, ok := colIdx["Player"]; ok {
+		nameIdx = i
+	}
+
+	var players []application.PlayerStats
 	for _, row := range dataRows {
 		cells := rowCells(row)
-		if len(cells) < 3 {
+		if len(cells) <= nameIdx {
 			continue
 		}
-		// Player name is the first non-numeric cell (skip jersey number).
-		playerName := strings.TrimSpace(textContent(cells[1]))
-		if playerName == "" || playerName == "Totals" || playerName == "Opposition" {
+		name := strings.TrimSpace(textContent(cells[nameIdx]))
+		if name == "" || name == "Totals" || name == "Opposition" {
 			continue
 		}
-
-		ps := application.PlayerStats{
-			Name:      playerName,
-			ClubName:  ts.clubName,
+		players = append(players, application.PlayerStats{
+			Name:      name,
+			ClubName:  clubName,
 			Kicks:     cellInt(cells, colIdx, "K"),
 			Handballs: cellInt(cells, colIdx, "HB"),
 			Marks:     cellInt(cells, colIdx, "M"),
@@ -230,38 +304,9 @@ func parseStatsTable(table *html.Node) (tableStats, error) {
 			Tackles:   cellInt(cells, colIdx, "T"),
 			Goals:     cellInt(cells, colIdx, "G"),
 			Behinds:   cellInt(cells, colIdx, "B"),
-		}
-		ts.players = append(ts.players, ps)
+		})
 	}
-
-	return ts, nil
-}
-
-// parseClubHeading extracts the club name, goals, and behinds from a heading like
-// "Carlton 14.9 (93)" or "Greater Western Sydney Giants 8.12 (60)".
-func parseClubHeading(text string) (clubName string, goals, behinds int) {
-	// Find the score pattern: digits.digits possibly followed by (total).
-	// The club name is everything before the score.
-	parts := strings.Fields(text)
-	for i, p := range parts {
-		if idx := strings.Index(p, "."); idx > 0 {
-			g, errG := strconv.Atoi(p[:idx])
-			rest := p[idx+1:]
-			// behinds may have trailing "(total)" — strip it
-			rest = strings.Split(rest, "(")[0]
-			rest = strings.TrimSuffix(rest, ")")
-			b, errB := strconv.Atoi(strings.TrimSpace(rest))
-			if errG == nil && errB == nil {
-				clubName = strings.Join(parts[:i], " ")
-				goals = g
-				behinds = b
-				return
-			}
-		}
-	}
-	// Fallback: return whole text as club name.
-	clubName = text
-	return
+	return players, nil
 }
 
 func buildColIndex(cells []*html.Node) map[string]int {
@@ -284,37 +329,74 @@ func cellInt(cells []*html.Node, colIdx map[string]int, col string) int {
 	return v
 }
 
-// findMidInFixture walks the fixture list DOM looking for a link to
-// ft_match_statistics?mid=XXXXX that sits within the correct round section
-// and near the expected club names.
-// findMidInFixture walks the fixture DOM in document order, tracking the most
-// recently seen round heading. When a match link is found, it checks whether
-// the surrounding row text contains both club names and the current heading
-// matches the requested round.
-func findMidInFixture(doc *html.Node, roundName, homeClub, awayClub string) string {
-	normRound := normStr(roundName)
+// footywireClubAliases maps FootyWire's abbreviated fixture names to a normalised
+// prefix of the full club name. Only needed for clubs whose fixture abbreviation
+// bears no prefix relation to their full name (e.g. GWS acronym).
+var footywireClubAliases = map[string]string{
+	"gws": "greaterwestern", // Greater Western Sydney Giants
+}
+
+// matchesClub reports whether normClub (full normalised club name) matches the
+// abbreviated name that FootyWire uses in fixture row text.
+//
+// FootyWire drops "mascot" words in some cases (e.g. "sydney" for "Sydney Swans",
+// "brisbane" for "Brisbane Lions"), so the fixture token is often a prefix of the
+// full normalised name. For GWS, an explicit alias handles the acronym form.
+func matchesClub(rowText, normClub string) bool {
+	if strings.Contains(rowText, normClub) {
+		return true
+	}
+	// rowText is the output of normStr so spaces are gone but newlines survive —
+	// split on newlines to extract individual tokens.
+	for _, tok := range strings.Split(rowText, "\n") {
+		if len(tok) < 3 {
+			continue
+		}
+		if strings.HasPrefix(normClub, tok) {
+			return true
+		}
+		if alias, ok := footywireClubAliases[tok]; ok && strings.HasPrefix(normClub, alias) {
+			return true
+		}
+	}
+	return false
+}
+
+// findMidInFixture walks the fixture DOM in document order. When a match link is
+// found it checks whether the surrounding row text contains both club names.
+//
+// Note: the FootyWire fixture page does not use h1–h3 headings to mark rounds, so
+// round-based disambiguation is not applied. Club-name matching is sufficient for
+// the regular season where each matchup occurs at most twice.
+func findMidInFixture(ctx context.Context, doc *html.Node, roundName, homeClub, awayClub string) string {
 	normHome := normStr(homeClub)
 	normAway := normStr(awayClub)
 
-	var currentRound string
+	slog.DebugContext(ctx, "fixture discovery start",
+		slog.String("round", roundName),
+		slog.String("home", homeClub), slog.String("normHome", normHome),
+		slog.String("away", awayClub), slog.String("normAway", normAway),
+	)
 
 	var walk func(*html.Node) string
 	walk = func(n *html.Node) string {
 		if n.Type == html.ElementNode {
-			// Track round headings (h1–h3).
-			if n.Data == "h1" || n.Data == "h2" || n.Data == "h3" {
-				currentRound = normStr(textContent(n))
-			}
-
 			if n.Data == "a" {
 				href := attrVal(n, "href")
 				if strings.Contains(href, "ft_match_statistics?mid=") {
-					// Gather text of the nearest table row containing this link.
 					rowText := normStr(nearestRowText(n))
-					if strings.Contains(currentRound, normRound) &&
-						strings.Contains(rowText, normHome) &&
-						strings.Contains(rowText, normAway) {
-						return extractMid(href)
+					homeMatch := matchesClub(rowText, normHome)
+					awayMatch := matchesClub(rowText, normAway)
+					slog.DebugContext(ctx, "fixture link",
+						slog.String("href", href),
+						slog.String("rowText", rowText),
+						slog.Bool("homeMatch", homeMatch),
+						slog.Bool("awayMatch", awayMatch),
+					)
+					if homeMatch && awayMatch {
+						mid := extractMid(href)
+						slog.DebugContext(ctx, "fixture match found", slog.String("mid", mid))
+						return mid
 					}
 				}
 			}

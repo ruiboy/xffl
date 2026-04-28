@@ -67,7 +67,7 @@ type AflMatch struct {
 	DrvResult         *string
 }
 
-type AflMatchSourceMap struct {
+type AflDataopsMatchSource struct {
 	Source     string
 	ExternalID string
 	MatchID    int32

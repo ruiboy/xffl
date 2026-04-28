@@ -302,7 +302,7 @@ watch(liveRoundResult, (val) => {
   }
 }, { immediate: true })
 
-const { result: roundStatsResult, loading: loadingRoundStats } = useQuery(
+const { result: roundStatsResult, loading: loadingRoundStats, refetch: refetchRoundStats } = useQuery(
   GET_AFL_ROUND_STATS,
   () => ({ roundId: selectedAflRoundId.value }),
   () => ({ enabled: !!selectedAflRoundId.value }),
@@ -316,12 +316,8 @@ const scrapeResult = ref<Record<string, { homeClubName: string; awayClubName: st
 const scrapeError = ref<Record<string, string>>({})
 const togglingComplete = ref<Record<string, boolean>>({})
 
-const { mutate: importStatsMutation } = useMutation(IMPORT_AFL_MATCH_STATS, {
-  refetchQueries: [{ query: GET_AFL_ROUND_STATS, variables: { roundId: selectedAflRoundId } }],
-})
-const { mutate: markCompleteMutation } = useMutation(MARK_AFL_MATCH_STATS_COMPLETE, {
-  refetchQueries: [{ query: GET_AFL_ROUND_STATS, variables: { roundId: selectedAflRoundId } }],
-})
+const { mutate: importStatsMutation } = useMutation(IMPORT_AFL_MATCH_STATS)
+const { mutate: markCompleteMutation } = useMutation(MARK_AFL_MATCH_STATS_COMPLETE)
 
 async function scrape(match: any) {
   scraping.value[match.id] = true
@@ -331,6 +327,7 @@ async function scrape(match: any) {
     const res = await importStatsMutation({ matchId: match.id })
     const data = res?.data?.importAFLMatchStats
     if (data) scrapeResult.value[match.id] = data
+    await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Scrape failed'
   } finally {
@@ -345,6 +342,7 @@ async function toggleComplete(match: any) {
       matchId: match.id,
       complete: match.statsImportStatus !== 'complete',
     })
+    await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Update failed'
   } finally {

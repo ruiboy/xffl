@@ -655,16 +655,16 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	return out, nil
 }
 
-// --- MatchSourceMapRepository ---
+// --- DataopsMatchSourceRepository ---
 
-type MatchSourceMapRepository struct{ q *sqlcgen.Queries }
+type DataopsMatchSourceRepository struct{ q *sqlcgen.Queries }
 
-func NewMatchSourceMapRepository(q *sqlcgen.Queries) *MatchSourceMapRepository {
-	return &MatchSourceMapRepository{q: q}
+func NewDataopsMatchSourceRepository(q *sqlcgen.Queries) *DataopsMatchSourceRepository {
+	return &DataopsMatchSourceRepository{q: q}
 }
 
-func (r *MatchSourceMapRepository) FindByMatchID(ctx context.Context, source string, matchID int) (string, bool, error) {
-	row, err := r.q.FindMatchSourceMapByMatchID(ctx, sqlcgen.FindMatchSourceMapByMatchIDParams{
+func (r *DataopsMatchSourceRepository) FindByMatchID(ctx context.Context, source string, matchID int) (string, bool, error) {
+	row, err := r.q.FindDataopsMatchSourceByMatchID(ctx, sqlcgen.FindDataopsMatchSourceByMatchIDParams{
 		Source:  source,
 		MatchID: int32(matchID),
 	})
@@ -678,8 +678,8 @@ func (r *MatchSourceMapRepository) FindByMatchID(ctx context.Context, source str
 	return row.ExternalID, true, nil
 }
 
-func (r *MatchSourceMapRepository) Store(ctx context.Context, source, externalID string, matchID int) error {
-	return r.q.UpsertMatchSourceMap(ctx, sqlcgen.UpsertMatchSourceMapParams{
+func (r *DataopsMatchSourceRepository) Store(ctx context.Context, source, externalID string, matchID int) error {
+	return r.q.UpsertDataopsMatchSource(ctx, sqlcgen.UpsertDataopsMatchSourceParams{
 		Source:     source,
 		ExternalID: externalID,
 		MatchID:    int32(matchID),

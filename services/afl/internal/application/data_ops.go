@@ -35,7 +35,7 @@ type DataOpsCommands struct {
 	clubs         domain.ClubRepository
 	rounds        domain.RoundRepository
 	playerSeasons domain.PlayerSeasonRepository
-	sourceMap     MatchSourceMapRepository
+	sourceMap     DataopsMatchSourceRepository
 	statsParser   StatsParser
 	discovery     FixtureDiscovery
 	resolver      PlayerResolver
@@ -50,7 +50,7 @@ func NewDataOpsCommands(
 	clubs domain.ClubRepository,
 	rounds domain.RoundRepository,
 	playerSeasons domain.PlayerSeasonRepository,
-	sourceMap MatchSourceMapRepository,
+	sourceMap DataopsMatchSourceRepository,
 	statsParser StatsParser,
 	discovery FixtureDiscovery,
 	resolver PlayerResolver,
@@ -94,10 +94,18 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		return ImportAFLStatsResult{}, fmt.Errorf("resolve away club: %w", err)
 	}
 
+	slog.InfoContext(ctx, "importing AFL stats",
+		slog.Int("matchId", matchID),
+		slog.String("round", round.Name),
+		slog.String("home", homeClubName),
+		slog.String("away", awayClubName),
+	)
+
 	mid, err := c.resolveMid(ctx, matchID, round.Name, homeClubName, awayClubName)
 	if err != nil {
 		return ImportAFLStatsResult{}, fmt.Errorf("resolve footywire mid: %w", err)
 	}
+	slog.InfoContext(ctx, "footywire mid resolved", slog.String("mid", mid))
 
 	stats, err := c.statsParser.ParseMatch(ctx, mid)
 	if err != nil {
@@ -111,16 +119,17 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 	}
 
 	type clubWork struct {
-		cm       domain.ClubMatch
-		clubName string
-		teamGoals int
-		teamBehinds int
-		counter  *int
+		cm            domain.ClubMatch
+		clubName      string // DB name — used for candidate lookup
+		statsClubName string // score table name — used to filter parsed players
+		teamGoals     int
+		teamBehinds   int
+		counter       *int
 	}
 
 	works := []clubWork{
-		{cm: match.Home, clubName: homeClubName, teamGoals: stats.HomeTeamGoals, teamBehinds: stats.HomeTeamBehinds, counter: &result.HomePlayerCount},
-		{cm: match.Away, clubName: awayClubName, teamGoals: stats.AwayTeamGoals, teamBehinds: stats.AwayTeamBehinds, counter: &result.AwayPlayerCount},
+		{cm: match.Home, clubName: homeClubName, statsClubName: stats.HomeClubName, teamGoals: stats.HomeTeamGoals, teamBehinds: stats.HomeTeamBehinds, counter: &result.HomePlayerCount},
+		{cm: match.Away, clubName: awayClubName, statsClubName: stats.AwayClubName, teamGoals: stats.AwayTeamGoals, teamBehinds: stats.AwayTeamBehinds, counter: &result.AwayPlayerCount},
 	}
 
 	var allWritten []domain.PlayerMatch
@@ -132,10 +141,16 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			return ImportAFLStatsResult{}, fmt.Errorf("build candidates for %s: %w", w.clubName, err)
 		}
 
-		playerStats := filterByClub(stats.Players, w.clubName)
+		playerStats := filterByClub(stats.Players, w.statsClubName)
+
+		// Sum behinds from ALL parsed player stats regardless of match confidence —
+		// this gives the accurate denominator for computing rushed behinds.
+		var totalParsedBehinds int
+		for _, ps := range playerStats {
+			totalParsedBehinds += ps.Behinds
+		}
 
 		var written []domain.PlayerMatch
-		var sumBehinds int
 
 		err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 			written = make([]domain.PlayerMatch, 0, len(playerStats))
@@ -174,7 +189,6 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 					return fmt.Errorf("upsert player_match for %s: %w", ps.Name, err)
 				}
 				written = append(written, pm)
-				sumBehinds += ps.Behinds
 			}
 
 			// Recalculate club score from updated player records.
@@ -188,8 +202,10 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 				return fmt.Errorf("update club score: %w", err)
 			}
 
-			// Compute and store rushed behinds: team total − sum of player behinds.
-			rushedBehinds := w.teamBehinds - sumBehinds
+			// Rushed behinds = team total behinds − sum of all player behinds from the
+			// stats page. Using the full parsed total (not just matched players) keeps
+			// this accurate even when some players are not yet in the DB.
+			rushedBehinds := w.teamBehinds - totalParsedBehinds
 			if rushedBehinds < 0 {
 				rushedBehinds = 0
 			}

@@ -96,3 +96,5 @@
 
 - [ ] Retire `parse_forum.py`
 - [ ] Remove `ffl.player.drv_name` — drop column from schema, remove from domain entity and all resolvers; update frontend to fetch player names via AFL service or search index (deferred until frontend is ready)
+- [ ] Move `afl.match.stats_import_status` + `stats_imported_at` out of core domain table and into `afl.dataops_match_source` (or a dedicated `afl.dataops_match` table) — needs design: currently surfaced directly on `AFLMatch` GraphQL type; moving requires decoupling the data ops and AFL domains in the API layer
+- [ ] have `dev/postgres/test-e2e` share init files, rather than having own 

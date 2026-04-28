@@ -56,9 +56,9 @@ type FixtureDiscovery interface {
 	FindMatchMid(ctx context.Context, roundName, homeClub, awayClub string) (string, error)
 }
 
-// MatchSourceMapRepository persists the mapping of afl.match_id → external source ID
+// DataopsMatchSourceRepository persists the mapping of afl.match_id → external source ID
 // per the ACL pattern (ADR-016). Source identifies the integration (e.g. "footywire").
-type MatchSourceMapRepository interface {
+type DataopsMatchSourceRepository interface {
 	FindByMatchID(ctx context.Context, source string, matchID int) (externalID string, found bool, err error)
 	Store(ctx context.Context, source, externalID string, matchID int) error
 }

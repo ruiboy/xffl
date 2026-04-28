@@ -20,7 +20,7 @@ func TestParseMatchStatsHTML_ParsesTwoClubs(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	stats, err := ParseMatchStatsHTML(f)
+	stats, err := ParseMatchStatsHTML(context.Background(), f)
 	require.NoError(t, err)
 
 	t.Run("home club name and score", func(t *testing.T) {
@@ -87,8 +87,8 @@ func TestParseFixtureMid_FindsCorrectMid(t *testing.T) {
 			wantMid: "11401",
 		},
 		{
-			name: "returns error when match not found",
-			round: "Round 99", homeClub: "Carlton", awayClub: "Richmond",
+			name: "returns error when clubs not in fixture",
+			round: "Round 1", homeClub: "Nonexistent FC", awayClub: "Phantom United",
 			wantError: true,
 		},
 	}
@@ -99,7 +99,7 @@ func TestParseFixtureMid_FindsCorrectMid(t *testing.T) {
 			require.NoError(t, err)
 			defer f.Close()
 
-			mid, err := ParseFixtureMid(f, tt.round, tt.homeClub, tt.awayClub)
+			mid, err := ParseFixtureMid(context.Background(), f, tt.round, tt.homeClub, tt.awayClub)
 			if tt.wantError {
 				assert.Error(t, err)
 				return
@@ -129,7 +129,7 @@ func TestFootywireClient_ParseMatch_UsesHTTPServer(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	stats, err := ParseMatchStatsHTML(resp.Body)
+	stats, err := ParseMatchStatsHTML(context.Background(), resp.Body)
 	require.NoError(t, err)
 	assert.Equal(t, "Carlton", stats.HomeClubName)
 	_ = client // ensures client is used
@@ -150,11 +150,10 @@ func TestFootywireClient_FindMatchMid_UsesHTTPServer(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	mid, err := ParseFixtureMid(resp.Body, "Round 5", "Carlton", "Richmond")
+	mid, err := ParseFixtureMid(context.Background(), resp.Body, "Round 5", "Carlton", "Richmond")
 	require.NoError(t, err)
 	assert.Equal(t, "11405", mid)
 
-	_ = context.Background() // suppress unused import
 }
 
 // ---- helpers ----
