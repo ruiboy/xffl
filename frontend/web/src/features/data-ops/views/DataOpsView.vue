@@ -40,67 +40,92 @@
         <!-- Match list -->
         <div v-if="loadingRoundStats" class="text-text-faint text-sm">Loading matches…</div>
         <div v-else-if="!aflMatches.length" class="text-text-faint text-sm">No matches in this round.</div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="match in aflMatches"
-            :key="match.id"
-            class="rounded-lg border border-border bg-surface p-4"
-          >
-            <!-- Match header -->
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-3">
-                <span class="text-sm font-medium text-text">
-                  {{ match.homeClubMatch?.club.name ?? '—' }}
-                  <span class="text-text-faint mx-2">vs</span>
-                  {{ match.awayClubMatch?.club.name ?? '—' }}
-                </span>
-                <span
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                  :class="statusBadge(match.statsImportStatus)"
-                >
-                  {{ statusLabel(match.statsImportStatus) }}
-                </span>
-                <span v-if="match.statsImportedAt" class="text-xs text-text-faint">
-                  last import {{ formatDate(match.statsImportedAt) }}
-                </span>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex items-center gap-2">
-                <button
-                  v-if="match.statsImportStatus !== 'no_data'"
-                  @click="toggleComplete(match)"
-                  :disabled="togglingComplete[match.id]"
-                  class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
-                >
-                  {{ match.statsImportStatus === 'complete' ? 'Mark Partial' : 'Mark Complete' }}
-                </button>
-                <button
-                  @click="scrape(match)"
-                  :disabled="scraping[match.id]"
-                  class="rounded border border-active bg-active px-3 py-1 text-xs font-medium text-active-text transition-colors disabled:opacity-40"
-                >
-                  {{ scraping[match.id] ? 'Getting Stats…' : 'Get Stats' }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Scrape result -->
-            <div v-if="scrapeResult[match.id]" class="mt-2 text-xs text-text-muted border-t border-border pt-2 space-y-1">
-              <div>
-                <span class="text-green-500 font-medium">Imported</span>
-                · {{ scrapeResult[match.id].homeClubName }} {{ scrapeResult[match.id].homePlayerCount }} players
-                · {{ scrapeResult[match.id].awayClubName }} {{ scrapeResult[match.id].awayPlayerCount }} players
-              </div>
-              <div v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500">
-                Unmatched ({{ scrapeResult[match.id].unmatchedPlayers.length }}):
-                {{ scrapeResult[match.id].unmatchedPlayers.join(', ') }}
-              </div>
-            </div>
-            <div v-if="scrapeError[match.id]" class="mt-2 text-xs text-red-400 border-t border-border pt-2">
-              {{ scrapeError[match.id] }}
-            </div>
-          </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Match</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Status</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Score</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Players</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Imported</th>
+                <th class="pb-2 text-right text-xs font-medium text-text-faint"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="match in aflMatches" :key="match.id">
+                <tr class="border-b border-border" :class="{ 'border-b-0': scrapeResult[match.id] || scrapeError[match.id] }">
+                  <td class="py-3 pr-4 text-sm font-semibold whitespace-nowrap">
+                    <router-link
+                      v-if="aflSeasonId"
+                      :to="{ name: 'afl-match', params: { seasonId: aflSeasonId, matchId: match.id } }"
+                      class="text-text hover:text-active transition-colors"
+                    >
+                      {{ abbrevClub(match.homeClubMatch?.club.name) }}
+                      <span class="font-normal text-text-faint text-xs mx-1.5">vs</span>
+                      {{ abbrevClub(match.awayClubMatch?.club.name) }}
+                    </router-link>
+                    <template v-else>
+                      {{ abbrevClub(match.homeClubMatch?.club.name) }}
+                      <span class="font-normal text-text-faint text-xs mx-1.5">vs</span>
+                      {{ abbrevClub(match.awayClubMatch?.club.name) }}
+                    </template>
+                  </td>
+                  <td class="py-3 pr-4 whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="statusBadge(match.statsImportStatus)"
+                    >{{ statusLabel(match.statsImportStatus) }}</span>
+                  </td>
+                  <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap tabular-nums">
+                    <template v-if="match.homeClubMatch?.score != null && match.awayClubMatch?.score != null && match.statsImportStatus !== 'no_data'">
+                      {{ match.homeClubMatch.score }}
+                      <span class="text-text-faint mx-1">vs</span>
+                      {{ match.awayClubMatch.score }}
+                    </template>
+                    <template v-else>—</template>
+                  </td>
+                  <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap">
+                    <template v-if="match.statsImportStatus === 'partial' || match.statsImportStatus === 'complete'">
+                      {{ match.homeClubMatch?.playerMatches?.length ?? 0 }} - {{ match.awayClubMatch?.playerMatches?.length ?? 0 }}
+                    </template>
+                    <template v-else>—</template>
+                  </td>
+                  <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap">
+                    {{ match.statsImportedAt ? formatDate(match.statsImportedAt) : '—' }}
+                  </td>
+                  <td class="py-3 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        v-if="match.statsImportStatus !== 'no_data'"
+                        @click="toggleComplete(match)"
+                        :disabled="togglingComplete[match.id]"
+                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+                      >{{ match.statsImportStatus === 'complete' ? 'Mark Partial' : 'Mark Complete' }}</button>
+                      <button
+                        @click="scrape(match)"
+                        :disabled="scraping[match.id]"
+                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+                      >{{ scraping[match.id] ? 'Getting Stats…' : 'Get Stats' }}</button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Feedback sub-row -->
+                <tr v-if="scrapeResult[match.id] || scrapeError[match.id]" class="border-b border-border">
+                  <td colspan="6" class="pb-2.5 pt-0 text-xs">
+                    <span v-if="scrapeError[match.id]" class="text-red-400">{{ scrapeError[match.id] }}</span>
+                    <template v-else-if="scrapeResult[match.id]">
+                      <span class="text-green-500 font-medium">Imported</span>
+                      <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-2">
+                        · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched:
+                        {{ scrapeResult[match.id].unmatchedPlayers.join(', ') }}
+                      </span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </template>
     </div>
@@ -162,11 +187,11 @@
 
             <!-- Paste area -->
             <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Forum post</label>
+              <label class="block text-xs font-medium text-text-muted mb-1">Team (eg Forum post)</label>
               <textarea
                 v-model="post"
                 rows="16"
-                placeholder="Paste the forum post here…"
+                placeholder="Paste team here…"
                 class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
               />
             </div>
@@ -223,16 +248,16 @@
           <p v-if="confirmError" class="mb-3 text-sm text-red-400">{{ confirmError }}</p>
           <p v-if="confirmSuccess" class="mb-3 text-sm text-green-500">{{ confirmSuccess }}</p>
 
-          <div class="overflow-x-auto rounded-lg border border-border">
-            <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full">
               <thead>
-                <tr class="border-b border-border bg-surface-raised">
-                  <th colspan="2" class="px-3 py-2 text-left font-medium text-text-muted">Posted</th>
-                  <th class="py-2"></th>
-                  <th colspan="2" class="px-3 py-2 text-left font-medium text-text-muted">Resolved</th>
-                  <th class="px-3 py-2 text-left font-medium text-text-muted">Position</th>
-                  <th class="px-3 py-2 text-right font-medium text-text-muted">Score</th>
-                  <th class="px-3 py-2 text-center font-medium text-text-muted">Confidence</th>
+                <tr class="border-b border-border">
+                  <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Posted</th>
+                  <th class="pb-2"></th>
+                  <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Resolved</th>
+                  <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Position</th>
+                  <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Score</th>
+                  <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Confidence</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,23 +267,23 @@
                   class="border-b border-border last:border-0"
                   :class="rowClass(i)"
                 >
-                  <td class="px-3 py-2 font-mono text-xs text-text">{{ rp.parsedName }}</td>
-                  <td class="pr-3 py-2 text-xs text-text-muted">{{ rp.clubHint }}</td>
-                  <td class="py-2 text-text-faint text-xs select-none">→</td>
-                  <td class="px-3 py-2 text-text text-sm">
+                  <td class="pl-4 pr-2 py-3 font-mono text-sm font-medium text-text whitespace-nowrap">{{ rp.parsedName }}</td>
+                  <td class="pr-3 py-3 text-xs text-text-faint whitespace-nowrap">{{ rp.clubHint }}</td>
+                  <td class="py-3 text-text-faint text-sm select-none px-1">→</td>
+                  <td class="pl-4 pr-2 py-3 text-sm font-semibold text-text whitespace-nowrap">
                     <span v-if="rp.resolvedName">{{ rp.resolvedName }}</span>
-                    <span v-else class="text-red-400">Unresolved</span>
+                    <span v-else class="text-red-400 font-normal">Unresolved</span>
                   </td>
-                  <td class="pr-3 py-2 text-xs text-text-muted">{{ rp.resolvedClub ?? '—' }}</td>
-                  <td class="px-3 py-2 text-xs">
+                  <td class="pr-4 py-3 text-xs text-text-muted whitespace-nowrap">{{ rp.resolvedClub ?? '—' }}</td>
+                  <td class="px-4 py-3 text-sm whitespace-nowrap">
                     <span :class="POSITION_COLORS[rp.position] ?? 'text-text-muted'">{{ displayPosition(rp) }}</span>
                   </td>
-                  <td class="px-3 py-2 text-right tabular-nums text-text-muted">
+                  <td class="px-4 py-3 text-right tabular-nums text-sm text-text">
                     {{ rp.score ?? '—' }}
                   </td>
-                  <td class="px-3 py-2 text-center">
+                  <td class="pl-4 pr-4 py-3 text-right">
                     <span
-                      class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                      class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
                       :class="confidenceBadge(rp.confidence)"
                     >
                       {{ (rp.confidence * 100).toFixed(0) }}%
@@ -289,7 +314,7 @@ const { liveSeasonId, liveRoundId } = useFflState()
 // ---- Tabs ----
 const tabs = [
   { id: 'afl-stats', label: 'AFL Stats' },
-  { id: 'team-submission', label: 'Team Submission' },
+  { id: 'team-submission', label: 'FFL Teams' },
 ]
 const activeTab = ref('afl-stats')
 
@@ -315,6 +340,7 @@ const { result: roundStatsResult, loading: loadingRoundStats, refetch: refetchRo
 )
 
 const aflMatches = computed(() => roundStatsResult.value?.aflRound?.matches ?? [])
+const aflSeasonId = computed(() => roundStatsResult.value?.aflRound?.season?.id ?? '')
 
 // Track per-match scrape state
 const scraping = ref<Record<string, boolean>>({})
@@ -356,6 +382,24 @@ async function toggleComplete(match: any) {
   }
 }
 
+const CLUB_ABBREV: Record<string, string> = {
+  'Adelaide Crows': 'Adelaide',
+  'Brisbane Lions': 'Brisbane',
+  'Gold Coast Suns': 'Gold Coast',
+  'Greater Western Sydney Giants': 'GWS',
+  'Greater Western Sydney': 'GWS',
+  'North Melbourne': 'North Melb.',
+  'Port Adelaide Power': 'Port Adelaide',
+  'Sydney Swans': 'Sydney',
+  'West Coast Eagles': 'West Coast',
+  'Western Bulldogs': 'W. Bulldogs',
+}
+
+function abbrevClub(name: string | undefined): string {
+  if (!name) return '—'
+  return CLUB_ABBREV[name] ?? name
+}
+
 function statusLabel(status: string): string {
   if (status === 'complete') return 'Complete'
   if (status === 'partial') return 'Partial'
@@ -369,7 +413,10 @@ function statusBadge(status: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-AU', { dateStyle: 'short', timeStyle: 'short' })
+  return new Date(iso).toLocaleString('en-AU', {
+    day: 'numeric', month: 'numeric', year: '2-digit',
+    hour: 'numeric', minute: '2-digit',
+  })
 }
 
 // ════════════════════════════════════════════

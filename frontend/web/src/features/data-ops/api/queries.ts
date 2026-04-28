@@ -5,12 +5,13 @@ export const GET_AFL_ROUND_STATS = gql`
     aflRound(id: $roundId) {
       id
       name
+      season { id }
       matches {
         id
         statsImportStatus
         statsImportedAt
-        homeClubMatch { id club { id name } }
-        awayClubMatch { id club { id name } }
+        homeClubMatch { id club { id name } score playerMatches { id } }
+        awayClubMatch { id club { id name } score playerMatches { id } }
       }
     }
   }
