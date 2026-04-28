@@ -15,6 +15,7 @@ test.describe('FFL Data Ops', () => {
     await setupFflSession(page)
     await page.getByRole('link', { name: /Data Ops/i }).click()
     await page.waitForURL('/ffl/data-ops')
+    await page.getByRole('button', { name: 'Team Submission' }).click()
     await page.waitForLoadState('networkidle')
   })
 
