@@ -54,6 +54,15 @@ func similarity(a, b string) float64 {
 	if a == b {
 		return 1.0
 	}
+	lev := levenshteinSimilarity(a, b)
+	tok := tokenSimilarity(a, b)
+	if tok > lev {
+		return tok
+	}
+	return lev
+}
+
+func levenshteinSimilarity(a, b string) float64 {
 	maxLen := len([]rune(a))
 	if lb := len([]rune(b)); lb > maxLen {
 		maxLen = lb
@@ -67,6 +76,40 @@ func similarity(a, b string) float64 {
 		return 0
 	}
 	return score
+}
+
+// tokenSimilarity handles names where a token is a single-letter abbreviation for
+// the corresponding token in the other name (e.g. "u" for "ugle", "h" for "horne").
+// FootyWire abbreviates hyphenated surnames this way: "Ugle-Hagan" → "U-Hagan".
+// Only activates when at least one token is a single letter; returns 0 otherwise.
+func tokenSimilarity(a, b string) float64 {
+	ta := strings.Fields(a)
+	tb := strings.Fields(b)
+	if len(ta) != len(tb) {
+		return 0
+	}
+	hasInitial := false
+	for _, t := range append(ta, tb...) {
+		if len(t) == 1 {
+			hasInitial = true
+			break
+		}
+	}
+	if !hasInitial {
+		return 0
+	}
+	matched := 0
+	for i := range ta {
+		switch {
+		case ta[i] == tb[i]:
+			matched++
+		case len(ta[i]) == 1 && strings.HasPrefix(tb[i], ta[i]):
+			matched++ // "u" matches "ugle"
+		case len(tb[i]) == 1 && strings.HasPrefix(ta[i], tb[i]):
+			matched++ // reverse
+		}
+	}
+	return float64(matched) / float64(len(ta))
 }
 
 func sortByConfidence(matches []application.PlayerMatch) {

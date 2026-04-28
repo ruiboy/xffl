@@ -128,11 +128,12 @@ type ComplexityRoot struct {
 	}
 
 	ImportAFLMatchStatsResult struct {
-		AwayClubName    func(childComplexity int) int
-		AwayPlayerCount func(childComplexity int) int
-		HomeClubName    func(childComplexity int) int
-		HomePlayerCount func(childComplexity int) int
-		MatchID         func(childComplexity int) int
+		AwayClubName     func(childComplexity int) int
+		AwayPlayerCount  func(childComplexity int) int
+		HomeClubName     func(childComplexity int) int
+		HomePlayerCount  func(childComplexity int) int
+		MatchID          func(childComplexity int) int
+		UnmatchedPlayers func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -595,6 +596,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ImportAFLMatchStatsResult.MatchID(childComplexity), true
+	case "ImportAFLMatchStatsResult.unmatchedPlayers":
+		if e.ComplexityRoot.ImportAFLMatchStatsResult.UnmatchedPlayers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ImportAFLMatchStatsResult.UnmatchedPlayers(childComplexity), true
 
 	case "Mutation.importAFLMatchStats":
 		if e.ComplexityRoot.Mutation.ImportAFLMatchStats == nil {
@@ -811,6 +818,7 @@ type ImportAFLMatchStatsResult {
   awayClubName: String!
   homePlayerCount: Int!
   awayPlayerCount: Int!
+  unmatchedPlayers: [String!]!
 }
 
 input UpdateAFLPlayerMatchInput {
@@ -3107,6 +3115,35 @@ func (ec *executionContext) fieldContext_ImportAFLMatchStatsResult_awayPlayerCou
 	return fc, nil
 }
 
+func (ec *executionContext) _ImportAFLMatchStatsResult_unmatchedPlayers(ctx context.Context, field graphql.CollectedField, obj *ImportAFLMatchStatsResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportAFLMatchStatsResult_unmatchedPlayers,
+		func(ctx context.Context) (any, error) {
+			return obj.UnmatchedPlayers, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportAFLMatchStatsResult_unmatchedPlayers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportAFLMatchStatsResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3211,6 +3248,8 @@ func (ec *executionContext) fieldContext_Mutation_importAFLMatchStats(ctx contex
 				return ec.fieldContext_ImportAFLMatchStatsResult_homePlayerCount(ctx, field)
 			case "awayPlayerCount":
 				return ec.fieldContext_ImportAFLMatchStatsResult_awayPlayerCount(ctx, field)
+			case "unmatchedPlayers":
+				return ec.fieldContext_ImportAFLMatchStatsResult_unmatchedPlayers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ImportAFLMatchStatsResult", field.Name)
 		},
@@ -6273,6 +6312,11 @@ func (ec *executionContext) _ImportAFLMatchStatsResult(ctx context.Context, sel 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "unmatchedPlayers":
+			out.Values[i] = ec._ImportAFLMatchStatsResult_unmatchedPlayers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7283,6 +7327,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNUpdateAFLPlayerMatchInput2xfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐUpdateAFLPlayerMatchInput(ctx context.Context, v any) (UpdateAFLPlayerMatchInput, error) {

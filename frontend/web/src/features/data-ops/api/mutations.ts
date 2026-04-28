@@ -8,6 +8,7 @@ export const IMPORT_AFL_MATCH_STATS = gql`
       awayClubName
       homePlayerCount
       awayPlayerCount
+      unmatchedPlayers
     }
   }
 `

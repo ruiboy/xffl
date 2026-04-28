@@ -19,11 +19,12 @@ const (
 
 // ImportAFLStatsResult summarises what was written for each club in a match.
 type ImportAFLStatsResult struct {
-	MatchID         int
-	HomeClubName    string
-	AwayClubName    string
-	HomePlayerCount int
-	AwayPlayerCount int
+	MatchID          int
+	HomeClubName     string
+	AwayClubName     string
+	HomePlayerCount  int
+	AwayPlayerCount  int
+	UnmatchedPlayers []string // display names of players with no confident match
 }
 
 // DataOpsCommands handles AFL stats import operations.
@@ -151,20 +152,28 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		}
 
 		var written []domain.PlayerMatch
+		var unmatched []string
 
 		err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 			written = make([]domain.PlayerMatch, 0, len(playerStats))
 			for _, ps := range playerStats {
-				matches, err := c.resolver.Resolve(ctx, ps.Name, w.clubName, candidates)
+				resolveName := ps.Name
+				if ps.CanonicalName != "" {
+					resolveName = ps.CanonicalName
+				}
+				matches, err := c.resolver.Resolve(ctx, resolveName, w.clubName, candidates)
 				if err != nil {
 					slog.WarnContext(ctx, "resolver error", slog.String("player", ps.Name), slog.Any("error", err))
+					unmatched = append(unmatched, ps.Name)
 					continue
 				}
 				if len(matches) == 0 || matches[0].Confidence < confidenceThreshold {
 					slog.WarnContext(ctx, "no confident match for player",
 						slog.String("player", ps.Name),
+						slog.String("canonicalName", ps.CanonicalName),
 						slog.String("club", w.clubName),
 					)
+					unmatched = append(unmatched, ps.Name)
 					continue
 				}
 
@@ -222,6 +231,7 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 
 		*w.counter = len(written)
 		allWritten = append(allWritten, written...)
+		result.UnmatchedPlayers = append(result.UnmatchedPlayers, unmatched...)
 	}
 
 	// Update match import status (outside transaction — best-effort).

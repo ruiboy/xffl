@@ -55,12 +55,17 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 	if err != nil {
 		return nil, err
 	}
+	unmatched := result.UnmatchedPlayers
+	if unmatched == nil {
+		unmatched = []string{}
+	}
 	return &ImportAFLMatchStatsResult{
-		MatchID:         toID(result.MatchID),
-		HomeClubName:    result.HomeClubName,
-		AwayClubName:    result.AwayClubName,
-		HomePlayerCount: result.HomePlayerCount,
-		AwayPlayerCount: result.AwayPlayerCount,
+		MatchID:          toID(result.MatchID),
+		HomeClubName:     result.HomeClubName,
+		AwayClubName:     result.AwayClubName,
+		HomePlayerCount:  result.HomePlayerCount,
+		AwayPlayerCount:  result.AwayPlayerCount,
+		UnmatchedPlayers: unmatched,
 	}, nil
 }
 

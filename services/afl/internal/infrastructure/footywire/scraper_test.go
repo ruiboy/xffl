@@ -39,7 +39,7 @@ func TestParseMatchStatsHTML_ParsesTwoClubs(t *testing.T) {
 		carltonPlayers := playersForClub(stats.Players, "Carlton")
 		require.Len(t, carltonPlayers, 3)
 		assert.Equal(t, application.PlayerStats{
-			Name: "Patrick Cripps", ClubName: "Carlton",
+			Name: "Patrick Cripps", CanonicalName: "Patrick Cripps", ClubName: "Carlton",
 			Kicks: 15, Handballs: 8, Marks: 7, Hitouts: 0, Tackles: 5, Goals: 2, Behinds: 1,
 		}, carltonPlayers[0])
 	})
@@ -48,9 +48,17 @@ func TestParseMatchStatsHTML_ParsesTwoClubs(t *testing.T) {
 		richmondPlayers := playersForClub(stats.Players, "Richmond")
 		require.Len(t, richmondPlayers, 2)
 		assert.Equal(t, application.PlayerStats{
-			Name: "Dustin Martin", ClubName: "Richmond",
+			Name: "Dustin Martin", CanonicalName: "Dustin Martin", ClubName: "Richmond",
 			Kicks: 18, Handballs: 5, Marks: 6, Hitouts: 0, Tackles: 3, Goals: 3, Behinds: 2,
 		}, richmondPlayers[0])
+	})
+
+	t.Run("canonical name extracted from href slug for abbreviated display name", func(t *testing.T) {
+		richmondPlayers := playersForClub(stats.Players, "Richmond")
+		require.Len(t, richmondPlayers, 2)
+		cotchin := richmondPlayers[1]
+		assert.Equal(t, "T Cotchin", cotchin.Name)
+		assert.Equal(t, "Trent Cotchin", cotchin.CanonicalName)
 	})
 
 	t.Run("totals row is excluded", func(t *testing.T) {
@@ -154,6 +162,38 @@ func TestFootywireClient_FindMatchMid_UsesHTTPServer(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "11405", mid)
 
+}
+
+// ---- LevenshteinResolver ----
+
+func TestLevenshteinResolver_HyphenatedSurnameAbbreviation(t *testing.T) {
+	resolver := NewLevenshteinResolver()
+	candidates := []application.PlayerCandidate{
+		{PlayerSeasonID: 1, Name: "Jamarra Ugle-Hagan"},
+		{PlayerSeasonID: 2, Name: "Nick Holman"},
+		{PlayerSeasonID: 3, Name: "Wil Powell"},
+	}
+
+	tests := []struct {
+		displayName string
+		wantName    string
+		wantAbove   float64
+	}{
+		// FootyWire abbreviates hyphenated surnames: "Ugle-Hagan" → "U-Hagan"
+		{"Jamarra U-Hagan", "Jamarra Ugle-Hagan", 0.85},
+		// Full name always matches
+		{"Jamarra Ugle-Hagan", "Jamarra Ugle-Hagan", 0.99},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.displayName, func(t *testing.T) {
+			matches, err := resolver.Resolve(context.Background(), tt.displayName, "", candidates)
+			require.NoError(t, err)
+			require.NotEmpty(t, matches)
+			assert.Equal(t, tt.wantName, matches[0].Candidate.Name)
+			assert.GreaterOrEqual(t, matches[0].Confidence, tt.wantAbove)
+		})
+	}
 }
 
 // ---- helpers ----

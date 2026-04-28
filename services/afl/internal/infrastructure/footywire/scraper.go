@@ -295,8 +295,9 @@ func parsePlayerRows(table *html.Node, clubName string) ([]application.PlayerSta
 			continue
 		}
 		players = append(players, application.PlayerStats{
-			Name:      name,
-			ClubName:  clubName,
+			Name:          name,
+			CanonicalName: canonicalNameFromCell(cells[nameIdx]),
+			ClubName:      clubName,
 			Kicks:     cellInt(cells, colIdx, "K"),
 			Handballs: cellInt(cells, colIdx, "HB"),
 			Marks:     cellInt(cells, colIdx, "M"),
@@ -307,6 +308,57 @@ func parsePlayerRows(table *html.Node, clubName string) ([]application.PlayerSta
 		})
 	}
 	return players, nil
+}
+
+// canonicalNameFromCell extracts the canonical player name from a player profile link
+// in the name cell. FootyWire renders these as:
+//
+//	<a href="pp-club--player-name" title="Full Player Name">Abbrev Name</a>
+//
+// The title attribute is used directly when present. Falls back to deriving the name
+// from the href slug. Returns "" when no player profile link is found.
+func canonicalNameFromCell(cell *html.Node) string {
+	var find func(*html.Node) string
+	find = func(n *html.Node) string {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			h := attrVal(n, "href")
+			if strings.Contains(h, "pp-") {
+				if title := attrVal(n, "title"); title != "" {
+					return title
+				}
+				return canonicalNameFromSlug(h)
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if s := find(c); s != "" {
+				return s
+			}
+		}
+		return ""
+	}
+	return find(cell)
+}
+
+// canonicalNameFromSlug derives a display name from a FootyWire player slug.
+// e.g. "pp-gold-coast-suns--jamarra-ugle-hagan" → "Jamarra Ugle-Hagan" is not
+// reconstructable from the slug alone, so this is a best-effort fallback that
+// converts hyphens to spaces: "Jamarra Ugle Hagan".
+func canonicalNameFromSlug(href string) string {
+	idx := strings.Index(href, "--")
+	if idx < 0 {
+		return ""
+	}
+	slug := href[idx+2:]
+	if i := strings.IndexAny(slug, "?#"); i >= 0 {
+		slug = slug[:i]
+	}
+	parts := strings.Split(slug, "-")
+	for i, p := range parts {
+		if len(p) > 0 {
+			parts[i] = strings.ToUpper(p[:1]) + strings.ToLower(p[1:])
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 func buildColIndex(cells []*html.Node) map[string]int {

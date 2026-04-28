@@ -34,15 +34,16 @@ type MatchStats struct {
 
 // PlayerStats is one player's stats from a match page.
 type PlayerStats struct {
-	Name      string
-	ClubName  string
-	Kicks     int
-	Handballs int
-	Marks     int
-	Hitouts   int
-	Tackles   int
-	Goals     int
-	Behinds   int
+	Name          string // display name as shown on the source page
+	CanonicalName string // slug-derived name (e.g. "Jason Horne Francis" from URL); preferred for matching when non-empty
+	ClubName      string
+	Kicks         int
+	Handballs     int
+	Marks         int
+	Hitouts       int
+	Tackles       int
+	Goals         int
+	Behinds       int
 }
 
 // StatsParser parses player stats for a single match from an external source.

@@ -10,6 +10,7 @@ type ImportAFLMatchStatsResult {
   awayClubName: String!
   homePlayerCount: Int!
   awayPlayerCount: Int!
+  unmatchedPlayers: [String!]!
 }
 
 input UpdateAFLPlayerMatchInput {

@@ -92,11 +92,12 @@ type AFLSeason struct {
 }
 
 type ImportAFLMatchStatsResult struct {
-	MatchID         string `json:"matchId"`
-	HomeClubName    string `json:"homeClubName"`
-	AwayClubName    string `json:"awayClubName"`
-	HomePlayerCount int    `json:"homePlayerCount"`
-	AwayPlayerCount int    `json:"awayPlayerCount"`
+	MatchID          string   `json:"matchId"`
+	HomeClubName     string   `json:"homeClubName"`
+	AwayClubName     string   `json:"awayClubName"`
+	HomePlayerCount  int      `json:"homePlayerCount"`
+	AwayPlayerCount  int      `json:"awayPlayerCount"`
+	UnmatchedPlayers []string `json:"unmatchedPlayers"`
 }
 
 type Mutation struct {

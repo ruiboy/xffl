@@ -80,16 +80,22 @@
                   :disabled="scraping[match.id]"
                   class="rounded border border-active bg-active px-3 py-1 text-xs font-medium text-active-text transition-colors disabled:opacity-40"
                 >
-                  {{ scraping[match.id] ? 'Scraping…' : 'Scrape' }}
+                  {{ scraping[match.id] ? 'Getting Stats…' : 'Get Stats' }}
                 </button>
               </div>
             </div>
 
             <!-- Scrape result -->
-            <div v-if="scrapeResult[match.id]" class="mt-2 text-xs text-text-muted border-t border-border pt-2">
-              <span class="text-green-500 font-medium">Imported</span>
-              · {{ scrapeResult[match.id].homeClubName }} {{ scrapeResult[match.id].homePlayerCount }} players
-              · {{ scrapeResult[match.id].awayClubName }} {{ scrapeResult[match.id].awayPlayerCount }} players
+            <div v-if="scrapeResult[match.id]" class="mt-2 text-xs text-text-muted border-t border-border pt-2 space-y-1">
+              <div>
+                <span class="text-green-500 font-medium">Imported</span>
+                · {{ scrapeResult[match.id].homeClubName }} {{ scrapeResult[match.id].homePlayerCount }} players
+                · {{ scrapeResult[match.id].awayClubName }} {{ scrapeResult[match.id].awayPlayerCount }} players
+              </div>
+              <div v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500">
+                Unmatched ({{ scrapeResult[match.id].unmatchedPlayers.length }}):
+                {{ scrapeResult[match.id].unmatchedPlayers.join(', ') }}
+              </div>
             </div>
             <div v-if="scrapeError[match.id]" class="mt-2 text-xs text-red-400 border-t border-border pt-2">
               {{ scrapeError[match.id] }}
@@ -282,7 +288,7 @@ const { liveSeasonId, liveRoundId } = useFflState()
 
 // ---- Tabs ----
 const tabs = [
-  { id: 'afl-stats', label: 'AFL Stats Import' },
+  { id: 'afl-stats', label: 'AFL Stats' },
   { id: 'team-submission', label: 'Team Submission' },
 ]
 const activeTab = ref('afl-stats')
@@ -312,7 +318,7 @@ const aflMatches = computed(() => roundStatsResult.value?.aflRound?.matches ?? [
 
 // Track per-match scrape state
 const scraping = ref<Record<string, boolean>>({})
-const scrapeResult = ref<Record<string, { homeClubName: string; awayClubName: string; homePlayerCount: number; awayPlayerCount: number }>>({})
+const scrapeResult = ref<Record<string, { homeClubName: string; awayClubName: string; homePlayerCount: number; awayPlayerCount: number; unmatchedPlayers: string[] }>>({})
 const scrapeError = ref<Record<string, string>>({})
 const togglingComplete = ref<Record<string, boolean>>({})
 
