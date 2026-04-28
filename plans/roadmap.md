@@ -196,7 +196,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 
 - [x] ADR — Twirp for cross-service communication
 - [x] FFL Round team submission
-- [ ] AFL stats import
+- [x] AFL stats import
 - [ ] FFL Score reconciliation
 - [ ] FFL Historical backfill
 - [ ] AFL season player import

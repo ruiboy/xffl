@@ -101,6 +101,7 @@ test-e2e:
     # Copy schemas into test-e2e (seed files live there permanently)
     cp dev/postgres/init/01_afl_schema.sql dev/postgres/test-e2e/01_afl_schema.sql
     cp dev/postgres/init/02_ffl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
+    cp dev/postgres/init/03_dataops.sql dev/postgres/test-e2e/03_dataops.sql
 
     docker compose -p xffl-test -f dev/docker-compose.test.yml up -d --force-recreate
     echo "Waiting for test Postgres on :5433..."
@@ -113,7 +114,7 @@ test-e2e:
     (cd frontend/web && npx playwright test); STATUS=$?
 
     docker compose -p xffl-test -f dev/docker-compose.test.yml down
-    rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql
+    rm -f dev/postgres/test-e2e/01_afl_schema.sql dev/postgres/test-e2e/02_ffl_schema.sql dev/postgres/test-e2e/03_dataops.sql
     exit $STATUS
 
 # Run all tests (AFL unit, FFL unit, and e2e)

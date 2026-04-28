@@ -313,8 +313,8 @@ const { liveSeasonId, liveRoundId } = useFflState()
 
 // ---- Tabs ----
 const tabs = [
-  { id: 'afl-stats', label: 'AFL Stats' },
   { id: 'team-submission', label: 'FFL Teams' },
+  { id: 'afl-stats', label: 'AFL Stats' },
 ]
 const activeTab = ref('afl-stats')
 

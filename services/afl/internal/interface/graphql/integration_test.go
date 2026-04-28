@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"xffl/services/afl/internal/application"
+	footywire "xffl/services/afl/internal/infrastructure/footywire"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	gql "xffl/services/afl/internal/interface/graphql"
@@ -804,5 +806,203 @@ func TestAflLiveRound(t *testing.T) {
 		require.NotNil(t, data.AflLiveRound)
 		assert.Equal(t, "Round 2", data.AflLiveRound.Round.Name)
 		assert.Equal(t, "2025-06-22T14:00:00Z", data.AflLiveRound.StartDate)
+	})
+}
+
+// ════════════════════════════════════════════════════════════════
+// AFL Stats Import integration test
+// ════════════════════════════════════════════════════════════════
+
+// stubStatsParser implements application.StatsParser using a local HTML fixture.
+// It never makes network calls — the mid argument is ignored.
+type stubStatsParser struct{ path string }
+
+func (s *stubStatsParser) ParseMatch(_ context.Context, _ string) (application.MatchStats, error) {
+	f, err := os.Open(s.path)
+	if err != nil {
+		return application.MatchStats{}, err
+	}
+	defer f.Close()
+	return footywire.ParseMatchStatsHTML(context.Background(), f)
+}
+
+// stubFixtureDiscovery implements application.FixtureDiscovery without hitting FootyWire.
+type stubFixtureDiscovery struct{}
+
+func (s *stubFixtureDiscovery) FindMatchMid(_ context.Context, _, _, _ string) (string, error) {
+	return "test-mid", nil
+}
+
+func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser application.StatsParser, discovery application.FixtureDiscovery) *httptest.Server {
+	t.Helper()
+
+	q := sqlcgen.New(pool)
+	queries := application.NewQueries(
+		clock.RealClock{},
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
+
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db, memevents.New())
+	dataOps := application.NewDataOpsCommands(
+		db,
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubRepository(q),
+		pg.NewRoundRepository(q, pool),
+		pg.NewPlayerSeasonRepository(q),
+		pg.NewDataopsMatchSourceRepository(q),
+		parser,
+		discovery,
+		footywire.NewLevenshteinResolver(),
+		memevents.New(),
+	)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := gql.InjectLoaders(r.Context(), gql.NewLoaders(queries))
+		srv.ServeHTTP(w, r.WithContext(ctx))
+	})
+	return httptest.NewServer(h)
+}
+
+type dataOpsTestIDs struct {
+	matchID         int
+	homeClubMatchID int
+	awayClubMatchID int
+}
+
+func seedDataOpsTestData(t *testing.T, pool *pgxpool.Pool) dataOpsTestIDs {
+	t.Helper()
+	ctx := context.Background()
+	cleanupTestData(ctx, t, pool)
+
+	var ids dataOpsTestIDs
+	var leagueID, seasonID, roundID int
+	var carltonID, richmondID int
+	var carltonSeasonID, richmondSeasonID int
+
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.league (name) VALUES ('Test AFL') RETURNING id").Scan(&leagueID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.season (name, league_id) VALUES ('Test 2025', $1) RETURNING id",
+		leagueID).Scan(&seasonID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		seasonID).Scan(&roundID))
+
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club (name) VALUES ('Carlton') RETURNING id").Scan(&carltonID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club (name) VALUES ('Richmond') RETURNING id").Scan(&richmondID))
+
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO afl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0) RETURNING id`,
+		carltonID, seasonID).Scan(&carltonSeasonID))
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO afl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0) RETURNING id`,
+		richmondID, seasonID).Scan(&richmondSeasonID))
+
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'MCG', '2025-05-01 19:30:00') RETURNING id",
+		roundID).Scan(&ids.matchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 0, 0) RETURNING id",
+		ids.matchID, carltonSeasonID).Scan(&ids.homeClubMatchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 0, 0) RETURNING id",
+		ids.matchID, richmondSeasonID).Scan(&ids.awayClubMatchID))
+	_, err := pool.Exec(ctx,
+		"UPDATE afl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
+		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
+	require.NoError(t, err)
+
+	for _, name := range []string{"Patrick Cripps", "Sam Walsh"} {
+		var playerID int
+		require.NoError(t, pool.QueryRow(ctx,
+			"INSERT INTO afl.player (name) VALUES ($1) RETURNING id", name).Scan(&playerID))
+		_, err := pool.Exec(ctx,
+			"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2)",
+			playerID, carltonSeasonID)
+		require.NoError(t, err)
+	}
+	for _, name := range []string{"Dustin Martin", "Trent Cotchin"} {
+		var playerID int
+		require.NoError(t, pool.QueryRow(ctx,
+			"INSERT INTO afl.player (name) VALUES ($1) RETURNING id", name).Scan(&playerID))
+		_, err := pool.Exec(ctx,
+			"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2)",
+			playerID, richmondSeasonID)
+		require.NoError(t, err)
+	}
+
+	t.Cleanup(func() { cleanupTestData(context.Background(), t, pool) })
+	return ids
+}
+
+func TestImportAFLMatchStats(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedDataOpsTestData(t, pool)
+	server := setupTestServerWithDataOps(t, pool,
+		&stubStatsParser{path: "testdata/carlton_vs_richmond.html"},
+		&stubFixtureDiscovery{},
+	)
+	defer server.Close()
+
+	mutation := fmt.Sprintf(`mutation {
+		importAFLMatchStats(matchId: "%d") {
+			matchId homePlayerCount awayPlayerCount unmatchedPlayers
+		}
+	}`, ids.matchID)
+
+	result := execQuery(t, server, mutation)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		ImportAFLMatchStats struct {
+			MatchID          string   `json:"matchId"`
+			HomePlayerCount  int      `json:"homePlayerCount"`
+			AwayPlayerCount  int      `json:"awayPlayerCount"`
+			UnmatchedPlayers []string `json:"unmatchedPlayers"`
+		} `json:"importAFLMatchStats"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	imp := data.ImportAFLMatchStats
+
+	t.Run("all home players matched and written", func(t *testing.T) {
+		assert.Equal(t, 2, imp.HomePlayerCount) // Patrick Cripps + Sam Walsh
+	})
+	t.Run("all away players matched and written", func(t *testing.T) {
+		assert.Equal(t, 2, imp.AwayPlayerCount) // Dustin Martin + Trent Cotchin
+	})
+	t.Run("no unmatched players", func(t *testing.T) {
+		assert.Empty(t, imp.UnmatchedPlayers)
+	})
+	t.Run("match import status set to partial", func(t *testing.T) {
+		statusResult := execQuery(t, server, fmt.Sprintf(`{
+			aflMatch(id: "%d") { statsImportStatus }
+		}`, ids.matchID))
+		require.Empty(t, statusResult.Errors)
+
+		var statusData struct {
+			AflMatch struct {
+				StatsImportStatus string `json:"statsImportStatus"`
+			} `json:"aflMatch"`
+		}
+		require.NoError(t, json.Unmarshal(statusResult.Data, &statusData))
+		assert.Equal(t, "partial", statusData.AflMatch.StatsImportStatus)
 	})
 }
