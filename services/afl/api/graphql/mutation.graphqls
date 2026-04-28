@@ -1,5 +1,16 @@
 type Mutation {
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+  importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
+  markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
+}
+
+type ImportAFLMatchStatsResult {
+  matchId: ID!
+  homeClubName: String!
+  awayClubName: String!
+  homePlayerCount: Int!
+  awayPlayerCount: Int!
+  unmatchedPlayers: [String!]!
 }
 
 input UpdateAFLPlayerMatchInput {

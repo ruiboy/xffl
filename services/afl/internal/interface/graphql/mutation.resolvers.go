@@ -45,6 +45,43 @@ func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input Updat
 	return convertPlayerMatch(pm, player), nil
 }
 
+// ImportAFLMatchStats is the resolver for the importAFLMatchStats field.
+func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID string) (*ImportAFLMatchStatsResult, error) {
+	id, err := fromID(matchID)
+	if err != nil {
+		return nil, err
+	}
+	result, err := r.DataOps.ImportAFLStats(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	unmatched := result.UnmatchedPlayers
+	if unmatched == nil {
+		unmatched = []string{}
+	}
+	return &ImportAFLMatchStatsResult{
+		MatchID:          toID(result.MatchID),
+		HomeClubName:     result.HomeClubName,
+		AwayClubName:     result.AwayClubName,
+		HomePlayerCount:  result.HomePlayerCount,
+		AwayPlayerCount:  result.AwayPlayerCount,
+		UnmatchedPlayers: unmatched,
+	}, nil
+}
+
+// MarkAFLMatchStatsComplete is the resolver for the markAFLMatchStatsComplete field.
+func (r *mutationResolver) MarkAFLMatchStatsComplete(ctx context.Context, matchID string, complete bool) (*AFLMatch, error) {
+	id, err := fromID(matchID)
+	if err != nil {
+		return nil, err
+	}
+	match, err := r.DataOps.MarkMatchStatsComplete(ctx, id, complete)
+	if err != nil {
+		return nil, err
+	}
+	return convertMatch(match), nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

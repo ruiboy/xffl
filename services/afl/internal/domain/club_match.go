@@ -25,4 +25,5 @@ type ClubMatchRepository interface {
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
 	FindRoundID(ctx context.Context, clubMatchID int) (int, error)
 	UpdateScore(ctx context.Context, id int, score int) error
+	UpdateRushedBehinds(ctx context.Context, id int, rushedBehinds int) error
 }

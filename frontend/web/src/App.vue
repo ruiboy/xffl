@@ -15,15 +15,16 @@
 
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
+          <router-link
+            v-if="isFfl || isAfl"
+            :to="{ name: 'ffl-data-ops' }"
+            class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+            title="Data Ops"
+          >
+            <IconDataOps class="w-4 h-4" />
+            Data Ops
+          </router-link>
           <template v-if="isFfl">
-            <router-link
-              :to="{ name: 'ffl-data-ops' }"
-              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-              title="Data Ops"
-            >
-              <IconDataOps class="w-4 h-4" />
-              Data Ops
-            </router-link>
             <router-link
               v-if="selectedClubId && liveRoundId && liveSeasonId"
               :to="{ name: 'ffl-team-builder', params: { seasonId: liveSeasonId, roundId: liveRoundId } }"
@@ -107,6 +108,7 @@ const { selectedClubId, liveSeasonId, liveRoundId, setClub } = useFflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
+const isAfl = computed(() => route.path.startsWith('/afl'))
 
 // Load clubs for the current FFL season (driven by state, not route params)
 const { result: clubsResult } = useQuery(

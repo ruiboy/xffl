@@ -50,9 +50,17 @@
 
 ### Step 5 — AFL stats import *(many times/round — automated)*
 
-- [ ] `StatsParser` port interface (application layer)
-- [ ] `ImportAFLStats` use case — parse stats → resolve player names via `PlayerResolver` (candidate pool = `afl.player` records for that club) → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
-- [ ] First `StatsParser` adapter for chosen data source (scrape or file)
+- [x] `StatsParser` port interface (application layer)
+- [x] `ImportAFLStats` use case — parse stats → resolve player names via `PlayerResolver` (candidate pool = `afl.player` records for that club) → write `afl.player_match` → fire `AFL.PlayerMatchUpdated` → FFL scores recalculate
+- [x] First `StatsParser` adapter for chosen data source (FootyWire scraper — `golang.org/x/net/html`, exempted from ADR by user)
+- [x] `MatchSourceMapRepository` ACL table per ADR-016 (footywire match IDs cached in `afl.match_source_map`)
+- [x] `MarkMatchStatsComplete` use case + `markAFLMatchStatsComplete` mutation
+- [x] AFL GraphQL mutations: `importAFLMatchStats`, `markAFLMatchStatsComplete`
+
+### Step 5a — Data ops management UI *(many times/round — manual)*
+
+- [x] Design Data ops UI to list FFL rounds and indicate what data we have / need: FFL teams, AFL player stats
+- [x] Ability to launch data imports from this page (AFL Stats Import tab with per-match scrape + mark complete)
 
 ### Step 6 — Score reconciliation *(every round)*
 
@@ -88,3 +96,5 @@
 
 - [ ] Retire `parse_forum.py`
 - [ ] Remove `ffl.player.drv_name` — drop column from schema, remove from domain entity and all resolvers; update frontend to fetch player names via AFL service or search index (deferred until frontend is ready)
+- [ ] Move `afl.match.stats_import_status` + `stats_imported_at` out of core domain table and into `afl.dataops_match_source` (or a dedicated `afl.dataops_match` table) — needs design: currently surfaced directly on `AFLMatch` GraphQL type; moving requires decoupling the data ops and AFL domains in the API layer
+- [ ] have `dev/postgres/test-e2e` share init files, rather than having own 

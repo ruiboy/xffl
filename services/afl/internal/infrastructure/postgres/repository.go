@@ -201,6 +201,24 @@ func NewMatchRepository(q *sqlcgen.Queries) *MatchRepository {
 	return &MatchRepository{q: q}
 }
 
+func matchFromRow(id, roundID, homeID, awayID int32, venue string, startDt pgtype.Timestamptz, result, status string, importedAt pgtype.Timestamptz) domain.Match {
+	m := domain.Match{
+		ID:                int(id),
+		RoundID:           int(roundID),
+		Home:              domain.ClubMatch{ID: int(homeID)},
+		Away:              domain.ClubMatch{ID: int(awayID)},
+		Venue:             venue,
+		StartTime:         startDt.Time,
+		Result:            domain.MatchResult(result),
+		StatsImportStatus: domain.MatchStatsStatus(status),
+	}
+	if importedAt.Valid {
+		t := importedAt.Time
+		m.StatsImportedAt = &t
+	}
+	return m
+}
+
 func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]domain.Match, error) {
 	rows, err := r.q.FindMatchesByRoundID(ctx, int32(roundID))
 	if err != nil {
@@ -208,15 +226,8 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 	}
 	out := make([]domain.Match, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Match{
-			ID:        int(row.ID),
-			RoundID:   int(row.RoundID),
-			Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
-			Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
-			Venue:     row.Venue,
-			StartTime: row.StartDt.Time,
-			Result:    domain.MatchResult(row.DrvResult),
-		}
+		out[i] = matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
+			row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt)
 	}
 	return out, nil
 }
@@ -226,15 +237,8 @@ func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, e
 	if err != nil {
 		return domain.Match{}, err
 	}
-	return domain.Match{
-		ID:        int(row.ID),
-		RoundID:   int(row.RoundID),
-		Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
-		Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
-		Venue:     row.Venue,
-		StartTime: row.StartDt.Time,
-		Result:    domain.MatchResult(row.DrvResult),
-	}, nil
+	return matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
+		row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt), nil
 }
 
 func (r *MatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.Match, error) {
@@ -248,17 +252,19 @@ func (r *MatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]dom
 	}
 	out := make(map[int]domain.Match, len(rows))
 	for _, row := range rows {
-		out[int(row.ID)] = domain.Match{
-			ID:        int(row.ID),
-			RoundID:   int(row.RoundID),
-			Home:      domain.ClubMatch{ID: int(row.HomeClubMatchID)},
-			Away:      domain.ClubMatch{ID: int(row.AwayClubMatchID)},
-			Venue:     row.Venue,
-			StartTime: row.StartDt.Time,
-			Result:    domain.MatchResult(row.DrvResult),
-		}
+		m := matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
+			row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt)
+		out[m.ID] = m
 	}
 	return out, nil
+}
+
+func (r *MatchRepository) UpdateImportStatus(ctx context.Context, matchID int, status domain.MatchStatsStatus, importedAt time.Time) error {
+	return r.q.UpdateMatchImportStatus(ctx, sqlcgen.UpdateMatchImportStatusParams{
+		ID:                int32(matchID),
+		StatsImportStatus: string(status),
+		StatsImportedAt:   pgtype.Timestamptz{Time: importedAt, Valid: true},
+	})
 }
 
 func (r *MatchRepository) FindByIDWithDetails(ctx context.Context, id int) (domain.Match, error) {
@@ -414,6 +420,14 @@ func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int
 	return r.q.UpdateClubMatchScore(ctx, sqlcgen.UpdateClubMatchScoreParams{
 		ID:       int32(id),
 		DrvScore: &s,
+	})
+}
+
+func (r *ClubMatchRepository) UpdateRushedBehinds(ctx context.Context, id int, rushedBehinds int) error {
+	v := int32(rushedBehinds)
+	return r.q.UpdateClubMatchRushedBehinds(ctx, sqlcgen.UpdateClubMatchRushedBehindsParams{
+		ID:            int32(id),
+		RushedBehinds: &v,
 	})
 }
 
@@ -608,6 +622,23 @@ func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.P
 	}, nil
 }
 
+func (r *PlayerSeasonRepository) FindByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int) ([]domain.PlayerSeasonWithPlayer, error) {
+	rows, err := r.q.FindPlayerSeasonsByClubSeasonIDWithPlayer(ctx, int32(clubSeasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonWithPlayer, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonWithPlayer{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			PlayerID:       int(row.PlayerID),
+			ClubSeasonID:   int(row.ClubSeasonID),
+			Name:           row.PlayerName,
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]domain.Player, error) {
 	int32IDs := make([]int32, len(ids))
 	for i, id := range ids {
@@ -622,4 +653,35 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 		out[int(row.PlayerSeasonID)] = domain.Player{ID: int(row.PlayerID), Name: row.PlayerName}
 	}
 	return out, nil
+}
+
+// --- DataopsMatchSourceRepository ---
+
+type DataopsMatchSourceRepository struct{ q *sqlcgen.Queries }
+
+func NewDataopsMatchSourceRepository(q *sqlcgen.Queries) *DataopsMatchSourceRepository {
+	return &DataopsMatchSourceRepository{q: q}
+}
+
+func (r *DataopsMatchSourceRepository) FindByMatchID(ctx context.Context, source string, matchID int) (string, bool, error) {
+	row, err := r.q.FindDataopsMatchSourceByMatchID(ctx, sqlcgen.FindDataopsMatchSourceByMatchIDParams{
+		Source:  source,
+		MatchID: int32(matchID),
+	})
+	if err != nil {
+		// pgx returns pgx.ErrNoRows when not found; treat as not-found.
+		if err.Error() == "no rows in result set" {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	return row.ExternalID, true, nil
+}
+
+func (r *DataopsMatchSourceRepository) Store(ctx context.Context, source, externalID string, matchID int) error {
+	return r.q.UpsertDataopsMatchSource(ctx, sqlcgen.UpsertDataopsMatchSourceParams{
+		Source:     source,
+		ExternalID: externalID,
+		MatchID:    int32(matchID),
+	})
 }

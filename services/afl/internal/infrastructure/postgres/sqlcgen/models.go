@@ -53,16 +53,26 @@ type AflLeague struct {
 }
 
 type AflMatch struct {
-	ID              int32
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-	DeletedAt       pgtype.Timestamptz
-	RoundID         int32
-	HomeClubMatchID *int32
-	AwayClubMatchID *int32
-	Venue           *string
-	StartDt         pgtype.Timestamptz
-	DrvResult       *string
+	ID                int32
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
+	DeletedAt         pgtype.Timestamptz
+	RoundID           int32
+	HomeClubMatchID   *int32
+	AwayClubMatchID   *int32
+	Venue             *string
+	StartDt           pgtype.Timestamptz
+	StatsImportStatus string
+	StatsImportedAt   pgtype.Timestamptz
+	DrvResult         *string
+}
+
+type AflDataopsMatchSource struct {
+	Source     string
+	ExternalID string
+	MatchID    int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
 
 type AflPlayer struct {

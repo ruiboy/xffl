@@ -17,19 +17,23 @@ SELECT id, round_id,
        COALESCE(away_club_match_id, 0) AS away_club_match_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result
+       COALESCE(drv_result, '') AS drv_result,
+       stats_import_status,
+       stats_imported_at
 FROM afl.match
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type FindMatchByIDRow struct {
-	ID              int32
-	RoundID         int32
-	HomeClubMatchID int32
-	AwayClubMatchID int32
-	Venue           string
-	StartDt         pgtype.Timestamptz
-	DrvResult       string
+	ID                int32
+	RoundID           int32
+	HomeClubMatchID   int32
+	AwayClubMatchID   int32
+	Venue             string
+	StartDt           pgtype.Timestamptz
+	DrvResult         string
+	StatsImportStatus string
+	StatsImportedAt   pgtype.Timestamptz
 }
 
 func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error) {
@@ -43,6 +47,8 @@ func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow
 		&i.Venue,
 		&i.StartDt,
 		&i.DrvResult,
+		&i.StatsImportStatus,
+		&i.StatsImportedAt,
 	)
 	return i, err
 }
@@ -53,19 +59,23 @@ SELECT id, round_id,
        COALESCE(away_club_match_id, 0) AS away_club_match_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result
+       COALESCE(drv_result, '') AS drv_result,
+       stats_import_status,
+       stats_imported_at
 FROM afl.match
 WHERE id = ANY($1::int[]) AND deleted_at IS NULL
 `
 
 type FindMatchesByIDsRow struct {
-	ID              int32
-	RoundID         int32
-	HomeClubMatchID int32
-	AwayClubMatchID int32
-	Venue           string
-	StartDt         pgtype.Timestamptz
-	DrvResult       string
+	ID                int32
+	RoundID           int32
+	HomeClubMatchID   int32
+	AwayClubMatchID   int32
+	Venue             string
+	StartDt           pgtype.Timestamptz
+	DrvResult         string
+	StatsImportStatus string
+	StatsImportedAt   pgtype.Timestamptz
 }
 
 func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error) {
@@ -85,6 +95,8 @@ func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatc
 			&i.Venue,
 			&i.StartDt,
 			&i.DrvResult,
+			&i.StatsImportStatus,
+			&i.StatsImportedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -102,19 +114,23 @@ SELECT id, round_id,
        COALESCE(away_club_match_id, 0) AS away_club_match_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result
+       COALESCE(drv_result, '') AS drv_result,
+       stats_import_status,
+       stats_imported_at
 FROM afl.match
 WHERE round_id = $1 AND deleted_at IS NULL
 `
 
 type FindMatchesByRoundIDRow struct {
-	ID              int32
-	RoundID         int32
-	HomeClubMatchID int32
-	AwayClubMatchID int32
-	Venue           string
-	StartDt         pgtype.Timestamptz
-	DrvResult       string
+	ID                int32
+	RoundID           int32
+	HomeClubMatchID   int32
+	AwayClubMatchID   int32
+	Venue             string
+	StartDt           pgtype.Timestamptz
+	DrvResult         string
+	StatsImportStatus string
+	StatsImportedAt   pgtype.Timestamptz
 }
 
 func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error) {
@@ -134,6 +150,8 @@ func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]Fi
 			&i.Venue,
 			&i.StartDt,
 			&i.DrvResult,
+			&i.StatsImportStatus,
+			&i.StatsImportedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -143,4 +161,23 @@ func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]Fi
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMatchImportStatus = `-- name: UpdateMatchImportStatus :exec
+UPDATE afl.match
+SET stats_import_status = $2,
+    stats_imported_at   = $3,
+    updated_at          = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateMatchImportStatusParams struct {
+	ID                int32
+	StatsImportStatus string
+	StatsImportedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateMatchImportStatus(ctx context.Context, arg UpdateMatchImportStatusParams) error {
+	_, err := q.db.Exec(ctx, updateMatchImportStatus, arg.ID, arg.StatsImportStatus, arg.StatsImportedAt)
+	return err
 }

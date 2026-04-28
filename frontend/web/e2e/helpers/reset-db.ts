@@ -5,8 +5,8 @@ const execFileP = promisify(execFile)
 
 const CONTAINER = 'xffl-postgres-test'
 const SEED_FILES = [
-  '/docker-entrypoint-initdb.d/03_afl_seed.sql',
-  '/docker-entrypoint-initdb.d/04_ffl_seed.sql',
+  '/docker-entrypoint-initdb.d/10_afl_seed.sql',
+  '/docker-entrypoint-initdb.d/11_ffl_seed.sql',
 ]
 
 // Resets the e2e Postgres to its seeded baseline. Truncates with RESTART IDENTITY

@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS afl.match (
     away_club_match_id INTEGER,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
+    stats_import_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
+    stats_imported_at TIMESTAMP WITH TIME ZONE,
     drv_result VARCHAR(50)
 );
 
@@ -165,3 +167,4 @@ CREATE INDEX IF NOT EXISTS idx_afl_club_match_deleted_at ON afl.club_match(delet
 CREATE INDEX IF NOT EXISTS idx_afl_player_deleted_at ON afl.player(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_season_deleted_at ON afl.player_season(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_match_deleted_at ON afl.player_match(deleted_at);
+

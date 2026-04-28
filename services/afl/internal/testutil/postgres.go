@@ -21,13 +21,14 @@ func StartPostgres(ctx context.Context) (*pgxpool.Pool, func(), error) {
 		return nil, nil, fmt.Errorf("find repo root: %w", err)
 	}
 	schemaPath := filepath.Join(repoRoot, "dev", "postgres", "init", "01_afl_schema.sql")
+	dataopsPath := filepath.Join(repoRoot, "dev", "postgres", "init", "03_dataops.sql")
 
 	ctr, err := tcpostgres.Run(ctx,
 		"postgres:16-alpine",
 		tcpostgres.WithDatabase("xffl"),
 		tcpostgres.WithUsername("postgres"),
 		tcpostgres.WithPassword("postgres"),
-		tcpostgres.WithInitScripts(schemaPath),
+		tcpostgres.WithInitScripts(schemaPath, dataopsPath),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2),
