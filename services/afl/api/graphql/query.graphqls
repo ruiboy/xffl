@@ -1,12 +1,16 @@
 type Query {
-  aflClubs: [AFLClub!]!
-  aflClub(id: ID!): AFLClub!
   aflSeasons: [AFLSeason!]!
   aflSeason(id: ID!): AFLSeason!
-  aflLiveRound: AFLLiveRound
   aflRound(id: ID!): AFLRound
   aflMatch(id: ID!): AFLMatch
+
+  aflClubs: [AFLClub!]!
+  aflClub(id: ID!): AFLClub!
+
+  aflPlayerSeason(id: ID!): AFLPlayerSeason
   aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
+
+  aflLiveRound: AFLLiveRound
   aflPlayerSearch(query: String!): [AFLPlayer!]!
 }
 
@@ -83,7 +87,14 @@ type AFLClubSeason {
   premiershipPoints: Int!
 }
 
-type AFLPlayerMatch {
+type AFLPlayerSeason @key(fields: "id") {
+  id: ID!
+  player: AFLPlayer!
+  clubSeason: AFLClubSeason!
+  matches: [AFLPlayerMatch!]!
+}
+
+type AFLPlayerMatch @key(fields: "id") {
   id: ID!
   playerSeasonId: ID!
   player: AFLPlayer!

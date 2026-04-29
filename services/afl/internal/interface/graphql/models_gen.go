@@ -65,6 +65,17 @@ type AFLPlayerMatch struct {
 	Score          int        `json:"score"`
 }
 
+func (AFLPlayerMatch) IsEntity() {}
+
+type AFLPlayerSeason struct {
+	ID         string            `json:"id"`
+	Player     *AFLPlayer        `json:"player"`
+	ClubSeason *AFLClubSeason    `json:"clubSeason"`
+	Matches    []*AFLPlayerMatch `json:"matches"`
+}
+
+func (AFLPlayerSeason) IsEntity() {}
+
 type AFLPlayerSeasonStats struct {
 	PlayerSeasonID string  `json:"playerSeasonId"`
 	GamesPlayed    int     `json:"gamesPlayed"`

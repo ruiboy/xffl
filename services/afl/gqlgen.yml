@@ -15,6 +15,11 @@ resolver:
   package: graphql
   filename_template: "{name}.resolvers.go"
 
+federation:
+  filename: internal/interface/graphql/federation.go
+  package: graphql
+  version: 2
+
 autobind: []
 
 models:
@@ -44,4 +49,12 @@ models:
   AFLClubMatch:
     fields:
       playerMatches:
+        resolver: true
+  AFLPlayerSeason:
+    fields:
+      player:
+        resolver: true
+      clubSeason:
+        resolver: true
+      matches:
         resolver: true

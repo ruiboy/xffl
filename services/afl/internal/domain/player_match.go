@@ -60,6 +60,7 @@ type PlayerSeasonStats struct {
 type PlayerMatchRepository interface {
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
+	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 	FindStatsByPlayerSeasonIDs(ctx context.Context, ids []int) ([]PlayerSeasonStats, error)
 }

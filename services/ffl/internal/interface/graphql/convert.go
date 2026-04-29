@@ -138,6 +138,10 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *FFLPlayerM
 		s := string(*pm.Status)
 		result.Status = &s
 	}
+	if pm.AFLPlayerMatchID != nil {
+		id := toID(*pm.AFLPlayerMatchID)
+		result.AflPlayerMatchID = &id
+	}
 	return result
 }
 

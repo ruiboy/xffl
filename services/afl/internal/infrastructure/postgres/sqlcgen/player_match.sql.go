@@ -159,6 +159,60 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
+const findPlayerMatchesByPlayerSeasonID = `-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
+FROM afl.player_match
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id
+`
+
+type FindPlayerMatchesByPlayerSeasonIDRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Status         *string
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int32) ([]FindPlayerMatchesByPlayerSeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesByPlayerSeasonID, playerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesByPlayerSeasonIDRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesByPlayerSeasonIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Status,
+			&i.Kicks,
+			&i.Handballs,
+			&i.Marks,
+			&i.Hitouts,
+			&i.Tackles,
+			&i.Goals,
+			&i.Behinds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

@@ -1,0 +1,456 @@
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+{
+  query: Query
+  mutation: Mutation
+}
+
+directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
+
+directive @join__field(graph: join__Graph, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+
+directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true, isInterfaceObject: Boolean! = false) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+
+directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
+
+directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+
+input AddFFLPlayerToSeasonInput
+  @join__type(graph: FFL)
+{
+  playerId: ID!
+  clubSeasonId: ID!
+}
+
+input AddFFLSquadPlayerInput
+  @join__type(graph: FFL)
+{
+  aflPlayerId: ID!
+  aflPlayerName: String!
+  clubSeasonId: ID!
+}
+
+type AFLClub
+  @join__type(graph: AFL)
+{
+  id: ID!
+  name: String!
+}
+
+type AFLClubMatch
+  @join__type(graph: AFL)
+{
+  id: ID!
+  club: AFLClub!
+  rushedBehinds: Int!
+  score: Int!
+  playerMatches: [AFLPlayerMatch!]!
+}
+
+type AFLClubSeason
+  @join__type(graph: AFL)
+{
+  id: ID!
+  club: AFLClub!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  for: Int!
+  against: Int!
+  premiershipPoints: Int!
+}
+
+type AFLLiveRound
+  @join__type(graph: AFL)
+{
+  round: AFLRound!
+  startDate: String!
+}
+
+type AFLMatch
+  @join__type(graph: AFL)
+{
+  id: ID!
+  venue: String
+  startTime: String
+  result: String
+  statsImportStatus: String!
+  statsImportedAt: String
+  round: AFLRound!
+  homeClubMatch: AFLClubMatch
+  awayClubMatch: AFLClubMatch
+}
+
+type AFLPlayer
+  @join__type(graph: AFL)
+{
+  id: ID!
+  name: String!
+}
+
+type AFLPlayerMatch
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
+{
+  id: ID!
+  playerSeasonId: ID! @join__field(graph: AFL)
+  player: AFLPlayer! @join__field(graph: AFL)
+  status: String! @join__field(graph: AFL)
+  kicks: Int! @join__field(graph: AFL)
+  handballs: Int! @join__field(graph: AFL)
+  marks: Int! @join__field(graph: AFL)
+  hitouts: Int! @join__field(graph: AFL)
+  tackles: Int! @join__field(graph: AFL)
+  goals: Int! @join__field(graph: AFL)
+  behinds: Int! @join__field(graph: AFL)
+  disposals: Int! @join__field(graph: AFL)
+  score: Int! @join__field(graph: AFL)
+}
+
+type AFLPlayerSeason
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
+{
+  id: ID!
+  player: AFLPlayer! @join__field(graph: AFL)
+  clubSeason: AFLClubSeason! @join__field(graph: AFL)
+  matches: [AFLPlayerMatch!]! @join__field(graph: AFL)
+}
+
+type AFLPlayerSeasonStats
+  @join__type(graph: AFL)
+{
+  playerSeasonId: ID!
+  gamesPlayed: Int!
+  avgKicks: Float!
+  avgHandballs: Float!
+  avgMarks: Float!
+  avgHitouts: Float!
+  avgTackles: Float!
+  avgGoals: Float!
+  avgBehinds: Float!
+}
+
+type AFLRound
+  @join__type(graph: AFL)
+{
+  id: ID!
+  name: String!
+  season: AFLSeason!
+  matches: [AFLMatch!]!
+}
+
+type AFLSeason
+  @join__type(graph: AFL)
+{
+  id: ID!
+  name: String!
+  ladder: [AFLClubSeason!]!
+  rounds: [AFLRound!]!
+}
+
+input CalculateFFLFantasyScoreInput
+  @join__type(graph: FFL)
+{
+  playerMatchId: ID!
+  goals: Int!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  tackles: Int!
+  hitouts: Int!
+}
+
+input ConfirmedFFLPlayerInput
+  @join__type(graph: FFL)
+{
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
+
+input ConfirmFFLTeamSubmissionInput
+  @join__type(graph: FFL)
+{
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input CreateFFLPlayerInput
+  @join__type(graph: FFL)
+{
+  name: String!
+  aflPlayerId: ID!
+}
+
+type FFLClub
+  @join__type(graph: FFL)
+{
+  id: ID!
+  name: String!
+}
+
+type FFLClubMatch
+  @join__type(graph: FFL)
+{
+  id: ID!
+  club: FFLClub!
+  score: Int!
+  playerMatches: [FFLPlayerMatch!]!
+}
+
+type FFLClubSeason
+  @join__type(graph: FFL)
+{
+  id: ID!
+  club: FFLClub!
+  season: FFLSeason!
+  played: Int!
+  won: Int!
+  lost: Int!
+  drawn: Int!
+  for: Int!
+  against: Int!
+  percentage: Float!
+  players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
+}
+
+type FFLMatch
+  @join__type(graph: FFL)
+{
+  id: ID!
+  venue: String
+  startTime: String
+  result: String
+  round: FFLRound!
+  homeClubMatch: FFLClubMatch
+  awayClubMatch: FFLClubMatch
+}
+
+type FFLPlayer
+  @join__type(graph: FFL)
+{
+  id: ID!
+  name: String!
+  aflPlayerId: ID!
+}
+
+type FFLPlayerMatch
+  @join__type(graph: FFL)
+{
+  id: ID!
+  playerSeasonId: ID!
+  player: FFLPlayer!
+  position: String
+  status: String
+  backupPositions: String
+  interchangePosition: String
+  score: Int!
+  aflPlayerMatchId: ID
+  aflPlayerMatch: AFLPlayerMatch
+}
+
+type FFLPlayerSeason
+  @join__type(graph: FFL)
+{
+  id: ID!
+  player: FFLPlayer!
+  clubSeasonId: ID!
+  aflPlayerSeasonId: ID
+  aflPlayerSeason: AFLPlayerSeason
+}
+
+type FFLPlayerSeasonConnection
+  @join__type(graph: FFL)
+{
+  nodes: [FFLPlayerSeason!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input FFLPlayerSeasonFilter
+  @join__type(graph: FFL)
+{
+  active: Boolean
+}
+
+type FFLRound
+  @join__type(graph: FFL)
+{
+  id: ID!
+  name: String!
+  aflRoundId: ID
+  season: FFLSeason!
+  matches: [FFLMatch!]!
+}
+
+type FFLSeason
+  @join__type(graph: FFL)
+{
+  id: ID!
+  name: String!
+  ladder: [FFLClubSeason!]!
+  rounds: [FFLRound!]!
+}
+
+input FFLTeamPlayerInput
+  @join__type(graph: FFL)
+{
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+}
+
+type ImportAFLMatchStatsResult
+  @join__type(graph: AFL)
+{
+  matchId: ID!
+  homeClubName: String!
+  awayClubName: String!
+  homePlayerCount: Int!
+  awayPlayerCount: Int!
+  unmatchedPlayers: [String!]!
+}
+
+scalar join__FieldSet
+
+enum join__Graph {
+  AFL @join__graph(name: "afl", url: "http://host.docker.internal:8080/query")
+  FFL @join__graph(name: "ffl", url: "http://host.docker.internal:8081/query")
+}
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+type Mutation
+  @join__type(graph: AFL)
+  @join__type(graph: FFL)
+{
+  updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
+  importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
+  markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
+  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
+  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
+  deleteFFLPlayer(id: ID!): Boolean! @join__field(graph: FFL)
+  addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
+  removeFFLPlayerFromSeason(id: ID!): Boolean! @join__field(graph: FFL)
+  calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
+  setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+  addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason! @join__field(graph: FFL)
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+}
+
+type PageInfo
+  @join__type(graph: FFL)
+{
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+input ParseFFLTeamSubmissionInput
+  @join__type(graph: FFL)
+{
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+type ParseFFLTeamSubmissionResult
+  @join__type(graph: FFL)
+{
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type Query
+  @join__type(graph: AFL)
+  @join__type(graph: FFL)
+{
+  aflClubs: [AFLClub!]! @join__field(graph: AFL)
+  aflClub(id: ID!): AFLClub! @join__field(graph: AFL)
+  aflSeasons: [AFLSeason!]! @join__field(graph: AFL)
+  aflSeason(id: ID!): AFLSeason! @join__field(graph: AFL)
+  aflLiveRound: AFLLiveRound @join__field(graph: AFL)
+  aflRound(id: ID!): AFLRound @join__field(graph: AFL)
+  aflMatch(id: ID!): AFLMatch @join__field(graph: AFL)
+  aflPlayerSeason(id: ID!): AFLPlayerSeason @join__field(graph: AFL)
+  aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]! @join__field(graph: AFL)
+  aflPlayerSearch(query: String!): [AFLPlayer!]! @join__field(graph: AFL)
+  fflClubs: [FFLClub!]! @join__field(graph: FFL)
+  fflClub(id: ID!): FFLClub! @join__field(graph: FFL)
+  fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
+  fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
+  fflSeasons: [FFLSeason!]! @join__field(graph: FFL)
+  fflSeason(id: ID!): FFLSeason! @join__field(graph: FFL)
+  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason @join__field(graph: FFL)
+  fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
+  fflRound(id: ID!): FFLRound @join__field(graph: FFL)
+  fflMatch(id: ID!): FFLMatch @join__field(graph: FFL)
+}
+
+type ResolvedPlayer
+  @join__type(graph: FFL)
+{
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input SetFFLTeamInput
+  @join__type(graph: FFL)
+{
+  clubMatchId: ID!
+  players: [FFLTeamPlayerInput!]!
+}
+
+input UpdateAFLPlayerMatchInput
+  @join__type(graph: AFL)
+{
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  status: String
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
+}
+
+input UpdateFFLPlayerInput
+  @join__type(graph: FFL)
+{
+  id: ID!
+  name: String!
+}

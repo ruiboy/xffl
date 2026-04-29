@@ -26,6 +26,19 @@ services:
     volumes:
       - typesensedata:/data
 
+  router:
+    image: ghcr.io/apollographql/router:v1.57.0
+    container_name: xffl-router
+    command:
+      - --supergraph=/config/supergraph.graphql
+      - --config=/config/router.yaml
+    volumes:
+      - ./router:/config
+    ports:
+      - "${ROUTER_PORT:-4000}:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   pgdata:
   typesensedata:

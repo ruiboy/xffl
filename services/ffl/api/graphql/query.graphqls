@@ -1,14 +1,17 @@
 type Query {
-  fflClubs: [FFLClub!]!
-  fflClub(id: ID!): FFLClub!
-  fflPlayers: [FFLPlayer!]!
-  fflPlayer(id: ID!): FFLPlayer!
   fflSeasons: [FFLSeason!]!
   fflSeason(id: ID!): FFLSeason!
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
-  fflRoundByAflRound(aflRoundId: ID!): FFLRound
   fflRound(id: ID!): FFLRound
   fflMatch(id: ID!): FFLMatch
+
+  fflClubs: [FFLClub!]!
+  fflClub(id: ID!): FFLClub!
+  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
+
+  fflPlayers: [FFLPlayer!]!
+  fflPlayer(id: ID!): FFLPlayer!
+
+  fflRoundByAflRound(aflRoundId: ID!): FFLRound
 }
 
 type FFLClub {
@@ -73,6 +76,7 @@ type FFLPlayerSeason {
   player: FFLPlayer!
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
+  aflPlayerSeason: AFLPlayerSeason
 }
 
 type FFLPlayerSeasonConnection {
@@ -94,8 +98,19 @@ type FFLPlayerMatch {
   backupPositions: String
   interchangePosition: String
   score: Int!
+  aflPlayerMatchId: ID
+  aflPlayerMatch: AFLPlayerMatch
 }
 
+# --- Stub types owned by the AFL subgraph — resolved via federation. ---
+
+type AFLPlayerSeason @key(fields: "id") {
+  id: ID!
+}
+
+type AFLPlayerMatch @key(fields: "id") {
+  id: ID!
+}
 # --- Data ops types ---
 
 input ParseFFLTeamSubmissionInput {

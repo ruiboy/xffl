@@ -543,6 +543,30 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 	}, nil
 }
 
+func (r *PlayerMatchRepository) FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]domain.PlayerMatch, error) {
+	rows, err := r.q.FindPlayerMatchesByPlayerSeasonID(ctx, int32(playerSeasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerMatch, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerMatch{
+			ID:             int(row.ID),
+			ClubMatchID:    int(row.ClubMatchID),
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			Status:         derefOrStr(row.Status),
+			Kicks:          derefOr(row.Kicks),
+			Handballs:      derefOr(row.Handballs),
+			Marks:          derefOr(row.Marks),
+			Hitouts:        derefOr(row.Hitouts),
+			Tackles:        derefOr(row.Tackles),
+			Goals:          derefOr(row.Goals),
+			Behinds:        derefOr(row.Behinds),
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),
@@ -620,6 +644,28 @@ func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.P
 		FromRoundID:  int32PtrToIntPtr(row.FromRoundID),
 		ToRoundID:    int32PtrToIntPtr(row.ToRoundID),
 	}, nil
+}
+
+func (r *PlayerSeasonRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.PlayerSeason, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayerSeasonsByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]domain.PlayerSeason, len(rows))
+	for _, row := range rows {
+		out[int(row.ID)] = domain.PlayerSeason{
+			ID:           int(row.ID),
+			PlayerID:     int(row.PlayerID),
+			ClubSeasonID: int(row.ClubSeasonID),
+			FromRoundID:  int32PtrToIntPtr(row.FromRoundID),
+			ToRoundID:    int32PtrToIntPtr(row.ToRoundID),
+		}
+	}
+	return out, nil
 }
 
 func (r *PlayerSeasonRepository) FindByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int) ([]domain.PlayerSeasonWithPlayer, error) {

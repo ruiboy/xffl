@@ -10,6 +10,13 @@ SELECT id, club_match_id, player_season_id, status,
 FROM afl.player_match
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
+FROM afl.player_match
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id;
+
 -- name: FindPlayerMatchStatsByPlayerSeasonIDs :many
 SELECT player_season_id,
        COUNT(*)::INTEGER AS games_played,
