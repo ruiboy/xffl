@@ -1,12 +1,6 @@
 supergraph:
   listen: 0.0.0.0:4000
-
-cors:
-  origins:
-    - http://localhost:3000
-  allow_credentials: true
-  allow_headers:
-    - content-type
+  path: /query
 
 # Override subgraph URLs for local dev (Docker → host networking).
 # In Docker, host.docker.internal resolves to the host machine.

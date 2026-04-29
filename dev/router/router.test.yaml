@@ -1,12 +1,6 @@
 supergraph:
   listen: 0.0.0.0:4000
-
-cors:
-  origins:
-    - http://localhost:3001
-  allow_credentials: true
-  allow_headers:
-    - content-type
+  path: /query
 
 override_subgraph_url:
   afl: http://host.docker.internal:8180/query
