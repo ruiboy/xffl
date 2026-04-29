@@ -23,6 +23,15 @@ test.describe('FFL Squad', () => {
     await expect(page.getByRole('cell', { name: 'Henry Smith' })).toBeVisible()
   })
 
+  test('shows Club column header', async ({ page }) => {
+    await expect(page.getByRole('columnheader', { name: 'Club' })).toBeVisible()
+  })
+
+  test('shows AFL club name for each player', async ({ page }) => {
+    const row = page.getByRole('row', { name: /Henry Smith/ })
+    await expect(row.getByText('Brisbane Lions')).toBeVisible()
+  })
+
   test('shows Manage button initially', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Done' })).not.toBeVisible()

@@ -44,6 +44,7 @@
               <thead>
                 <tr class="border-b border-border text-left text-text-muted">
                   <th class="py-2 pr-4 font-medium">Player</th>
+                  <th class="py-2 pr-4 font-medium">Club</th>
                   <th v-if="!managing" class="py-2">
                     <div class="flex gap-0.5">
                       <span
@@ -65,6 +66,7 @@
                     class="border-b border-border-subtle hover:bg-surface-hover"
                   >
                     <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                    <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
                     <td v-if="!managing" class="py-2">
                       <div class="flex gap-0.5">
                         <span
