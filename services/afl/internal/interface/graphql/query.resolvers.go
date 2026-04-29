@@ -218,28 +218,6 @@ func (r *aFLSeasonResolver) Rounds(ctx context.Context, obj *AFLSeason) ([]*AFLR
 	return convertRounds(rounds), nil
 }
 
-// AflClubs is the resolver for the aflClubs field.
-func (r *queryResolver) AflClubs(ctx context.Context) ([]*AFLClub, error) {
-	clubs, err := r.Queries.GetClubs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return convertClubs(clubs), nil
-}
-
-// AflClub is the resolver for the aflClub field.
-func (r *queryResolver) AflClub(ctx context.Context, id string) (*AFLClub, error) {
-	parsed, err := fromID(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid club id: %w", err)
-	}
-	club, err := r.Queries.GetClub(ctx, parsed)
-	if err != nil {
-		return nil, err
-	}
-	return convertClub(club), nil
-}
-
 // AflSeasons is the resolver for the aflSeasons field.
 func (r *queryResolver) AflSeasons(ctx context.Context) ([]*AFLSeason, error) {
 	seasons, err := r.Queries.GetSeasons(ctx)
@@ -260,21 +238,6 @@ func (r *queryResolver) AflSeason(ctx context.Context, id string) (*AFLSeason, e
 		return nil, err
 	}
 	return convertSeason(season), nil
-}
-
-// AflLiveRound is the resolver for the aflLiveRound field.
-func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error) {
-	result, err := r.Queries.LiveRound(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil {
-		return nil, nil
-	}
-	return &AFLLiveRound{
-		Round:     convertRound(result.Round),
-		StartDate: result.FirstMatchTime.UTC().Format("2006-01-02T15:04:05Z"),
-	}, nil
 }
 
 // AflRound is the resolver for the aflRound field.
@@ -303,6 +266,28 @@ func (r *queryResolver) AflMatch(ctx context.Context, id string) (*AFLMatch, err
 	return convertMatch(match), nil
 }
 
+// AflClubs is the resolver for the aflClubs field.
+func (r *queryResolver) AflClubs(ctx context.Context) ([]*AFLClub, error) {
+	clubs, err := r.Queries.GetClubs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return convertClubs(clubs), nil
+}
+
+// AflClub is the resolver for the aflClub field.
+func (r *queryResolver) AflClub(ctx context.Context, id string) (*AFLClub, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid club id: %w", err)
+	}
+	club, err := r.Queries.GetClub(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return convertClub(club), nil
+}
+
 // AflPlayerSeason is the resolver for the aflPlayerSeason field.
 func (r *queryResolver) AflPlayerSeason(ctx context.Context, id string) (*AFLPlayerSeason, error) {
 	parsed, err := fromID(id)
@@ -316,35 +301,19 @@ func (r *queryResolver) AflPlayerSeason(ctx context.Context, id string) (*AFLPla
 	return &AFLPlayerSeason{ID: id}, nil
 }
 
-// AflPlayerSeasonStats is the resolver for the aflPlayerSeasonStats field.
-func (r *queryResolver) AflPlayerSeasonStats(ctx context.Context, ids []string) ([]*AFLPlayerSeasonStats, error) {
-	intIDs := make([]int, len(ids))
-	for i, id := range ids {
-		parsed, err := fromID(id)
-		if err != nil {
-			return nil, fmt.Errorf("invalid id %q: %w", id, err)
-		}
-		intIDs[i] = parsed
-	}
-	stats, err := r.Queries.GetPlayerSeasonStats(ctx, intIDs)
+// AflLiveRound is the resolver for the aflLiveRound field.
+func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error) {
+	result, err := r.Queries.LiveRound(ctx)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*AFLPlayerSeasonStats, len(stats))
-	for i, s := range stats {
-		result[i] = &AFLPlayerSeasonStats{
-			PlayerSeasonID: toID(s.PlayerSeasonID),
-			GamesPlayed:    s.GamesPlayed,
-			AvgKicks:       s.AvgKicks,
-			AvgHandballs:   s.AvgHandballs,
-			AvgMarks:       s.AvgMarks,
-			AvgHitouts:     s.AvgHitouts,
-			AvgTackles:     s.AvgTackles,
-			AvgGoals:       s.AvgGoals,
-			AvgBehinds:     s.AvgBehinds,
-		}
+	if result == nil {
+		return nil, nil
 	}
-	return result, nil
+	return &AFLLiveRound{
+		Round:     convertRound(result.Round),
+		StartDate: result.FirstMatchTime.UTC().Format("2006-01-02T15:04:05Z"),
+	}, nil
 }
 
 // AflPlayerSearch is the resolver for the aflPlayerSearch field.

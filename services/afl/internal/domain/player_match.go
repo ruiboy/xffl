@@ -44,23 +44,9 @@ type UpsertPlayerMatchParams struct {
 	Behinds        *int
 }
 
-// PlayerSeasonStats holds aggregated match statistics for a player across a season.
-type PlayerSeasonStats struct {
-	PlayerSeasonID int
-	GamesPlayed    int
-	AvgKicks       float64
-	AvgHandballs   float64
-	AvgMarks       float64
-	AvgHitouts     float64
-	AvgTackles     float64
-	AvgGoals       float64
-	AvgBehinds     float64
-}
-
 type PlayerMatchRepository interface {
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
-	FindStatsByPlayerSeasonIDs(ctx context.Context, ids []int) ([]PlayerSeasonStats, error)
 }

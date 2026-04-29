@@ -8,37 +8,9 @@ type Query {
   aflClub(id: ID!): AFLClub!
 
   aflPlayerSeason(id: ID!): AFLPlayerSeason
-  aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]!
 
   aflLiveRound: AFLLiveRound
   aflPlayerSearch(query: String!): [AFLPlayer!]!
-}
-
-type AFLLiveRound {
-  round: AFLRound!
-  startDate: String!
-}
-
-type AFLPlayerSeasonStats {
-  playerSeasonId: ID!
-  gamesPlayed: Int!
-  avgKicks: Float!
-  avgHandballs: Float!
-  avgMarks: Float!
-  avgHitouts: Float!
-  avgTackles: Float!
-  avgGoals: Float!
-  avgBehinds: Float!
-}
-
-type AFLClub {
-  id: ID!
-  name: String!
-}
-
-type AFLPlayer {
-  id: ID!
-  name: String!
 }
 
 type AFLSeason {
@@ -67,12 +39,9 @@ type AFLMatch {
   awayClubMatch: AFLClubMatch
 }
 
-type AFLClubMatch {
+type AFLClub {
   id: ID!
-  club: AFLClub!
-  rushedBehinds: Int!
-  score: Int!
-  playerMatches: [AFLPlayerMatch!]!
+  name: String!
 }
 
 type AFLClubSeason {
@@ -85,6 +54,19 @@ type AFLClubSeason {
   for: Int!
   against: Int!
   premiershipPoints: Int!
+}
+
+type AFLClubMatch {
+  id: ID!
+  club: AFLClub!
+  rushedBehinds: Int!
+  score: Int!
+  playerMatches: [AFLPlayerMatch!]!
+}
+
+type AFLPlayer {
+  id: ID!
+  name: String!
 }
 
 type AFLPlayerSeason @key(fields: "id") {
@@ -109,3 +91,9 @@ type AFLPlayerMatch @key(fields: "id") {
   disposals: Int!
   score: Int!
 }
+
+type AFLLiveRound {
+  round: AFLRound!
+  startDate: String!
+}
+

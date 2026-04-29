@@ -14,17 +14,6 @@ type Query {
   fflRoundByAflRound(aflRoundId: ID!): FFLRound
 }
 
-type FFLClub {
-  id: ID!
-  name: String!
-}
-
-type FFLPlayer {
-  id: ID!
-  name: String!
-  aflPlayerId: ID!
-}
-
 type FFLSeason {
   id: ID!
   name: String!
@@ -50,11 +39,9 @@ type FFLMatch {
   awayClubMatch: FFLClubMatch
 }
 
-type FFLClubMatch {
+type FFLClub {
   id: ID!
-  club: FFLClub!
-  score: Int!
-  playerMatches: [FFLPlayerMatch!]!
+  name: String!
 }
 
 type FFLClubSeason {
@@ -69,6 +56,19 @@ type FFLClubSeason {
   against: Int!
   percentage: Float!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
+}
+
+type FFLClubMatch {
+  id: ID!
+  club: FFLClub!
+  score: Int!
+  playerMatches: [FFLPlayerMatch!]!
+}
+
+type FFLPlayer {
+  id: ID!
+  name: String!
+  aflPlayerId: ID!
 }
 
 type FFLPlayerSeason {
@@ -111,6 +111,7 @@ type AFLPlayerSeason @key(fields: "id") {
 type AFLPlayerMatch @key(fields: "id") {
   id: ID!
 }
+
 # --- Data ops types ---
 
 input ParseFFLTeamSubmissionInput {
