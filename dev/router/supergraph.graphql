@@ -123,20 +123,6 @@ type AFLPlayerSeason
   matches: [AFLPlayerMatch!]! @join__field(graph: AFL)
 }
 
-type AFLPlayerSeasonStats
-  @join__type(graph: AFL)
-{
-  playerSeasonId: ID!
-  gamesPlayed: Int!
-  avgKicks: Float!
-  avgHandballs: Float!
-  avgMarks: Float!
-  avgHitouts: Float!
-  avgTackles: Float!
-  avgGoals: Float!
-  avgBehinds: Float!
-}
-
 type AFLRound
   @join__type(graph: AFL)
 {
@@ -388,15 +374,14 @@ type Query
   @join__type(graph: AFL)
   @join__type(graph: FFL)
 {
-  aflClubs: [AFLClub!]! @join__field(graph: AFL)
-  aflClub(id: ID!): AFLClub! @join__field(graph: AFL)
   aflSeasons: [AFLSeason!]! @join__field(graph: AFL)
   aflSeason(id: ID!): AFLSeason! @join__field(graph: AFL)
-  aflLiveRound: AFLLiveRound @join__field(graph: AFL)
   aflRound(id: ID!): AFLRound @join__field(graph: AFL)
   aflMatch(id: ID!): AFLMatch @join__field(graph: AFL)
+  aflClubs: [AFLClub!]! @join__field(graph: AFL)
+  aflClub(id: ID!): AFLClub! @join__field(graph: AFL)
   aflPlayerSeason(id: ID!): AFLPlayerSeason @join__field(graph: AFL)
-  aflPlayerSeasonStats(ids: [ID!]!): [AFLPlayerSeasonStats!]! @join__field(graph: AFL)
+  aflLiveRound: AFLLiveRound @join__field(graph: AFL)
   aflPlayerSearch(query: String!): [AFLPlayer!]! @join__field(graph: AFL)
   fflClubs: [FFLClub!]! @join__field(graph: FFL)
   fflClub(id: ID!): FFLClub! @join__field(graph: FFL)

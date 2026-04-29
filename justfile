@@ -85,7 +85,7 @@ stop-all:
 # Install rover: curl -sSL https://rover.apollo.dev/nix/latest | sh
 # Requires: just run-afl and just run-ffl already running
 supergraph-compose:
-    ~/.rover/bin/rover supergraph compose --config dev/router/supergraph.yaml --elv2-license=accept > dev/router/supergraph.graphql
+    ~/.rover/bin/rover supergraph compose --config dev/router/supergraph.yaml --elv2-license=accept --output dev/router/supergraph.graphql
     @echo "Supergraph written to dev/router/supergraph.graphql — restart Apollo Router to pick up changes"
 
 # Generate Twirp + protobuf Go code from contracts/proto/ → contracts/gen/
@@ -114,6 +114,9 @@ test-e2e:
     echo "Waiting for test Postgres on :5433..."
     until docker exec xffl-postgres-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
     echo "Test Postgres ready"
+    echo "Waiting for test Router on :4001..."
+    until curl -s http://localhost:4001/ >/dev/null 2>&1; do sleep 1; done
+    echo "Test Router ready"
 
     # If npx (or npm run) is blocked on your machine, swap the command below for:
     #   ./node_modules/.bin/playwright test

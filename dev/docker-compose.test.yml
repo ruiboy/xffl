@@ -17,3 +17,16 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  router-test:
+    image: ghcr.io/apollographql/router:v1.57.0
+    container_name: xffl-router-test
+    command:
+      - --supergraph=/config/supergraph.graphql
+      - --config=/config/router.test.yaml
+    volumes:
+      - ./router:/config
+    ports:
+      - "4001:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

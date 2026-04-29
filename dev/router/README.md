@@ -6,7 +6,8 @@ Apollo Router configuration for local development.
 
 | File | Status | Description |
 |---|---|---|
-| `router.yaml` | hand-written | Apollo Router config: listen address, CORS, subgraph URL overrides |
+| `router.yaml` | hand-written | Apollo Router config for local dev (subgraphs on `:8080`/`:8081`) |
+| `router.test.yaml` | hand-written | Apollo Router config for e2e tests (subgraphs on `:8180`/`:8181`) |
 | `supergraph.yaml` | hand-written | Rover composition config: subgraph names and SDL source URLs |
 | `supergraph.graphql` | **generated** | Composed supergraph SDL — do not edit by hand |
 
