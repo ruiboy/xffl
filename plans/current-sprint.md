@@ -54,8 +54,21 @@ ADR: ADR-018 (Twirp for cross-service communication)
 
 ## Step 3 — In-season player trades *(frequent)*
 
-- [ ] FFL frontend UI for trade management
-- [ ] Updates `ffl.player_season` (from/to round) via existing domain/use case layer
+**Decisions:**
+- `ffl.season.afl_season_id` FK required — foundational for scoping player season search; add schema migration and seed `dev/postgres/seed/02_ffl_seed.sql` with the key immediately for manual testing
+- **Remove:** sets `to_round_id` on `ffl.player_season` (preserves history); UI shows a round dropdown (returns explicit `round_id`); defaults to current round but allows past/future
+- **Add:** search-backed (Typesense); AFL player seasons indexed as a separate collection filterable by `afl_season_id`; search returns `afl_player_season_id` alongside player; existing search service extended with `SearchAFLPlayerSeasons(seasonId, query)` 
+- `ADD_FFL_SQUAD_PLAYER` mutation needs extending to accept `aflPlayerSeasonId` and `fromRoundId`; backing use case extended accordingly
+- Entry point remains the existing Manage mode on SquadView
+
+**Tasks:**
+- [ ] Schema migration: `ffl.season.afl_season_id INTEGER REFERENCES afl.season(id)`
+- [ ] Seed `dev/postgres/seed/02_ffl_seed.sql` with `afl_season_id` for FFL 2026 → AFL 2026
+- [ ] Typesense: index AFL player seasons collection (player name, afl_player_id, afl_player_season_id, club name, season_id as filter)
+- [ ] Search service: `SearchAFLPlayerSeasons(seasonId, query)` method + GraphQL query
+- [ ] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
+- [ ] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
+- [ ] SquadView: remove button → round dropdown + confirm; add panel → season-scoped player season search
 
 ## Step 6 — Score reconciliation *(every round)*
 
