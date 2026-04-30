@@ -49,63 +49,6 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 	return i, err
 }
 
-const findPlayerMatchStatsByPlayerSeasonIDs = `-- name: FindPlayerMatchStatsByPlayerSeasonIDs :many
-SELECT player_season_id,
-       COUNT(*)::INTEGER AS games_played,
-       AVG(kicks)::FLOAT8 AS avg_kicks,
-       AVG(handballs)::FLOAT8 AS avg_handballs,
-       AVG(marks)::FLOAT8 AS avg_marks,
-       AVG(hitouts)::FLOAT8 AS avg_hitouts,
-       AVG(tackles)::FLOAT8 AS avg_tackles,
-       AVG(goals)::FLOAT8 AS avg_goals,
-       AVG(behinds)::FLOAT8 AS avg_behinds
-FROM afl.player_match
-WHERE player_season_id = ANY($1::int[]) AND deleted_at IS NULL
-GROUP BY player_season_id
-`
-
-type FindPlayerMatchStatsByPlayerSeasonIDsRow struct {
-	PlayerSeasonID int32
-	GamesPlayed    int32
-	AvgKicks       float64
-	AvgHandballs   float64
-	AvgMarks       float64
-	AvgHitouts     float64
-	AvgTackles     float64
-	AvgGoals       float64
-	AvgBehinds     float64
-}
-
-func (q *Queries) FindPlayerMatchStatsByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayerMatchStatsByPlayerSeasonIDsRow, error) {
-	rows, err := q.db.Query(ctx, findPlayerMatchStatsByPlayerSeasonIDs, playerSeasonIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindPlayerMatchStatsByPlayerSeasonIDsRow{}
-	for rows.Next() {
-		var i FindPlayerMatchStatsByPlayerSeasonIDsRow
-		if err := rows.Scan(
-			&i.PlayerSeasonID,
-			&i.GamesPlayed,
-			&i.AvgKicks,
-			&i.AvgHandballs,
-			&i.AvgMarks,
-			&i.AvgHitouts,
-			&i.AvgTackles,
-			&i.AvgGoals,
-			&i.AvgBehinds,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const findPlayerMatchesByClubMatchID = `-- name: FindPlayerMatchesByClubMatchID :many
 SELECT id, club_match_id, player_season_id, status,
        kicks, handballs, marks, hitouts, tackles, goals, behinds
@@ -136,6 +79,60 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	items := []FindPlayerMatchesByClubMatchIDRow{}
 	for rows.Next() {
 		var i FindPlayerMatchesByClubMatchIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Status,
+			&i.Kicks,
+			&i.Handballs,
+			&i.Marks,
+			&i.Hitouts,
+			&i.Tackles,
+			&i.Goals,
+			&i.Behinds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const findPlayerMatchesByPlayerSeasonID = `-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
+FROM afl.player_match
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id
+`
+
+type FindPlayerMatchesByPlayerSeasonIDRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Status         *string
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int32) ([]FindPlayerMatchesByPlayerSeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesByPlayerSeasonID, playerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesByPlayerSeasonIDRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesByPlayerSeasonIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ClubMatchID,

@@ -1,0 +1,9 @@
+supergraph:
+  listen: 0.0.0.0:4000
+  path: /query
+
+# Override subgraph URLs for local dev (Docker → host networking).
+# In Docker, host.docker.internal resolves to the host machine.
+override_subgraph_url:
+  afl: http://host.docker.internal:8080/query
+  ffl: http://host.docker.internal:8081/query

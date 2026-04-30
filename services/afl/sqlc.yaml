@@ -2,7 +2,9 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "internal/infrastructure/postgres/sqlc"
-    schema: "../../dev/postgres/init/01_afl_schema.sql"
+    schema:
+      - "../../dev/postgres/init/01_afl_schema.sql"
+      - "../../dev/postgres/init/03_dataops.sql"
     gen:
       go:
         package: "sqlcgen"

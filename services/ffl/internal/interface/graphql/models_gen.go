@@ -2,6 +2,18 @@
 
 package graphql
 
+type AFLPlayerMatch struct {
+	ID string `json:"id"`
+}
+
+func (AFLPlayerMatch) IsEntity() {}
+
+type AFLPlayerSeason struct {
+	ID string `json:"id"`
+}
+
+func (AFLPlayerSeason) IsEntity() {}
+
 type AddFFLPlayerToSeasonInput struct {
 	PlayerID     string `json:"playerId"`
 	ClubSeasonID string `json:"clubSeasonId"`
@@ -84,21 +96,24 @@ type FFLPlayer struct {
 }
 
 type FFLPlayerMatch struct {
-	ID                  string     `json:"id"`
-	PlayerSeasonID      string     `json:"playerSeasonId"`
-	Player              *FFLPlayer `json:"player"`
-	Position            *string    `json:"position,omitempty"`
-	Status              *string    `json:"status,omitempty"`
-	BackupPositions     *string    `json:"backupPositions,omitempty"`
-	InterchangePosition *string    `json:"interchangePosition,omitempty"`
-	Score               int        `json:"score"`
+	ID                  string          `json:"id"`
+	PlayerSeasonID      string          `json:"playerSeasonId"`
+	Player              *FFLPlayer      `json:"player"`
+	Position            *string         `json:"position,omitempty"`
+	Status              *string         `json:"status,omitempty"`
+	BackupPositions     *string         `json:"backupPositions,omitempty"`
+	InterchangePosition *string         `json:"interchangePosition,omitempty"`
+	Score               int             `json:"score"`
+	AflPlayerMatchID    *string         `json:"aflPlayerMatchId,omitempty"`
+	AflPlayerMatch      *AFLPlayerMatch `json:"aflPlayerMatch,omitempty"`
 }
 
 type FFLPlayerSeason struct {
-	ID                string     `json:"id"`
-	Player            *FFLPlayer `json:"player"`
-	ClubSeasonID      string     `json:"clubSeasonId"`
-	AflPlayerSeasonID *string    `json:"aflPlayerSeasonId,omitempty"`
+	ID                string           `json:"id"`
+	Player            *FFLPlayer       `json:"player"`
+	ClubSeasonID      string           `json:"clubSeasonId"`
+	AflPlayerSeasonID *string          `json:"aflPlayerSeasonId,omitempty"`
+	AflPlayerSeason   *AFLPlayerSeason `json:"aflPlayerSeason,omitempty"`
 }
 
 type FFLPlayerSeasonConnection struct {

@@ -16,6 +16,7 @@ type Loaders struct {
 	PlayerByPlayerSeasonID *dataloadgen.Loader[int, *domain.Player]
 	ClubByID               *dataloadgen.Loader[int, *domain.Club]
 	MatchByID              *dataloadgen.Loader[int, *domain.Match]
+	PlayerSeasonByID       *dataloadgen.Loader[int, *domain.PlayerSeason]
 }
 
 func NewLoaders(q *application.Queries) *Loaders {
@@ -30,6 +31,10 @@ func NewLoaders(q *application.Queries) *Loaders {
 		}),
 		MatchByID: dataloadgen.NewLoader(func(ctx context.Context, ids []int) ([]*domain.Match, []error) {
 			m, err := q.GetMatchesByIDs(ctx, ids)
+			return mapToSlice(ids, m, err)
+		}),
+		PlayerSeasonByID: dataloadgen.NewLoader(func(ctx context.Context, ids []int) ([]*domain.PlayerSeason, []error) {
+			m, err := q.GetPlayerSeasonsByIDs(ctx, ids)
 			return mapToSlice(ids, m, err)
 		}),
 	}

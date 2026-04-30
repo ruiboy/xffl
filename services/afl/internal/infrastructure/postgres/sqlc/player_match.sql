@@ -10,19 +10,12 @@ SELECT id, club_match_id, player_season_id, status,
 FROM afl.player_match
 WHERE id = $1 AND deleted_at IS NULL;
 
--- name: FindPlayerMatchStatsByPlayerSeasonIDs :many
-SELECT player_season_id,
-       COUNT(*)::INTEGER AS games_played,
-       AVG(kicks)::FLOAT8 AS avg_kicks,
-       AVG(handballs)::FLOAT8 AS avg_handballs,
-       AVG(marks)::FLOAT8 AS avg_marks,
-       AVG(hitouts)::FLOAT8 AS avg_hitouts,
-       AVG(tackles)::FLOAT8 AS avg_tackles,
-       AVG(goals)::FLOAT8 AS avg_goals,
-       AVG(behinds)::FLOAT8 AS avg_behinds
+-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
 FROM afl.player_match
-WHERE player_season_id = ANY(@player_season_ids::int[]) AND deleted_at IS NULL
-GROUP BY player_season_id;
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id;
 
 -- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)

@@ -44,8 +44,12 @@ SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
 );
 
 -- Round 1
-INSERT INTO ffl.round (name, season_id) VALUES
-    ('Round 1', (SELECT id FROM ffl.season WHERE name = 'FFL 2026'));
+INSERT INTO ffl.round (name, season_id, afl_round_id)
+SELECT 'Round 1', s.id, ar.id
+FROM ffl.season s, afl.round ar
+JOIN afl.season as2 ON ar.season_id = as2.id
+JOIN afl.league al ON as2.league_id = al.id
+WHERE s.name = 'FFL 2026' AND al.name = 'AFL' AND as2.name = 'AFL 2026' AND ar.name = 'Round 1';
 
 -- Player seasons — Ruiboys
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
@@ -68,6 +72,17 @@ WHERE r.name = 'Round 1' AND ap.name IN (
     'Henry Smith', 'Hugh McCluggage',
     'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
 );
+
+-- Link FFL player seasons to their AFL player seasons (same player, AFL 2026 season)
+UPDATE ffl.player_season fps
+SET afl_player_season_id = aps.id
+FROM afl.player_season aps
+JOIN afl.player ap ON aps.player_id = ap.id
+JOIN afl.club_season acs ON aps.club_season_id = acs.id
+JOIN afl.season as2 ON acs.season_id = as2.id
+JOIN ffl.player fp ON fp.afl_player_id = ap.id
+WHERE fps.player_id = fp.id
+  AND as2.name = 'AFL 2026';
 
 -- Round 1 match
 INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
@@ -107,8 +122,12 @@ UPDATE ffl.club_season SET drv_played = 1, drv_won = 0, drv_lost = 1, drv_for = 
 WHERE id = (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows');
 
 -- Round 2
-INSERT INTO ffl.round (name, season_id) VALUES
-    ('Round 2', (SELECT id FROM ffl.season WHERE name = 'FFL 2026'));
+INSERT INTO ffl.round (name, season_id, afl_round_id)
+SELECT 'Round 2', s.id, ar.id
+FROM ffl.season s, afl.round ar
+JOIN afl.season as2 ON ar.season_id = as2.id
+JOIN afl.league al ON as2.league_id = al.id
+WHERE s.name = 'FFL 2026' AND al.name = 'AFL' AND as2.name = 'AFL 2026' AND ar.name = 'Round 2';
 
 INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
     ((SELECT id FROM ffl.round WHERE name = 'Round 2'), 'versus', 'MCG', '2025-03-22 19:30:00+00');
@@ -169,5 +188,26 @@ UPDATE ffl.match SET
     home_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys' AND cm.match_id = ffl.match.id),
     away_club_match_id = (SELECT cm.id FROM ffl.club_match cm JOIN ffl.club_season cs ON cm.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows' AND cm.match_id = ffl.match.id)
 WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 3');
+
+-- Link FFL player matches to AFL player matches via round bridge + shared player
+UPDATE ffl.player_match fpm
+SET afl_player_match_id = apm.id
+FROM afl.player_match apm
+JOIN afl.player_season aps ON apm.player_season_id = aps.id
+JOIN afl.player ap ON aps.player_id = ap.id
+JOIN afl.club_match acm ON apm.club_match_id = acm.id
+JOIN afl.match am ON acm.match_id = am.id,
+ffl.player_season fps,
+ffl.player fp,
+ffl.club_match fcm,
+ffl.match fm,
+ffl.round fr
+WHERE fpm.player_season_id = fps.id
+  AND fps.player_id = fp.id
+  AND fp.afl_player_id = ap.id
+  AND fpm.club_match_id = fcm.id
+  AND fcm.match_id = fm.id
+  AND fm.round_id = fr.id
+  AND fr.afl_round_id = am.round_id;
 
 COMMIT;

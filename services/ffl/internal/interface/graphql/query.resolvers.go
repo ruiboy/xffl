@@ -105,6 +105,29 @@ func (r *fFLMatchResolver) AwayClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	return convertClubMatch(cm, club), nil
 }
 
+// AflPlayerMatchID is the resolver for the aflPlayerMatchId field.
+func (r *fFLPlayerMatchResolver) AflPlayerMatchID(ctx context.Context, obj *FFLPlayerMatch) (*string, error) {
+	return obj.AflPlayerMatchID, nil
+}
+
+// AflPlayerMatch is the resolver for the aflPlayerMatch field.
+// Returns a stub with the AFL entity ID; the router fetches full data from the AFL subgraph.
+func (r *fFLPlayerMatchResolver) AflPlayerMatch(ctx context.Context, obj *FFLPlayerMatch) (*AFLPlayerMatch, error) {
+	if obj.AflPlayerMatchID == nil {
+		return nil, nil
+	}
+	return &AFLPlayerMatch{ID: *obj.AflPlayerMatchID}, nil
+}
+
+// AflPlayerSeason is the resolver for the aflPlayerSeason field.
+// Returns a stub with the AFL entity ID; the router fetches full data from the AFL subgraph.
+func (r *fFLPlayerSeasonResolver) AflPlayerSeason(ctx context.Context, obj *FFLPlayerSeason) (*AFLPlayerSeason, error) {
+	if obj.AflPlayerSeasonID == nil {
+		return nil, nil
+	}
+	return &AFLPlayerSeason{ID: *obj.AflPlayerSeasonID}, nil
+}
+
 // Season is the resolver for the season field.
 func (r *fFLRoundResolver) Season(ctx context.Context, obj *FFLRound) (*FFLSeason, error) {
 	roundID, err := fromID(obj.ID)
@@ -322,6 +345,12 @@ func (r *Resolver) FFLClubSeason() FFLClubSeasonResolver { return &fFLClubSeason
 // FFLMatch returns FFLMatchResolver implementation.
 func (r *Resolver) FFLMatch() FFLMatchResolver { return &fFLMatchResolver{r} }
 
+// FFLPlayerMatch returns FFLPlayerMatchResolver implementation.
+func (r *Resolver) FFLPlayerMatch() FFLPlayerMatchResolver { return &fFLPlayerMatchResolver{r} }
+
+// FFLPlayerSeason returns FFLPlayerSeasonResolver implementation.
+func (r *Resolver) FFLPlayerSeason() FFLPlayerSeasonResolver { return &fFLPlayerSeasonResolver{r} }
+
 // FFLRound returns FFLRoundResolver implementation.
 func (r *Resolver) FFLRound() FFLRoundResolver { return &fFLRoundResolver{r} }
 
@@ -334,6 +363,8 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type fFLClubMatchResolver struct{ *Resolver }
 type fFLClubSeasonResolver struct{ *Resolver }
 type fFLMatchResolver struct{ *Resolver }
+type fFLPlayerMatchResolver struct{ *Resolver }
+type fFLPlayerSeasonResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }
 type fFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

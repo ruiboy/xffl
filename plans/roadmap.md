@@ -190,51 +190,42 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] E2e test isolation — per-test DB reset via auto worker fixture (`fixtures.ts`); `TRUNCATE … RESTART IDENTITY CASCADE` for stable IDs; `helpers/reset-db.ts` via `docker exec`; `workers: 1`; restored `ffl-team-builder.spec.ts`
 - [x] E2e docs — `ai/architecture/testing.md` Playwright section; cookbook recipe for adding new specs
 
-## Phase 18: Data Management — Import Infrastructure
+## Phase 18: Data Management — Import Infrastructure, Part I
 
 **Goal:** Build recurring data flows for team submissions, AFL stats, score reconciliation, historical backfill, and season setup. All Go; ports-and-adapters throughout; Twirp for cross-service calls.
 
 - [x] ADR — Twirp for cross-service communication
 - [x] FFL Round team submission
 - [x] AFL stats import
+
+## Phase 19: Graph Federation
+
+**Goal:** Adopt Apollo Federation so the frontend can traverse cross-service entity relationships in a single query. Replace the path-based gateway with Apollo Router. Establish `AFLPlayerSeason` as a first-class graph type.
+
+- [ ] Apollo Router — replace `services/gateway` with Apollo Router in Docker Compose; configure supergraph from both subgraphs
+- [ ] AFL subgraph — add `AFLPlayerSeason` type + entity resolver; add `@key` to `AFLPlayerMatch`; mount federation-compatible handler
+- [ ] FFL subgraph — add `aflPlayerSeason` field on `FFLPlayerSeason`; add `aflPlayerMatch` field on `FFLPlayerMatch`; reference resolvers; mount federation-compatible handler
+- [ ] Frontend — single Apollo client endpoint; remove operation-name routing link
+- [ ] Tests + e2e verification
+
+## Phase 20: Data Management — Import Infrastructure, Part II
+
+- [ ] FFL In-season player trades
 - [ ] FFL Score reconciliation
-- [ ] FFL Historical backfill
 - [ ] AFL season player import
 - [ ] FFL squad import
-- [ ] FFL In-season player trades
+- [ ] FFL Historical backfill
 - [ ] Close out
 
-## Phase 19: Search Frontend + Index Enrichment
+See detailed breakdown (carried over from Phase 18) in [phase-20-sprint.md](phase-20-sprint.md)
+
+## Phase 21: Search Frontend + Index Enrichment
 
 **Goal:** Search UI backed by an enriched Typesense index with whatever data the UX needs.
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Expand search index as needed to support UX data requirements (player stats, aggregates, etc.)
 - [ ] Playwright tests
-
-## Phase 20: Historical AFL Data — prior years (TBD sources, 1998–2023)
-
-**Goal:** Complete the AFL historical record back to 1998 using one or more sources to be identified. Reconciliation is against the cumulative player roster from Phase 14.
-
-- [ ] Identify sources and assess data quality for each year range
-- [ ] Evaluate whether new ADRs are needed (new dependencies or protocols)
-- [ ] For each source: build parser/fetcher, add `afl.xref_<source>_player` xref table, build import tool, reconcile and commit `reconcile.csv`, import into dev then prod
-
-## Phase 21: Historical FFL Data
-
-**Goal:** Load all historical FFL team submissions, match results, and player season records. Uses the same two-phase reconciliation pattern as Phase 14.
-
-Notes:
-- FFL player names will not exactly match AFL player names — a Levenshtein reconciliation step links `ffl.player` records to `afl.player` records after both are loaded
-- FFL scoring rules have changed over time; historical scores are imported as-recorded, not recalculated
-- No `FFL.FantasyScoreCalculated` events are fired on import
-
-- [ ] Identify where historical FFL data lives and its format (per round, per team)
-- [ ] Build `dev/import/ffl_historical/main.go` — reconcile + import modes
-- [ ] Add `ffl.xref_<source>_player` xref table as needed
-- [ ] Run FFL player reconciliation; then run AFL↔FFL player linkage reconciliation
-- [ ] Import match results and player season records
-- [ ] Verify ladder standings, scores, and player history post-import
 
 ## Phase 22: UX — Player & Team Pages
 

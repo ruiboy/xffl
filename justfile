@@ -11,7 +11,7 @@ dev-up:
     docker compose -f dev/docker-compose.yml up -d
     @echo "Waiting for Postgres..."
     @until docker exec xffl-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
-    @echo "Postgres ready on :${DB_PORT:-5432} | Typesense ready on :${TYPESENSE_PORT:-8108}"
+    @echo "Postgres ready on :${DB_PORT:-5432} | Typesense ready on :${TYPESENSE_PORT:-8108} | Apollo Router ready on :${ROUTER_PORT:-4000}"
 
 # Load test data into Postgres
 dev-seed:
@@ -81,6 +81,13 @@ stop-all:
         fi
     done
 
+# Compose Apollo supergraph from running AFL and FFL subgraphs (requires rover CLI)
+# Install rover: curl -sSL https://rover.apollo.dev/nix/latest | sh
+# Requires: just run-afl and just run-ffl already running
+supergraph-compose:
+    ~/.rover/bin/rover supergraph compose --config dev/router/supergraph.yaml --elv2-license=accept --output dev/router/supergraph.graphql
+    @echo "Supergraph written to dev/router/supergraph.graphql — restart Apollo Router to pick up changes"
+
 # Generate Twirp + protobuf Go code from contracts/proto/ → contracts/gen/
 proto-gen:
     buf generate
@@ -107,6 +114,9 @@ test-e2e:
     echo "Waiting for test Postgres on :5433..."
     until docker exec xffl-postgres-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
     echo "Test Postgres ready"
+    echo "Waiting for test Router on :4001..."
+    until curl -s http://localhost:4001/ >/dev/null 2>&1; do sleep 1; done
+    echo "Test Router ready"
 
     # If npx (or npm run) is blocked on your machine, swap the command below for:
     #   ./node_modules/.bin/playwright test

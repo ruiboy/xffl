@@ -44,6 +44,14 @@ type AflClubSeason struct {
 	DrvPremiershipPoints *int32
 }
 
+type AflDataopsMatchSource struct {
+	Source     string
+	ExternalID string
+	MatchID    int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
 type AflLeague struct {
 	ID        int32
 	CreatedAt pgtype.Timestamptz
@@ -65,14 +73,6 @@ type AflMatch struct {
 	StatsImportStatus string
 	StatsImportedAt   pgtype.Timestamptz
 	DrvResult         *string
-}
-
-type AflDataopsMatchSource struct {
-	Source     string
-	ExternalID string
-	MatchID    int32
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
 }
 
 type AflPlayer struct {

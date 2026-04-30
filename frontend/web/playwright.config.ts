@@ -41,7 +41,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: 'AFL_SERVICE_URL=http://localhost:8180 FFL_SERVICE_URL=http://localhost:8181 CORS_ORIGIN=http://localhost:3001 PORT=8190 go run ./cmd/main.go',
+      command: 'ROUTER_URL=http://localhost:4001 CORS_ORIGIN=http://localhost:3001 PORT=8190 go run ./cmd/main.go',
       cwd: '../../services/gateway',
       port: 8190,
       timeout: 60_000,

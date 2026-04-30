@@ -128,8 +128,24 @@ func (q *Queries) GetClubForClubSeason(ctx context.Context, clubSeasonID int) (d
 	return q.clubs.FindByID(ctx, cs.ClubID)
 }
 
-func (q *Queries) GetPlayerSeasonStats(ctx context.Context, ids []int) ([]domain.PlayerSeasonStats, error) {
-	return q.playerMatches.FindStatsByPlayerSeasonIDs(ctx, ids)
+func (q *Queries) GetPlayerSeasonByID(ctx context.Context, id int) (domain.PlayerSeason, error) {
+	return q.playerSeasons.FindByID(ctx, id)
+}
+
+func (q *Queries) GetPlayerSeasonsByIDs(ctx context.Context, ids []int) (map[int]domain.PlayerSeason, error) {
+	return q.playerSeasons.FindByIDs(ctx, ids)
+}
+
+func (q *Queries) GetPlayerMatchByID(ctx context.Context, id int) (domain.PlayerMatch, error) {
+	return q.playerMatches.FindByID(ctx, id)
+}
+
+func (q *Queries) GetPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]domain.PlayerMatch, error) {
+	return q.playerMatches.FindByPlayerSeasonID(ctx, playerSeasonID)
+}
+
+func (q *Queries) GetClubSeasonByID(ctx context.Context, id int) (domain.ClubSeason, error) {
+	return q.clubSeasons.FindByID(ctx, id)
 }
 
 // GetPlayerForPlayerSeason resolves the player for a player_season record.

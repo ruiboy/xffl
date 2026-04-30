@@ -1,0 +1,7 @@
+supergraph:
+  listen: 0.0.0.0:4000
+  path: /query
+
+override_subgraph_url:
+  afl: http://host.docker.internal:8180/query
+  ffl: http://host.docker.internal:8181/query

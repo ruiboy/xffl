@@ -28,19 +28,14 @@ func main() {
 		port = "8090"
 	}
 
-	aflURL := os.Getenv("AFL_SERVICE_URL")
-	if aflURL == "" {
-		aflURL = "http://localhost:8080"
-	}
-
-	fflURL := os.Getenv("FFL_SERVICE_URL")
-	if fflURL == "" {
-		fflURL = "http://localhost:8081"
-	}
-
 	searchURL := os.Getenv("SEARCH_SERVICE_URL")
 	if searchURL == "" {
 		searchURL = "http://localhost:8082"
+	}
+
+	routerURL := os.Getenv("ROUTER_URL")
+	if routerURL == "" {
+		routerURL = "http://localhost:4000"
 	}
 
 	corsOrigin := os.Getenv("CORS_ORIGIN")
@@ -49,26 +44,19 @@ func main() {
 	}
 
 	ctx := context.Background()
-	aflTarget, err := url.Parse(aflURL)
-	if err != nil {
-		slog.ErrorContext(ctx, "invalid AFL_SERVICE_URL", slog.Any("error", err))
-		os.Exit(1)
-	}
-	aflProxy := httputil.NewSingleHostReverseProxy(aflTarget)
-
-	fflTarget, err := url.Parse(fflURL)
-	if err != nil {
-		slog.ErrorContext(ctx, "invalid FFL_SERVICE_URL", slog.Any("error", err))
-		os.Exit(1)
-	}
-	fflProxy := httputil.NewSingleHostReverseProxy(fflTarget)
-
 	searchTarget, err := url.Parse(searchURL)
 	if err != nil {
 		slog.ErrorContext(ctx, "invalid SEARCH_SERVICE_URL", slog.Any("error", err))
 		os.Exit(1)
 	}
 	searchProxy := httputil.NewSingleHostReverseProxy(searchTarget)
+
+	routerTarget, err := url.Parse(routerURL)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid ROUTER_URL", slog.Any("error", err))
+		os.Exit(1)
+	}
+	routerProxy := httputil.NewSingleHostReverseProxy(routerTarget)
 
 	cors := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -92,21 +80,14 @@ func main() {
 		fmt.Fprintln(w, "ok")
 	})
 
-	mux.HandleFunc("/query", cors(aflProxy.ServeHTTP))
-	mux.HandleFunc("/afl/query", cors(func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = "/query"
-		aflProxy.ServeHTTP(w, r)
-	}))
-	mux.HandleFunc("/ffl/query", cors(func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = "/query"
-		fflProxy.ServeHTTP(w, r)
-	}))
+	// Federated GraphQL endpoint — proxied to Apollo Router.
+	mux.HandleFunc("/query", cors(routerProxy.ServeHTTP))
 	mux.HandleFunc("/search/query", cors(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = "/query"
 		searchProxy.ServeHTTP(w, r)
 	}))
 
-	slog.InfoContext(ctx, "gateway starting", slog.String("port", port), slog.String("afl_url", aflURL), slog.String("ffl_url", fflURL), slog.String("search_url", searchURL))
+	slog.InfoContext(ctx, "gateway starting", slog.String("port", port), slog.String("router_url", routerURL), slog.String("search_url", searchURL))
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		slog.ErrorContext(ctx, "gateway failed", slog.Any("error", err))
 		os.Exit(1)

@@ -1,25 +1,17 @@
 type Query {
-  fflClubs: [FFLClub!]!
-  fflClub(id: ID!): FFLClub!
-  fflPlayers: [FFLPlayer!]!
-  fflPlayer(id: ID!): FFLPlayer!
   fflSeasons: [FFLSeason!]!
   fflSeason(id: ID!): FFLSeason!
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
-  fflRoundByAflRound(aflRoundId: ID!): FFLRound
   fflRound(id: ID!): FFLRound
   fflMatch(id: ID!): FFLMatch
-}
 
-type FFLClub {
-  id: ID!
-  name: String!
-}
+  fflClubs: [FFLClub!]!
+  fflClub(id: ID!): FFLClub!
+  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
 
-type FFLPlayer {
-  id: ID!
-  name: String!
-  aflPlayerId: ID!
+  fflPlayers: [FFLPlayer!]!
+  fflPlayer(id: ID!): FFLPlayer!
+
+  fflRoundByAflRound(aflRoundId: ID!): FFLRound
 }
 
 type FFLSeason {
@@ -47,11 +39,9 @@ type FFLMatch {
   awayClubMatch: FFLClubMatch
 }
 
-type FFLClubMatch {
+type FFLClub {
   id: ID!
-  club: FFLClub!
-  score: Int!
-  playerMatches: [FFLPlayerMatch!]!
+  name: String!
 }
 
 type FFLClubSeason {
@@ -68,11 +58,25 @@ type FFLClubSeason {
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
+type FFLClubMatch {
+  id: ID!
+  club: FFLClub!
+  score: Int!
+  playerMatches: [FFLPlayerMatch!]!
+}
+
+type FFLPlayer {
+  id: ID!
+  name: String!
+  aflPlayerId: ID!
+}
+
 type FFLPlayerSeason {
   id: ID!
   player: FFLPlayer!
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
+  aflPlayerSeason: AFLPlayerSeason
 }
 
 type FFLPlayerSeasonConnection {
@@ -94,6 +98,18 @@ type FFLPlayerMatch {
   backupPositions: String
   interchangePosition: String
   score: Int!
+  aflPlayerMatchId: ID
+  aflPlayerMatch: AFLPlayerMatch
+}
+
+# --- Stub types owned by the AFL subgraph — resolved via federation. ---
+
+type AFLPlayerSeason @key(fields: "id") {
+  id: ID!
+}
+
+type AFLPlayerMatch @key(fields: "id") {
+  id: ID!
 }
 
 # --- Data ops types ---
