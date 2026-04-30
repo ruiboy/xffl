@@ -68,6 +68,7 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - [x] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
 - [x] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
 - [x] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
+- [ ] Make sure to/from round id is recorded for all player trades; tighten UI and graph endpoints
 
 ## Step 6 — Score reconciliation *(every round)*
 
