@@ -19,6 +19,7 @@ type FFLSeason {
   name: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
+  aflSeason: AFLSeason
 }
 
 type FFLRound {
@@ -82,7 +83,6 @@ type FFLPlayerSeason {
 type FFLPlayerSeasonConnection {
   nodes: [FFLPlayerSeason!]!
   pageInfo: PageInfo!
-  totalCount: Int!
 }
 
 input FFLPlayerSeasonFilter {
@@ -103,6 +103,10 @@ type FFLPlayerMatch {
 }
 
 # --- Stub types owned by the AFL subgraph — resolved via federation. ---
+
+type AFLSeason @key(fields: "id") {
+  id: ID!
+}
 
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!

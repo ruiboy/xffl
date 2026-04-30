@@ -31,6 +31,7 @@ models:
     fields:
       ladder: { resolver: true }
       rounds: { resolver: true }
+      aflSeason: { resolver: true }
 
   FFLRound:
     fields:

@@ -21,6 +21,12 @@ func (r *entityResolver) FindAFLPlayerSeasonByID(ctx context.Context, id string)
 	return &AFLPlayerSeason{ID: id}, nil
 }
 
+// FindAFLSeasonByID is the resolver for the findAFLSeasonByID field.
+// FFL is not the owner of AFLSeason; return a stub so the router can fetch from the AFL subgraph.
+func (r *entityResolver) FindAFLSeasonByID(ctx context.Context, id string) (*AFLSeason, error) {
+	return &AFLSeason{ID: id}, nil
+}
+
 // Entity returns EntityResolver implementation.
 func (r *Resolver) Entity() EntityResolver { return &entityResolver{r} }
 

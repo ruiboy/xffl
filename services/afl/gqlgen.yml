@@ -32,6 +32,8 @@ models:
         resolver: true
       rounds:
         resolver: true
+      playerSeasons:
+        resolver: true
   AFLRound:
     fields:
       season:

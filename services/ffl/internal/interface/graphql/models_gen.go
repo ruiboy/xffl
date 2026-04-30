@@ -14,6 +14,12 @@ type AFLPlayerSeason struct {
 
 func (AFLPlayerSeason) IsEntity() {}
 
+type AFLSeason struct {
+	ID string `json:"id"`
+}
+
+func (AFLSeason) IsEntity() {}
+
 type AddFFLPlayerToSeasonInput struct {
 	PlayerID     string `json:"playerId"`
 	ClubSeasonID string `json:"clubSeasonId"`
@@ -117,9 +123,8 @@ type FFLPlayerSeason struct {
 }
 
 type FFLPlayerSeasonConnection struct {
-	Nodes      []*FFLPlayerSeason `json:"nodes"`
-	PageInfo   *PageInfo          `json:"pageInfo"`
-	TotalCount int                `json:"totalCount"`
+	Nodes    []*FFLPlayerSeason `json:"nodes"`
+	PageInfo *PageInfo          `json:"pageInfo"`
 }
 
 type FFLPlayerSeasonFilter struct {
@@ -135,10 +140,11 @@ type FFLRound struct {
 }
 
 type FFLSeason struct {
-	ID     string           `json:"id"`
-	Name   string           `json:"name"`
-	Ladder []*FFLClubSeason `json:"ladder"`
-	Rounds []*FFLRound      `json:"rounds"`
+	ID        string           `json:"id"`
+	Name      string           `json:"name"`
+	Ladder    []*FFLClubSeason `json:"ladder"`
+	Rounds    []*FFLRound      `json:"rounds"`
+	AflSeason *AFLSeason       `json:"aflSeason,omitempty"`
 }
 
 type FFLTeamPlayerInput struct {
@@ -154,6 +160,7 @@ type Mutation struct {
 type PageInfo struct {
 	HasNextPage bool    `json:"hasNextPage"`
 	EndCursor   *string `json:"endCursor,omitempty"`
+	TotalCount  *int    `json:"totalCount,omitempty"`
 }
 
 type ParseFFLTeamSubmissionInput struct {

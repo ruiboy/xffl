@@ -114,10 +114,11 @@ type FflRound struct {
 }
 
 type FflSeason struct {
-	ID        int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
-	LeagueID  int32
-	Name      string
+	ID          int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	LeagueID    int32
+	Name        string
+	AflSeasonID *int32
 }

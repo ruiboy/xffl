@@ -218,6 +218,34 @@ func (r *aFLSeasonResolver) Rounds(ctx context.Context, obj *AFLSeason) ([]*AFLR
 	return convertRounds(rounds), nil
 }
 
+// PlayerSeasons is the resolver for the playerSeasons field.
+func (r *aFLSeasonResolver) PlayerSeasons(ctx context.Context, obj *AFLSeason, filter *AFLPlayerSeasonFilter, first *int, after *string) (*AFLPlayerSeasonConnection, error) {
+	seasonID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	var nameQuery *string
+	if filter != nil {
+		nameQuery = filter.Query
+	}
+	ids, err := r.Queries.GetPlayerSeasonIDsBySeasonID(ctx, seasonID, nameQuery)
+	if err != nil {
+		return nil, err
+	}
+	nodes := make([]*AFLPlayerSeason, len(ids))
+	for i, id := range ids {
+		nodes[i] = &AFLPlayerSeason{ID: toID(id)}
+	}
+	total := len(nodes)
+	return &AFLPlayerSeasonConnection{
+		Nodes: nodes,
+		PageInfo: &PageInfo{
+			HasNextPage: false,
+			TotalCount:  &total,
+		},
+	}, nil
+}
+
 // AflSeasons is the resolver for the aflSeasons field.
 func (r *queryResolver) AflSeasons(ctx context.Context) ([]*AFLSeason, error) {
 	seasons, err := r.Queries.GetSeasons(ctx)

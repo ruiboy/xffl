@@ -40,6 +40,19 @@ func (r *entityResolver) FindAFLPlayerSeasonByID(ctx context.Context, id string)
 	return &AFLPlayerSeason{ID: id}, nil
 }
 
+// FindAFLSeasonByID is the resolver for the findAFLSeasonByID field.
+func (r *entityResolver) FindAFLSeasonByID(ctx context.Context, id string) (*AFLSeason, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.Queries.GetSeason(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &AFLSeason{ID: id}, nil
+}
+
 // Entity returns EntityResolver implementation.
 func (r *Resolver) Entity() EntityResolver { return &entityResolver{r} }
 

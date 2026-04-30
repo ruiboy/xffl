@@ -13,11 +13,21 @@ type Query {
   aflPlayerSearch(query: String!): [AFLPlayer!]!
 }
 
-type AFLSeason {
+type AFLSeason @key(fields: "id") {
   id: ID!
   name: String!
   ladder: [AFLClubSeason!]!
   rounds: [AFLRound!]!
+  playerSeasons(filter: AFLPlayerSeasonFilter, first: Int, after: String): AFLPlayerSeasonConnection!
+}
+
+input AFLPlayerSeasonFilter {
+  query: String
+}
+
+type AFLPlayerSeasonConnection {
+  nodes: [AFLPlayerSeason!]!
+  pageInfo: PageInfo!
 }
 
 type AFLRound {

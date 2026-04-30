@@ -85,7 +85,7 @@ func (r *SeasonRepository) FindAll(ctx context.Context) ([]domain.Season, error)
 	}
 	out := make([]domain.Season, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID)}
+		out[i] = domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int32PtrToIntPtr(row.AflSeasonID)}
 	}
 	return out, nil
 }
@@ -95,7 +95,7 @@ func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season,
 	if err != nil {
 		return domain.Season{}, err
 	}
-	return domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID)}, nil
+	return domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int32PtrToIntPtr(row.AflSeasonID)}, nil
 }
 
 // --- Round ---

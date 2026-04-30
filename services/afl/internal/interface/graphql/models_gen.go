@@ -76,6 +76,15 @@ type AFLPlayerSeason struct {
 
 func (AFLPlayerSeason) IsEntity() {}
 
+type AFLPlayerSeasonConnection struct {
+	Nodes    []*AFLPlayerSeason `json:"nodes"`
+	PageInfo *PageInfo          `json:"pageInfo"`
+}
+
+type AFLPlayerSeasonFilter struct {
+	Query *string `json:"query,omitempty"`
+}
+
 type AFLRound struct {
 	ID      string      `json:"id"`
 	Name    string      `json:"name"`
@@ -84,11 +93,14 @@ type AFLRound struct {
 }
 
 type AFLSeason struct {
-	ID     string           `json:"id"`
-	Name   string           `json:"name"`
-	Ladder []*AFLClubSeason `json:"ladder"`
-	Rounds []*AFLRound      `json:"rounds"`
+	ID            string                     `json:"id"`
+	Name          string                     `json:"name"`
+	Ladder        []*AFLClubSeason           `json:"ladder"`
+	Rounds        []*AFLRound                `json:"rounds"`
+	PlayerSeasons *AFLPlayerSeasonConnection `json:"playerSeasons"`
 }
+
+func (AFLSeason) IsEntity() {}
 
 type ImportAFLMatchStatsResult struct {
 	MatchID          string   `json:"matchId"`
@@ -100,6 +112,12 @@ type ImportAFLMatchStatsResult struct {
 }
 
 type Mutation struct {
+}
+
+type PageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor,omitempty"`
+	TotalCount  *int    `json:"totalCount,omitempty"`
 }
 
 type Query struct {
