@@ -701,12 +701,23 @@ func TestAddAndRemoveFFLPlayerFromSeason(t *testing.T) {
 		assert.Equal(t, clubSeasonID, addData.AddFFLPlayerToSeason.ClubSeasonID)
 	})
 
+	roundID := fmt.Sprintf("%d", ids.roundID)
 	removeResult := execQuery(t, server, `mutation {
-		removeFFLPlayerFromSeason(id: "`+addData.AddFFLPlayerToSeason.ID+`")
+		removeFFLPlayerFromSeason(id: "`+addData.AddFFLPlayerToSeason.ID+`", toRoundId: "`+roundID+`")
 	}`)
 
 	t.Run("remove returns no errors", func(t *testing.T) {
 		assert.Empty(t, removeResult.Errors)
+	})
+
+	t.Run("remove sets to_round_id, preserving the row", func(t *testing.T) {
+		psID, err := strconv.Atoi(addData.AddFFLPlayerToSeason.ID)
+		require.NoError(t, err)
+		var toRoundID *int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT to_round_id FROM ffl.player_season WHERE id = $1", psID).Scan(&toRoundID))
+		require.NotNil(t, toRoundID)
+		assert.Equal(t, ids.roundID, *toRoundID)
 	})
 }
 
