@@ -25,8 +25,9 @@ INSERT INTO ffl.club (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Season
-INSERT INTO ffl.season (name, league_id) VALUES
-    ('FFL 2026', (SELECT id FROM ffl.league WHERE name = 'FFL'));
+INSERT INTO ffl.season (name, league_id, afl_season_id) VALUES
+    ('FFL 2026', (SELECT id FROM ffl.league WHERE name = 'FFL'),
+     (SELECT id FROM afl.season WHERE name = 'AFL 2026'));
 
 -- Club seasons
 INSERT INTO ffl.club_season (club_id, season_id) VALUES

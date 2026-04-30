@@ -30,6 +30,12 @@ The `EventDispatcher` interface lives in `shared/events/`. Concrete implementati
 | PG LISTEN/NOTIFY | `shared/events/pg/` | Production transport |
 | In-memory | `shared/events/memory/` | Testing |
 
+### Event Naming
+
+Events must be named as **past-tense domain facts** describing what happened in the domain: `PlayerMatchUpdated`, `PlayerSeasonUpdated`.
+
+Never name an event as an instruction to a subscriber. If the name implies what a downstream service should do (e.g. "Indexed", "Sync", "Reindex"), the event is wrong — it couples the producer to a specific consumer's concern. The publishing service must have zero knowledge of who subscribes or what they do with the event.
+
 ### Event Payload Convention
 
 Events carry **full payloads** as JSON. At this project's scale (two event types, small structs) payloads are well within PG's 8KB NOTIFY limit. Full payloads let subscribers act on the event without calling back to the producer, which avoids extra round-trips and cross-service API coupling.
