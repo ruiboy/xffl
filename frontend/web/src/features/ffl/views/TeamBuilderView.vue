@@ -105,7 +105,14 @@
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
                     <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
-                    <span class="font-medium">{{ slot.player.name }}</span>
+                    <div v-if="managing">
+                      <div class="font-medium text-sm">{{ slot.player.name }}</div>
+                      <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
+                    </div>
+                    <div v-else class="flex items-baseline gap-2">
+                      <span class="font-medium text-sm">{{ slot.player.name }}</span>
+                      <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                    </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
                   <div v-if="slot.player && managing" class="flex items-center gap-2">
@@ -158,7 +165,10 @@
                 >
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
-                    <span v-if="slot.player" class="font-medium text-text-muted">{{ slot.player.name }}</span>
+                    <div v-if="slot.player" class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
+                      <span class="font-medium text-sm text-text-muted">{{ slot.player.name }}</span>
+                      <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                    </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
                   </div>
                   <!-- Right: selectors + remove (manage) or read-only tags -->
@@ -247,7 +257,10 @@
                 :key="player.id"
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
-                <span class="font-medium text-sm">{{ player.name }}</span>
+                <div>
+                  <div class="font-medium text-sm">{{ player.name }}</div>
+                  <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                </div>
                 <div class="flex items-center gap-1">
                   <!-- Position buttons (starters) -->
                   <button
@@ -320,6 +333,7 @@ const nonStarPositions = positions.filter(p => p.key !== 'star')
 interface SquadPlayer {
   id: string
   name: string
+  club: string | null
   score: number | null
   status: string | null
 }
@@ -401,9 +415,10 @@ const clubMatch = computed(() => {
 
 const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string } }) => ({
+  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } } }) => ({
     id: r.id,
     name: r.player.name,
+    club: r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
     score: null,
     status: null,
   }))
@@ -465,7 +480,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
 
   let dualIndex = 0
   for (const pm of cm.playerMatches) {
-    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name, score: pm.score ?? null, status: pm.status ?? null }
+    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name, club: squad.value.find(s => s.id === pm.playerSeasonId)?.club ?? null, score: pm.score ?? null, status: pm.status ?? null }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (!isBench) {

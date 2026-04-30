@@ -12,6 +12,9 @@ export const GET_FFL_TEAM_BUILDER = gql`
           nodes {
             id
             player { id name }
+            aflPlayerSeason {
+              clubSeason { club { name } }
+            }
           }
         }
       }
