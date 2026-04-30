@@ -39,11 +39,11 @@ ADR: ADR-013 (revised 2026-04-28)
 - [x] Removed operation-name routing link
 - [x] Apollo client points at single `/query` endpoint (via gateway → Router)
 - [x] Update `SquadView` to fetch player AFL club name via `FFLPlayerSeason.aflPlayerSeason.clubSeason.club.name`
-- [ ] Verify existing queries still work end-to-end
+- [x] Verify existing queries still work end-to-end
 
 ## Step 5 — Tests + verification
 
 - [x] AFL integration tests green
 - [x] FFL integration tests green
 - [x] E2e test: SquadView shows AFL club name column
-- [ ] All existing Playwright tests green
+- [x] All existing Playwright tests green

@@ -196,13 +196,18 @@ FROM afl.player_match apm
 JOIN afl.player_season aps ON apm.player_season_id = aps.id
 JOIN afl.player ap ON aps.player_id = ap.id
 JOIN afl.club_match acm ON apm.club_match_id = acm.id
-JOIN afl.match am ON acm.match_id = am.id
-JOIN ffl.player_season fps ON fpm.player_season_id = fps.id
-JOIN ffl.player fp ON fps.player_id = fp.id
-JOIN ffl.club_match fcm ON fpm.club_match_id = fcm.id
-JOIN ffl.match fm ON fcm.match_id = fm.id
-JOIN ffl.round fr ON fm.round_id = fr.id
-WHERE fp.afl_player_id = ap.id
+JOIN afl.match am ON acm.match_id = am.id,
+ffl.player_season fps,
+ffl.player fp,
+ffl.club_match fcm,
+ffl.match fm,
+ffl.round fr
+WHERE fpm.player_season_id = fps.id
+  AND fps.player_id = fp.id
+  AND fp.afl_player_id = ap.id
+  AND fpm.club_match_id = fcm.id
+  AND fcm.match_id = fm.id
+  AND fm.round_id = fr.id
   AND fr.afl_round_id = am.round_id;
 
 COMMIT;
