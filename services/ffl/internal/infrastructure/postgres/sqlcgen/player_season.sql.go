@@ -10,14 +10,21 @@ import (
 )
 
 const createPlayerSeason = `-- name: CreatePlayerSeason :one
-INSERT INTO ffl.player_season (player_id, club_season_id)
-VALUES ($1, $2)
+INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (player_id, club_season_id) DO UPDATE
+  SET to_round_id = NULL,
+      from_round_id = EXCLUDED.from_round_id,
+      afl_player_season_id = EXCLUDED.afl_player_season_id,
+      updated_at = CURRENT_TIMESTAMP
 RETURNING id, player_id, club_season_id, afl_player_season_id
 `
 
 type CreatePlayerSeasonParams struct {
-	PlayerID     int32
-	ClubSeasonID int32
+	PlayerID          int32
+	ClubSeasonID      int32
+	FromRoundID       *int32
+	AflPlayerSeasonID *int32
 }
 
 type CreatePlayerSeasonRow struct {
@@ -28,7 +35,12 @@ type CreatePlayerSeasonRow struct {
 }
 
 func (q *Queries) CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error) {
-	row := q.db.QueryRow(ctx, createPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
+	row := q.db.QueryRow(ctx, createPlayerSeason,
+		arg.PlayerID,
+		arg.ClubSeasonID,
+		arg.FromRoundID,
+		arg.AflPlayerSeasonID,
+	)
 	var i CreatePlayerSeasonRow
 	err := row.Scan(
 		&i.ID,
@@ -117,7 +129,7 @@ func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflP
 const findPlayerSeasonsByClubSeasonID = `-- name: FindPlayerSeasonsByClubSeasonID :many
 SELECT id, player_id, club_season_id, afl_player_season_id
 FROM ffl.player_season
-WHERE club_season_id = $1 AND deleted_at IS NULL
+WHERE club_season_id = $1 AND deleted_at IS NULL AND to_round_id IS NULL
 `
 
 type FindPlayerSeasonsByClubSeasonIDRow struct {
@@ -183,4 +195,21 @@ func (q *Queries) FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeason
 		return nil, err
 	}
 	return items, nil
+}
+
+const setPlayerSeasonEndRound = `-- name: SetPlayerSeasonEndRound :exec
+UPDATE ffl.player_season
+SET to_round_id = $1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $2 AND deleted_at IS NULL
+`
+
+type SetPlayerSeasonEndRoundParams struct {
+	ToRoundID *int32
+	ID        int32
+}
+
+func (q *Queries) SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error {
+	_, err := q.db.Exec(ctx, setPlayerSeasonEndRound, arg.ToRoundID, arg.ID)
+	return err
 }

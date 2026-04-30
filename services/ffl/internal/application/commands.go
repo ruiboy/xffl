@@ -57,20 +57,17 @@ func (c *Commands) CreatePlayer(ctx context.Context, name string, aflPlayerID in
 }
 
 // AddAFLPlayerToSquad finds or creates an FFL player linked to an AFL player, then adds them to a club season.
-func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int) (domain.PlayerSeason, error) {
+func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		// Find existing FFL player by AFL player ID
 		player, err := repos.Players.FindByAFLPlayerID(ctx, aflPlayerID)
 		if err != nil {
-			// Not found — create a new FFL player linked to the AFL player
 			player, err = repos.Players.Create(ctx, aflPlayerName, aflPlayerID)
 			if err != nil {
 				return err
 			}
 		}
-
-		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID)
+		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID, fromRoundID, aflPlayerSeasonID)
 		if err != nil {
 			return err
 		}
@@ -105,7 +102,7 @@ func (c *Commands) DeletePlayer(ctx context.Context, id int) error {
 func (c *Commands) AddPlayerToSeason(ctx context.Context, playerID int, clubSeasonID int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		ps, err := repos.PlayerSeasons.Create(ctx, playerID, clubSeasonID)
+		ps, err := repos.PlayerSeasons.Create(ctx, playerID, clubSeasonID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -115,10 +112,10 @@ func (c *Commands) AddPlayerToSeason(ctx context.Context, playerID int, clubSeas
 	return result, err
 }
 
-// RemovePlayerFromSeason removes a player from a club season squad.
-func (c *Commands) RemovePlayerFromSeason(ctx context.Context, playerSeasonID int) error {
+// RemovePlayerFromSeason records the last round a player was in the squad, preserving history.
+func (c *Commands) RemovePlayerFromSeason(ctx context.Context, playerSeasonID int, toRoundID int) error {
 	return c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		return repos.PlayerSeasons.Delete(ctx, playerSeasonID)
+		return repos.PlayerSeasons.SetEndRound(ctx, playerSeasonID, toRoundID)
 	})
 }
 

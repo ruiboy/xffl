@@ -26,9 +26,11 @@ type AddFFLPlayerToSeasonInput struct {
 }
 
 type AddFFLSquadPlayerInput struct {
-	AflPlayerID   string `json:"aflPlayerId"`
-	AflPlayerName string `json:"aflPlayerName"`
-	ClubSeasonID  string `json:"clubSeasonId"`
+	AflPlayerID       string  `json:"aflPlayerId"`
+	AflPlayerName     string  `json:"aflPlayerName"`
+	ClubSeasonID      string  `json:"clubSeasonId"`
+	AflPlayerSeasonID *string `json:"aflPlayerSeasonId,omitempty"`
+	FromRoundID       *string `json:"fromRoundId,omitempty"`
 }
 
 type CalculateFFLFantasyScoreInput struct {

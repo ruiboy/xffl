@@ -11,8 +11,8 @@ export const ADD_FFL_PLAYER_TO_SEASON = gql`
 `
 
 export const REMOVE_FFL_PLAYER_FROM_SEASON = gql`
-  mutation RemoveFFLPlayerFromSeason($id: ID!) {
-    removeFFLPlayerFromSeason(id: $id)
+  mutation RemoveFFLPlayerFromSeason($id: ID!, $toRoundId: ID!) {
+    removeFFLPlayerFromSeason(id: $id, toRoundId: $toRoundId)
   }
 `
 

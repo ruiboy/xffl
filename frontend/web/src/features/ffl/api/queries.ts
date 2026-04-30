@@ -84,17 +84,25 @@ export const GET_FFL_CLUB_SEASON = gql`
             }
           }
         }
-        totalCount
+        pageInfo { totalCount }
       }
     }
   }
 `
 
-export const SEARCH_AFL_PLAYERS = gql`
-  query SearchAFLPlayers($query: String!) {
-    aflPlayerSearch(query: $query) {
-      id
-      name
+export const GET_AFL_PLAYER_SEASONS = gql`
+  query GetAFLPlayerSeasonsBySeason($seasonId: ID!, $query: String) {
+    fflSeason(id: $seasonId) {
+      aflSeason {
+        playerSeasons(filter: { query: $query }) {
+          nodes {
+            id
+            player { id name }
+            clubSeason { club { name } }
+          }
+          pageInfo { totalCount }
+        }
+      }
     }
   }
 `

@@ -72,12 +72,16 @@ func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFF
 }
 
 // RemoveFFLPlayerFromSeason is the resolver for the removeFFLPlayerFromSeason field.
-func (r *mutationResolver) RemoveFFLPlayerFromSeason(ctx context.Context, id string) (bool, error) {
+func (r *mutationResolver) RemoveFFLPlayerFromSeason(ctx context.Context, id string, toRoundID string) (bool, error) {
 	parsed, err := fromID(id)
 	if err != nil {
 		return false, err
 	}
-	if err := r.Commands.RemovePlayerFromSeason(ctx, parsed); err != nil {
+	roundID, err := fromID(toRoundID)
+	if err != nil {
+		return false, err
+	}
+	if err := r.Commands.RemovePlayerFromSeason(ctx, parsed, roundID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -152,7 +156,23 @@ func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSq
 	if err != nil {
 		return nil, err
 	}
-	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID)
+	var fromRoundID *int
+	if input.FromRoundID != nil {
+		id, err := fromID(*input.FromRoundID)
+		if err != nil {
+			return nil, err
+		}
+		fromRoundID = &id
+	}
+	var aflPlayerSeasonID *int
+	if input.AflPlayerSeasonID != nil {
+		id, err := fromID(*input.AflPlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		aflPlayerSeasonID = &id
+	}
+	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID, fromRoundID, aflPlayerSeasonID)
 	if err != nil {
 		return nil, err
 	}

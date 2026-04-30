@@ -616,15 +616,25 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	return out, nil
 }
 
-func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID int, clubSeasonID int) (domain.PlayerSeason, error) {
+func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID int, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int) (domain.PlayerSeason, error) {
 	row, err := r.q.CreatePlayerSeason(ctx, sqlcgen.CreatePlayerSeasonParams{
-		PlayerID:     int32(playerID),
-		ClubSeasonID: int32(clubSeasonID),
+		PlayerID:          int32(playerID),
+		ClubSeasonID:      int32(clubSeasonID),
+		FromRoundID:       intPtrToInt32Ptr(fromRoundID),
+		AflPlayerSeasonID: intPtrToInt32Ptr(aflPlayerSeasonID),
 	})
 	if err != nil {
 		return domain.PlayerSeason{}, err
 	}
 	return domain.PlayerSeason{ID: int(row.ID), PlayerID: int(row.PlayerID), ClubSeasonID: int(row.ClubSeasonID), AFLPlayerSeasonID: int32PtrToIntPtr(row.AflPlayerSeasonID)}, nil
+}
+
+func (r *PlayerSeasonRepository) SetEndRound(ctx context.Context, id int, toRoundID int) error {
+	v := int32(toRoundID)
+	return r.q.SetPlayerSeasonEndRound(ctx, sqlcgen.SetPlayerSeasonEndRoundParams{
+		ID:        int32(id),
+		ToRoundID: &v,
+	})
 }
 
 func (r *PlayerSeasonRepository) Delete(ctx context.Context, id int) error {

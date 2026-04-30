@@ -64,10 +64,10 @@ ADR: ADR-018 (Twirp for cross-service communication)
 **Tasks:**
 - [x] Schema migration: `ffl.season.afl_season_id INTEGER REFERENCES afl.season(id)`
 - [x] Seed `dev/postgres/seed/02_ffl_seed.sql` with `afl_season_id` for FFL 2026 → AFL 2026
-- [ ] AFL service: `playerSeasonsBySeason(seasonId)` query returning player name, club, `afl_player_season_id`
-- [ ] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
-- [ ] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
-- [ ] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
+- [x] AFL service: `AFLSeason.playerSeasons(filter, first, after)` connection; `FFLSeason.aflSeason` traversal via federation
+- [x] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
+- [x] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
+- [x] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
 
 ## Step 6 — Score reconciliation *(every round)*
 

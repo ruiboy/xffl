@@ -77,12 +77,31 @@
                         >{{ roundLetter(row.id, round.id) }}</span>
                       </div>
                     </td>
-                    <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
+                    <td v-if="isMyClub && managing" class="py-2 px-2">
+                      <template v-if="removeConfirmId === row.id">
+                        <div class="flex items-center gap-1 justify-end flex-wrap">
+                          <select
+                            v-model="removeRoundId"
+                            class="rounded border border-border bg-surface px-1 py-0.5 text-xs text-text focus:outline-none"
+                          >
+                            <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
+                          </select>
+                          <button
+                            @click="confirmRemove(row.id)"
+                            :disabled="removingId === row.id || !removeRoundId"
+                            class="text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
+                          >Remove</button>
+                          <button
+                            @click="removeConfirmId = null"
+                            class="text-xs text-text-muted hover:text-text transition-colors"
+                          >Cancel</button>
+                        </div>
+                      </template>
                       <button
-                        @click="removePlayer(row.id)"
+                        v-else
+                        @click="startRemove(row.id)"
                         aria-label="Remove"
-                        class="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
-                        :disabled="removingId === row.id"
+                        class="float-right text-red-400 hover:text-red-300 transition-colors"
                       >
                         <IconBin class="w-3.5 h-3.5" />
                       </button>
@@ -107,17 +126,20 @@
           <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching...</div>
           <div v-else-if="searchResults.length > 0" class="mt-2">
             <div
-              v-for="player in searchResults"
-              :key="player.id"
+              v-for="node in searchResults"
+              :key="node.id"
               class="flex items-center justify-between border-b border-border-subtle py-2"
             >
-              <span class="text-sm">{{ player.name }}</span>
+              <div>
+                <div class="text-sm">{{ node.player.name }}</div>
+                <div class="text-xs text-text-muted">{{ node.clubSeason.club.name }}</div>
+              </div>
               <button
-                @click="addPlayer(player)"
+                @click="addPlayer(node)"
                 class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
-                :disabled="addingId === player.id"
+                :disabled="addingId === node.id"
               >
-                {{ addingId === player.id ? 'Adding...' : 'Add' }}
+                {{ addingId === node.id ? 'Adding...' : 'Add' }}
               </button>
             </div>
           </div>
@@ -133,7 +155,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_CLUB_SEASON, SEARCH_AFL_PLAYERS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
+import { GET_FFL_CLUB_SEASON, GET_AFL_PLAYER_SEASONS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -254,8 +276,8 @@ watch(searchQuery, (val) => {
 })
 
 const { result: searchResult, loading: searchLoading } = useQuery(
-  SEARCH_AFL_PLAYERS,
-  () => ({ query: debouncedQuery.value }),
+  GET_AFL_PLAYER_SEASONS,
+  () => ({ seasonId: props.seasonId, query: debouncedQuery.value }),
   () => ({ enabled: debouncedQuery.value.length >= 2 })
 )
 
@@ -267,9 +289,15 @@ const squadAflPlayerIds = computed(() => {
   return ids
 })
 
-const searchResults = computed(() => {
-  const results = searchResult.value?.aflPlayerSearch ?? []
-  return results.filter((p: { id: string }) => !squadAflPlayerIds.value.has(p.id))
+interface AFLPlayerSeasonNode {
+  id: string
+  player: { id: string; name: string }
+  clubSeason: { club: { name: string } }
+}
+
+const searchResults = computed((): AFLPlayerSeasonNode[] => {
+  const nodes: AFLPlayerSeasonNode[] = searchResult.value?.fflSeason?.aflSeason?.playerSeasons?.nodes ?? []
+  return nodes.filter(n => !squadAflPlayerIds.value.has(n.player.id))
 })
 
 // Saved flash
@@ -283,14 +311,23 @@ function flashSaved() {
 
 // Remove player
 const removingId = ref<string | null>(null)
+const removeConfirmId = ref<string | null>(null)
+const removeRoundId = ref<string>('')
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
 
-async function removePlayer(playerSeasonId: string) {
+function startRemove(playerSeasonId: string) {
+  removeConfirmId.value = playerSeasonId
+  removeRoundId.value = liveRoundId.value || (rounds.value.at(-1)?.id ?? '')
+}
+
+async function confirmRemove(playerSeasonId: string) {
+  if (!removeRoundId.value) return
   removingId.value = playerSeasonId
   try {
-    await removePlayerMutation({ id: playerSeasonId })
+    await removePlayerMutation({ id: playerSeasonId, toRoundId: removeRoundId.value })
     await refetchSquad()
     flashSaved()
+    removeConfirmId.value = null
   } finally {
     removingId.value = null
   }
@@ -300,15 +337,17 @@ async function removePlayer(playerSeasonId: string) {
 const addingId = ref<string | null>(null)
 const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
 
-async function addPlayer(player: { id: string; name: string }) {
+async function addPlayer(node: AFLPlayerSeasonNode) {
   if (!clubSeasonId.value) return
-  addingId.value = player.id
+  addingId.value = node.id
   try {
     await addPlayerMutation({
       input: {
-        aflPlayerId: player.id,
-        aflPlayerName: player.name,
+        aflPlayerId: node.player.id,
+        aflPlayerName: node.player.name,
         clubSeasonId: clubSeasonId.value,
+        aflPlayerSeasonId: node.id,
+        ...(liveRoundId.value ? { fromRoundId: liveRoundId.value } : {}),
       },
     })
     await refetchSquad()

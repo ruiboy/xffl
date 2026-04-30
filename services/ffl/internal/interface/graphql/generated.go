@@ -153,7 +153,7 @@ type ComplexityRoot struct {
 		CreateFFLPlayer           func(childComplexity int, input CreateFFLPlayerInput) int
 		DeleteFFLPlayer           func(childComplexity int, id string) int
 		ParseFFLTeamSubmission    func(childComplexity int, input ParseFFLTeamSubmissionInput) int
-		RemoveFFLPlayerFromSeason func(childComplexity int, id string) int
+		RemoveFFLPlayerFromSeason func(childComplexity int, id string, toRoundID string) int
 		SetFFLTeam                func(childComplexity int, input SetFFLTeamInput) int
 		UpdateFFLPlayer           func(childComplexity int, input UpdateFFLPlayerInput) int
 	}
@@ -239,7 +239,7 @@ type MutationResolver interface {
 	UpdateFFLPlayer(ctx context.Context, input UpdateFFLPlayerInput) (*FFLPlayer, error)
 	DeleteFFLPlayer(ctx context.Context, id string) (bool, error)
 	AddFFLPlayerToSeason(ctx context.Context, input AddFFLPlayerToSeasonInput) (*FFLPlayerSeason, error)
-	RemoveFFLPlayerFromSeason(ctx context.Context, id string) (bool, error)
+	RemoveFFLPlayerFromSeason(ctx context.Context, id string, toRoundID string) (bool, error)
 	CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error)
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
 	AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error)
@@ -754,7 +754,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["id"].(string), args["toRoundId"].(string)), true
 	case "Mutation.setFFLTeam":
 		if e.ComplexityRoot.Mutation.SetFFLTeam == nil {
 			break
@@ -1103,7 +1103,7 @@ var sources = []*ast.Source{
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
   deleteFFLPlayer(id: ID!): Boolean!
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
-  removeFFLPlayerFromSeason(id: ID!): Boolean!
+  removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
   addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
@@ -1120,6 +1120,8 @@ input AddFFLSquadPlayerInput {
   aflPlayerId: ID!
   aflPlayerName: String!
   clubSeasonId: ID!
+  aflPlayerSeasonId: ID
+  fromRoundId: ID
 }
 
 input CreateFFLPlayerInput {
@@ -1535,6 +1537,11 @@ func (ec *executionContext) field_Mutation_removeFFLPlayerFromSeason_args(ctx co
 		return nil, err
 	}
 	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "toRoundId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["toRoundId"] = arg1
 	return args, nil
 }
 
@@ -3912,7 +3919,7 @@ func (ec *executionContext) _Mutation_removeFFLPlayerFromSeason(ctx context.Cont
 		ec.fieldContext_Mutation_removeFFLPlayerFromSeason,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RemoveFFLPlayerFromSeason(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().RemoveFFLPlayerFromSeason(ctx, fc.Args["id"].(string), fc.Args["toRoundId"].(string))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -6917,7 +6924,7 @@ func (ec *executionContext) unmarshalInputAddFFLSquadPlayerInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"aflPlayerId", "aflPlayerName", "clubSeasonId"}
+	fieldsInOrder := [...]string{"aflPlayerId", "aflPlayerName", "clubSeasonId", "aflPlayerSeasonId", "fromRoundId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6945,6 +6952,20 @@ func (ec *executionContext) unmarshalInputAddFFLSquadPlayerInput(ctx context.Con
 				return it, err
 			}
 			it.ClubSeasonID = data
+		case "aflPlayerSeasonId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflPlayerSeasonId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AflPlayerSeasonID = data
+		case "fromRoundId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fromRoundId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FromRoundID = data
 		}
 	}
 	return it, nil
