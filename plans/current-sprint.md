@@ -55,20 +55,19 @@ ADR: ADR-018 (Twirp for cross-service communication)
 ## Step 3 — In-season player trades *(frequent)*
 
 **Decisions:**
-- `ffl.season.afl_season_id` FK required — foundational for scoping player season search; add schema migration and seed `dev/postgres/seed/02_ffl_seed.sql` with the key immediately for manual testing
+- `ffl.season.afl_season_id` FK required — foundational for scoping player season lookup; schema migration and seed already complete
 - **Remove:** sets `to_round_id` on `ffl.player_season` (preserves history); UI shows a round dropdown (returns explicit `round_id`); defaults to current round but allows past/future
-- **Add:** search-backed (Typesense); AFL player seasons indexed as a separate collection filterable by `afl_season_id`; search returns `afl_player_season_id` alongside player; existing search service extended with `SearchAFLPlayerSeasons(seasonId, query)` 
+- **Add:** graph-traversal backed; FFL season links to AFL season via `afl_season_id`; gateway queries AFL service for player seasons scoped to that AFL season; no Typesense involvement
 - `ADD_FFL_SQUAD_PLAYER` mutation needs extending to accept `aflPlayerSeasonId` and `fromRoundId`; backing use case extended accordingly
 - Entry point remains the existing Manage mode on SquadView
 
 **Tasks:**
-- [ ] Schema migration: `ffl.season.afl_season_id INTEGER REFERENCES afl.season(id)`
-- [ ] Seed `dev/postgres/seed/02_ffl_seed.sql` with `afl_season_id` for FFL 2026 → AFL 2026
-- [ ] Typesense: index AFL player seasons collection (player name, afl_player_id, afl_player_season_id, club name, season_id as filter)
-- [ ] Search service: `SearchAFLPlayerSeasons(seasonId, query)` method + GraphQL query
+- [x] Schema migration: `ffl.season.afl_season_id INTEGER REFERENCES afl.season(id)`
+- [x] Seed `dev/postgres/seed/02_ffl_seed.sql` with `afl_season_id` for FFL 2026 → AFL 2026
+- [ ] AFL service: `playerSeasonsBySeason(seasonId)` query returning player name, club, `afl_player_season_id`
 - [ ] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
 - [ ] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
-- [ ] SquadView: remove button → round dropdown + confirm; add panel → season-scoped player season search
+- [ ] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
 
 ## Step 6 — Score reconciliation *(every round)*
 
