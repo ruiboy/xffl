@@ -77,31 +77,11 @@
                         >{{ roundLetter(row.id, round.id) }}</span>
                       </div>
                     </td>
-                    <td v-if="isMyClub && managing" class="py-2 px-2">
-                      <template v-if="removeConfirmId === row.id">
-                        <div class="flex items-center gap-1 justify-end flex-wrap">
-                          <select
-                            v-model="removeRoundId"
-                            class="rounded border border-border bg-surface px-1 py-0.5 text-xs text-text focus:outline-none"
-                          >
-                            <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
-                          </select>
-                          <button
-                            @click="confirmRemove(row.id)"
-                            :disabled="removingId === row.id || !removeRoundId"
-                            class="text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
-                          >Remove</button>
-                          <button
-                            @click="removeConfirmId = null"
-                            class="text-xs text-text-muted hover:text-text transition-colors"
-                          >Cancel</button>
-                        </div>
-                      </template>
+                    <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
                       <button
-                        v-else
-                        @click="startRemove(row.id)"
+                        @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
                         aria-label="Remove"
-                        class="float-right text-red-400 hover:text-red-300 transition-colors"
+                        class="text-red-400 hover:text-red-300 transition-colors"
                       >
                         <IconBin class="w-3.5 h-3.5" />
                       </button>
@@ -135,11 +115,10 @@
                 <div class="text-xs text-text-muted">{{ node.clubSeason.club.name }}</div>
               </div>
               <button
-                @click="addPlayer(node)"
+                @click="openAddModal(node)"
                 class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
-                :disabled="addingId === node.id"
               >
-                {{ addingId === node.id ? 'Adding...' : 'Add' }}
+                Add
               </button>
             </div>
           </div>
@@ -149,6 +128,49 @@
         </div>
       </div>
     </template>
+
+    <!-- Player action modal (add / remove) -->
+    <Teleport to="body">
+      <div v-if="modal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="closeModal" />
+        <div class="relative z-10 w-80 rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
+          <h3 class="text-base font-semibold text-text mb-1">
+            {{ modal.action === 'add' ? 'Add Player' : 'Remove Player' }}
+          </h3>
+          <p class="text-sm font-medium text-text mb-0.5">
+            {{ modal.action === 'add' ? modal.node.player.name : modal.playerName }}
+          </p>
+          <p class="text-xs text-text-muted mb-4">
+            {{ modal.action === 'add' ? modal.node.clubSeason.club.name : modal.playerClub }}
+          </p>
+
+          <label class="text-xs text-text-muted block mb-1">Round</label>
+          <select
+            v-model="modal.roundId"
+            class="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text mb-5 focus:outline-none focus:border-active"
+          >
+            <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+
+          <div class="flex gap-2 justify-end">
+            <button
+              @click="closeModal"
+              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+            >Cancel</button>
+            <button
+              @click="confirmModal"
+              :disabled="modalSubmitting || !modal.roundId"
+              class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
+              :class="modal.action === 'remove'
+                ? 'bg-red-600 text-white hover:bg-red-500'
+                : 'bg-active text-active-text hover:opacity-90'"
+            >
+              {{ modalSubmitting ? '…' : modal.action === 'add' ? 'Add' : 'Remove' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -309,51 +331,56 @@ function flashSaved() {
   saveMessageTimer = setTimeout(() => { saveMessage.value = '' }, 3000)
 }
 
-// Remove player
-const removingId = ref<string | null>(null)
-const removeConfirmId = ref<string | null>(null)
-const removeRoundId = ref<string>('')
+// Modal
+type ModalState =
+  | { action: 'remove'; playerSeasonId: string; playerName: string; playerClub: string; roundId: string }
+  | { action: 'add'; node: AFLPlayerSeasonNode; roundId: string }
+
+const modal = ref<ModalState | null>(null)
+const modalSubmitting = ref(false)
+
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
-
-function startRemove(playerSeasonId: string) {
-  removeConfirmId.value = playerSeasonId
-  removeRoundId.value = liveRoundId.value || (rounds.value.at(-1)?.id ?? '')
-}
-
-async function confirmRemove(playerSeasonId: string) {
-  if (!removeRoundId.value) return
-  removingId.value = playerSeasonId
-  try {
-    await removePlayerMutation({ id: playerSeasonId, toRoundId: removeRoundId.value })
-    await refetchSquad()
-    flashSaved()
-    removeConfirmId.value = null
-  } finally {
-    removingId.value = null
-  }
-}
-
-// Add player
-const addingId = ref<string | null>(null)
 const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
 
-async function addPlayer(node: AFLPlayerSeasonNode) {
-  if (!clubSeasonId.value) return
-  addingId.value = node.id
+function defaultRoundId(): string {
+  return liveRoundId.value || (rounds.value.at(-1)?.id ?? '')
+}
+
+function openRemoveModal(playerSeasonId: string, playerName: string, playerClub: string) {
+  modal.value = { action: 'remove', playerSeasonId, playerName, playerClub, roundId: defaultRoundId() }
+}
+
+function openAddModal(node: AFLPlayerSeasonNode) {
+  modal.value = { action: 'add', node, roundId: defaultRoundId() }
+}
+
+function closeModal() {
+  if (!modalSubmitting.value) modal.value = null
+}
+
+async function confirmModal() {
+  if (!modal.value) return
+  modalSubmitting.value = true
   try {
-    await addPlayerMutation({
-      input: {
-        aflPlayerId: node.player.id,
-        aflPlayerName: node.player.name,
-        clubSeasonId: clubSeasonId.value,
-        aflPlayerSeasonId: node.id,
-        ...(liveRoundId.value ? { fromRoundId: liveRoundId.value } : {}),
-      },
-    })
+    if (modal.value.action === 'remove') {
+      await removePlayerMutation({ id: modal.value.playerSeasonId, toRoundId: modal.value.roundId })
+    } else {
+      if (!clubSeasonId.value) return
+      await addPlayerMutation({
+        input: {
+          aflPlayerId: modal.value.node.player.id,
+          aflPlayerName: modal.value.node.player.name,
+          clubSeasonId: clubSeasonId.value,
+          aflPlayerSeasonId: modal.value.node.id,
+          ...(modal.value.roundId ? { fromRoundId: modal.value.roundId } : {}),
+        },
+      })
+    }
     await refetchSquad()
     flashSaved()
+    modal.value = null
   } finally {
-    addingId.value = null
+    modalSubmitting.value = false
   }
 }
 
