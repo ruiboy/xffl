@@ -425,6 +425,7 @@ const { result: clubSeasonResult } = useQuery(
 )
 
 const round = computed(() => roundResult.value?.fflRound ?? null)
+const currentRound = round
 const season = computed(() => seasonResult.value?.fflSeason ?? null)
 const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
 
