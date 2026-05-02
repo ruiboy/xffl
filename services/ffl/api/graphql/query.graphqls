@@ -26,6 +26,7 @@ type FFLRound {
   id: ID!
   name: String!
   aflRoundId: ID
+  aflRound: AFLRound
   season: FFLSeason!
   matches: [FFLMatch!]!
 }
@@ -97,6 +98,7 @@ input FFLPlayerSeasonFilter {
 type FFLPlayerMatch {
   id: ID!
   playerSeasonId: ID!
+  playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
   status: String
@@ -110,6 +112,10 @@ type FFLPlayerMatch {
 # --- Stub types owned by the AFL subgraph — resolved via federation. ---
 
 type AFLSeason @key(fields: "id") {
+  id: ID!
+}
+
+type AFLRound @key(fields: "id") {
   id: ID!
 }
 

@@ -30,7 +30,7 @@ type AFLPlayerSeasonConnection {
   pageInfo: PageInfo!
 }
 
-type AFLRound {
+type AFLRound @key(fields: "id") {
   id: ID!
   name: String!
   season: AFLSeason!

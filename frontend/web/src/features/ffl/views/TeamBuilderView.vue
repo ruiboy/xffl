@@ -2,7 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
-    <template v-else-if="season">
+    <template v-else-if="round">
       <div class="mb-6">
         <Breadcrumb v-if="currentRound" :items="breadcrumbs" />
         <div class="flex items-center">
@@ -110,7 +110,11 @@
                       <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
                     </div>
                     <div v-else class="flex items-baseline gap-2">
-                      <span class="font-medium text-sm">{{ slot.player.name }}</span>
+                      <component
+                        :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                        :to="playerAflMatchRoute(slot.player) ?? undefined"
+                        class="font-medium text-sm hover:text-active transition-colors"
+                      >{{ slot.player.name }}</component>
                       <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
                     </div>
                   </div>
@@ -140,9 +144,9 @@
                   </div>
                   <div v-else-if="slot.player" class="flex items-center shrink-0 w-44">
                     <span class="w-16 shrink-0">
-                      <StatusBadge v-if="slot.player.status" :status="slot.player.status" />
+                      <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
-                    <template v-if="showScore(slot.player)">
+                    <template v-if="playerShowScore(slot.player)">
                       <span class="flex-1 text-right text-xs tabular-nums text-text-faint pr-2">{{ positionFormula(pos.key, slot.player.score ?? 0) ?? '' }}</span>
                       <span class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
                     </template>
@@ -166,7 +170,11 @@
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
                     <div v-if="slot.player" class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
-                      <span class="font-medium text-sm text-text-muted">{{ slot.player.name }}</span>
+                      <component
+                        :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                        :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
+                        class="font-medium text-sm text-text-muted hover:text-active transition-colors"
+                      >{{ slot.player.name }}</component>
                       <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -210,7 +218,7 @@
                     <template v-else-if="slot.player">
                       <div class="flex items-center w-44 shrink-0">
                         <span class="w-16 shrink-0">
-                          <StatusBadge v-if="slot.player.status" :status="slot.player.status" />
+                          <StatusBadge :status="playerStatus(slot.player)" />
                         </span>
                         <div class="flex items-center gap-1 flex-1 justify-end">
                           <template v-if="slot.positions[0]">
@@ -223,7 +231,7 @@
                               {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                             </span>
                           </template>
-                          <span v-if="showScore(slot.player)" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
+                          <span v-if="playerShowScore(slot.player)" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
                         </div>
                       </div>
                     </template>
@@ -262,7 +270,7 @@
                     <div class="font-medium text-sm">{{ player.name }}</div>
                     <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
                   </div>
-                  <span v-if="showScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
+                  <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <!-- Position buttons (starters) -->
@@ -313,7 +321,7 @@
                       <div class="font-medium text-sm">{{ player.name }}</div>
                       <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
                     </div>
-                    <span v-if="showScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
+                    <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                   </div>
                   <div class="flex items-center gap-1">
                     <button
@@ -349,12 +357,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_TEAM_BUILDER } from '../api/queries'
+import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON } from '../api/queries'
 import { SET_FFL_TEAM } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
+import { derivePlayerStatus, showScore as computeShowScore, aflMatchRoute, buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconBin from '../components/icons/IconBin.vue'
@@ -381,9 +390,8 @@ interface SquadPlayer {
   id: string
   name: string
   club: string | null
+  aflClubId: string | null
   score: number | null
-  status: string | null
-  statsImportStatus: string | null
   toRoundId: string | null
 }
 
@@ -399,29 +407,44 @@ interface BenchDualSlot {
 const { selectedClubId } = useFflState()
 const managing = ref(false)
 
-// Data loading
-const { result, loading, error } = useQuery(
-  GET_FFL_TEAM_BUILDER,
+// Three parallel queries
+const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
+  GET_FFL_ROUND,
+  () => ({ id: props.roundId }),
+  { errorPolicy: 'all' },
+)
+const { result: seasonResult, loading: seasonLoading } = useQuery(
+  GET_FFL_SEASON_CLUBS,
   () => ({ seasonId: props.seasonId }),
   { errorPolicy: 'all' },
 )
+const { result: clubSeasonResult } = useQuery(
+  GET_FFL_CLUB_SEASON,
+  () => ({ seasonId: props.seasonId, clubId: selectedClubId.value! }),
+  () => ({ enabled: !!selectedClubId.value, errorPolicy: 'all' }),
+)
 
-const season = computed(() => result.value?.fflSeason ?? null)
+const round = computed(() => roundResult.value?.fflRound ?? null)
+const season = computed(() => seasonResult.value?.fflSeason ?? null)
+const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
+
+const loading = computed(() => roundLoading.value || seasonLoading.value)
+const error = computed(() => roundError.value ?? null)
 
 const selectedClubSeason = computed(() =>
   season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
 )
 
-const currentRound = computed(() =>
-  season.value?.rounds.find((r: { id: string }) => r.id === props.roundId) ?? null
-)
+const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))
+
+const allRounds = computed(() => round.value?.season.rounds ?? [])
 
 const breadcrumbs = computed(() => {
-  if (!season.value || !currentRound.value) return []
+  if (!round.value) return []
   const crumbs: { label: string; to?: object }[] = [
     { label: 'FFL' },
-    { label: season.value.name, to: { name: 'home' } },
-    { label: currentRound.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } } },
+    { label: round.value.season.name, to: { name: 'home' } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } } },
   ]
   if (currentMatch.value) {
     const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
@@ -432,30 +455,28 @@ const breadcrumbs = computed(() => {
 })
 
 const prevRound = computed(() => {
-  const rounds = season.value?.rounds ?? []
+  const rounds = allRounds.value
   const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
   return idx > 0 ? rounds[idx - 1] : null
 })
 
 const nextRound = computed(() => {
-  const rounds = season.value?.rounds ?? []
+  const rounds = allRounds.value
   const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
   return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
 })
 
 const currentMatch = computed(() => {
-  if (!season.value || !selectedClubSeason.value) return null
-  const round = season.value.rounds.find((r: { id: string }) => r.id === props.roundId)
-  if (!round) return null
-  const clubId = selectedClubSeason.value.club.id
-  return round.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+  if (!round.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
+  return round.value.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
     m.homeClubMatch?.club.id === clubId || m.awayClubMatch?.club.id === clubId
   ) ?? null
 })
 
 const clubMatch = computed(() => {
-  if (!currentMatch.value || !selectedClubSeason.value) return null
-  const clubId = selectedClubSeason.value.club.id
+  if (!currentMatch.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
   const m = currentMatch.value
   if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch
   if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch
@@ -463,32 +484,53 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { score: number | null; status: string | null; statsImportStatus: string | null }>()
+  const map = new Map<string, { score: number | null; club: string | null; aflClubId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       score: pm.score ?? null,
-      status: pm.status ?? null,
-      statsImportStatus: pm.aflPlayerMatch?.clubMatch?.match?.statsImportStatus ?? null,
+      club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null,
+      aflClubId: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? null,
     })
   }
   return map
 })
 
 const squad = computed<SquadPlayer[]>(() => {
-  if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } }; toRoundId?: string | null }) => {
+  if (!clubSeasonData.value) return []
+  return clubSeasonData.value.players.nodes.map((r: {
+    id: string
+    player: { name: string }
+    aflPlayerSeason?: { clubSeason?: { club?: { id: string; name: string } | null } | null } | null
+    toRoundId?: string | null
+  }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
     return {
       id: r.id,
       name: r.player.name,
-      club: r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
+      club: pm?.club ?? r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
+      aflClubId: pm?.aflClubId ?? r.aflPlayerSeason?.clubSeason?.club?.id ?? null,
       score: pm?.score ?? null,
-      status: pm?.status ?? null,
-      statsImportStatus: pm?.statsImportStatus ?? null,
       toRoundId: r.toRoundId ?? null,
     }
   })
 })
+
+// On-the-fly helpers using the map — no stale values on players
+function playerMatchInfo(player: SquadPlayer) {
+  return player.aflClubId ? (aflClubMatchMap.value[player.aflClubId] ?? null) : null
+}
+
+function playerStatus(player: SquadPlayer) {
+  return derivePlayerStatus(playerMatchInfo(player)?.statsImportStatus, player.score)
+}
+
+function playerShowScore(player: SquadPlayer) {
+  return computeShowScore(playerMatchInfo(player)?.statsImportStatus, player.score)
+}
+
+function playerAflMatchRoute(player: SquadPlayer) {
+  return aflMatchRoute(playerMatchInfo(player))
+}
 
 // ── Team state ──────────────────────────────────────────────────────────────
 
@@ -550,10 +592,9 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
     const player: SquadPlayer = {
       id: pm.playerSeasonId,
       name: pm.player.name,
-      club: squadEntry?.club ?? null,
+      club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? squadEntry?.club ?? null,
+      aflClubId: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? squadEntry?.aflClubId ?? null,
       score: pm.score ?? null,
-      status: pm.status ?? null,
-      statsImportStatus: pm.aflPlayerMatch?.clubMatch?.match?.statsImportStatus ?? null,
       toRoundId: squadEntry?.toRoundId ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
@@ -662,10 +703,6 @@ function positionShort(key: string): string {
   return positions.find(p => p.key === key)?.short ?? key
 }
 
-function showScore(player: SquadPlayer): boolean {
-  return player.statsImportStatus != null && player.statsImportStatus !== 'no_data'
-}
-
 // ── Team management ─────────────────────────────────────────────────────────
 
 function addToTeam(key: PositionKey, player: SquadPlayer) {
@@ -737,7 +774,7 @@ function setInterchange(value: string) {
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
-  refetchQueries: [{ query: GET_FFL_TEAM_BUILDER, variables: { seasonId: props.seasonId } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: props.roundId } }],
   awaitRefetchQueries: true,
 }))
 const submitting = ref(false)

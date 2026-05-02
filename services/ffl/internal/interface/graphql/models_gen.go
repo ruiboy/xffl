@@ -14,6 +14,12 @@ type AFLPlayerSeason struct {
 
 func (AFLPlayerSeason) IsEntity() {}
 
+type AFLRound struct {
+	ID string `json:"id"`
+}
+
+func (AFLRound) IsEntity() {}
+
 type AFLSeason struct {
 	ID string `json:"id"`
 }
@@ -104,16 +110,17 @@ type FFLPlayer struct {
 }
 
 type FFLPlayerMatch struct {
-	ID                  string          `json:"id"`
-	PlayerSeasonID      string          `json:"playerSeasonId"`
-	Player              *FFLPlayer      `json:"player"`
-	Position            *string         `json:"position,omitempty"`
-	Status              *string         `json:"status,omitempty"`
-	BackupPositions     *string         `json:"backupPositions,omitempty"`
-	InterchangePosition *string         `json:"interchangePosition,omitempty"`
-	Score               int             `json:"score"`
-	AflPlayerMatchID    *string         `json:"aflPlayerMatchId,omitempty"`
-	AflPlayerMatch      *AFLPlayerMatch `json:"aflPlayerMatch,omitempty"`
+	ID                  string           `json:"id"`
+	PlayerSeasonID      string           `json:"playerSeasonId"`
+	PlayerSeason        *FFLPlayerSeason `json:"playerSeason"`
+	Player              *FFLPlayer       `json:"player"`
+	Position            *string          `json:"position,omitempty"`
+	Status              *string          `json:"status,omitempty"`
+	BackupPositions     *string          `json:"backupPositions,omitempty"`
+	InterchangePosition *string          `json:"interchangePosition,omitempty"`
+	Score               int              `json:"score"`
+	AflPlayerMatchID    *string          `json:"aflPlayerMatchId,omitempty"`
+	AflPlayerMatch      *AFLPlayerMatch  `json:"aflPlayerMatch,omitempty"`
 }
 
 type FFLPlayerSeason struct {
@@ -134,6 +141,7 @@ type FFLPlayerSeasonConnection struct {
 }
 
 type FFLPlayerSeasonFilter struct {
+	// Not supported
 	Active *bool `json:"active,omitempty"`
 }
 
@@ -141,6 +149,7 @@ type FFLRound struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
 	AflRoundID *string     `json:"aflRoundId,omitempty"`
+	AflRound   *AFLRound   `json:"aflRound,omitempty"`
 	Season     *FFLSeason  `json:"season"`
 	Matches    []*FFLMatch `json:"matches"`
 }

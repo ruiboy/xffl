@@ -105,6 +105,24 @@ func (r *fFLMatchResolver) AwayClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	return convertClubMatch(cm, club), nil
 }
 
+// PlayerSeason is the resolver for the playerSeason field.
+func (r *fFLPlayerMatchResolver) PlayerSeason(ctx context.Context, obj *FFLPlayerMatch) (*FFLPlayerSeason, error) {
+	psID, err := fromID(obj.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.Queries.GetPlayerSeasonByID(ctx, psID)
+	if err != nil {
+		return nil, err
+	}
+	loaders := LoadersFromCtx(ctx)
+	player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, psID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, *player), nil
+}
+
 // AflPlayerMatchID is the resolver for the aflPlayerMatchId field.
 func (r *fFLPlayerMatchResolver) AflPlayerMatchID(ctx context.Context, obj *FFLPlayerMatch) (*string, error) {
 	return obj.AflPlayerMatchID, nil
@@ -126,6 +144,14 @@ func (r *fFLPlayerSeasonResolver) AflPlayerSeason(ctx context.Context, obj *FFLP
 		return nil, nil
 	}
 	return &AFLPlayerSeason{ID: *obj.AflPlayerSeasonID}, nil
+}
+
+// AflRound is the resolver for the aflRound field.
+func (r *fFLRoundResolver) AflRound(ctx context.Context, obj *FFLRound) (*AFLRound, error) {
+	if obj.AflRoundID == nil {
+		return nil, nil
+	}
+	return &AFLRound{ID: *obj.AflRoundID}, nil
 }
 
 // Season is the resolver for the season field.

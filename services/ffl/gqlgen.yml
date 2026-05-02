@@ -37,6 +37,7 @@ models:
     fields:
       season: { resolver: true }
       matches: { resolver: true }
+      aflRound: { resolver: true }
 
   FFLMatch:
     fields:
@@ -57,5 +58,6 @@ models:
 
   FFLPlayerMatch:
     fields:
+      playerSeason: { resolver: true }
       aflPlayerMatchId: { resolver: true }
       aflPlayerMatch: { resolver: true }

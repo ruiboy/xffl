@@ -55,6 +55,7 @@ type AFLPlayerMatch struct {
 	ID             string        `json:"id"`
 	PlayerSeasonID string        `json:"playerSeasonId"`
 	ClubMatchID    string        `json:"clubMatchId"`
+	ClubMatch      *AFLClubMatch `json:"clubMatch,omitempty"`
 	Player         *AFLPlayer    `json:"player"`
 	Status         string        `json:"status"`
 	Kicks          int           `json:"kicks"`
@@ -66,7 +67,6 @@ type AFLPlayerMatch struct {
 	Behinds        int           `json:"behinds"`
 	Disposals      int           `json:"disposals"`
 	Score          int           `json:"score"`
-	ClubMatch      *AFLClubMatch `json:"clubMatch,omitempty"`
 }
 
 func (AFLPlayerMatch) IsEntity() {}
@@ -95,6 +95,8 @@ type AFLRound struct {
 	Season  *AFLSeason  `json:"season"`
 	Matches []*AFLMatch `json:"matches"`
 }
+
+func (AFLRound) IsEntity() {}
 
 type AFLSeason struct {
 	ID            string                     `json:"id"`
