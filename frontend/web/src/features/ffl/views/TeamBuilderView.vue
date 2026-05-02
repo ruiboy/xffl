@@ -291,6 +291,47 @@
               </div>
               <p v-if="availablePlayers.length === 0" class="text-sm text-text-faint">All players assigned</p>
             </div>
+            <template v-if="tradedPlayers.length > 0">
+              <button
+                @click="showTraded = !showTraded"
+                class="flex items-center gap-1.5 text-xs font-medium text-text-faint uppercase tracking-wide mt-4 mb-2 hover:text-text-muted transition-colors"
+              >
+                <span>{{ showTraded ? '▾' : '▸' }}</span>
+                Traded ({{ tradedPlayers.length }})
+              </button>
+              <div v-if="showTraded" class="space-y-1">
+                <div
+                  v-for="player in tradedPlayers"
+                  :key="player.id"
+                  class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 opacity-40"
+                >
+                  <div>
+                    <div class="font-medium text-sm">{{ player.name }}</div>
+                    <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button
+                      v-for="pos in positions"
+                      :key="pos.key"
+                      class="rounded px-2 py-0.5 text-xs transition-colors"
+                      :class="[
+                        isPositionFull(pos.key) ? 'opacity-30 cursor-not-allowed' : '',
+                        pos.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-muted hover:bg-control-hover hover:text-text'
+                      ]"
+                      :disabled="isPositionFull(pos.key)"
+                      @click="addToTeam(pos.key, player)"
+                    >{{ pos.short }}</button>
+                    <span class="w-px h-4 bg-border mx-0.5 shrink-0"></span>
+                    <button
+                      class="rounded px-2 py-0.5 text-xs text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                      :disabled="benchDualFull"
+                      :class="{ 'opacity-30 cursor-not-allowed': benchDualFull }"
+                      @click="addBenchDual(player)"
+                    >B</button>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </template>
@@ -336,6 +377,7 @@ interface SquadPlayer {
   club: string | null
   score: number | null
   status: string | null
+  toRoundId: string | null
 }
 
 interface Slot {
@@ -415,12 +457,13 @@ const clubMatch = computed(() => {
 
 const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } } }) => ({
+  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } }; toRoundId?: string | null }) => ({
     id: r.id,
     name: r.player.name,
     club: r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
     score: null,
     status: null,
+    toRoundId: r.toRoundId ?? null,
   }))
 })
 
@@ -530,8 +573,14 @@ const assignedPlayerIds = computed(() => {
 })
 
 const availablePlayers = computed(() =>
-  squad.value.filter(p => !assignedPlayerIds.value.has(p.id))
+  squad.value.filter(p => !p.toRoundId && !assignedPlayerIds.value.has(p.id))
 )
+
+const tradedPlayers = computed(() =>
+  squad.value.filter(p => !!p.toRoundId && !assignedPlayerIds.value.has(p.id))
+)
+
+const showTraded = ref(false)
 
 const starterCount = computed(() => {
   let count = 0

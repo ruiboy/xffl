@@ -123,6 +123,68 @@
                 </tr>
               </template>
             </template>
+            <template v-if="tradedPlayers.length > 0">
+              <tr><td colspan="4" class="pt-4 pb-1">
+                <button
+                  @click="showTraded = !showTraded"
+                  class="flex items-center gap-1.5 text-xs font-medium text-text-faint uppercase tracking-wide hover:text-text-muted transition-colors"
+                >
+                  <span>{{ showTraded ? '▾' : '▸' }}</span>
+                  Traded ({{ tradedPlayers.length }})
+                </button>
+              </td></tr>
+              <template v-if="showTraded" v-for="row in tradedPlayers" :key="row.id">
+                <tr
+                  class="opacity-40"
+                  :class="[
+                    managing ? 'cursor-pointer hover:opacity-60' : '',
+                    expandedId === row.id ? '' : 'border-b border-border-subtle'
+                  ]"
+                  @click="managing && toggleRow(row)"
+                >
+                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                  <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
+                  <td class="py-2">
+                    <div class="flex gap-0.5">
+                      <span
+                        v-for="round in rounds"
+                        :key="round.id"
+                        class="w-5 text-center text-xs font-mono inline-block"
+                        :class="roundColor(row.id, round.id)"
+                      >{{ roundLetter(row.id, round.id) }}</span>
+                    </div>
+                  </td>
+                  <td v-if="isMyClub && managing" class="py-2 px-2"></td>
+                </tr>
+                <tr v-if="expandedId === row.id" class="border-b border-border-subtle opacity-40">
+                  <td colspan="4" class="pb-3 pt-1 px-0">
+                    <div class="flex gap-4">
+                      <div class="flex flex-col gap-2 text-xs shrink-0">
+                        <div><div class="text-text-muted">From</div><div class="text-text">{{ roundName(row.fromRoundId) }}</div></div>
+                        <div><div class="text-text-muted">To</div><div class="text-text">{{ roundName(row.toRoundId) }}</div></div>
+                        <div><div class="text-text-muted">Cost</div><div class="text-text">{{ formatCost(row.costCents) }}</div></div>
+                      </div>
+                      <div class="flex-1 flex flex-col" @click.stop>
+                        <textarea
+                          v-model="expandedNotes"
+                          rows="3"
+                          placeholder="Add notes..."
+                          class="flex-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none resize-none"
+                        />
+                        <div class="flex justify-end mt-2">
+                          <button
+                            v-if="expandedDirty"
+                            @click="saveExpanded"
+                            :disabled="expandedSubmitting"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium bg-active text-active-text hover:opacity-90 transition-colors disabled:opacity-40"
+                          >{{ expandedSubmitting ? '…' : 'Save' }}</button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </template>
           </tbody>
         </table>
       </div>
@@ -250,6 +312,7 @@ const props = defineProps<{ seasonId: string; clubId: string }>()
 
 const { selectedClubId, liveRoundId } = useFflState()
 const managing = ref(false)
+const showTraded = ref(false)
 
 const isMyClub = computed(() => !!selectedClubId.value && props.clubId === selectedClubId.value)
 
@@ -271,14 +334,19 @@ const breadcrumbs = computed(() => {
   ]
 })
 
+const byLastName = (a: { player: { name: string } }, b: { player: { name: string } }) => {
+  const lastA = a.player.name.split(' ').pop()?.toLowerCase() ?? ''
+  const lastB = b.player.name.split(' ').pop()?.toLowerCase() ?? ''
+  return lastA.localeCompare(lastB)
+}
+
 const players = computed(() => {
   const nodes = clubSeason.value?.players?.nodes ?? []
-  return [...nodes].sort((a, b) => {
-    const lastA = a.player.name.split(' ').pop()?.toLowerCase() ?? ''
-    const lastB = b.player.name.split(' ').pop()?.toLowerCase() ?? ''
-    return lastA.localeCompare(lastB)
-  })
+  return [...nodes].sort(byLastName)
 })
+
+const activePlayers = computed(() => players.value.filter((p: PlayerSeasonRow) => !p.toRoundId))
+const tradedPlayers = computed(() => [...players.value.filter((p: PlayerSeasonRow) => !!p.toRoundId)].sort(byLastName))
 
 // --- Round history ---
 
@@ -324,11 +392,11 @@ function roundLabel(name: string): string {
 // --- Position grouping (recency-weighted) ---
 
 const groupedPlayers = computed(() => {
-  type P = typeof players.value[number]
+  type P = typeof activePlayers.value[number]
   const buckets = new Map<string | null, P[]>(
     [...POSITION_ORDER.map(p => [p, []] as [string, P[]]), [null, []]]
   )
-  for (const p of players.value) {
+  for (const p of activePlayers.value) {
     const pos = primaryPosition(p.id, playerRoundMap.value, rounds.value)
     buckets.get(POSITION_ORDER.includes(pos as typeof POSITION_ORDER[number]) ? pos : null)!.push(p)
   }

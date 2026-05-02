@@ -15,6 +15,7 @@ export const GET_FFL_TEAM_BUILDER = gql`
             aflPlayerSeason {
               clubSeason { club { name } }
             }
+            toRoundId
           }
         }
       }

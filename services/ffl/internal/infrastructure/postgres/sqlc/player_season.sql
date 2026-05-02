@@ -7,7 +7,8 @@ WHERE ps.id = ANY(@player_season_ids::int[]) AND ps.deleted_at IS NULL;
 -- name: FindPlayerSeasonsByClubSeasonID :many
 SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 FROM ffl.player_season
-WHERE club_season_id = $1 AND deleted_at IS NULL AND to_round_id IS NULL;
+WHERE club_season_id = $1 AND deleted_at IS NULL
+ORDER BY to_round_id IS NOT NULL, id;
 
 -- name: FindPlayerSeasonByID :one
 SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
