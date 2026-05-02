@@ -75,11 +75,14 @@ func main() {
 	playerLookup := rpc.NewAFLPlayerLookup(aflBaseURL)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, dispatcher, application.EventRepos{
-		Rounds:        pg.NewRoundRepository(q),
-		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-		PlayerMatches: pg.NewPlayerMatchRepository(q),
-	}, playerLookup)
+	commands := application.NewCommands(db, dispatcher, application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+		},
+		PlayerLookup: playerLookup,
+	})
 
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
 	go func() {

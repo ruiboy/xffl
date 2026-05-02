@@ -31,6 +31,14 @@ type EventRepos struct {
 	PlayerMatches domain.PlayerMatchRepository
 }
 
+// CommandsDeps bundles the dependencies Commands needs beyond the transaction
+// manager and event dispatcher. Grouping them in a struct keeps callsites
+// labelled and stable as new dependencies are added.
+type CommandsDeps struct {
+	EventRepos   EventRepos
+	PlayerLookup PlayerLookup
+}
+
 // Commands handles all write operations for the FFL service.
 type Commands struct {
 	tx           TxManager
@@ -39,8 +47,8 @@ type Commands struct {
 	playerLookup PlayerLookup
 }
 
-func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, eventRepos EventRepos, playerLookup PlayerLookup) *Commands {
-	return &Commands{tx: tx, dispatcher: dispatcher, eventRepos: eventRepos, playerLookup: playerLookup}
+func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, deps CommandsDeps) *Commands {
+	return &Commands{tx: tx, dispatcher: dispatcher, eventRepos: deps.EventRepos, playerLookup: deps.PlayerLookup}
 }
 
 // CreatePlayer creates a new player linked to an AFL player.

@@ -48,11 +48,14 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New(), application.EventRepos{
-		Rounds:        pg.NewRoundRepository(q),
-		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-		PlayerMatches: pg.NewPlayerMatchRepository(q),
-	}, &stubPlayerLookup{pool: pool})
+	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+		},
+		PlayerLookup: &stubPlayerLookup{pool: pool},
+	})
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

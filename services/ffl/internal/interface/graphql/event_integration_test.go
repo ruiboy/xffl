@@ -153,11 +153,14 @@ func setupCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application
 	q := sqlcgen.New(pool)
 	db := pg.NewDB(pool)
 	dispatcher := memevents.New()
-	commands := application.NewCommands(db, dispatcher, application.EventRepos{
-		Rounds:        pg.NewRoundRepository(q),
-		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-		PlayerMatches: pg.NewPlayerMatchRepository(q),
-	}, &stubPlayerLookup{pool: pool})
+	commands := application.NewCommands(db, dispatcher, application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+		},
+		PlayerLookup: &stubPlayerLookup{pool: pool},
+	})
 	return commands, dispatcher
 }
 
