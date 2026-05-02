@@ -34,12 +34,12 @@ INSERT INTO ffl.club_season (club_id, season_id) VALUES
     ((SELECT id FROM ffl.club WHERE name = 'Ruiboys'), (SELECT id FROM ffl.season WHERE name = 'FFL 2026')),
     ((SELECT id FROM ffl.club WHERE name = 'The Howling Cows'),     (SELECT id FROM ffl.season WHERE name = 'FFL 2026'));
 
--- Players: Ruiboys use Adelaide players, The Howling Cows use Brisbane players
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN ('Jordan Dawson', 'Wayne Milera');
+-- Players: Ruiboys use Adelaide players, The Howling Cows use Brisbane players.
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name IN ('Jordan Dawson', 'Wayne Milera');
 
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, ap.name FROM afl.player ap WHERE ap.name IN (
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name IN (
     'Henry Smith', 'Hugh McCluggage',
     'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
 );

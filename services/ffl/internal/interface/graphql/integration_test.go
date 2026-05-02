@@ -151,7 +151,7 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Player (linked to AFL player)
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Test Player', $1) RETURNING id",
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id",
 		ids.aflPlayerID).Scan(&ids.playerID))
 
 	// Player season
@@ -328,7 +328,7 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 						club { name }
 						score
 						playerMatches {
-							player { name }
+							player { aflPlayer { id } }
 							position
 							status
 							score
@@ -359,7 +359,9 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 						Score         int `json:"score"`
 						PlayerMatches []struct {
 							Player struct {
-								Name string `json:"name"`
+								AflPlayer struct {
+									ID string `json:"id"`
+								} `json:"aflPlayer"`
 							} `json:"player"`
 							Position *string `json:"position"`
 							Status   *string `json:"status"`
@@ -401,7 +403,10 @@ func TestFflSeasonGraphTraversal(t *testing.T) {
 	t.Run("player match has correct player, position and score", func(t *testing.T) {
 		require.Len(t, match.HomeClubMatch.PlayerMatches, 1)
 		pm := match.HomeClubMatch.PlayerMatches[0]
-		assert.Equal(t, "Test Player", pm.Player.Name)
+		// aflPlayer.name is resolved via federation; the FFL subgraph in
+		// isolation only exposes the AFLPlayer stub by id. End-to-end name
+		// resolution is covered by the e2e suite.
+		assert.NotEmpty(t, pm.Player.AflPlayer.ID)
 		require.NotNil(t, pm.Position)
 		assert.Equal(t, "goals", *pm.Position)
 		assert.Equal(t, 15, pm.Score)
@@ -563,98 +568,9 @@ func TestFflClubSeason(t *testing.T) {
 	})
 }
 
-func TestCreateFFLPlayer(t *testing.T) {
-	pool := connectDB(t)
-	seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	ctx := context.Background()
-	var aflPlayerID2 int
-	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('New AFL Player') RETURNING id").Scan(&aflPlayerID2))
-
-	aflPID := fmt.Sprintf("%d", aflPlayerID2)
-	result := execQuery(t, server, `mutation {
-		createFFLPlayer(input: { name: "New Player", aflPlayerId: "`+aflPID+`" }) {
-			id
-			name
-		}
-	}`)
-
-	require.Empty(t, result.Errors)
-
-	var data struct {
-		CreateFFLPlayer struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"createFFLPlayer"`
-	}
-	require.NoError(t, json.Unmarshal(result.Data, &data))
-
-	t.Run("created player has correct name and non-empty id", func(t *testing.T) {
-		assert.Equal(t, "New Player", data.CreateFFLPlayer.Name)
-		assert.NotEmpty(t, data.CreateFFLPlayer.ID)
-	})
-}
-
-func TestUpdateFFLPlayer(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	playerID := fmt.Sprintf("%d", ids.playerID)
-	result := execQuery(t, server, `mutation {
-		updateFFLPlayer(input: { id: "`+playerID+`", name: "Renamed Player" }) {
-			id
-			name
-		}
-	}`)
-
-	require.Empty(t, result.Errors)
-
-	var data struct {
-		UpdateFFLPlayer struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"updateFFLPlayer"`
-	}
-	require.NoError(t, json.Unmarshal(result.Data, &data))
-
-	t.Run("player name is updated", func(t *testing.T) {
-		assert.Equal(t, "Renamed Player", data.UpdateFFLPlayer.Name)
-	})
-}
-
-func TestDeleteFFLPlayer(t *testing.T) {
-	pool := connectDB(t)
-	seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	ctx := context.Background()
-	var aflPID int
-	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.player (name) VALUES ('Temp AFL') RETURNING id").Scan(&aflPID))
-
-	aflPIDStr := fmt.Sprintf("%d", aflPID)
-	createResult := execQuery(t, server, `mutation {
-		createFFLPlayer(input: { name: "Temp Player", aflPlayerId: "`+aflPIDStr+`" }) { id }
-	}`)
-	var created struct {
-		CreateFFLPlayer struct {
-			ID string `json:"id"`
-		} `json:"createFFLPlayer"`
-	}
-	require.NoError(t, json.Unmarshal(createResult.Data, &created))
-
-	result := execQuery(t, server, `mutation {
-		deleteFFLPlayer(id: "`+created.CreateFFLPlayer.ID+`")
-	}`)
-
-	t.Run("delete returns no errors", func(t *testing.T) {
-		assert.Empty(t, result.Errors)
-	})
-}
+// createFFLPlayer / updateFFLPlayer / deleteFFLPlayer mutations were retired
+// alongside ffl.player.drv_name — FFL players are now created implicitly by
+// addFFLPlayerToSeason and identified by their afl_player_id link.
 
 func TestCalculateFFLFantasyScore(t *testing.T) {
 	pool := connectDB(t)
@@ -676,7 +592,7 @@ func TestCalculateFFLFantasyScore(t *testing.T) {
 			hitouts: 0
 		}) {
 			id
-			player { name }
+			player { aflPlayer { id } }
 			position
 			score
 		}
@@ -688,7 +604,9 @@ func TestCalculateFFLFantasyScore(t *testing.T) {
 		CalculateFFLFantasyScore struct {
 			ID     string `json:"id"`
 			Player struct {
-				Name string `json:"name"`
+				AflPlayer struct {
+					ID string `json:"id"`
+				} `json:"aflPlayer"`
 			} `json:"player"`
 			Position *string `json:"position"`
 			Score    int     `json:"score"`
@@ -697,7 +615,7 @@ func TestCalculateFFLFantasyScore(t *testing.T) {
 	require.NoError(t, json.Unmarshal(result.Data, &data))
 
 	t.Run("player match score is goals multiplied by 5", func(t *testing.T) {
-		assert.Equal(t, "Test Player", data.CalculateFFLFantasyScore.Player.Name)
+		assert.NotEmpty(t, data.CalculateFFLFantasyScore.Player.AflPlayer.ID)
 		assert.Equal(t, 15, data.CalculateFFLFantasyScore.Score)
 	})
 }
@@ -831,8 +749,8 @@ func seedExtraPlayers(t *testing.T, pool *pgxpool.Pool, ids testIDs, count int) 
 		require.NoError(t, pool.QueryRow(ctx,
 			fmt.Sprintf("INSERT INTO afl.player (name) VALUES ('Extra Player %d') RETURNING id", i)).Scan(&aflID))
 		require.NoError(t, pool.QueryRow(ctx,
-			"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ($1, $2) RETURNING id",
-			fmt.Sprintf("Extra Player %d", i), aflID).Scan(&playerID))
+			"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id",
+			aflID).Scan(&playerID))
 		require.NoError(t, pool.QueryRow(ctx,
 			"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
 			playerID, ids.homeClubSeaID).Scan(&psID))
@@ -1129,7 +1047,7 @@ func TestAddFFLPlayerToSeason_FromAFLPlayerSeason(t *testing.T) {
 	clubSeasonID := fmt.Sprintf("%d", ids.homeClubSeaID)
 	roundIDStr := fmt.Sprintf("%d", ids.roundID)
 
-	t.Run("creates a new FFL player (drv_name=\"\") and player_season linked to the AFL player_season", func(t *testing.T) {
+	t.Run("creates a new FFL player and player_season linked to the AFL player_season", func(t *testing.T) {
 		result := execQuery(t, server, `mutation {
 			addFFLPlayerToSeason(input: {
 				clubSeasonId: "`+clubSeasonID+`"
@@ -1161,11 +1079,12 @@ func TestAddFFLPlayerToSeason_FromAFLPlayerSeason(t *testing.T) {
 		require.NotNil(t, data.AddFFLPlayerToSeason.FromRoundID)
 		assert.Equal(t, roundIDStr, *data.AddFFLPlayerToSeason.FromRoundID)
 
-		// drv_name retired — must be empty for newly-created rows.
-		var drvName string
+		// drv_name has been dropped from ffl.player — verify the row exists
+		// linked to the AFL player and nothing more.
+		var fflPlayerCount int
 		require.NoError(t, pool.QueryRow(ctx,
-			"SELECT drv_name FROM ffl.player WHERE afl_player_id = $1", aflPlayerID).Scan(&drvName))
-		assert.Equal(t, "", drvName)
+			"SELECT COUNT(*) FROM ffl.player WHERE afl_player_id = $1", aflPlayerID).Scan(&fflPlayerCount))
+		assert.Equal(t, 1, fflPlayerCount)
 	})
 
 	t.Run("reuses the existing FFL player when called again for a different club season", func(t *testing.T) {
@@ -1311,7 +1230,7 @@ func TestFflClubSeason_PageInfoTotalCount(t *testing.T) {
 			players {
 				nodes {
 					id
-					player { name }
+					player { aflPlayer { id } }
 					fromRoundId
 					toRoundId
 					notes

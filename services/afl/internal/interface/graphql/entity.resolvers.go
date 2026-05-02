@@ -9,6 +9,19 @@ import (
 	"context"
 )
 
+// FindAFLPlayerByID is the resolver for the findAFLPlayerByID field.
+func (r *entityResolver) FindAFLPlayerByID(ctx context.Context, id string) (*AFLPlayer, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	p, err := r.Queries.GetPlayer(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayer(p), nil
+}
+
 // FindAFLPlayerMatchByID is the resolver for the findAFLPlayerMatchByID field.
 func (r *entityResolver) FindAFLPlayerMatchByID(ctx context.Context, id string) (*AFLPlayerMatch, error) {
 	parsed, err := fromID(id)

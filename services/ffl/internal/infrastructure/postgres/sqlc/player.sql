@@ -1,28 +1,21 @@
 -- name: FindAllPlayers :many
-SELECT id, drv_name, afl_player_id
+SELECT id, afl_player_id
 FROM ffl.player
 WHERE deleted_at IS NULL
-ORDER BY drv_name;
+ORDER BY id;
 
 -- name: FindPlayerByID :one
-SELECT id, drv_name, afl_player_id
+SELECT id, afl_player_id
 FROM ffl.player
 WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: CreatePlayer :one
-INSERT INTO ffl.player (drv_name, afl_player_id)
-VALUES ($1, $2)
-RETURNING id, drv_name, afl_player_id;
-
--- name: UpdatePlayer :one
-UPDATE ffl.player
-SET drv_name = $2,
-    updated_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, drv_name, afl_player_id;
+INSERT INTO ffl.player (afl_player_id)
+VALUES ($1)
+RETURNING id, afl_player_id;
 
 -- name: FindPlayerByAFLPlayerID :one
-SELECT id, drv_name, afl_player_id
+SELECT id, afl_player_id
 FROM ffl.player
 WHERE afl_player_id = $1 AND deleted_at IS NULL;
 

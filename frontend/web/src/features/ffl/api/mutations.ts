@@ -32,7 +32,7 @@ export const SET_FFL_TEAM = gql`
     setFFLTeam(input: $input) {
       id
       playerSeasonId
-      player { id name }
+      player { id aflPlayer { id name } }
       position
       status
       backupPositions

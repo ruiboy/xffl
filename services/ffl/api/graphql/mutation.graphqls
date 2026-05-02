@@ -1,7 +1,4 @@
 type Mutation {
-  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer!
-  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
-  deleteFFLPlayer(id: ID!): Boolean!
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean!
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
@@ -19,16 +16,6 @@ type Mutation {
 input UpdateFFLPlayerSeasonInput {
   id: ID!
   notes: String
-}
-
-input CreateFFLPlayerInput {
-  name: String!
-  aflPlayerId: ID!
-}
-
-input UpdateFFLPlayerInput {
-  id: ID!
-  name: String!
 }
 
 input AddFFLPlayerToSeasonInput {

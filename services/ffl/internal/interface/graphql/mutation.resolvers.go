@@ -12,44 +12,6 @@ import (
 	"xffl/services/ffl/internal/domain"
 )
 
-// CreateFFLPlayer is the resolver for the createFFLPlayer field.
-func (r *mutationResolver) CreateFFLPlayer(ctx context.Context, input CreateFFLPlayerInput) (*FFLPlayer, error) {
-	aflPlayerID, err := fromID(input.AflPlayerID)
-	if err != nil {
-		return nil, err
-	}
-	p, err := r.Commands.CreatePlayer(ctx, input.Name, aflPlayerID)
-	if err != nil {
-		return nil, err
-	}
-	return convertPlayer(p), nil
-}
-
-// UpdateFFLPlayer is the resolver for the updateFFLPlayer field.
-func (r *mutationResolver) UpdateFFLPlayer(ctx context.Context, input UpdateFFLPlayerInput) (*FFLPlayer, error) {
-	id, err := fromID(input.ID)
-	if err != nil {
-		return nil, err
-	}
-	p, err := r.Commands.UpdatePlayer(ctx, id, input.Name)
-	if err != nil {
-		return nil, err
-	}
-	return convertPlayer(p), nil
-}
-
-// DeleteFFLPlayer is the resolver for the deleteFFLPlayer field.
-func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool, error) {
-	parsed, err := fromID(id)
-	if err != nil {
-		return false, err
-	}
-	if err := r.Commands.DeletePlayer(ctx, parsed); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 // AddFFLPlayerToSeason is the resolver for the addFFLPlayerToSeason field.
 func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFFLPlayerToSeasonInput) (*FFLPlayerSeason, error) {
 	clubSeasonID, err := fromID(input.ClubSeasonID)

@@ -105,6 +105,13 @@ func (r *fFLMatchResolver) AwayClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	return convertClubMatch(cm, club), nil
 }
 
+// AflPlayer is the resolver for the aflPlayer field. Returns a federation stub
+// so the router can resolve AFL-side fields (name, etc.) from the AFL subgraph
+// only when the client actually selects them.
+func (r *fFLPlayerResolver) AflPlayer(ctx context.Context, obj *FFLPlayer) (*AFLPlayer, error) {
+	return &AFLPlayer{ID: obj.AflPlayerID}, nil
+}
+
 // PlayerSeason is the resolver for the playerSeason field.
 func (r *fFLPlayerMatchResolver) PlayerSeason(ctx context.Context, obj *FFLPlayerMatch) (*FFLPlayerSeason, error) {
 	psID, err := fromID(obj.PlayerSeasonID)
@@ -387,6 +394,9 @@ func (r *Resolver) FFLClubSeason() FFLClubSeasonResolver { return &fFLClubSeason
 // FFLMatch returns FFLMatchResolver implementation.
 func (r *Resolver) FFLMatch() FFLMatchResolver { return &fFLMatchResolver{r} }
 
+// FFLPlayer returns FFLPlayerResolver implementation.
+func (r *Resolver) FFLPlayer() FFLPlayerResolver { return &fFLPlayerResolver{r} }
+
 // FFLPlayerMatch returns FFLPlayerMatchResolver implementation.
 func (r *Resolver) FFLPlayerMatch() FFLPlayerMatchResolver { return &fFLPlayerMatchResolver{r} }
 
@@ -405,6 +415,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type fFLClubMatchResolver struct{ *Resolver }
 type fFLClubSeasonResolver struct{ *Resolver }
 type fFLMatchResolver struct{ *Resolver }
+type fFLPlayerResolver struct{ *Resolver }
 type fFLPlayerMatchResolver struct{ *Resolver }
 type fFLPlayerSeasonResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }

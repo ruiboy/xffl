@@ -51,6 +51,8 @@ type AFLPlayer struct {
 	Name string `json:"name"`
 }
 
+func (AFLPlayer) IsEntity() {}
+
 type AFLPlayerMatch struct {
 	ID             string        `json:"id"`
 	PlayerSeasonID string        `json:"playerSeasonId"`

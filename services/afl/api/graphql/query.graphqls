@@ -76,7 +76,7 @@ type AFLClubMatch {
   match: AFLMatch
 }
 
-type AFLPlayer {
+type AFLPlayer @key(fields: "id") {
   id: ID!
   name: String!
 }

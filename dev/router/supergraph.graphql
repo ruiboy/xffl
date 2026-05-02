@@ -91,10 +91,11 @@ type AFLMatch
 }
 
 type AFLPlayer
-  @join__type(graph: AFL)
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
 {
   id: ID!
-  name: String!
+  name: String! @join__field(graph: AFL)
 }
 
 type AFLPlayerMatch
@@ -191,13 +192,6 @@ input ConfirmFFLTeamSubmissionInput
   players: [ConfirmedFFLPlayerInput!]!
 }
 
-input CreateFFLPlayerInput
-  @join__type(graph: FFL)
-{
-  name: String!
-  aflPlayerId: ID!
-}
-
 type FFLClub
   @join__type(graph: FFL)
 {
@@ -246,8 +240,8 @@ type FFLPlayer
   @join__type(graph: FFL)
 {
   id: ID!
-  name: String!
   aflPlayerId: ID!
+  aflPlayer: AFLPlayer!
 }
 
 type FFLPlayerMatch
@@ -363,9 +357,6 @@ type Mutation
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
-  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
-  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
-  deleteFFLPlayer(id: ID!): Boolean! @join__field(graph: FFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
@@ -461,13 +452,6 @@ input UpdateAFLPlayerMatchInput
   tackles: Int
   goals: Int
   behinds: Int
-}
-
-input UpdateFFLPlayerInput
-  @join__type(graph: FFL)
-{
-  id: ID!
-  name: String!
 }
 
 input UpdateFFLPlayerSeasonInput

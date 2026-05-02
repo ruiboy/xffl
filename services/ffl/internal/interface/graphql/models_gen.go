@@ -2,6 +2,12 @@
 
 package graphql
 
+type AFLPlayer struct {
+	ID string `json:"id"`
+}
+
+func (AFLPlayer) IsEntity() {}
+
 type AFLPlayerMatch struct {
 	ID string `json:"id"`
 }
@@ -56,11 +62,6 @@ type ConfirmedFFLPlayerInput struct {
 	Score               *int    `json:"score,omitempty"`
 }
 
-type CreateFFLPlayerInput struct {
-	Name        string `json:"name"`
-	AflPlayerID string `json:"aflPlayerId"`
-}
-
 type FFLClub struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -98,9 +99,9 @@ type FFLMatch struct {
 }
 
 type FFLPlayer struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	AflPlayerID string `json:"aflPlayerId"`
+	ID          string     `json:"id"`
+	AflPlayerID string     `json:"aflPlayerId"`
+	AflPlayer   *AFLPlayer `json:"aflPlayer"`
 }
 
 type FFLPlayerMatch struct {
@@ -209,11 +210,6 @@ type ResolvedPlayer struct {
 type SetFFLTeamInput struct {
 	ClubMatchID string                `json:"clubMatchId"`
 	Players     []*FFLTeamPlayerInput `json:"players"`
-}
-
-type UpdateFFLPlayerInput struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
 }
 
 type UpdateFFLPlayerSeasonInput struct {

@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	CreatePlayer(ctx context.Context, arg CreatePlayerParams) (CreatePlayerRow, error)
+	CreatePlayer(ctx context.Context, aflPlayerID int32) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error
@@ -43,7 +43,6 @@ type Querier interface {
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
-	UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (UpdatePlayerRow, error)
 	UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error)
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }

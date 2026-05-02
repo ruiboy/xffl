@@ -26,7 +26,7 @@
                 :is="pmAflMatchRoute(pm) ? 'router-link' : 'span'"
                 :to="pmAflMatchRoute(pm) ?? undefined"
                 class="font-medium hover:text-active transition-colors"
-              >{{ pm.player.name }}</component>
+              >{{ pm.player.aflPlayer.name }}</component>
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
@@ -50,7 +50,7 @@
                 :is="pmAflMatchRoute(pm) ? 'router-link' : 'span'"
                 :to="pmAflMatchRoute(pm) ?? undefined"
                 class="font-medium text-text-muted hover:text-active transition-colors"
-              >{{ pm.player.name }}</component>
+              >{{ pm.player.aflPlayer.name }}</component>
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2">
@@ -82,7 +82,7 @@ import { derivePlayerStatus, showScore, aflMatchRoute, type AflClubMatchMap } fr
 
 interface PlayerMatch {
   id: string
-  player: { name: string }
+  player: { aflPlayer: { name: string } }
   position: string | null
   status: string | null
   backupPositions: string | null

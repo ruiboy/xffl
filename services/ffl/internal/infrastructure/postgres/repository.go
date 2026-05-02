@@ -384,8 +384,8 @@ func intPtrToInt32Ptr(v *int) *int32 {
 	return &i
 }
 
-func playerFromRow(id int32, name string, aflPlayerID int32) domain.Player {
-	return domain.Player{ID: int(id), Name: name, AFLPlayerID: int(aflPlayerID)}
+func playerFromRow(id int32, aflPlayerID int32) domain.Player {
+	return domain.Player{ID: int(id), AFLPlayerID: int(aflPlayerID)}
 }
 
 func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error) {
@@ -395,7 +395,7 @@ func (r *PlayerRepository) FindAll(ctx context.Context) ([]domain.Player, error)
 	}
 	out := make([]domain.Player, len(rows))
 	for i, row := range rows {
-		out[i] = playerFromRow(row.ID, row.DrvName, row.AflPlayerID)
+		out[i] = playerFromRow(row.ID, row.AflPlayerID)
 	}
 	return out, nil
 }
@@ -405,7 +405,7 @@ func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player,
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) FindByAFLPlayerID(ctx context.Context, aflPlayerID int) (domain.Player, error) {
@@ -413,29 +413,15 @@ func (r *PlayerRepository) FindByAFLPlayerID(ctx context.Context, aflPlayerID in
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.AflPlayerID), nil
 }
 
-func (r *PlayerRepository) Create(ctx context.Context, name string, aflPlayerID int) (domain.Player, error) {
-	row, err := r.q.CreatePlayer(ctx, sqlcgen.CreatePlayerParams{
-		DrvName:     name,
-		AflPlayerID: int32(aflPlayerID),
-	})
+func (r *PlayerRepository) Create(ctx context.Context, aflPlayerID int) (domain.Player, error) {
+	row, err := r.q.CreatePlayer(ctx, int32(aflPlayerID))
 	if err != nil {
 		return domain.Player{}, err
 	}
-	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
-}
-
-func (r *PlayerRepository) Update(ctx context.Context, id int, name string) (domain.Player, error) {
-	row, err := r.q.UpdatePlayer(ctx, sqlcgen.UpdatePlayerParams{
-		ID:      int32(id),
-		DrvName: name,
-	})
-	if err != nil {
-		return domain.Player{}, err
-	}
-	return playerFromRow(row.ID, row.DrvName, row.AflPlayerID), nil
+	return playerFromRow(row.ID, row.AflPlayerID), nil
 }
 
 func (r *PlayerRepository) Delete(ctx context.Context, id int) error {
@@ -624,7 +610,7 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	}
 	out := make(map[int]domain.Player, len(rows))
 	for _, row := range rows {
-		out[int(row.PlayerSeasonID)] = domain.Player{ID: int(row.PlayerID), Name: row.PlayerName}
+		out[int(row.PlayerSeasonID)] = domain.Player{ID: int(row.PlayerID), AFLPlayerID: int(row.AflPlayerID)}
 	}
 	return out, nil
 }

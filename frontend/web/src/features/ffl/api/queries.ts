@@ -22,7 +22,7 @@ export const GET_FFL_CLUB_SEASON = gql`
       players {
         nodes {
           id
-          player { id name aflPlayerId }
+          player { id aflPlayerId aflPlayer { id name } }
           aflPlayerSeason {
             clubSeason {
               club { id name }
@@ -136,7 +136,7 @@ export const GET_FFL_ROUND = gql`
           playerMatches {
             id
             playerSeasonId
-            player { name }
+            player { aflPlayer { name } }
             position
             status
             backupPositions
@@ -156,7 +156,7 @@ export const GET_FFL_ROUND = gql`
           playerMatches {
             id
             playerSeasonId
-            player { name }
+            player { aflPlayer { name } }
             position
             status
             backupPositions
@@ -203,7 +203,7 @@ export const GET_FFL_MATCH = gql`
         playerMatches {
           id
           playerSeasonId
-          player { name }
+          player { aflPlayer { name } }
           position
           status
           backupPositions
@@ -223,7 +223,7 @@ export const GET_FFL_MATCH = gql`
         playerMatches {
           id
           playerSeasonId
-          player { name }
+          player { aflPlayer { name } }
           position
           status
           backupPositions
@@ -307,7 +307,7 @@ export const GET_FFL_SEASON = gql`
             playerMatches {
               id
               playerSeasonId
-              player { id name }
+              player { id aflPlayer { id name } }
               position
               status
               backupPositions
@@ -332,7 +332,7 @@ export const GET_FFL_SEASON = gql`
             playerMatches {
               id
               playerSeasonId
-              player { id name }
+              player { id aflPlayer { id name } }
               position
               status
               backupPositions

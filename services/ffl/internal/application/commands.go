@@ -51,42 +51,6 @@ func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, deps Commands
 	return &Commands{tx: tx, dispatcher: dispatcher, eventRepos: deps.EventRepos, playerLookup: deps.PlayerLookup}
 }
 
-// CreatePlayer creates a new player linked to an AFL player.
-func (c *Commands) CreatePlayer(ctx context.Context, name string, aflPlayerID int) (domain.Player, error) {
-	var result domain.Player
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		p, err := repos.Players.Create(ctx, name, aflPlayerID)
-		if err != nil {
-			return err
-		}
-		result = p
-		return nil
-	})
-	return result, err
-}
-
-
-// UpdatePlayer updates an existing player's name.
-func (c *Commands) UpdatePlayer(ctx context.Context, id int, name string) (domain.Player, error) {
-	var result domain.Player
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		p, err := repos.Players.Update(ctx, id, name)
-		if err != nil {
-			return err
-		}
-		result = p
-		return nil
-	})
-	return result, err
-}
-
-// DeletePlayer removes a player.
-func (c *Commands) DeletePlayer(ctx context.Context, id int) error {
-	return c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		return repos.Players.Delete(ctx, id)
-	})
-}
-
 // AddPlayerToSeason adds a player to a club season squad. The AFL player_season
 // ID is the only cross-service handle the caller needs to provide; the FFL
 // service resolves it to the underlying afl.player.id via Twirp and find-or-
@@ -101,9 +65,7 @@ func (c *Commands) AddPlayerToSeason(ctx context.Context, clubSeasonID, aflPlaye
 	err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		player, err := repos.Players.FindByAFLPlayerID(ctx, aflPlayerID)
 		if err != nil {
-			// drv_name is set to "" — it's a denormalized field being retired
-			// and will be dropped once UI traverses FFLPlayer.aflPlayer.name.
-			player, err = repos.Players.Create(ctx, "", aflPlayerID)
+			player, err = repos.Players.Create(ctx, aflPlayerID)
 			if err != nil {
 				return err
 			}

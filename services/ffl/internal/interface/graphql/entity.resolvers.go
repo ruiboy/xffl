@@ -7,8 +7,13 @@ package graphql
 
 import (
 	"context"
-	"fmt"
 )
+
+// FindAFLPlayerByID is the resolver for the findAFLPlayerByID field.
+// FFL is not the owner of AFLPlayer; return a stub so the router can fetch from the AFL subgraph.
+func (r *entityResolver) FindAFLPlayerByID(ctx context.Context, id string) (*AFLPlayer, error) {
+	return &AFLPlayer{ID: id}, nil
+}
 
 // FindAFLPlayerMatchByID is the resolver for the findAFLPlayerMatchByID field.
 // FFL is not the owner of AFLPlayerMatch; return a stub so the router can fetch from the AFL subgraph.
@@ -23,8 +28,9 @@ func (r *entityResolver) FindAFLPlayerSeasonByID(ctx context.Context, id string)
 }
 
 // FindAFLRoundByID is the resolver for the findAFLRoundByID field.
+// FFL is not the owner of AFLRound; return a stub so the router can fetch from the AFL subgraph.
 func (r *entityResolver) FindAFLRoundByID(ctx context.Context, id string) (*AFLRound, error) {
-	panic(fmt.Errorf("not implemented: FindAFLRoundByID - findAFLRoundByID"))
+	return &AFLRound{ID: id}, nil
 }
 
 // FindAFLSeasonByID is the resolver for the findAFLSeasonByID field.

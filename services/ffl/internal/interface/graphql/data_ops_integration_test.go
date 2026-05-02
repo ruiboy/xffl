@@ -98,7 +98,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 
 	var jeremyFflID int
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Jeremy Cameron', $1) RETURNING id",
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id",
 		jeremyAFLID).Scan(&jeremyFflID))
 
 	var jeremyPSID int

@@ -72,7 +72,7 @@
                   ]"
                   @click="managing && toggleRow(row)"
                 >
-                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                  <td class="py-2 pr-4 font-medium">{{ row.player.aflPlayer.name }}</td>
                   <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
@@ -86,7 +86,7 @@
                   </td>
                   <td v-if="isMyClub && managing" class="py-2 px-2 text-right" @click.stop>
                     <button
-                      @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
+                      @click="openRemoveModal(row.id, row.player.aflPlayer.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
                       aria-label="Remove"
                       class="text-red-400 hover:text-red-300 transition-colors"
                     >
@@ -142,7 +142,7 @@
                   ]"
                   @click="managing && toggleRow(row)"
                 >
-                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                  <td class="py-2 pr-4 font-medium">{{ row.player.aflPlayer.name }}</td>
                   <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
@@ -334,9 +334,9 @@ const breadcrumbs = computed(() => {
   ]
 })
 
-const byLastName = (a: { player: { name: string } }, b: { player: { name: string } }) => {
-  const lastA = a.player.name.split(' ').pop()?.toLowerCase() ?? ''
-  const lastB = b.player.name.split(' ').pop()?.toLowerCase() ?? ''
+const byLastName = (a: { player: { aflPlayer: { name: string } } }, b: { player: { aflPlayer: { name: string } } }) => {
+  const lastA = a.player.aflPlayer.name.split(' ').pop()?.toLowerCase() ?? ''
+  const lastB = b.player.aflPlayer.name.split(' ').pop()?.toLowerCase() ?? ''
   return lastA.localeCompare(lastB)
 }
 
@@ -543,7 +543,7 @@ async function confirmAdd() {
 // Inline row expansion
 interface PlayerSeasonRow {
   id: string
-  player: { id: string; name: string; aflPlayerId: string }
+  player: { id: string; aflPlayerId: string; aflPlayer: { id: string; name: string } }
   aflPlayerSeason?: { clubSeason?: { club?: { name: string } } } | null
   fromRoundId?: string | null
   toRoundId?: string | null

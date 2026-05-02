@@ -500,14 +500,14 @@ const squad = computed<SquadPlayer[]>(() => {
   if (!clubSeasonData.value) return []
   return clubSeasonData.value.players.nodes.map((r: {
     id: string
-    player: { name: string }
+    player: { aflPlayer: { name: string } }
     aflPlayerSeason?: { clubSeason?: { club?: { id: string; name: string } | null } | null } | null
     toRoundId?: string | null
   }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
     return {
       id: r.id,
-      name: r.player.name,
+      name: r.player.aflPlayer.name,
       club: pm?.club ?? r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
       aflClubId: pm?.aflClubId ?? r.aflPlayerSeason?.clubSeason?.club?.id ?? null,
       score: pm?.score ?? null,
@@ -592,7 +592,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
     const squadEntry = squad.value.find(s => s.id === pm.playerSeasonId)
     const player: SquadPlayer = {
       id: pm.playerSeasonId,
-      name: pm.player.name,
+      name: pm.player.aflPlayer.name,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? squadEntry?.club ?? null,
       aflClubId: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? squadEntry?.aflClubId ?? null,
       score: pm.score ?? null,

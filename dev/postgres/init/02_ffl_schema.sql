@@ -106,8 +106,7 @@ CREATE TABLE IF NOT EXISTS ffl.player (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    afl_player_id INTEGER NOT NULL,
-    drv_name VARCHAR(255) NOT NULL
+    afl_player_id INTEGER NOT NULL
 );
 
 -- Create player_season table
