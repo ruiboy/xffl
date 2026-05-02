@@ -269,6 +269,10 @@ type FFLPlayerSeason
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
   aflPlayerSeason: AFLPlayerSeason
+  fromRoundId: ID
+  toRoundId: ID
+  notes: String
+  costCents: Int
 }
 
 type FFLPlayerSeasonConnection
@@ -357,6 +361,7 @@ type Mutation
   deleteFFLPlayer(id: ID!): Boolean! @join__field(graph: FFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean! @join__field(graph: FFL)
+  updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
   addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason! @join__field(graph: FFL)
@@ -457,4 +462,11 @@ input UpdateFFLPlayerInput
 {
   id: ID!
   name: String!
+}
+
+input UpdateFFLPlayerSeasonInput
+  @join__type(graph: FFL)
+{
+  id: ID!
+  notes: String
 }

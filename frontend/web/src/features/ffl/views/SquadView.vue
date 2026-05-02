@@ -64,33 +64,64 @@
           <tbody>
             <template v-for="(group, gi) in groupedPlayers" :key="group.pos ?? 'bench'">
               <tr v-if="gi > 0"><td colspan="3" class="pt-3"></td></tr>
-              <tr
-                v-for="row in group.players"
-                :key="row.id"
-                class="border-b border-border-subtle hover:bg-surface-hover"
-              >
-                <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
-                <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
-                <td class="py-2">
-                  <div class="flex gap-0.5">
-                    <span
-                      v-for="round in rounds"
-                      :key="round.id"
-                      class="w-5 text-center text-xs font-mono inline-block"
-                      :class="roundColor(row.id, round.id)"
-                    >{{ roundLetter(row.id, round.id) }}</span>
-                  </div>
-                </td>
-                <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
-                  <button
-                    @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
-                    aria-label="Remove"
-                    class="text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    <IconBin class="w-3.5 h-3.5" />
-                  </button>
-                </td>
-              </tr>
+              <template v-for="row in group.players" :key="row.id">
+                <tr
+                  :class="[
+                    managing ? 'cursor-pointer hover:bg-surface-hover' : '',
+                    expandedId === row.id ? '' : 'border-b border-border-subtle'
+                  ]"
+                  @click="managing && toggleRow(row)"
+                >
+                  <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                  <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
+                  <td class="py-2">
+                    <div class="flex gap-0.5">
+                      <span
+                        v-for="round in rounds"
+                        :key="round.id"
+                        class="w-5 text-center text-xs font-mono inline-block"
+                        :class="roundColor(row.id, round.id)"
+                      >{{ roundLetter(row.id, round.id) }}</span>
+                    </div>
+                  </td>
+                  <td v-if="isMyClub && managing" class="py-2 px-2 text-right" @click.stop>
+                    <button
+                      @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
+                      aria-label="Remove"
+                      class="text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      <IconBin class="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="expandedId === row.id" class="border-b border-border-subtle">
+                  <td colspan="4" class="pb-3 pt-1 px-0">
+                    <div class="flex gap-4">
+                      <div class="flex flex-col gap-2 text-xs shrink-0">
+                        <div><div class="text-text-muted">From</div><div class="text-text">{{ roundName(row.fromRoundId) }}</div></div>
+                        <div><div class="text-text-muted">To</div><div class="text-text">{{ roundName(row.toRoundId) }}</div></div>
+                        <div><div class="text-text-muted">Cost</div><div class="text-text">{{ formatCost(row.costCents) }}</div></div>
+                      </div>
+                      <div class="flex-1 flex flex-col" @click.stop>
+                        <textarea
+                          v-model="expandedNotes"
+                          rows="3"
+                          placeholder="Add notes..."
+                          class="flex-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none resize-none"
+                        />
+                        <div class="flex justify-end mt-2">
+                          <button
+                            v-if="expandedDirty"
+                            @click="saveExpanded"
+                            :disabled="expandedSubmitting"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium bg-active text-active-text hover:opacity-90 transition-colors disabled:opacity-40"
+                          >{{ expandedSubmitting ? '…' : 'Save' }}</button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </template>
           </tbody>
         </table>
@@ -197,6 +228,7 @@
           </div>
         </div>
       </div>
+
     </Teleport>
   </div>
 </template>
@@ -205,7 +237,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_CLUB_SEASON, GET_AFL_PLAYER_SEASONS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
-import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER } from '../api/mutations'
+import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
@@ -365,6 +397,7 @@ const modalSubmitting = ref(false)
 
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
 const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
+const { mutate: updatePlayerSeasonMutation } = useMutation(UPDATE_FFL_PLAYER_SEASON)
 
 function defaultRoundId(): string {
   return liveRoundId.value || (rounds.value.at(-1)?.id ?? '')
@@ -441,9 +474,67 @@ async function confirmAdd() {
   }
 }
 
+// Inline row expansion
+interface PlayerSeasonRow {
+  id: string
+  player: { id: string; name: string; aflPlayerId: string }
+  aflPlayerSeason?: { clubSeason?: { club?: { name: string } } } | null
+  fromRoundId?: string | null
+  toRoundId?: string | null
+  notes?: string | null
+  costCents?: number | null
+}
+
+const expandedId = ref<string | null>(null)
+const expandedNotes = ref('')
+const expandedSubmitting = ref(false)
+const expandedDirty = computed(() => {
+  const row = players.value.find((p: PlayerSeasonRow) => p.id === expandedId.value)
+  return row != null && expandedNotes.value !== (row.notes ?? '')
+})
+
+function roundName(id: string | null | undefined): string {
+  if (!id) return '—'
+  return rounds.value.find((r: { id: string; name: string }) => r.id === id)?.name ?? '—'
+}
+
+function formatCost(cents: number | null | undefined): string {
+  if (cents == null) return '—'
+  return `$${(cents / 100).toFixed(2)}`
+}
+
+function toggleRow(row: PlayerSeasonRow) {
+  if (expandedId.value === row.id) {
+    expandedId.value = null
+    expandedNotes.value = ''
+  } else {
+    expandedId.value = row.id
+    expandedNotes.value = row.notes ?? ''
+  }
+}
+
+async function saveExpanded() {
+  if (!expandedId.value) return
+  expandedSubmitting.value = true
+  try {
+    await updatePlayerSeasonMutation({
+      input: {
+        id: expandedId.value,
+        notes: expandedNotes.value || null,
+      },
+    })
+    await refetchSquad()
+    flashSaved()
+  } finally {
+    expandedSubmitting.value = false
+  }
+}
+
 watch(managing, (val) => {
   if (!val) {
     cancelAddSearch()
+    expandedId.value = null
+    expandedNotes.value = ''
   }
 })
 

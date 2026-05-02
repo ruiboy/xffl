@@ -1,5 +1,15 @@
 import gql from 'graphql-tag'
 
+export const UPDATE_FFL_PLAYER_SEASON = gql`
+  mutation UpdateFFLPlayerSeason($input: UpdateFFLPlayerSeasonInput!) {
+    updateFFLPlayerSeason(input: $input) {
+      id
+      notes
+      costCents
+    }
+  }
+`
+
 export const ADD_FFL_PLAYER_TO_SEASON = gql`
   mutation AddFFLPlayerToSeason($input: AddFFLPlayerToSeasonInput!) {
     addFFLPlayerToSeason(input: $input) {

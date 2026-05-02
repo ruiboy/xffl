@@ -101,6 +101,8 @@ type FflPlayerSeason struct {
 	FromRoundID       *int32
 	ToRoundID         *int32
 	AflPlayerSeasonID *int32
+	Notes             *string
+	CostCents         *int32
 }
 
 type FflRound struct {

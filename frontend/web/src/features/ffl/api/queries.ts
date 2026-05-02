@@ -86,6 +86,10 @@ export const GET_FFL_CLUB_SEASON = gql`
               club { name }
             }
           }
+          fromRoundId
+          toRoundId
+          notes
+          costCents
         }
         pageInfo { totalCount }
       }

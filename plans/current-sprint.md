@@ -70,12 +70,12 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - [x] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
 - [x] Make sure to/from round id is recorded for all player trades; tighten UI
 - Side quest:
-  - [ ] Add ffl.player_season.notes and cost columns.
-  - [ ] Add a little player season dialog showing to/from round, cost, and allowing to edit notes in Manage and normal modes
+  - [x] Add ffl.player_season.notes and cost columns.
+  - [x] Add a little player season dialog showing to/from round, cost, and allowing to edit notes in Manage and normal modes
 - [ ] Tighten graph endpoints for player trades: `addFFLPlayerToSeason`, `removeFFLPlayerFromSeason`, `addFFLSquadPlayer`
 - [ ] Update e2e tests for player trade flows (after above is done)
 - Side quest:
-  - [ ] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
+  - [x] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
 
 ## Step 6 — Score reconciliation *(every round)*
 

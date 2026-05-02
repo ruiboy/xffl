@@ -4,6 +4,7 @@ type Mutation {
   deleteFFLPlayer(id: ID!): Boolean!
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
   removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean!
+  updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
   addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
@@ -14,6 +15,11 @@ type Mutation {
 
   # Data ops: confirm a reviewed parse result and write to the database.
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
+}
+
+input UpdateFFLPlayerSeasonInput {
+  id: ID!
+  notes: String
 }
 
 input AddFFLSquadPlayerInput {

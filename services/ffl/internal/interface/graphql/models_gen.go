@@ -122,6 +122,10 @@ type FFLPlayerSeason struct {
 	ClubSeasonID      string           `json:"clubSeasonId"`
 	AflPlayerSeasonID *string          `json:"aflPlayerSeasonId,omitempty"`
 	AflPlayerSeason   *AFLPlayerSeason `json:"aflPlayerSeason,omitempty"`
+	FromRoundID       *string          `json:"fromRoundId,omitempty"`
+	ToRoundID         *string          `json:"toRoundId,omitempty"`
+	Notes             *string          `json:"notes,omitempty"`
+	CostCents         *int             `json:"costCents,omitempty"`
 }
 
 type FFLPlayerSeasonConnection struct {
@@ -202,4 +206,9 @@ type SetFFLTeamInput struct {
 type UpdateFFLPlayerInput struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type UpdateFFLPlayerSeasonInput struct {
+	ID    string  `json:"id"`
+	Notes *string `json:"notes,omitempty"`
 }

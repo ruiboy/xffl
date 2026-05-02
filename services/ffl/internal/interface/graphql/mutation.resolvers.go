@@ -87,6 +87,23 @@ func (r *mutationResolver) RemoveFFLPlayerFromSeason(ctx context.Context, id str
 	return true, nil
 }
 
+// UpdateFFLPlayerSeason is the resolver for the updateFFLPlayerSeason field.
+func (r *mutationResolver) UpdateFFLPlayerSeason(ctx context.Context, input UpdateFFLPlayerSeasonInput) (*FFLPlayerSeason, error) {
+	id, err := fromID(input.ID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.Commands.UpdatePlayerSeasonDetails(ctx, id, input.Notes)
+	if err != nil {
+		return nil, err
+	}
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerSeason(ps, player), nil
+}
+
 // CalculateFFLFantasyScore is the resolver for the calculateFFLFantasyScore field.
 func (r *mutationResolver) CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error) {
 	pmID, err := fromID(input.PlayerMatchID)
@@ -172,7 +189,7 @@ func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSq
 		}
 		aflPlayerSeasonID = &id
 	}
-	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID, fromRoundID, aflPlayerSeasonID)
+	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID, fromRoundID, aflPlayerSeasonID, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -121,6 +121,8 @@ CREATE TABLE IF NOT EXISTS ffl.player_season (
     from_round_id INTEGER REFERENCES ffl.round(id),
     to_round_id INTEGER REFERENCES ffl.round(id),
     afl_player_season_id INTEGER,
+    notes TEXT,
+    cost_cents INTEGER,
     CONSTRAINT uni_player_season UNIQUE (player_id, club_season_id)
 );
 

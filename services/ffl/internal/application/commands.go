@@ -57,7 +57,7 @@ func (c *Commands) CreatePlayer(ctx context.Context, name string, aflPlayerID in
 }
 
 // AddAFLPlayerToSquad finds or creates an FFL player linked to an AFL player, then adds them to a club season.
-func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int) (domain.PlayerSeason, error) {
+func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, aflPlayerName string, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int, costCents *int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		player, err := repos.Players.FindByAFLPlayerID(ctx, aflPlayerID)
@@ -67,7 +67,7 @@ func (c *Commands) AddAFLPlayerToSquad(ctx context.Context, aflPlayerID int, afl
 				return err
 			}
 		}
-		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID, fromRoundID, aflPlayerSeasonID)
+		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID, fromRoundID, aflPlayerSeasonID, costCents)
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,21 @@ func (c *Commands) DeletePlayer(ctx context.Context, id int) error {
 func (c *Commands) AddPlayerToSeason(ctx context.Context, playerID int, clubSeasonID int) (domain.PlayerSeason, error) {
 	var result domain.PlayerSeason
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		ps, err := repos.PlayerSeasons.Create(ctx, playerID, clubSeasonID, nil, nil)
+		ps, err := repos.PlayerSeasons.Create(ctx, playerID, clubSeasonID, nil, nil, nil)
+		if err != nil {
+			return err
+		}
+		result = ps
+		return nil
+	})
+	return result, err
+}
+
+// UpdatePlayerSeasonDetails updates the notes for a player season.
+func (c *Commands) UpdatePlayerSeasonDetails(ctx context.Context, id int, notes *string) (domain.PlayerSeason, error) {
+	var result domain.PlayerSeason
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		ps, err := repos.PlayerSeasons.UpdateDetails(ctx, id, notes)
 		if err != nil {
 			return err
 		}

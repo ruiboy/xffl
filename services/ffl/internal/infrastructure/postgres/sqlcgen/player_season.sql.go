@@ -10,14 +10,15 @@ import (
 )
 
 const createPlayerSeason = `-- name: CreatePlayerSeason :one
-INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id, cost_cents)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (player_id, club_season_id) DO UPDATE
   SET to_round_id = NULL,
       from_round_id = EXCLUDED.from_round_id,
       afl_player_season_id = EXCLUDED.afl_player_season_id,
+      cost_cents = EXCLUDED.cost_cents,
       updated_at = CURRENT_TIMESTAMP
-RETURNING id, player_id, club_season_id, afl_player_season_id
+RETURNING id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 `
 
 type CreatePlayerSeasonParams struct {
@@ -25,6 +26,7 @@ type CreatePlayerSeasonParams struct {
 	ClubSeasonID      int32
 	FromRoundID       *int32
 	AflPlayerSeasonID *int32
+	CostCents         *int32
 }
 
 type CreatePlayerSeasonRow struct {
@@ -32,6 +34,10 @@ type CreatePlayerSeasonRow struct {
 	PlayerID          int32
 	ClubSeasonID      int32
 	AflPlayerSeasonID *int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	Notes             *string
+	CostCents         *int32
 }
 
 func (q *Queries) CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error) {
@@ -40,6 +46,7 @@ func (q *Queries) CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeason
 		arg.ClubSeasonID,
 		arg.FromRoundID,
 		arg.AflPlayerSeasonID,
+		arg.CostCents,
 	)
 	var i CreatePlayerSeasonRow
 	err := row.Scan(
@@ -47,6 +54,10 @@ func (q *Queries) CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeason
 		&i.PlayerID,
 		&i.ClubSeasonID,
 		&i.AflPlayerSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+		&i.Notes,
+		&i.CostCents,
 	)
 	return i, err
 }
@@ -64,7 +75,7 @@ func (q *Queries) DeletePlayerSeason(ctx context.Context, id int32) error {
 }
 
 const findPlayerSeasonByID = `-- name: FindPlayerSeasonByID :one
-SELECT id, player_id, club_season_id, afl_player_season_id
+SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 FROM ffl.player_season
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -74,6 +85,10 @@ type FindPlayerSeasonByIDRow struct {
 	PlayerID          int32
 	ClubSeasonID      int32
 	AflPlayerSeasonID *int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	Notes             *string
+	CostCents         *int32
 }
 
 func (q *Queries) FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error) {
@@ -84,12 +99,16 @@ func (q *Queries) FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlaye
 		&i.PlayerID,
 		&i.ClubSeasonID,
 		&i.AflPlayerSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+		&i.Notes,
+		&i.CostCents,
 	)
 	return i, err
 }
 
 const findPlayerSeasonsByAFLPlayerSeasonID = `-- name: FindPlayerSeasonsByAFLPlayerSeasonID :many
-SELECT id, player_id, club_season_id, afl_player_season_id
+SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 FROM ffl.player_season
 WHERE afl_player_season_id = $1 AND deleted_at IS NULL
 `
@@ -99,6 +118,10 @@ type FindPlayerSeasonsByAFLPlayerSeasonIDRow struct {
 	PlayerID          int32
 	ClubSeasonID      int32
 	AflPlayerSeasonID *int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	Notes             *string
+	CostCents         *int32
 }
 
 func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error) {
@@ -115,6 +138,10 @@ func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflP
 			&i.PlayerID,
 			&i.ClubSeasonID,
 			&i.AflPlayerSeasonID,
+			&i.FromRoundID,
+			&i.ToRoundID,
+			&i.Notes,
+			&i.CostCents,
 		); err != nil {
 			return nil, err
 		}
@@ -127,7 +154,7 @@ func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflP
 }
 
 const findPlayerSeasonsByClubSeasonID = `-- name: FindPlayerSeasonsByClubSeasonID :many
-SELECT id, player_id, club_season_id, afl_player_season_id
+SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 FROM ffl.player_season
 WHERE club_season_id = $1 AND deleted_at IS NULL AND to_round_id IS NULL
 `
@@ -137,6 +164,10 @@ type FindPlayerSeasonsByClubSeasonIDRow struct {
 	PlayerID          int32
 	ClubSeasonID      int32
 	AflPlayerSeasonID *int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	Notes             *string
+	CostCents         *int32
 }
 
 func (q *Queries) FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error) {
@@ -153,6 +184,10 @@ func (q *Queries) FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeaso
 			&i.PlayerID,
 			&i.ClubSeasonID,
 			&i.AflPlayerSeasonID,
+			&i.FromRoundID,
+			&i.ToRoundID,
+			&i.Notes,
+			&i.CostCents,
 		); err != nil {
 			return nil, err
 		}
@@ -212,4 +247,44 @@ type SetPlayerSeasonEndRoundParams struct {
 func (q *Queries) SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error {
 	_, err := q.db.Exec(ctx, setPlayerSeasonEndRound, arg.ToRoundID, arg.ID)
 	return err
+}
+
+const updatePlayerSeason = `-- name: UpdatePlayerSeason :one
+UPDATE ffl.player_season
+SET notes = $1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $2 AND deleted_at IS NULL
+RETURNING id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
+`
+
+type UpdatePlayerSeasonParams struct {
+	Notes *string
+	ID    int32
+}
+
+type UpdatePlayerSeasonRow struct {
+	ID                int32
+	PlayerID          int32
+	ClubSeasonID      int32
+	AflPlayerSeasonID *int32
+	FromRoundID       *int32
+	ToRoundID         *int32
+	Notes             *string
+	CostCents         *int32
+}
+
+func (q *Queries) UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error) {
+	row := q.db.QueryRow(ctx, updatePlayerSeason, arg.Notes, arg.ID)
+	var i UpdatePlayerSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.AflPlayerSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+		&i.Notes,
+		&i.CostCents,
+	)
+	return i, err
 }

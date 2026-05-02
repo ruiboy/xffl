@@ -150,10 +150,20 @@ func convertPlayerSeason(ps domain.PlayerSeason, player domain.Player) *FFLPlaye
 		ID:           toID(ps.ID),
 		Player:       convertPlayer(player),
 		ClubSeasonID: toID(ps.ClubSeasonID),
+		Notes:        ps.Notes,
+		CostCents:    ps.CostCents,
 	}
 	if ps.AFLPlayerSeasonID != nil {
 		id := toID(*ps.AFLPlayerSeasonID)
 		result.AflPlayerSeasonID = &id
+	}
+	if ps.FromRoundID != nil {
+		id := toID(*ps.FromRoundID)
+		result.FromRoundID = &id
+	}
+	if ps.ToRoundID != nil {
+		id := toID(*ps.ToRoundID)
+		result.ToRoundID = &id
 	}
 	return result
 }
