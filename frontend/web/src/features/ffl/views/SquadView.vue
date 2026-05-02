@@ -16,8 +16,8 @@
       </router-link>
     </div>
 
-    <!-- Manage toggle + Team Builder link — only for the selected club -->
-    <div v-if="isMyClub" class="mb-6 flex items-center gap-4">
+    <!-- Manage toolbar — only for the selected club -->
+    <div v-if="isMyClub" class="mb-6 flex items-center gap-3">
       <button
         @click="managing = !managing"
         class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
@@ -30,120 +30,153 @@
           {{ managing ? 'Done' : 'Manage' }}
         </span>
       </button>
+      <button
+        v-if="managing"
+        @click="openAddSearch"
+        class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+      >
+        + Add Player
+      </button>
       <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
     </div>
 
     <div v-if="squadLoading" class="text-text-faint">Loading...</div>
     <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
     <template v-else>
-      <div class="flex gap-8 items-start">
-        <!-- Player list -->
-        <div class="flex-1 min-w-0">
-          <div v-if="players.length > 0" class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-border text-left text-text-muted">
-                  <th class="py-2 pr-4 font-medium">Player</th>
-                  <th class="py-2 pr-4 font-medium">Club</th>
-                  <th v-if="!managing" class="py-2">
-                    <div class="flex gap-0.5">
-                      <span
-                        v-for="round in rounds"
-                        :key="round.id"
-                        class="w-5 text-center text-[10px] text-text-faint font-normal"
-                      >{{ roundLabel(round.name) }}</span>
-                    </div>
-                  </th>
-                  <th v-if="isMyClub && managing" class="py-2 px-2 font-medium text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="(group, gi) in groupedPlayers" :key="group.pos ?? 'bench'">
-                  <tr v-if="gi > 0"><td colspan="2" class="pt-3"></td></tr>
-                  <tr
-                    v-for="row in group.players"
-                    :key="row.id"
-                    class="border-b border-border-subtle hover:bg-surface-hover"
+      <div v-if="players.length > 0" class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-left text-text-muted">
+              <th class="py-2 pr-4 font-medium">Player</th>
+              <th class="py-2 pr-4 font-medium">Club</th>
+              <th class="py-2">
+                <div class="flex gap-0.5">
+                  <span
+                    v-for="round in rounds"
+                    :key="round.id"
+                    class="w-5 text-center text-[10px] text-text-faint font-normal"
+                  >{{ roundLabel(round.name) }}</span>
+                </div>
+              </th>
+              <th v-if="isMyClub && managing" class="py-2 px-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="(group, gi) in groupedPlayers" :key="group.pos ?? 'bench'">
+              <tr v-if="gi > 0"><td colspan="3" class="pt-3"></td></tr>
+              <tr
+                v-for="row in group.players"
+                :key="row.id"
+                class="border-b border-border-subtle hover:bg-surface-hover"
+              >
+                <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
+                <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
+                <td class="py-2">
+                  <div class="flex gap-0.5">
+                    <span
+                      v-for="round in rounds"
+                      :key="round.id"
+                      class="w-5 text-center text-xs font-mono inline-block"
+                      :class="roundColor(row.id, round.id)"
+                    >{{ roundLetter(row.id, round.id) }}</span>
+                  </div>
+                </td>
+                <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
+                  <button
+                    @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
+                    aria-label="Remove"
+                    class="text-red-400 hover:text-red-300 transition-colors"
                   >
-                    <td class="py-2 pr-4 font-medium">{{ row.player.name }}</td>
-                    <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
-                    <td v-if="!managing" class="py-2">
-                      <div class="flex gap-0.5">
-                        <span
-                          v-for="round in rounds"
-                          :key="round.id"
-                          class="w-5 text-center text-xs font-mono inline-block"
-                          :class="roundColor(row.id, round.id)"
-                        >{{ roundLetter(row.id, round.id) }}</span>
-                      </div>
-                    </td>
-                    <td v-if="isMyClub && managing" class="py-2 px-2 text-right">
-                      <button
-                        @click="openRemoveModal(row.id, row.player.name, row.aflPlayerSeason?.clubSeason?.club?.name ?? '')"
-                        aria-label="Remove"
-                        class="text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <IconBin class="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="text-text-faint">No players on squad.</p>
-        </div>
+                    <IconBin class="w-3.5 h-3.5" />
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="text-text-faint">No players on squad.</p>
+    </template>
 
-        <!-- Add player search (manage mode only) -->
-        <div v-if="isMyClub && managing" class="w-72 shrink-0">
-          <h2 class="text-lg font-semibold mb-2">Add Player</h2>
+    <Teleport to="body">
+      <!-- Add player: search dialog (step 1) -->
+      <div v-if="addStep === 'search'" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="cancelAddSearch" />
+        <div class="relative z-10 w-96 h-[30rem] flex flex-col rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
+          <h3 class="text-base font-semibold text-text mb-4 shrink-0">Add Player</h3>
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search AFL players by name..."
-            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
+            placeholder="Search by name..."
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none mb-3 shrink-0"
+            autofocus
           />
-          <div v-if="searchLoading" class="mt-2 text-text-faint text-sm">Searching...</div>
-          <div v-else-if="searchResults.length > 0" class="mt-2">
-            <div
-              v-for="node in searchResults"
-              :key="node.id"
-              class="flex items-center justify-between border-b border-border-subtle py-2"
-            >
-              <div>
-                <div class="text-sm">{{ node.player.name }}</div>
-                <div class="text-xs text-text-muted">{{ node.clubSeason.club.name }}</div>
-              </div>
-              <button
-                @click="openAddModal(node)"
-                class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
+          <div class="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+            <div v-if="searchLoading" class="text-text-faint text-sm py-2">Searching...</div>
+            <div v-else-if="searchResults.length > 0">
+              <div
+                v-for="node in searchResults"
+                :key="node.id"
+                class="flex items-center justify-between border-b border-border-subtle py-2"
               >
-                Add
-              </button>
+                <div>
+                  <div class="text-sm text-text">{{ node.player.name }}</div>
+                  <div class="text-xs text-text-muted">{{ node.clubSeason.club.name }}</div>
+                </div>
+                <button
+                  @click="selectAddPlayer(node)"
+                  class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
+                >Add</button>
+              </div>
+            </div>
+            <div v-else-if="searchQuery.length >= 2 && !searchLoading" class="text-text-faint text-sm py-2">
+              No players found.
             </div>
           </div>
-          <div v-else-if="searchQuery.length >= 2 && !searchLoading" class="mt-2 text-text-faint text-sm">
-            No players found.
+          <div class="flex justify-end mt-4 shrink-0">
+            <button
+              @click="cancelAddSearch"
+              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+            >Cancel</button>
           </div>
         </div>
       </div>
-    </template>
 
-    <!-- Player action modal (add / remove) -->
-    <Teleport to="body">
+      <!-- Add player: confirm round dialog (step 2) -->
+      <div v-if="addStep === 'confirm' && pendingAddNode" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="cancelAddConfirm" />
+        <div class="relative z-10 w-80 rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
+          <h3 class="text-base font-semibold text-text mb-1">Add Player</h3>
+          <p class="text-sm font-medium text-text mb-0.5">{{ pendingAddNode.player.name }}</p>
+          <p class="text-xs text-text-muted mb-4">{{ pendingAddNode.clubSeason.club.name }}</p>
+          <label class="text-xs text-text-muted block mb-1">From round</label>
+          <select
+            v-model="addRoundId"
+            class="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text mb-5 focus:outline-none focus:border-active"
+          >
+            <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+          <div class="flex gap-2 justify-end">
+            <button
+              @click="cancelAddConfirm"
+              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+            >Back</button>
+            <button
+              @click="confirmAdd"
+              :disabled="modalSubmitting || !addRoundId"
+              class="rounded-lg px-3 py-1.5 text-sm font-medium bg-active text-active-text hover:opacity-90 transition-colors disabled:opacity-40"
+            >{{ modalSubmitting ? '…' : 'Add' }}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remove player modal -->
       <div v-if="modal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="closeModal" />
         <div class="relative z-10 w-80 rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
-          <h3 class="text-base font-semibold text-text mb-1">
-            {{ modal.action === 'add' ? 'Add Player' : 'Remove Player' }}
-          </h3>
-          <p class="text-sm font-medium text-text mb-0.5">
-            {{ modal.action === 'add' ? modal.node.player.name : modal.playerName }}
-          </p>
-          <p class="text-xs text-text-muted mb-4">
-            {{ modal.action === 'add' ? modal.node.clubSeason.club.name : modal.playerClub }}
-          </p>
-
+          <h3 class="text-base font-semibold text-text mb-1">Remove Player</h3>
+          <p class="text-sm font-medium text-text mb-0.5">{{ modal.playerName }}</p>
+          <p class="text-xs text-text-muted mb-4">{{ modal.playerClub }}</p>
           <label class="text-xs text-text-muted block mb-1">Round</label>
           <select
             v-model="modal.roundId"
@@ -151,7 +184,6 @@
           >
             <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
           </select>
-
           <div class="flex gap-2 justify-end">
             <button
               @click="closeModal"
@@ -160,13 +192,8 @@
             <button
               @click="confirmModal"
               :disabled="modalSubmitting || !modal.roundId"
-              class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
-              :class="modal.action === 'remove'
-                ? 'bg-red-600 text-white hover:bg-red-500'
-                : 'bg-active text-active-text hover:opacity-90'"
-            >
-              {{ modalSubmitting ? '…' : modal.action === 'add' ? 'Add' : 'Remove' }}
-            </button>
+              class="rounded-lg px-3 py-1.5 text-sm font-medium bg-red-600 text-white hover:bg-red-500 transition-colors disabled:opacity-40"
+            >{{ modalSubmitting ? '…' : 'Remove' }}</button>
           </div>
         </div>
       </div>
@@ -331,12 +358,9 @@ function flashSaved() {
   saveMessageTimer = setTimeout(() => { saveMessage.value = '' }, 3000)
 }
 
-// Modal
-type ModalState =
-  | { action: 'remove'; playerSeasonId: string; playerName: string; playerClub: string; roundId: string }
-  | { action: 'add'; node: AFLPlayerSeasonNode; roundId: string }
-
-const modal = ref<ModalState | null>(null)
+// Remove modal
+interface RemoveModalState { playerSeasonId: string; playerName: string; playerClub: string; roundId: string }
+const modal = ref<RemoveModalState | null>(null)
 const modalSubmitting = ref(false)
 
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
@@ -347,11 +371,7 @@ function defaultRoundId(): string {
 }
 
 function openRemoveModal(playerSeasonId: string, playerName: string, playerClub: string) {
-  modal.value = { action: 'remove', playerSeasonId, playerName, playerClub, roundId: defaultRoundId() }
-}
-
-function openAddModal(node: AFLPlayerSeasonNode) {
-  modal.value = { action: 'add', node, roundId: defaultRoundId() }
+  modal.value = { playerSeasonId, playerName, playerClub, roundId: defaultRoundId() }
 }
 
 function closeModal() {
@@ -362,20 +382,7 @@ async function confirmModal() {
   if (!modal.value) return
   modalSubmitting.value = true
   try {
-    if (modal.value.action === 'remove') {
-      await removePlayerMutation({ id: modal.value.playerSeasonId, toRoundId: modal.value.roundId })
-    } else {
-      if (!clubSeasonId.value) return
-      await addPlayerMutation({
-        input: {
-          aflPlayerId: modal.value.node.player.id,
-          aflPlayerName: modal.value.node.player.name,
-          clubSeasonId: clubSeasonId.value,
-          aflPlayerSeasonId: modal.value.node.id,
-          ...(modal.value.roundId ? { fromRoundId: modal.value.roundId } : {}),
-        },
-      })
-    }
+    await removePlayerMutation({ id: modal.value.playerSeasonId, toRoundId: modal.value.roundId })
     await refetchSquad()
     flashSaved()
     modal.value = null
@@ -384,10 +391,59 @@ async function confirmModal() {
   }
 }
 
+// Add player: two-step flow (search → confirm)
+const addStep = ref<null | 'search' | 'confirm'>(null)
+const pendingAddNode = ref<AFLPlayerSeasonNode | null>(null)
+const addRoundId = ref<string>('')
+
+function openAddSearch() {
+  addStep.value = 'search'
+  searchQuery.value = ''
+  debouncedQuery.value = ''
+  addRoundId.value = defaultRoundId()
+}
+
+function selectAddPlayer(node: AFLPlayerSeasonNode) {
+  pendingAddNode.value = node
+  addStep.value = 'confirm'
+}
+
+function cancelAddConfirm() {
+  addStep.value = 'search'
+}
+
+function cancelAddSearch() {
+  addStep.value = null
+  pendingAddNode.value = null
+  searchQuery.value = ''
+  debouncedQuery.value = ''
+}
+
+async function confirmAdd() {
+  if (!pendingAddNode.value || !clubSeasonId.value) return
+  modalSubmitting.value = true
+  try {
+    await addPlayerMutation({
+      input: {
+        aflPlayerId: pendingAddNode.value.player.id,
+        aflPlayerName: pendingAddNode.value.player.name,
+        clubSeasonId: clubSeasonId.value,
+        aflPlayerSeasonId: pendingAddNode.value.id,
+        ...(addRoundId.value ? { fromRoundId: addRoundId.value } : {}),
+      },
+    })
+    await refetchSquad()
+    flashSaved()
+    addStep.value = null
+    pendingAddNode.value = null
+  } finally {
+    modalSubmitting.value = false
+  }
+}
+
 watch(managing, (val) => {
   if (!val) {
-    searchQuery.value = ''
-    debouncedQuery.value = ''
+    cancelAddSearch()
   }
 })
 
