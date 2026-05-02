@@ -23,18 +23,17 @@ directive @link(url: String, as: String, for: link__Purpose, import: [link__Impo
 input AddFFLPlayerToSeasonInput
   @join__type(graph: FFL)
 {
-  playerId: ID!
   clubSeasonId: ID!
+  aflPlayerSeasonId: ID!
+  fromRoundId: ID
+  costCents: Int
 }
 
-input AddFFLSquadPlayerInput
+input RemoveFFLPlayerFromSeasonInput
   @join__type(graph: FFL)
 {
-  aflPlayerId: ID!
-  aflPlayerName: String!
-  clubSeasonId: ID!
-  aflPlayerSeasonId: ID
-  fromRoundId: ID
+  id: ID!
+  toRoundId: ID!
 }
 
 type AFLClub
@@ -368,11 +367,10 @@ type Mutation
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
   deleteFFLPlayer(id: ID!): Boolean! @join__field(graph: FFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
-  removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean! @join__field(graph: FFL)
+  removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
-  addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason! @join__field(graph: FFL)
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 }

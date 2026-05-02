@@ -73,7 +73,8 @@ ADR: ADR-018 (Twirp for cross-service communication)
   - [x] Add ffl.player_season.notes and cost columns.
   - [x] Add a little player season dialog showing to/from round, cost, and allowing to edit notes in Manage and normal modes
 - [ ] Tighten graph endpoints for player trades: `addFFLPlayerToSeason`, `removeFFLPlayerFromSeason`, `addFFLSquadPlayer`
-- [ ] Update e2e tests for player trade flows (after above is done)
+- [x] Update e2e tests for player trade flows (after above is done)
+- [ ] Retire `ffl.player.drv_name`: add `FFLPlayer.aflPlayer: AFLPlayer` federation traversal; audit all `player { name }` reads in frontend and switch to `player { aflPlayer { name } }`; deprecate `FFLPlayer.name`; drop `drv_name` column. Until done, new `ffl.player` rows have `drv_name=""` so squad/match views show empty names for newly-added players.
 - Side quest:
   - [x] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
 

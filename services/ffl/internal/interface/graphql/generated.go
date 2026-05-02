@@ -158,13 +158,12 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddFFLPlayerToSeason      func(childComplexity int, input AddFFLPlayerToSeasonInput) int
-		AddFFLSquadPlayer         func(childComplexity int, input AddFFLSquadPlayerInput) int
 		CalculateFFLFantasyScore  func(childComplexity int, input CalculateFFLFantasyScoreInput) int
 		ConfirmFFLTeamSubmission  func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
 		CreateFFLPlayer           func(childComplexity int, input CreateFFLPlayerInput) int
 		DeleteFFLPlayer           func(childComplexity int, id string) int
 		ParseFFLTeamSubmission    func(childComplexity int, input ParseFFLTeamSubmissionInput) int
-		RemoveFFLPlayerFromSeason func(childComplexity int, id string, toRoundID string) int
+		RemoveFFLPlayerFromSeason func(childComplexity int, input RemoveFFLPlayerFromSeasonInput) int
 		SetFFLTeam                func(childComplexity int, input SetFFLTeamInput) int
 		UpdateFFLPlayer           func(childComplexity int, input UpdateFFLPlayerInput) int
 		UpdateFFLPlayerSeason     func(childComplexity int, input UpdateFFLPlayerSeasonInput) int
@@ -255,11 +254,10 @@ type MutationResolver interface {
 	UpdateFFLPlayer(ctx context.Context, input UpdateFFLPlayerInput) (*FFLPlayer, error)
 	DeleteFFLPlayer(ctx context.Context, id string) (bool, error)
 	AddFFLPlayerToSeason(ctx context.Context, input AddFFLPlayerToSeasonInput) (*FFLPlayerSeason, error)
-	RemoveFFLPlayerFromSeason(ctx context.Context, id string, toRoundID string) (bool, error)
+	RemoveFFLPlayerFromSeason(ctx context.Context, input RemoveFFLPlayerFromSeasonInput) (bool, error)
 	UpdateFFLPlayerSeason(ctx context.Context, input UpdateFFLPlayerSeasonInput) (*FFLPlayerSeason, error)
 	CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error)
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
-	AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error)
 	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
 	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
 }
@@ -749,17 +747,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddFFLPlayerToSeason(childComplexity, args["input"].(AddFFLPlayerToSeasonInput)), true
-	case "Mutation.addFFLSquadPlayer":
-		if e.ComplexityRoot.Mutation.AddFFLSquadPlayer == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addFFLSquadPlayer_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Mutation.AddFFLSquadPlayer(childComplexity, args["input"].(AddFFLSquadPlayerInput)), true
 	case "Mutation.calculateFFLFantasyScore":
 		if e.ComplexityRoot.Mutation.CalculateFFLFantasyScore == nil {
 			break
@@ -825,7 +812,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["id"].(string), args["toRoundId"].(string)), true
+		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["input"].(RemoveFFLPlayerFromSeasonInput)), true
 	case "Mutation.setFFLTeam":
 		if e.ComplexityRoot.Mutation.SetFFLTeam == nil {
 			break
@@ -1089,7 +1076,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddFFLPlayerToSeasonInput,
-		ec.unmarshalInputAddFFLSquadPlayerInput,
 		ec.unmarshalInputCalculateFFLFantasyScoreInput,
 		ec.unmarshalInputConfirmFFLTeamSubmissionInput,
 		ec.unmarshalInputConfirmedFFLPlayerInput,
@@ -1097,6 +1083,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLTeamPlayerInput,
 		ec.unmarshalInputParseFFLTeamSubmissionInput,
+		ec.unmarshalInputRemoveFFLPlayerFromSeasonInput,
 		ec.unmarshalInputSetFFLTeamInput,
 		ec.unmarshalInputUpdateFFLPlayerInput,
 		ec.unmarshalInputUpdateFFLPlayerSeasonInput,
@@ -1186,11 +1173,10 @@ var sources = []*ast.Source{
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
   deleteFFLPlayer(id: ID!): Boolean!
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
-  removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean!
+  removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean!
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
-  addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
 
   # Data ops: parse a forum post and resolve players against the squad.
   # Returns a parse result for review — no DB writes.
@@ -1205,14 +1191,6 @@ input UpdateFFLPlayerSeasonInput {
   notes: String
 }
 
-input AddFFLSquadPlayerInput {
-  aflPlayerId: ID!
-  aflPlayerName: String!
-  clubSeasonId: ID!
-  aflPlayerSeasonId: ID
-  fromRoundId: ID
-}
-
 input CreateFFLPlayerInput {
   name: String!
   aflPlayerId: ID!
@@ -1224,8 +1202,15 @@ input UpdateFFLPlayerInput {
 }
 
 input AddFFLPlayerToSeasonInput {
-  playerId: ID!
   clubSeasonId: ID!
+  aflPlayerSeasonId: ID!
+  fromRoundId: ID
+  costCents: Int
+}
+
+input RemoveFFLPlayerFromSeasonInput {
+  id: ID!
+  toRoundId: ID!
 }
 
 input CalculateFFLFantasyScoreInput {
@@ -1575,17 +1560,6 @@ func (ec *executionContext) field_Mutation_addFFLPlayerToSeason_args(ctx context
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_addFFLSquadPlayer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddFFLSquadPlayerInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐAddFFLSquadPlayerInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_calculateFFLFantasyScore_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1644,16 +1618,11 @@ func (ec *executionContext) field_Mutation_parseFFLTeamSubmission_args(ctx conte
 func (ec *executionContext) field_Mutation_removeFFLPlayerFromSeason_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRemoveFFLPlayerFromSeasonInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐRemoveFFLPlayerFromSeasonInput)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "toRoundId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["toRoundId"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -4336,7 +4305,7 @@ func (ec *executionContext) _Mutation_removeFFLPlayerFromSeason(ctx context.Cont
 		ec.fieldContext_Mutation_removeFFLPlayerFromSeason,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RemoveFFLPlayerFromSeason(ctx, fc.Args["id"].(string), fc.Args["toRoundId"].(string))
+			return ec.Resolvers.Mutation().RemoveFFLPlayerFromSeason(ctx, fc.Args["input"].(RemoveFFLPlayerFromSeasonInput))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -4554,67 +4523,6 @@ func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setFFLTeam_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_addFFLSquadPlayer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_addFFLSquadPlayer,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddFFLSquadPlayer(ctx, fc.Args["input"].(AddFFLSquadPlayerInput))
-		},
-		nil,
-		ec.marshalNFFLPlayerSeason2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerSeason,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_addFFLSquadPlayer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_FFLPlayerSeason_id(ctx, field)
-			case "player":
-				return ec.fieldContext_FFLPlayerSeason_player(ctx, field)
-			case "clubSeasonId":
-				return ec.fieldContext_FFLPlayerSeason_clubSeasonId(ctx, field)
-			case "aflPlayerSeasonId":
-				return ec.fieldContext_FFLPlayerSeason_aflPlayerSeasonId(ctx, field)
-			case "aflPlayerSeason":
-				return ec.fieldContext_FFLPlayerSeason_aflPlayerSeason(ctx, field)
-			case "fromRoundId":
-				return ec.fieldContext_FFLPlayerSeason_fromRoundId(ctx, field)
-			case "toRoundId":
-				return ec.fieldContext_FFLPlayerSeason_toRoundId(ctx, field)
-			case "notes":
-				return ec.fieldContext_FFLPlayerSeason_notes(ctx, field)
-			case "costCents":
-				return ec.fieldContext_FFLPlayerSeason_costCents(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FFLPlayerSeason", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_addFFLSquadPlayer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7383,64 +7291,13 @@ func (ec *executionContext) unmarshalInputAddFFLPlayerToSeasonInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"playerId", "clubSeasonId"}
+	fieldsInOrder := [...]string{"clubSeasonId", "aflPlayerSeasonId", "fromRoundId", "costCents"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "playerId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PlayerID = data
-		case "clubSeasonId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clubSeasonId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ClubSeasonID = data
-		}
-	}
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputAddFFLSquadPlayerInput(ctx context.Context, obj any) (AddFFLSquadPlayerInput, error) {
-	var it AddFFLSquadPlayerInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"aflPlayerId", "aflPlayerName", "clubSeasonId", "aflPlayerSeasonId", "fromRoundId"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "aflPlayerId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflPlayerId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.AflPlayerID = data
-		case "aflPlayerName":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflPlayerName"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.AflPlayerName = data
 		case "clubSeasonId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clubSeasonId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -7450,7 +7307,7 @@ func (ec *executionContext) unmarshalInputAddFFLSquadPlayerInput(ctx context.Con
 			it.ClubSeasonID = data
 		case "aflPlayerSeasonId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflPlayerSeasonId"))
-			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7462,6 +7319,13 @@ func (ec *executionContext) unmarshalInputAddFFLSquadPlayerInput(ctx context.Con
 				return it, err
 			}
 			it.FromRoundID = data
+		case "costCents":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("costCents"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CostCents = data
 		}
 	}
 	return it, nil
@@ -7798,6 +7662,43 @@ func (ec *executionContext) unmarshalInputParseFFLTeamSubmissionInput(ctx contex
 				return it, err
 			}
 			it.Post = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRemoveFFLPlayerFromSeasonInput(ctx context.Context, obj any) (RemoveFFLPlayerFromSeasonInput, error) {
+	var it RemoveFFLPlayerFromSeasonInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "toRoundId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "toRoundId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("toRoundId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ToRoundID = data
 		}
 	}
 	return it, nil
@@ -9338,13 +9239,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "addFFLSquadPlayer":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_addFFLSquadPlayer(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "parseFFLTeamSubmission":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_parseFFLTeamSubmission(ctx, field)
@@ -10280,11 +10174,6 @@ func (ec *executionContext) unmarshalNAddFFLPlayerToSeasonInput2xfflᚋservices�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNAddFFLSquadPlayerInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐAddFFLSquadPlayerInput(ctx context.Context, v any) (AddFFLSquadPlayerInput, error) {
-	res, err := ec.unmarshalInputAddFFLSquadPlayerInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10719,6 +10608,11 @@ func (ec *executionContext) marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservi
 		return graphql.Null
 	}
 	return ec._ParseFFLTeamSubmissionResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRemoveFFLPlayerFromSeasonInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐRemoveFFLPlayerFromSeasonInput(ctx context.Context, v any) (RemoveFFLPlayerFromSeasonInput, error) {
+	res, err := ec.unmarshalInputRemoveFFLPlayerFromSeasonInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNResolvedPlayer2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐResolvedPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*ResolvedPlayer) graphql.Marshaler {

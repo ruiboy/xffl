@@ -3,11 +3,10 @@ type Mutation {
   updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer!
   deleteFFLPlayer(id: ID!): Boolean!
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
-  removeFFLPlayerFromSeason(id: ID!, toRoundId: ID!): Boolean!
+  removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean!
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
-  addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason!
 
   # Data ops: parse a forum post and resolve players against the squad.
   # Returns a parse result for review — no DB writes.
@@ -22,14 +21,6 @@ input UpdateFFLPlayerSeasonInput {
   notes: String
 }
 
-input AddFFLSquadPlayerInput {
-  aflPlayerId: ID!
-  aflPlayerName: String!
-  clubSeasonId: ID!
-  aflPlayerSeasonId: ID
-  fromRoundId: ID
-}
-
 input CreateFFLPlayerInput {
   name: String!
   aflPlayerId: ID!
@@ -41,8 +32,15 @@ input UpdateFFLPlayerInput {
 }
 
 input AddFFLPlayerToSeasonInput {
-  playerId: ID!
   clubSeasonId: ID!
+  aflPlayerSeasonId: ID!
+  fromRoundId: ID
+  costCents: Int
+}
+
+input RemoveFFLPlayerFromSeasonInput {
+  id: ID!
+  toRoundId: ID!
 }
 
 input CalculateFFLFantasyScoreInput {

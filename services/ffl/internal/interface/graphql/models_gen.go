@@ -27,16 +27,10 @@ type AFLSeason struct {
 func (AFLSeason) IsEntity() {}
 
 type AddFFLPlayerToSeasonInput struct {
-	PlayerID     string `json:"playerId"`
-	ClubSeasonID string `json:"clubSeasonId"`
-}
-
-type AddFFLSquadPlayerInput struct {
-	AflPlayerID       string  `json:"aflPlayerId"`
-	AflPlayerName     string  `json:"aflPlayerName"`
 	ClubSeasonID      string  `json:"clubSeasonId"`
-	AflPlayerSeasonID *string `json:"aflPlayerSeasonId,omitempty"`
+	AflPlayerSeasonID string  `json:"aflPlayerSeasonId"`
 	FromRoundID       *string `json:"fromRoundId,omitempty"`
+	CostCents         *int    `json:"costCents,omitempty"`
 }
 
 type CalculateFFLFantasyScoreInput struct {
@@ -191,6 +185,11 @@ type ParseFFLTeamSubmissionResult struct {
 }
 
 type Query struct {
+}
+
+type RemoveFFLPlayerFromSeasonInput struct {
+	ID        string `json:"id"`
+	ToRoundID string `json:"toRoundId"`
 }
 
 type ResolvedPlayer struct {

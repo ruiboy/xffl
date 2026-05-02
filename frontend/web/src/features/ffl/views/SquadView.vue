@@ -299,7 +299,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_CLUB_SEASON, GET_AFL_PLAYER_SEASONS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
-import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_SQUAD_PLAYER, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
+import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_PLAYER_TO_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
@@ -464,7 +464,7 @@ const modal = ref<RemoveModalState | null>(null)
 const modalSubmitting = ref(false)
 
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
-const { mutate: addPlayerMutation } = useMutation(ADD_FFL_SQUAD_PLAYER)
+const { mutate: addPlayerMutation } = useMutation(ADD_FFL_PLAYER_TO_SEASON)
 const { mutate: updatePlayerSeasonMutation } = useMutation(UPDATE_FFL_PLAYER_SEASON)
 
 function defaultRoundId(): string {
@@ -483,7 +483,7 @@ async function confirmModal() {
   if (!modal.value) return
   modalSubmitting.value = true
   try {
-    await removePlayerMutation({ id: modal.value.playerSeasonId, toRoundId: modal.value.roundId })
+    await removePlayerMutation({ input: { id: modal.value.playerSeasonId, toRoundId: modal.value.roundId } })
     await refetchSquad()
     flashSaved()
     modal.value = null
@@ -526,8 +526,6 @@ async function confirmAdd() {
   try {
     await addPlayerMutation({
       input: {
-        aflPlayerId: pendingAddNode.value.player.id,
-        aflPlayerName: pendingAddNode.value.player.name,
         clubSeasonId: clubSeasonId.value,
         aflPlayerSeasonId: pendingAddNode.value.id,
         ...(addRoundId.value ? { fromRoundId: addRoundId.value } : {}),

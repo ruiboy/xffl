@@ -52,15 +52,23 @@ func (r *mutationResolver) DeleteFFLPlayer(ctx context.Context, id string) (bool
 
 // AddFFLPlayerToSeason is the resolver for the addFFLPlayerToSeason field.
 func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFFLPlayerToSeasonInput) (*FFLPlayerSeason, error) {
-	playerID, err := fromID(input.PlayerID)
-	if err != nil {
-		return nil, err
-	}
 	clubSeasonID, err := fromID(input.ClubSeasonID)
 	if err != nil {
 		return nil, err
 	}
-	ps, err := r.Commands.AddPlayerToSeason(ctx, playerID, clubSeasonID)
+	aflPlayerSeasonID, err := fromID(input.AflPlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	var fromRoundID *int
+	if input.FromRoundID != nil {
+		id, err := fromID(*input.FromRoundID)
+		if err != nil {
+			return nil, err
+		}
+		fromRoundID = &id
+	}
+	ps, err := r.Commands.AddPlayerToSeason(ctx, clubSeasonID, aflPlayerSeasonID, fromRoundID, input.CostCents)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +80,12 @@ func (r *mutationResolver) AddFFLPlayerToSeason(ctx context.Context, input AddFF
 }
 
 // RemoveFFLPlayerFromSeason is the resolver for the removeFFLPlayerFromSeason field.
-func (r *mutationResolver) RemoveFFLPlayerFromSeason(ctx context.Context, id string, toRoundID string) (bool, error) {
-	parsed, err := fromID(id)
+func (r *mutationResolver) RemoveFFLPlayerFromSeason(ctx context.Context, input RemoveFFLPlayerFromSeasonInput) (bool, error) {
+	parsed, err := fromID(input.ID)
 	if err != nil {
 		return false, err
 	}
-	roundID, err := fromID(toRoundID)
+	roundID, err := fromID(input.ToRoundID)
 	if err != nil {
 		return false, err
 	}
@@ -161,43 +169,6 @@ func (r *mutationResolver) SetFFLTeam(ctx context.Context, input SetFFLTeamInput
 		result[i] = convertPlayerMatch(pm, player)
 	}
 	return result, nil
-}
-
-// AddFFLSquadPlayer is the resolver for the addFFLSquadPlayer field.
-func (r *mutationResolver) AddFFLSquadPlayer(ctx context.Context, input AddFFLSquadPlayerInput) (*FFLPlayerSeason, error) {
-	aflPlayerID, err := fromID(input.AflPlayerID)
-	if err != nil {
-		return nil, err
-	}
-	clubSeasonID, err := fromID(input.ClubSeasonID)
-	if err != nil {
-		return nil, err
-	}
-	var fromRoundID *int
-	if input.FromRoundID != nil {
-		id, err := fromID(*input.FromRoundID)
-		if err != nil {
-			return nil, err
-		}
-		fromRoundID = &id
-	}
-	var aflPlayerSeasonID *int
-	if input.AflPlayerSeasonID != nil {
-		id, err := fromID(*input.AflPlayerSeasonID)
-		if err != nil {
-			return nil, err
-		}
-		aflPlayerSeasonID = &id
-	}
-	ps, err := r.Commands.AddAFLPlayerToSquad(ctx, aflPlayerID, input.AflPlayerName, clubSeasonID, fromRoundID, aflPlayerSeasonID, nil)
-	if err != nil {
-		return nil, err
-	}
-	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
-	if err != nil {
-		return nil, err
-	}
-	return convertPlayerSeason(ps, player), nil
 }
 
 // ParseFFLTeamSubmission is the resolver for the parseFFLTeamSubmission field.

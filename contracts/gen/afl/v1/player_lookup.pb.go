@@ -169,6 +169,94 @@ func (x *PlayerInfo) GetClubName() string {
 	return ""
 }
 
+type LookupPlayerSeasonRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PlayerSeasonId int32                  `protobuf:"varint,1,opt,name=player_season_id,json=playerSeasonId,proto3" json:"player_season_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *LookupPlayerSeasonRequest) Reset() {
+	*x = LookupPlayerSeasonRequest{}
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LookupPlayerSeasonRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LookupPlayerSeasonRequest) ProtoMessage() {}
+
+func (x *LookupPlayerSeasonRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LookupPlayerSeasonRequest.ProtoReflect.Descriptor instead.
+func (*LookupPlayerSeasonRequest) Descriptor() ([]byte, []int) {
+	return file_afl_v1_player_lookup_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *LookupPlayerSeasonRequest) GetPlayerSeasonId() int32 {
+	if x != nil {
+		return x.PlayerSeasonId
+	}
+	return 0
+}
+
+type LookupPlayerSeasonResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PlayerId      int32                  `protobuf:"varint,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LookupPlayerSeasonResponse) Reset() {
+	*x = LookupPlayerSeasonResponse{}
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LookupPlayerSeasonResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LookupPlayerSeasonResponse) ProtoMessage() {}
+
+func (x *LookupPlayerSeasonResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LookupPlayerSeasonResponse.ProtoReflect.Descriptor instead.
+func (*LookupPlayerSeasonResponse) Descriptor() ([]byte, []int) {
+	return file_afl_v1_player_lookup_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LookupPlayerSeasonResponse) GetPlayerId() int32 {
+	if x != nil {
+		return x.PlayerId
+	}
+	return 0
+}
+
 var File_afl_v1_player_lookup_proto protoreflect.FileDescriptor
 
 const file_afl_v1_player_lookup_proto_rawDesc = "" +
@@ -182,9 +270,14 @@ const file_afl_v1_player_lookup_proto_rawDesc = "" +
 	"PlayerInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
-	"\tclub_name\x18\x03 \x01(\tR\bclubName2\\\n" +
+	"\tclub_name\x18\x03 \x01(\tR\bclubName\"E\n" +
+	"\x19LookupPlayerSeasonRequest\x12(\n" +
+	"\x10player_season_id\x18\x01 \x01(\x05R\x0eplayerSeasonId\"9\n" +
+	"\x1aLookupPlayerSeasonResponse\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\x05R\bplayerId2\xb9\x01\n" +
 	"\fPlayerLookup\x12L\n" +
-	"\rLookupPlayers\x12\x1c.afl.v1.LookupPlayersRequest\x1a\x1d.afl.v1.LookupPlayersResponseB!Z\x1fxffl/contracts/gen/afl/v1;aflv1b\x06proto3"
+	"\rLookupPlayers\x12\x1c.afl.v1.LookupPlayersRequest\x1a\x1d.afl.v1.LookupPlayersResponse\x12[\n" +
+	"\x12LookupPlayerSeason\x12!.afl.v1.LookupPlayerSeasonRequest\x1a\".afl.v1.LookupPlayerSeasonResponseB!Z\x1fxffl/contracts/gen/afl/v1;aflv1b\x06proto3"
 
 var (
 	file_afl_v1_player_lookup_proto_rawDescOnce sync.Once
@@ -198,18 +291,22 @@ func file_afl_v1_player_lookup_proto_rawDescGZIP() []byte {
 	return file_afl_v1_player_lookup_proto_rawDescData
 }
 
-var file_afl_v1_player_lookup_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_afl_v1_player_lookup_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_afl_v1_player_lookup_proto_goTypes = []any{
-	(*LookupPlayersRequest)(nil),  // 0: afl.v1.LookupPlayersRequest
-	(*LookupPlayersResponse)(nil), // 1: afl.v1.LookupPlayersResponse
-	(*PlayerInfo)(nil),            // 2: afl.v1.PlayerInfo
+	(*LookupPlayersRequest)(nil),       // 0: afl.v1.LookupPlayersRequest
+	(*LookupPlayersResponse)(nil),      // 1: afl.v1.LookupPlayersResponse
+	(*PlayerInfo)(nil),                 // 2: afl.v1.PlayerInfo
+	(*LookupPlayerSeasonRequest)(nil),  // 3: afl.v1.LookupPlayerSeasonRequest
+	(*LookupPlayerSeasonResponse)(nil), // 4: afl.v1.LookupPlayerSeasonResponse
 }
 var file_afl_v1_player_lookup_proto_depIdxs = []int32{
 	2, // 0: afl.v1.LookupPlayersResponse.players:type_name -> afl.v1.PlayerInfo
 	0, // 1: afl.v1.PlayerLookup.LookupPlayers:input_type -> afl.v1.LookupPlayersRequest
-	1, // 2: afl.v1.PlayerLookup.LookupPlayers:output_type -> afl.v1.LookupPlayersResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	3, // 2: afl.v1.PlayerLookup.LookupPlayerSeason:input_type -> afl.v1.LookupPlayerSeasonRequest
+	1, // 3: afl.v1.PlayerLookup.LookupPlayers:output_type -> afl.v1.LookupPlayersResponse
+	4, // 4: afl.v1.PlayerLookup.LookupPlayerSeason:output_type -> afl.v1.LookupPlayerSeasonResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -226,7 +323,7 @@ func file_afl_v1_player_lookup_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_afl_v1_player_lookup_proto_rawDesc), len(file_afl_v1_player_lookup_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
