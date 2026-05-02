@@ -68,9 +68,14 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - [x] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
 - [x] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
 - [x] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
-- [ ] Make sure to/from round id is recorded for all player trades; tighten UI and graph endpoints
+- [x] Make sure to/from round id is recorded for all player trades; tighten UI
+- Side quest:
+  - [ ] Add ffl.player_season.notes and cost columns.
+  - [ ] Add a little player season dialog showing to/from round, cost, and allowing to edit notes in Manage and normal modes
+- [ ] Tighten graph endpoints for player trades: `addFFLPlayerToSeason`, `removeFFLPlayerFromSeason`, `addFFLSquadPlayer`
 - [ ] Update e2e tests for player trade flows (after above is done)
-- [ ] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
+- Side quest:
+  - [ ] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
 
 ## Step 6 — Score reconciliation *(every round)*
 
