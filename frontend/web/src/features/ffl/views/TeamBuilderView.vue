@@ -142,7 +142,7 @@
                     <span class="w-16 shrink-0">
                       <StatusBadge v-if="slot.player.status" :status="slot.player.status" />
                     </span>
-                    <template v-if="slot.player.status === 'played'">
+                    <template v-if="showScore(slot.player)">
                       <span class="flex-1 text-right text-xs tabular-nums text-text-faint pr-2">{{ positionFormula(pos.key, slot.player.score ?? 0) ?? '' }}</span>
                       <span class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
                     </template>
@@ -223,7 +223,7 @@
                               {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                             </span>
                           </template>
-                          <span v-if="slot.player.status === 'played'" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
+                          <span v-if="showScore(slot.player)" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
                         </div>
                       </div>
                     </template>
@@ -257,9 +257,12 @@
                 :key="player.id"
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
-                <div>
-                  <div class="font-medium text-sm">{{ player.name }}</div>
-                  <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                <div class="flex items-center gap-3 min-w-0">
+                  <div>
+                    <div class="font-medium text-sm">{{ player.name }}</div>
+                    <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                  </div>
+                  <span v-if="showScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <!-- Position buttons (starters) -->
@@ -305,9 +308,12 @@
                   :key="player.id"
                   class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 opacity-40"
                 >
-                  <div>
-                    <div class="font-medium text-sm">{{ player.name }}</div>
-                    <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div>
+                      <div class="font-medium text-sm">{{ player.name }}</div>
+                      <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                    </div>
+                    <span v-if="showScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                   </div>
                   <div class="flex items-center gap-1">
                     <button
@@ -377,6 +383,7 @@ interface SquadPlayer {
   club: string | null
   score: number | null
   status: string | null
+  statsImportStatus: string | null
   toRoundId: string | null
 }
 
@@ -455,16 +462,32 @@ const clubMatch = computed(() => {
   return null
 })
 
+const playerMatchBySeasonId = computed(() => {
+  const map = new Map<string, { score: number | null; status: string | null; statsImportStatus: string | null }>()
+  for (const pm of clubMatch.value?.playerMatches ?? []) {
+    map.set(pm.playerSeasonId, {
+      score: pm.score ?? null,
+      status: pm.status ?? null,
+      statsImportStatus: pm.aflPlayerMatch?.clubMatch?.match?.statsImportStatus ?? null,
+    })
+  }
+  return map
+})
+
 const squad = computed<SquadPlayer[]>(() => {
   if (!selectedClubSeason.value) return []
-  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } }; toRoundId?: string | null }) => ({
-    id: r.id,
-    name: r.player.name,
-    club: r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
-    score: null,
-    status: null,
-    toRoundId: r.toRoundId ?? null,
-  }))
+  return selectedClubSeason.value.players.nodes.map((r: { id: string; player: { name: string }; aflPlayerSeason?: { clubSeason?: { club?: { name: string } } }; toRoundId?: string | null }) => {
+    const pm = playerMatchBySeasonId.value.get(r.id)
+    return {
+      id: r.id,
+      name: r.player.name,
+      club: r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
+      score: pm?.score ?? null,
+      status: pm?.status ?? null,
+      statsImportStatus: pm?.statsImportStatus ?? null,
+      toRoundId: r.toRoundId ?? null,
+    }
+  })
 })
 
 // ── Team state ──────────────────────────────────────────────────────────────
@@ -523,7 +546,16 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
 
   let dualIndex = 0
   for (const pm of cm.playerMatches) {
-    const player: SquadPlayer = { id: pm.playerSeasonId, name: pm.player.name, club: squad.value.find(s => s.id === pm.playerSeasonId)?.club ?? null, score: pm.score ?? null, status: pm.status ?? null }
+    const squadEntry = squad.value.find(s => s.id === pm.playerSeasonId)
+    const player: SquadPlayer = {
+      id: pm.playerSeasonId,
+      name: pm.player.name,
+      club: squadEntry?.club ?? null,
+      score: pm.score ?? null,
+      status: pm.status ?? null,
+      statsImportStatus: pm.aflPlayerMatch?.clubMatch?.match?.statsImportStatus ?? null,
+      toRoundId: squadEntry?.toRoundId ?? null,
+    }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
     if (!isBench) {
@@ -628,6 +660,10 @@ function isBenchPositionUsed(posKey: string, slotIndex: number, sideIndex: numbe
 
 function positionShort(key: string): string {
   return positions.find(p => p.key === key)?.short ?? key
+}
+
+function showScore(player: SquadPlayer): boolean {
+  return player.statsImportStatus != null && player.statsImportStatus !== 'no_data'
 }
 
 // ── Team management ─────────────────────────────────────────────────────────

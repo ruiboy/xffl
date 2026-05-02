@@ -37,6 +37,13 @@ export const GET_FFL_TEAM_BUILDER = gql`
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  match {
+                    statsImportStatus
+                  }
+                }
+              }
             }
           }
           awayClubMatch {
@@ -52,6 +59,13 @@ export const GET_FFL_TEAM_BUILDER = gql`
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  match {
+                    statsImportStatus
+                  }
+                }
+              }
             }
           }
         }
@@ -332,6 +346,13 @@ export const GET_FFL_SEASON = gql`
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  match {
+                    statsImportStatus
+                  }
+                }
+              }
             }
           }
           awayClubMatch {
@@ -347,6 +368,13 @@ export const GET_FFL_SEASON = gql`
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  match {
+                    statsImportStatus
+                  }
+                }
+              }
             }
           }
         }

@@ -90,6 +90,7 @@ type FFLPlayerSeasonConnection {
 }
 
 input FFLPlayerSeasonFilter {
+  "Not supported"
   active: Boolean
 }
 

@@ -72,6 +72,8 @@ type AFLClubMatch {
   rushedBehinds: Int!
   score: Int!
   playerMatches: [AFLPlayerMatch!]!
+  matchId: ID!
+  match: AFLMatch
 }
 
 type AFLPlayer {
@@ -89,6 +91,8 @@ type AFLPlayerSeason @key(fields: "id") {
 type AFLPlayerMatch @key(fields: "id") {
   id: ID!
   playerSeasonId: ID!
+  clubMatchId: ID!
+  clubMatch: AFLClubMatch
   player: AFLPlayer!
   status: String!
   kicks: Int!

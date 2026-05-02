@@ -115,6 +115,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *AFLClubMatch {
 		Club:          convertClub(club),
 		RushedBehinds: cm.RushedBehinds,
 		Score:         cm.StoredScore,
+		MatchID:       toID(cm.MatchID),
 	}
 }
 
@@ -122,6 +123,7 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *AFLPlayerM
 	return &AFLPlayerMatch{
 		ID:             toID(pm.ID),
 		PlayerSeasonID: toID(pm.PlayerSeasonID),
+		ClubMatchID:    toID(pm.ClubMatchID),
 		Player:         convertPlayer(player),
 		Status:    pm.Status,
 		Kicks:     pm.Kicks,

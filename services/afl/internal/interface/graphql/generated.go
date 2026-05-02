@@ -29,6 +29,7 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 type ResolverRoot interface {
 	AFLClubMatch() AFLClubMatchResolver
 	AFLMatch() AFLMatchResolver
+	AFLPlayerMatch() AFLPlayerMatchResolver
 	AFLPlayerSeason() AFLPlayerSeasonResolver
 	AFLRound() AFLRoundResolver
 	AFLSeason() AFLSeasonResolver
@@ -49,6 +50,8 @@ type ComplexityRoot struct {
 	AFLClubMatch struct {
 		Club          func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Match         func(childComplexity int) int
+		MatchID       func(childComplexity int) int
 		PlayerMatches func(childComplexity int) int
 		RushedBehinds func(childComplexity int) int
 		Score         func(childComplexity int) int
@@ -90,6 +93,8 @@ type ComplexityRoot struct {
 
 	AFLPlayerMatch struct {
 		Behinds        func(childComplexity int) int
+		ClubMatch      func(childComplexity int) int
+		ClubMatchID    func(childComplexity int) int
 		Disposals      func(childComplexity int) int
 		Goals          func(childComplexity int) int
 		Handballs      func(childComplexity int) int
@@ -179,11 +184,16 @@ type ComplexityRoot struct {
 
 type AFLClubMatchResolver interface {
 	PlayerMatches(ctx context.Context, obj *AFLClubMatch) ([]*AFLPlayerMatch, error)
+
+	Match(ctx context.Context, obj *AFLClubMatch) (*AFLMatch, error)
 }
 type AFLMatchResolver interface {
 	Round(ctx context.Context, obj *AFLMatch) (*AFLRound, error)
 	HomeClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
 	AwayClubMatch(ctx context.Context, obj *AFLMatch) (*AFLClubMatch, error)
+}
+type AFLPlayerMatchResolver interface {
+	ClubMatch(ctx context.Context, obj *AFLPlayerMatch) (*AFLClubMatch, error)
 }
 type AFLPlayerSeasonResolver interface {
 	Player(ctx context.Context, obj *AFLPlayerSeason) (*AFLPlayer, error)
@@ -260,6 +270,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLClubMatch.ID(childComplexity), true
+	case "AFLClubMatch.match":
+		if e.ComplexityRoot.AFLClubMatch.Match == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLClubMatch.Match(childComplexity), true
+	case "AFLClubMatch.matchId":
+		if e.ComplexityRoot.AFLClubMatch.MatchID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLClubMatch.MatchID(childComplexity), true
 	case "AFLClubMatch.playerMatches":
 		if e.ComplexityRoot.AFLClubMatch.PlayerMatches == nil {
 			break
@@ -421,6 +443,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLPlayerMatch.Behinds(childComplexity), true
+	case "AFLPlayerMatch.clubMatch":
+		if e.ComplexityRoot.AFLPlayerMatch.ClubMatch == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerMatch.ClubMatch(childComplexity), true
+	case "AFLPlayerMatch.clubMatchId":
+		if e.ComplexityRoot.AFLPlayerMatch.ClubMatchID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayerMatch.ClubMatchID(childComplexity), true
 	case "AFLPlayerMatch.disposals":
 		if e.ComplexityRoot.AFLPlayerMatch.Disposals == nil {
 			break
@@ -1020,6 +1054,8 @@ type AFLClubMatch {
   rushedBehinds: Int!
   score: Int!
   playerMatches: [AFLPlayerMatch!]!
+  matchId: ID!
+  match: AFLMatch
 }
 
 type AFLPlayer {
@@ -1037,6 +1073,7 @@ type AFLPlayerSeason @key(fields: "id") {
 type AFLPlayerMatch @key(fields: "id") {
   id: ID!
   playerSeasonId: ID!
+  clubMatchId: ID!
   player: AFLPlayer!
   status: String!
   kicks: Int!
@@ -1048,6 +1085,7 @@ type AFLPlayerMatch @key(fields: "id") {
   behinds: Int!
   disposals: Int!
   score: Int!
+  clubMatch: AFLClubMatch
 }
 
 type AFLLiveRound {
@@ -1574,6 +1612,8 @@ func (ec *executionContext) fieldContext_AFLClubMatch_playerMatches(_ context.Co
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
 			case "playerSeasonId":
 				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
+			case "clubMatchId":
+				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "status":
@@ -1596,8 +1636,88 @@ func (ec *executionContext) fieldContext_AFLClubMatch_playerMatches(_ context.Co
 				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
 			case "score":
 				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
+			case "clubMatch":
+				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLClubMatch_matchId(ctx context.Context, field graphql.CollectedField, obj *AFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLClubMatch_matchId,
+		func(ctx context.Context) (any, error) {
+			return obj.MatchID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLClubMatch_matchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLClubMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLClubMatch_match(ctx context.Context, field graphql.CollectedField, obj *AFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLClubMatch_match,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AFLClubMatch().Match(ctx, obj)
+		},
+		nil,
+		ec.marshalOAFLMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLMatch,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLClubMatch_match(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLClubMatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLMatch_id(ctx, field)
+			case "venue":
+				return ec.fieldContext_AFLMatch_venue(ctx, field)
+			case "startTime":
+				return ec.fieldContext_AFLMatch_startTime(ctx, field)
+			case "result":
+				return ec.fieldContext_AFLMatch_result(ctx, field)
+			case "statsImportStatus":
+				return ec.fieldContext_AFLMatch_statsImportStatus(ctx, field)
+			case "statsImportedAt":
+				return ec.fieldContext_AFLMatch_statsImportedAt(ctx, field)
+			case "round":
+				return ec.fieldContext_AFLMatch_round(ctx, field)
+			case "homeClubMatch":
+				return ec.fieldContext_AFLMatch_homeClubMatch(ctx, field)
+			case "awayClubMatch":
+				return ec.fieldContext_AFLMatch_awayClubMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLMatch", field.Name)
 		},
 	}
 	return fc, nil
@@ -2185,6 +2305,10 @@ func (ec *executionContext) fieldContext_AFLMatch_homeClubMatch(_ context.Contex
 				return ec.fieldContext_AFLClubMatch_score(ctx, field)
 			case "playerMatches":
 				return ec.fieldContext_AFLClubMatch_playerMatches(ctx, field)
+			case "matchId":
+				return ec.fieldContext_AFLClubMatch_matchId(ctx, field)
+			case "match":
+				return ec.fieldContext_AFLClubMatch_match(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLClubMatch", field.Name)
 		},
@@ -2226,6 +2350,10 @@ func (ec *executionContext) fieldContext_AFLMatch_awayClubMatch(_ context.Contex
 				return ec.fieldContext_AFLClubMatch_score(ctx, field)
 			case "playerMatches":
 				return ec.fieldContext_AFLClubMatch_playerMatches(ctx, field)
+			case "matchId":
+				return ec.fieldContext_AFLClubMatch_matchId(ctx, field)
+			case "match":
+				return ec.fieldContext_AFLClubMatch_match(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLClubMatch", field.Name)
 		},
@@ -2337,6 +2465,35 @@ func (ec *executionContext) _AFLPlayerMatch_playerSeasonId(ctx context.Context, 
 }
 
 func (ec *executionContext) fieldContext_AFLPlayerMatch_playerSeasonId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AFLPlayerMatch_clubMatchId(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerMatch_clubMatchId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClubMatchID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerMatch_clubMatchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AFLPlayerMatch",
 		Field:      field,
@@ -2674,6 +2831,51 @@ func (ec *executionContext) fieldContext_AFLPlayerMatch_score(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AFLPlayerMatch_clubMatch(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayerMatch_clubMatch,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AFLPlayerMatch().ClubMatch(ctx, obj)
+		},
+		nil,
+		ec.marshalOAFLClubMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLClubMatch,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayerMatch_clubMatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayerMatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLClubMatch_id(ctx, field)
+			case "club":
+				return ec.fieldContext_AFLClubMatch_club(ctx, field)
+			case "rushedBehinds":
+				return ec.fieldContext_AFLClubMatch_rushedBehinds(ctx, field)
+			case "score":
+				return ec.fieldContext_AFLClubMatch_score(ctx, field)
+			case "playerMatches":
+				return ec.fieldContext_AFLClubMatch_playerMatches(ctx, field)
+			case "matchId":
+				return ec.fieldContext_AFLClubMatch_matchId(ctx, field)
+			case "match":
+				return ec.fieldContext_AFLClubMatch_match(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLClubMatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AFLPlayerSeason_id(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerSeason) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2815,6 +3017,8 @@ func (ec *executionContext) fieldContext_AFLPlayerSeason_matches(_ context.Conte
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
 			case "playerSeasonId":
 				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
+			case "clubMatchId":
+				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "status":
@@ -2837,6 +3041,8 @@ func (ec *executionContext) fieldContext_AFLPlayerSeason_matches(_ context.Conte
 				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
 			case "score":
 				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
+			case "clubMatch":
+				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
 		},
@@ -3290,6 +3496,8 @@ func (ec *executionContext) fieldContext_Entity_findAFLPlayerMatchByID(ctx conte
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
 			case "playerSeasonId":
 				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
+			case "clubMatchId":
+				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "status":
@@ -3312,6 +3520,8 @@ func (ec *executionContext) fieldContext_Entity_findAFLPlayerMatchByID(ctx conte
 				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
 			case "score":
 				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
+			case "clubMatch":
+				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
 		},
@@ -3637,6 +3847,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAFLPlayerMatch(ctx conte
 				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
 			case "playerSeasonId":
 				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
+			case "clubMatchId":
+				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
 			case "player":
 				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
 			case "status":
@@ -3659,6 +3871,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAFLPlayerMatch(ctx conte
 				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
 			case "score":
 				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
+			case "clubMatch":
+				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
 		},
@@ -6234,6 +6448,44 @@ func (ec *executionContext) _AFLClubMatch(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "matchId":
+			out.Values[i] = ec._AFLClubMatch_matchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "match":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLClubMatch_match(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6592,68 +6844,106 @@ func (ec *executionContext) _AFLPlayerMatch(ctx context.Context, sel ast.Selecti
 		case "id":
 			out.Values[i] = ec._AFLPlayerMatch_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "playerSeasonId":
 			out.Values[i] = ec._AFLPlayerMatch_playerSeasonId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clubMatchId":
+			out.Values[i] = ec._AFLPlayerMatch_clubMatchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "player":
 			out.Values[i] = ec._AFLPlayerMatch_player(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "status":
 			out.Values[i] = ec._AFLPlayerMatch_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "kicks":
 			out.Values[i] = ec._AFLPlayerMatch_kicks(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "handballs":
 			out.Values[i] = ec._AFLPlayerMatch_handballs(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "marks":
 			out.Values[i] = ec._AFLPlayerMatch_marks(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hitouts":
 			out.Values[i] = ec._AFLPlayerMatch_hitouts(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tackles":
 			out.Values[i] = ec._AFLPlayerMatch_tackles(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "goals":
 			out.Values[i] = ec._AFLPlayerMatch_goals(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "behinds":
 			out.Values[i] = ec._AFLPlayerMatch_behinds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "disposals":
 			out.Values[i] = ec._AFLPlayerMatch_disposals(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "score":
 			out.Values[i] = ec._AFLPlayerMatch_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "clubMatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AFLPlayerMatch_clubMatch(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

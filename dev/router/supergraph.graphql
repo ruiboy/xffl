@@ -52,6 +52,8 @@ type AFLClubMatch
   rushedBehinds: Int!
   score: Int!
   playerMatches: [AFLPlayerMatch!]!
+  matchId: ID!
+  match: AFLMatch
 }
 
 type AFLClubSeason
@@ -102,6 +104,8 @@ type AFLPlayerMatch
 {
   id: ID!
   playerSeasonId: ID! @join__field(graph: AFL)
+  clubMatchId: ID! @join__field(graph: AFL)
+  clubMatch: AFLClubMatch @join__field(graph: AFL)
   player: AFLPlayer! @join__field(graph: AFL)
   status: String! @join__field(graph: AFL)
   kicks: Int! @join__field(graph: AFL)
@@ -285,6 +289,7 @@ type FFLPlayerSeasonConnection
 input FFLPlayerSeasonFilter
   @join__type(graph: FFL)
 {
+  """Not supported"""
   active: Boolean
 }
 

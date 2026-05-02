@@ -32,6 +32,19 @@ func (r *aFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *AFLClubMa
 	return result, nil
 }
 
+// Match is the resolver for the match field.
+func (r *aFLClubMatchResolver) Match(ctx context.Context, obj *AFLClubMatch) (*AFLMatch, error) {
+	matchID, err := fromID(obj.MatchID)
+	if err != nil {
+		return nil, err
+	}
+	match, err := r.Queries.GetMatch(ctx, matchID)
+	if err != nil {
+		return nil, err
+	}
+	return convertMatch(match), nil
+}
+
 // Round is the resolver for the round field.
 func (r *aFLMatchResolver) Round(ctx context.Context, obj *AFLMatch) (*AFLRound, error) {
 	matchID, err := fromID(obj.ID)
@@ -87,6 +100,23 @@ func (r *aFLMatchResolver) AwayClubMatch(ctx context.Context, obj *AFLMatch) (*A
 		return nil, nil
 	}
 	cm, err := r.Queries.GetClubMatch(ctx, match.Away.ID)
+	if err != nil {
+		return nil, err
+	}
+	club, err := r.Queries.GetClubForClubSeason(ctx, cm.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertClubMatch(cm, club), nil
+}
+
+// ClubMatch is the resolver for the clubMatch field.
+func (r *aFLPlayerMatchResolver) ClubMatch(ctx context.Context, obj *AFLPlayerMatch) (*AFLClubMatch, error) {
+	cmID, err := fromID(obj.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	cm, err := r.Queries.GetClubMatch(ctx, cmID)
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +389,9 @@ func (r *Resolver) AFLClubMatch() AFLClubMatchResolver { return &aFLClubMatchRes
 // AFLMatch returns AFLMatchResolver implementation.
 func (r *Resolver) AFLMatch() AFLMatchResolver { return &aFLMatchResolver{r} }
 
+// AFLPlayerMatch returns AFLPlayerMatchResolver implementation.
+func (r *Resolver) AFLPlayerMatch() AFLPlayerMatchResolver { return &aFLPlayerMatchResolver{r} }
+
 // AFLPlayerSeason returns AFLPlayerSeasonResolver implementation.
 func (r *Resolver) AFLPlayerSeason() AFLPlayerSeasonResolver { return &aFLPlayerSeasonResolver{r} }
 
@@ -373,6 +406,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type aFLClubMatchResolver struct{ *Resolver }
 type aFLMatchResolver struct{ *Resolver }
+type aFLPlayerMatchResolver struct{ *Resolver }
 type aFLPlayerSeasonResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }
 type aFLSeasonResolver struct{ *Resolver }
