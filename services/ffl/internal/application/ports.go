@@ -16,13 +16,11 @@ type PlayerMatch struct {
 	Confidence float64 // 0.0–1.0
 }
 
-// PlayerLookup fetches player entities from the AFL service by ID.
+// PlayerLookup fetches entities from the AFL service by ID, to return information required cross-service.
 type PlayerLookup interface {
-    // LookupPlayers fetches player names from the AFL service by AFL player ID.
-    // Used to build candidate pools without reading ffl.player.drv_name.
+	// LookupPlayers fetches an AFL Player by ID.
 	LookupPlayers(ctx context.Context, aflPlayerIDs []int) ([]PlayerCandidate, error)
-	// LookupPlayerSeason resolves an AFL player_season ID to its underlying
-	// afl.player.id, used when creating an ffl.player_season.
+	// LookupPlayerSeason fetches an AFL Player Season by ID.
 	LookupPlayerSeason(ctx context.Context, aflPlayerSeasonID int) (int, error)
 }
 

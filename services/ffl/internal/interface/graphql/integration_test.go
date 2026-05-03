@@ -568,10 +568,6 @@ func TestFflClubSeason(t *testing.T) {
 	})
 }
 
-// createFFLPlayer / updateFFLPlayer / deleteFFLPlayer mutations were retired
-// alongside ffl.player.drv_name — FFL players are now created implicitly by
-// addFFLPlayerToSeason and identified by their afl_player_id link.
-
 func TestCalculateFFLFantasyScore(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
@@ -1079,8 +1075,7 @@ func TestAddFFLPlayerToSeason_FromAFLPlayerSeason(t *testing.T) {
 		require.NotNil(t, data.AddFFLPlayerToSeason.FromRoundID)
 		assert.Equal(t, roundIDStr, *data.AddFFLPlayerToSeason.FromRoundID)
 
-		// drv_name has been dropped from ffl.player — verify the row exists
-		// linked to the AFL player and nothing more.
+		// verify the FFL player has a link to the AFL player
 		var fflPlayerCount int
 		require.NoError(t, pool.QueryRow(ctx,
 			"SELECT COUNT(*) FROM ffl.player WHERE afl_player_id = $1", aflPlayerID).Scan(&fflPlayerCount))
@@ -1246,12 +1241,12 @@ func TestFflClubSeason_PageInfoTotalCount(t *testing.T) {
 		FflClubSeason struct {
 			Players struct {
 				Nodes []struct {
-					ID          string  `json:"id"`
+					ID          string                `json:"id"`
 					Player      struct{ Name string } `json:"player"`
-					FromRoundID *string `json:"fromRoundId"`
-					ToRoundID   *string `json:"toRoundId"`
-					Notes       *string `json:"notes"`
-					CostCents   *int    `json:"costCents"`
+					FromRoundID *string               `json:"fromRoundId"`
+					ToRoundID   *string               `json:"toRoundId"`
+					Notes       *string               `json:"notes"`
+					CostCents   *int                  `json:"costCents"`
 				} `json:"nodes"`
 				PageInfo struct {
 					HasNextPage bool    `json:"hasNextPage"`

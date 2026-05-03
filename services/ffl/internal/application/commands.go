@@ -54,8 +54,7 @@ func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, deps Commands
 // AddPlayerToSeason adds a player to a club season squad. The AFL player_season
 // ID is the only cross-service handle the caller needs to provide; the FFL
 // service resolves it to the underlying afl.player.id via Twirp and find-or-
-// creates the ffl.player row. Player names are not written into ffl.player
-// (drv_name is retired); they are read via federation traversal at query time.
+// creates the ffl.player row.
 func (c *Commands) AddPlayerToSeason(ctx context.Context, clubSeasonID, aflPlayerSeasonID int, fromRoundID, costCents *int) (domain.PlayerSeason, error) {
 	aflPlayerID, err := c.playerLookup.LookupPlayerSeason(ctx, aflPlayerSeasonID)
 	if err != nil {
