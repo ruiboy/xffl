@@ -8,7 +8,12 @@ export const IMPORT_AFL_MATCH_STATS = gql`
       awayClubName
       homePlayerCount
       awayPlayerCount
-      unmatchedPlayers
+      unmatchedPlayers {
+        parsedName
+        clubMatchId
+        kicks handballs marks hitouts tackles goals behinds
+        candidates { playerSeasonId name confidence }
+      }
     }
   }
 `
@@ -17,8 +22,15 @@ export const MARK_AFL_MATCH_STATS_COMPLETE = gql`
   mutation MarkAFLMatchStatsComplete($matchId: ID!, $complete: Boolean!) {
     markAFLMatchStatsComplete(matchId: $matchId, complete: $complete) {
       id
-      statsImportStatus
-      statsImportedAt
+      dataStatus
+    }
+  }
+`
+
+export const CONFIRM_AFL_PLAYER_MATCH = gql`
+  mutation ConfirmAFLPlayerMatch($input: UpdateAFLPlayerMatchInput!) {
+    updateAFLPlayerMatch(input: $input) {
+      id
     }
   }
 `

@@ -55,9 +55,28 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 	if err != nil {
 		return nil, err
 	}
-	unmatched := result.UnmatchedPlayers
-	if unmatched == nil {
-		unmatched = []string{}
+	unmatched := make([]*UnmatchedAFLPlayer, len(result.UnmatchedPlayers))
+	for i, u := range result.UnmatchedPlayers {
+		candidates := make([]*AFLPlayerCandidate, len(u.Candidates))
+		for j, c := range u.Candidates {
+			candidates[j] = &AFLPlayerCandidate{
+				PlayerSeasonID: toID(c.Candidate.PlayerSeasonID),
+				Name:           c.Candidate.Name,
+				Confidence:     c.Confidence,
+			}
+		}
+		unmatched[i] = &UnmatchedAFLPlayer{
+			ParsedName:  u.ParsedName,
+			ClubMatchID: toID(u.ClubMatchID),
+			Kicks:       u.Kicks,
+			Handballs:   u.Handballs,
+			Marks:       u.Marks,
+			Hitouts:     u.Hitouts,
+			Tackles:     u.Tackles,
+			Goals:       u.Goals,
+			Behinds:     u.Behinds,
+			Candidates:  candidates,
+		}
 	}
 	return &ImportAFLMatchStatsResult{
 		MatchID:          toID(result.MatchID),

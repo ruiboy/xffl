@@ -90,6 +90,14 @@ type AFLPlayer
   name: String! @join__field(graph: AFL)
 }
 
+type AFLPlayerCandidate
+  @join__type(graph: AFL)
+{
+  playerSeasonId: ID!
+  name: String!
+  confidence: Float!
+}
+
 type AFLPlayerMatch
   @join__type(graph: AFL, key: "id")
   @join__type(graph: FFL, key: "id")
@@ -319,7 +327,7 @@ type ImportAFLMatchStatsResult
   awayClubName: String!
   homePlayerCount: Int!
   awayPlayerCount: Int!
-  unmatchedPlayers: [String!]!
+  unmatchedPlayers: [UnmatchedAFLPlayer!]!
 }
 
 scalar join__FieldSet
@@ -437,6 +445,21 @@ input SetFFLTeamInput
 {
   clubMatchId: ID!
   players: [FFLTeamPlayerInput!]!
+}
+
+type UnmatchedAFLPlayer
+  @join__type(graph: AFL)
+{
+  parsedName: String!
+  clubMatchId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  candidates: [AFLPlayerCandidate!]!
 }
 
 input UpdateAFLPlayerMatchInput

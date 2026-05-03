@@ -52,6 +52,12 @@ type AFLPlayer struct {
 
 func (AFLPlayer) IsEntity() {}
 
+type AFLPlayerCandidate struct {
+	PlayerSeasonID string  `json:"playerSeasonId"`
+	Name           string  `json:"name"`
+	Confidence     float64 `json:"confidence"`
+}
+
 type AFLPlayerMatch struct {
 	ID             string        `json:"id"`
 	PlayerSeasonID string        `json:"playerSeasonId"`
@@ -110,12 +116,12 @@ type AFLSeason struct {
 func (AFLSeason) IsEntity() {}
 
 type ImportAFLMatchStatsResult struct {
-	MatchID          string   `json:"matchId"`
-	HomeClubName     string   `json:"homeClubName"`
-	AwayClubName     string   `json:"awayClubName"`
-	HomePlayerCount  int      `json:"homePlayerCount"`
-	AwayPlayerCount  int      `json:"awayPlayerCount"`
-	UnmatchedPlayers []string `json:"unmatchedPlayers"`
+	MatchID          string                `json:"matchId"`
+	HomeClubName     string                `json:"homeClubName"`
+	AwayClubName     string                `json:"awayClubName"`
+	HomePlayerCount  int                   `json:"homePlayerCount"`
+	AwayPlayerCount  int                   `json:"awayPlayerCount"`
+	UnmatchedPlayers []*UnmatchedAFLPlayer `json:"unmatchedPlayers"`
 }
 
 type Mutation struct {
@@ -128,6 +134,19 @@ type PageInfo struct {
 }
 
 type Query struct {
+}
+
+type UnmatchedAFLPlayer struct {
+	ParsedName  string                `json:"parsedName"`
+	ClubMatchID string                `json:"clubMatchId"`
+	Kicks       int                   `json:"kicks"`
+	Handballs   int                   `json:"handballs"`
+	Marks       int                   `json:"marks"`
+	Hitouts     int                   `json:"hitouts"`
+	Tackles     int                   `json:"tackles"`
+	Goals       int                   `json:"goals"`
+	Behinds     int                   `json:"behinds"`
+	Candidates  []*AFLPlayerCandidate `json:"candidates"`
 }
 
 type UpdateAFLPlayerMatchInput struct {

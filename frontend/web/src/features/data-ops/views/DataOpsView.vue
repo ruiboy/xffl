@@ -106,16 +106,80 @@
                     </div>
                   </td>
                 </tr>
-                <!-- Feedback sub-row -->
+                <!-- Feedback / unmatched review sub-row -->
                 <tr v-if="scrapeResult[match.id] || scrapeError[match.id]" class="border-b border-border">
-                  <td colspan="5" class="pb-2.5 pt-0 text-xs">
-                    <span v-if="scrapeError[match.id]" class="text-red-400">{{ scrapeError[match.id] }}</span>
+                  <td colspan="5" class="pb-3 pt-0">
+                    <span v-if="scrapeError[match.id]" class="text-xs text-red-400">{{ scrapeError[match.id] }}</span>
                     <template v-else-if="scrapeResult[match.id]">
-                      <span class="text-green-500 font-medium">Imported</span>
-                      <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-2">
-                        · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched:
-                        {{ scrapeResult[match.id].unmatchedPlayers.join(', ') }}
-                      </span>
+                      <div class="text-xs mb-1">
+                        <span class="text-green-500 font-medium">Imported</span>
+                        <span class="text-text-faint ml-1">
+                          · {{ scrapeResult[match.id].homePlayerCount + scrapeResult[match.id].awayPlayerCount }} players
+                        </span>
+                        <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-1">
+                          · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched — review below
+                        </span>
+                      </div>
+                      <!-- Unmatched player review table -->
+                      <div v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="mt-2 border border-border rounded-lg overflow-hidden">
+                        <table class="w-full">
+                          <thead>
+                            <tr class="border-b border-border bg-surface-raised">
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Parsed name</th>
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Stats</th>
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Best match</th>
+                              <th class="px-3 py-2 text-right text-xs font-medium text-text-faint"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr
+                              v-for="(up, ui) in scrapeResult[match.id].unmatchedPlayers"
+                              :key="ui"
+                              class="border-b border-border last:border-0"
+                              :class="unmatchedConfirmed[match.id]?.[ui] ? 'bg-green-500/5' : ''"
+                            >
+                              <td class="px-3 py-2 text-sm font-medium whitespace-nowrap">{{ up.parsedName }}</td>
+                              <td class="px-3 py-2 text-xs text-text-faint whitespace-nowrap tabular-nums">
+                                {{ up.goals }}g {{ up.kicks }}k {{ up.handballs }}hb {{ up.marks }}m {{ up.tackles }}t {{ up.hitouts }}ho
+                              </td>
+                              <td class="px-3 py-2">
+                                <template v-if="unmatchedConfirmed[match.id]?.[ui]">
+                                  <span class="text-green-500 text-xs font-medium">✓ Confirmed</span>
+                                </template>
+                                <template v-else-if="up.candidates.length === 0">
+                                  <span class="text-text-faint text-xs">No candidates</span>
+                                </template>
+                                <template v-else>
+                                  <select
+                                    v-model="unmatchedSelections[match.id + ':' + ui]"
+                                    class="rounded border border-border bg-surface px-2 py-1 text-xs text-text focus:outline-none focus:ring-1 focus:ring-active"
+                                  >
+                                    <option value="">Select player…</option>
+                                    <option
+                                      v-for="c in up.candidates"
+                                      :key="c.playerSeasonId"
+                                      :value="c.playerSeasonId"
+                                    >{{ c.name }} ({{ (c.confidence * 100).toFixed(0) }}%)</option>
+                                  </select>
+                                </template>
+                              </td>
+                              <td class="px-3 py-2 text-right">
+                                <button
+                                  v-if="!unmatchedConfirmed[match.id]?.[ui] && up.candidates.length > 0"
+                                  @click="confirmUnmatched(match.id, ui, up)"
+                                  :disabled="!unmatchedSelections[match.id + ':' + ui] || confirmingUnmatched[match.id + ':' + ui]"
+                                  class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+                                >{{ confirmingUnmatched[match.id + ':' + ui] ? '…' : 'Confirm' }}</button>
+                                <button
+                                  v-else-if="!unmatchedConfirmed[match.id]?.[ui]"
+                                  class="rounded border border-border px-2 py-1 text-xs text-text-faint"
+                                  disabled
+                                >Skip</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </template>
                   </td>
                 </tr>
@@ -305,7 +369,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE } from '../api/mutations'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, CONFIRM_AFL_PLAYER_MATCH } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
@@ -343,13 +407,33 @@ const { result: roundStatsResult, loading: loadingRoundStats, refetch: refetchRo
 const aflMatches = computed(() => roundStatsResult.value?.aflRound?.matches ?? [])
 const aflSeasonId = computed(() => roundStatsResult.value?.aflRound?.season?.id ?? '')
 
+type UnmatchedAFLPlayer = {
+  parsedName: string
+  clubMatchId: string
+  kicks: number; handballs: number; marks: number; hitouts: number; tackles: number; goals: number; behinds: number
+  candidates: { playerSeasonId: string; name: string; confidence: number }[]
+}
+
+type ScrapeResult = {
+  homeClubName: string; awayClubName: string
+  homePlayerCount: number; awayPlayerCount: number
+  unmatchedPlayers: UnmatchedAFLPlayer[]
+}
+
 const scraping = ref<Record<string, boolean>>({})
-const scrapeResult = ref<Record<string, { homeClubName: string; awayClubName: string; homePlayerCount: number; awayPlayerCount: number; unmatchedPlayers: string[] }>>({})
+const scrapeResult = ref<Record<string, ScrapeResult>>({})
 const scrapeError = ref<Record<string, string>>({})
 const togglingFinal = ref<Record<string, boolean>>({})
 
+// unmatched review: keyed by "matchId:rowIndex"
+const unmatchedSelections = ref<Record<string, string>>({})
+const confirmingUnmatched = ref<Record<string, boolean>>({})
+// keyed by matchId → rowIndex → true when confirmed
+const unmatchedConfirmed = ref<Record<string, Record<number, boolean>>>({})
+
 const { mutate: importStatsMutation } = useMutation(IMPORT_AFL_MATCH_STATS)
 const { mutate: markCompleteMutation } = useMutation(MARK_AFL_MATCH_STATS_COMPLETE)
+const { mutate: confirmPlayerMatchMutation } = useMutation(CONFIRM_AFL_PLAYER_MATCH)
 
 async function scrape(match: any) {
   scraping.value[match.id] = true
@@ -379,6 +463,36 @@ async function toggleFinal(match: any) {
     scrapeError.value[match.id] = e.message ?? 'Update failed'
   } finally {
     togglingFinal.value[match.id] = false
+  }
+}
+
+async function confirmUnmatched(matchId: string, rowIndex: number, up: UnmatchedAFLPlayer) {
+  const key = `${matchId}:${rowIndex}`
+  const playerSeasonId = unmatchedSelections.value[key]
+  if (!playerSeasonId) return
+  confirmingUnmatched.value[key] = true
+  try {
+    await confirmPlayerMatchMutation({
+      input: {
+        playerSeasonId,
+        clubMatchId: up.clubMatchId,
+        status: 'played',
+        kicks: up.kicks,
+        handballs: up.handballs,
+        marks: up.marks,
+        hitouts: up.hitouts,
+        tackles: up.tackles,
+        goals: up.goals,
+        behinds: up.behinds,
+      },
+    })
+    if (!unmatchedConfirmed.value[matchId]) unmatchedConfirmed.value[matchId] = {}
+    unmatchedConfirmed.value[matchId][rowIndex] = true
+    await refetchRoundStats()
+  } catch (e: any) {
+    scrapeError.value[matchId] = e.message ?? 'Confirm failed'
+  } finally {
+    confirmingUnmatched.value[key] = false
   }
 }
 

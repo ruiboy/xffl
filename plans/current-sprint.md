@@ -80,7 +80,7 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - Side quest - Data Ops:
   - AFL stats import and FFL Team import pages to align more closely in intent and UX:
     - AFL Stats import
-      - [ ] On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.
+      - [x] On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.
       - [ ] Link round to AFL Round page.
       - [x] Link match to AFL Match page.
       - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).

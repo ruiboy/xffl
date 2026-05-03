@@ -16,6 +16,21 @@ const (
 	confidenceThreshold   = 0.85
 )
 
+// UnmatchedAFLPlayer holds the parsed stats and candidate pool for a player
+// who could not be confidently matched during import.
+type UnmatchedAFLPlayer struct {
+	ParsedName  string
+	ClubMatchID int
+	Kicks       int
+	Handballs   int
+	Marks       int
+	Hitouts     int
+	Tackles     int
+	Goals       int
+	Behinds     int
+	Candidates  []PlayerMatch // sorted by descending confidence; may be empty
+}
+
 // ImportAFLStatsResult summarises what was written for each club in a match.
 type ImportAFLStatsResult struct {
 	MatchID          int
@@ -23,7 +38,7 @@ type ImportAFLStatsResult struct {
 	AwayClubName     string
 	HomePlayerCount  int
 	AwayPlayerCount  int
-	UnmatchedPlayers []string // display names of players with no confident match
+	UnmatchedPlayers []UnmatchedAFLPlayer
 }
 
 // DataOpsCommands handles AFL stats import operations.
@@ -151,7 +166,7 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		}
 
 		var written []domain.PlayerMatch
-		var unmatched []string
+		var unmatched []UnmatchedAFLPlayer
 
 		err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 			written = make([]domain.PlayerMatch, 0, len(playerStats))
@@ -163,7 +178,9 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 				matches, err := c.resolver.Resolve(ctx, resolveName, w.clubName, candidates)
 				if err != nil {
 					slog.WarnContext(ctx, "resolver error", slog.String("player", ps.Name), slog.Any("error", err))
-					unmatched = append(unmatched, ps.Name)
+					unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
+						Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
+						Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds})
 					continue
 				}
 				if len(matches) == 0 || matches[0].Confidence < confidenceThreshold {
@@ -172,7 +189,9 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 						slog.String("canonicalName", ps.CanonicalName),
 						slog.String("club", w.clubName),
 					)
-					unmatched = append(unmatched, ps.Name)
+					unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
+						Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
+						Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds, Candidates: matches})
 					continue
 				}
 

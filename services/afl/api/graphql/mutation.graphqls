@@ -10,7 +10,26 @@ type ImportAFLMatchStatsResult {
   awayClubName: String!
   homePlayerCount: Int!
   awayPlayerCount: Int!
-  unmatchedPlayers: [String!]!
+  unmatchedPlayers: [UnmatchedAFLPlayer!]!
+}
+
+type UnmatchedAFLPlayer {
+  parsedName: String!
+  clubMatchId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  candidates: [AFLPlayerCandidate!]!
+}
+
+type AFLPlayerCandidate {
+  playerSeasonId: ID!
+  name: String!
+  confidence: Float!
 }
 
 input UpdateAFLPlayerMatchInput {
