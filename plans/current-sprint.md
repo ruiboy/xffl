@@ -80,7 +80,7 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - Side quest - Data Ops:
   - AFL stats import and FFL Team import pages to align more closely in intent and UX:
     - AFL Stats import
-      - [x] On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.
+      - [x] ~~On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.~~ → replaced by holistic player search (see below)
       - [ ] Link round to AFL Round page.
       - [x] Link match to AFL Match page.
       - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).
@@ -92,6 +92,19 @@ ADR: ADR-018 (Twirp for cross-service communication)
       - [ ] Link each team to FFL Team Builder page
       - [x] Improve UI: Form is a bit ugly right now. Team format should default selected club.
     - [ ] Function to recalculate FFL stats for a team. Call on team import. Maybe have button in data ops.
+  - Holistic player search (replaces inline unmatched-player review in AFL stats import)
+    **Decisions:**
+    - Player search is a shared UX pattern but two separate components: `features/data-ops/` and `features/ffl/` each own theirs so they can diverge naturally
+    - Both components display latest AFL club name + season name alongside player name to aid disambiguation
+    - Selecting a player from the list is the mapping action; "Add new player" button is used for when the player isn't found
+    - `afl.dataops_player_source` table (mirrors `afl.dataops_match_source`): maps footywire (season, club, player name) → `afl.player_season.id`; row only written when a name mismatch was manually resolved — not for natural name matches
+    - AFL Stats Import player flow: search → select existing OR add new → ensure `afl.player_season` exists → add `afl.player_match`; selecting a non-matching player creates the `dataops_player_source` row so future imports auto-resolve
+    - FFL Add Player flow: same search → select/add AFL player → ensure `afl.player_season` → ensure `ffl.player` → add `ffl.player_season`
+    **Tasks:**
+    - [ ] `afl.dataops_player_source` schema + migration
+    - [ ] Backend: player search query enriched with latest club/season; mutations for add player, ensure player season, create source mapping
+    - [ ] Frontend data-ops: player search component + reworked AFL stats import unmatched-player flow
+    - [ ] Frontend FFL: player search component + reworked add player flow
   
 ## Step 6 — Score reconciliation *(every round)*
 
