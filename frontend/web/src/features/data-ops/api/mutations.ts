@@ -49,7 +49,7 @@ export const CONFIRM_TEAM_SUBMISSION = gql`
     confirmFFLTeamSubmission(input: $input) {
       id
       playerSeasonId
-      player { id name }
+      player { id aflPlayer { name } }
       position
       backupPositions
       interchangePosition

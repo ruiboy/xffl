@@ -136,6 +136,10 @@ func (q *Queries) GetPlayerSeasonsByIDs(ctx context.Context, ids []int) (map[int
 	return q.playerSeasons.FindByIDs(ctx, ids)
 }
 
+func (q *Queries) GetPlayerSeasonIDsBySeasonID(ctx context.Context, seasonID int, nameQuery *string) ([]int, error) {
+	return q.playerSeasons.FindIDsBySeasonID(ctx, seasonID, nameQuery)
+}
+
 func (q *Queries) GetPlayerMatchByID(ctx context.Context, id int) (domain.PlayerMatch, error) {
 	return q.playerMatches.FindByID(ctx, id)
 }

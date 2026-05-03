@@ -153,6 +153,25 @@ func (ec *executionContext) resolveEntity(
 	}()
 
 	switch typeName {
+	case "AFLPlayer":
+		resolverName, err := entityResolverNameForAFLPlayer(ctx, rep)
+		if err != nil {
+			return nil, fmt.Errorf(`finding resolver for Entity "AFLPlayer": %w`, err)
+		}
+		switch resolverName {
+
+		case "findAFLPlayerByID":
+			id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+			if err != nil {
+				return nil, fmt.Errorf(`unmarshalling param 0 for findAFLPlayerByID(): %w`, err)
+			}
+			entity, err := ec.Resolvers.Entity().FindAFLPlayerByID(ctx, id0)
+			if err != nil {
+				return nil, fmt.Errorf(`resolving Entity "AFLPlayer": %w`, err)
+			}
+
+			return entity, nil
+		}
 	case "AFLPlayerMatch":
 		resolverName, err := entityResolverNameForAFLPlayerMatch(ctx, rep)
 		if err != nil {
@@ -191,6 +210,44 @@ func (ec *executionContext) resolveEntity(
 
 			return entity, nil
 		}
+	case "AFLRound":
+		resolverName, err := entityResolverNameForAFLRound(ctx, rep)
+		if err != nil {
+			return nil, fmt.Errorf(`finding resolver for Entity "AFLRound": %w`, err)
+		}
+		switch resolverName {
+
+		case "findAFLRoundByID":
+			id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+			if err != nil {
+				return nil, fmt.Errorf(`unmarshalling param 0 for findAFLRoundByID(): %w`, err)
+			}
+			entity, err := ec.Resolvers.Entity().FindAFLRoundByID(ctx, id0)
+			if err != nil {
+				return nil, fmt.Errorf(`resolving Entity "AFLRound": %w`, err)
+			}
+
+			return entity, nil
+		}
+	case "AFLSeason":
+		resolverName, err := entityResolverNameForAFLSeason(ctx, rep)
+		if err != nil {
+			return nil, fmt.Errorf(`finding resolver for Entity "AFLSeason": %w`, err)
+		}
+		switch resolverName {
+
+		case "findAFLSeasonByID":
+			id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+			if err != nil {
+				return nil, fmt.Errorf(`unmarshalling param 0 for findAFLSeasonByID(): %w`, err)
+			}
+			entity, err := ec.Resolvers.Entity().FindAFLSeasonByID(ctx, id0)
+			if err != nil {
+				return nil, fmt.Errorf(`resolving Entity "AFLSeason": %w`, err)
+			}
+
+			return entity, nil
+		}
 
 	}
 	return nil, fmt.Errorf("%w: %s", ErrUnknownType, typeName)
@@ -215,6 +272,41 @@ func (ec *executionContext) resolveManyEntities(
 	default:
 		return errors.New("unknown type: " + typeName)
 	}
+}
+
+func entityResolverNameForAFLPlayer(ctx context.Context, rep EntityRepresentation) (string, error) {
+	// we collect errors because a later entity resolver may work fine
+	// when an entity has multiple keys
+	entityResolverErrs := []error{}
+	for {
+		var (
+			m   EntityRepresentation
+			val any
+			ok  bool
+		)
+		_ = val
+		// if all of the KeyFields values for this resolver are null,
+		// we shouldn't use use it
+		allNull := true
+		m = rep
+		val, ok = m["id"]
+		if !ok {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to missing Key Field \"id\" for AFLPlayer", ErrTypeNotFound))
+			break
+		}
+		if allNull {
+			allNull = val == nil
+		}
+		if allNull {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to all null value KeyFields for AFLPlayer", ErrTypeNotFound))
+			break
+		}
+		return "findAFLPlayerByID", nil
+	}
+	return "", fmt.Errorf("%w for AFLPlayer due to %v", ErrTypeNotFound,
+		errors.Join(entityResolverErrs...).Error())
 }
 
 func entityResolverNameForAFLPlayerMatch(ctx context.Context, rep EntityRepresentation) (string, error) {
@@ -284,5 +376,75 @@ func entityResolverNameForAFLPlayerSeason(ctx context.Context, rep EntityReprese
 		return "findAFLPlayerSeasonByID", nil
 	}
 	return "", fmt.Errorf("%w for AFLPlayerSeason due to %v", ErrTypeNotFound,
+		errors.Join(entityResolverErrs...).Error())
+}
+
+func entityResolverNameForAFLRound(ctx context.Context, rep EntityRepresentation) (string, error) {
+	// we collect errors because a later entity resolver may work fine
+	// when an entity has multiple keys
+	entityResolverErrs := []error{}
+	for {
+		var (
+			m   EntityRepresentation
+			val any
+			ok  bool
+		)
+		_ = val
+		// if all of the KeyFields values for this resolver are null,
+		// we shouldn't use use it
+		allNull := true
+		m = rep
+		val, ok = m["id"]
+		if !ok {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to missing Key Field \"id\" for AFLRound", ErrTypeNotFound))
+			break
+		}
+		if allNull {
+			allNull = val == nil
+		}
+		if allNull {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to all null value KeyFields for AFLRound", ErrTypeNotFound))
+			break
+		}
+		return "findAFLRoundByID", nil
+	}
+	return "", fmt.Errorf("%w for AFLRound due to %v", ErrTypeNotFound,
+		errors.Join(entityResolverErrs...).Error())
+}
+
+func entityResolverNameForAFLSeason(ctx context.Context, rep EntityRepresentation) (string, error) {
+	// we collect errors because a later entity resolver may work fine
+	// when an entity has multiple keys
+	entityResolverErrs := []error{}
+	for {
+		var (
+			m   EntityRepresentation
+			val any
+			ok  bool
+		)
+		_ = val
+		// if all of the KeyFields values for this resolver are null,
+		// we shouldn't use use it
+		allNull := true
+		m = rep
+		val, ok = m["id"]
+		if !ok {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to missing Key Field \"id\" for AFLSeason", ErrTypeNotFound))
+			break
+		}
+		if allNull {
+			allNull = val == nil
+		}
+		if allNull {
+			entityResolverErrs = append(entityResolverErrs,
+				fmt.Errorf("%w due to all null value KeyFields for AFLSeason", ErrTypeNotFound))
+			break
+		}
+		return "findAFLSeasonByID", nil
+	}
+	return "", fmt.Errorf("%w for AFLSeason due to %v", ErrTypeNotFound,
 		errors.Join(entityResolverErrs...).Error())
 }

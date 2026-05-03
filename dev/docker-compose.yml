@@ -32,6 +32,7 @@ services:
     command:
       - --supergraph=/config/supergraph.graphql
       - --config=/config/router.yaml
+      - --hot-reload
     volumes:
       - ./router:/config
     ports:

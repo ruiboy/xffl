@@ -7,7 +7,8 @@ rules:
   - "list fields that may grow use the Connection pattern"
   - "pagination is cursor-based only — no offset/limit"
   - "PageInfo is defined once in api/graphql/common.graphqls per service"
-  - "Connection types are named <Resource>Connection with nodes, pageInfo, totalCount"
+  - "Connection types are named <Resource>Connection with nodes and pageInfo only"
+  - "totalCount lives in PageInfo as Int (nullable) — clients opt in by selecting it"
 ---
 
 # ADR-014: GraphQL Pagination Standard — Cursor-Based Connection Pattern
@@ -28,8 +29,8 @@ query ($first: Int!, $after: String) {
     pageInfo {
       hasNextPage
       endCursor
+      totalCount
     }
-    totalCount
   }
 }
 ```
@@ -39,12 +40,12 @@ query ($first: Int!, $after: String) {
 type PageInfo {
   hasNextPage: Boolean!
   endCursor: String
+  totalCount: Int
 }
 
 type <Resource>Connection {
   nodes: [<Resource>!]!
   pageInfo: PageInfo!
-  totalCount: Int!
 }
 ```
 
@@ -52,7 +53,7 @@ type <Resource>Connection {
 - `PageInfo` is defined once in `api/graphql/common.graphqls` (per service) — never duplicated
 - Connection fields accept `first: Int, after: String` arguments even before real pagination is implemented
 - Cursors are opaque to clients (base64-encoded stable sort key, e.g. id)
-- Always return `nodes`, `pageInfo`, `totalCount`
+- `totalCount` is nullable (`Int`) and lives in `PageInfo` — clients opt in by selecting it; resolvers may compute it eagerly or lazily
 - Forward pagination only (`first` + `after`); no `last`/`before`
 - No `edges` unless explicitly required
 
@@ -61,6 +62,7 @@ type <Resource>Connection {
 - **Why cursor-based:** Stable under concurrent inserts/deletes; offset pagination skips or duplicates rows when the underlying data changes
 - **Why adopt the shape early:** Avoids breaking schema changes later; the shape is additive — clients can ignore `pageInfo` until they need it
 - **Why not return all:** Defensive default for fields that may grow (squads, match history, stat lists)
+- **Why `totalCount` is nullable and in `PageInfo`:** Being nullable means only need to compute it if requested. It belongs in `PageInfo` because it is pagination metadata, not result data.
 
 ## When to apply
 

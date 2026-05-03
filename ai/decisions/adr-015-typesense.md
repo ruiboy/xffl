@@ -48,6 +48,14 @@ The `domain.DocumentRepository` interface is unchanged. Only the infrastructure 
 - **Query API:** Typesense has its own JSON API (not ES-compatible). This is fully abstracted behind `DocumentRepository`. No application code is affected.
 - **Zinc removed:** `internal/infrastructure/zinc/` is replaced with `internal/infrastructure/typesense/`. The Zinc docker-compose service is removed.
 
+## Search Service Boundaries
+
+The search service is solely responsible for building and maintaining its own index. Source services (AFL, FFL) must be completely unaware that a search index exists.
+
+- **Incremental sync** flows via domain events. Source services fire events when domain data changes; the search service subscribes and reacts. The source service has no knowledge of this.
+- **Full reindex** is the search service's concern. It fetches data from source services via their existing APIs and indexes directly. Source services must not expose mutations or commands whose sole purpose is to serve the search service.
+- Data import use cases in source services fire domain events as a side effect of domain changes. They must not contain search-specific logic, calls, or event names designed for a specific subscriber.
+
 ## Future path
 
 The `SearchQuery` struct evolves in the domain layer as requirements grow:

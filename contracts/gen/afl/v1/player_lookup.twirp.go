@@ -33,6 +33,11 @@ const _ = twirp.TwirpPackageMinVersion_8_1_0
 
 type PlayerLookup interface {
 	LookupPlayers(context.Context, *LookupPlayersRequest) (*LookupPlayersResponse, error)
+
+	// Resolves a player_season ID to its underlying player ID, used by the FFL
+	// service when creating a player_season from an AFL search result. The "AFL"
+	// qualifier is omitted because the proto already lives in the afl.v1 package.
+	LookupPlayerSeason(context.Context, *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error)
 }
 
 // ============================
@@ -41,7 +46,7 @@ type PlayerLookup interface {
 
 type playerLookupProtobufClient struct {
 	client      HTTPClient
-	urls        [1]string
+	urls        [2]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -69,8 +74,9 @@ func NewPlayerLookupProtobufClient(baseURL string, client HTTPClient, opts ...tw
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "afl.v1", "PlayerLookup")
-	urls := [1]string{
+	urls := [2]string{
 		serviceURL + "LookupPlayers",
+		serviceURL + "LookupPlayerSeason",
 	}
 
 	return &playerLookupProtobufClient{
@@ -127,13 +133,59 @@ func (c *playerLookupProtobufClient) callLookupPlayers(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *playerLookupProtobufClient) LookupPlayerSeason(ctx context.Context, in *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "afl.v1")
+	ctx = ctxsetters.WithServiceName(ctx, "PlayerLookup")
+	ctx = ctxsetters.WithMethodName(ctx, "LookupPlayerSeason")
+	caller := c.callLookupPlayerSeason
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*LookupPlayerSeasonRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*LookupPlayerSeasonRequest) when calling interceptor")
+					}
+					return c.callLookupPlayerSeason(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*LookupPlayerSeasonResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*LookupPlayerSeasonResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *playerLookupProtobufClient) callLookupPlayerSeason(ctx context.Context, in *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+	out := new(LookupPlayerSeasonResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
 // ========================
 // PlayerLookup JSON Client
 // ========================
 
 type playerLookupJSONClient struct {
 	client      HTTPClient
-	urls        [1]string
+	urls        [2]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -161,8 +213,9 @@ func NewPlayerLookupJSONClient(baseURL string, client HTTPClient, opts ...twirp.
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "afl.v1", "PlayerLookup")
-	urls := [1]string{
+	urls := [2]string{
 		serviceURL + "LookupPlayers",
+		serviceURL + "LookupPlayerSeason",
 	}
 
 	return &playerLookupJSONClient{
@@ -205,6 +258,52 @@ func (c *playerLookupJSONClient) LookupPlayers(ctx context.Context, in *LookupPl
 func (c *playerLookupJSONClient) callLookupPlayers(ctx context.Context, in *LookupPlayersRequest) (*LookupPlayersResponse, error) {
 	out := new(LookupPlayersResponse)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *playerLookupJSONClient) LookupPlayerSeason(ctx context.Context, in *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "afl.v1")
+	ctx = ctxsetters.WithServiceName(ctx, "PlayerLookup")
+	ctx = ctxsetters.WithMethodName(ctx, "LookupPlayerSeason")
+	caller := c.callLookupPlayerSeason
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*LookupPlayerSeasonRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*LookupPlayerSeasonRequest) when calling interceptor")
+					}
+					return c.callLookupPlayerSeason(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*LookupPlayerSeasonResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*LookupPlayerSeasonResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *playerLookupJSONClient) callLookupPlayerSeason(ctx context.Context, in *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+	out := new(LookupPlayerSeasonResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -318,6 +417,9 @@ func (s *playerLookupServer) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 	switch method {
 	case "LookupPlayers":
 		s.serveLookupPlayers(ctx, resp, req)
+		return
+	case "LookupPlayerSeason":
+		s.serveLookupPlayerSeason(ctx, resp, req)
 		return
 	default:
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
@@ -483,6 +585,186 @@ func (s *playerLookupServer) serveLookupPlayersProtobuf(ctx context.Context, res
 	}
 	if respContent == nil {
 		s.writeError(ctx, resp, twirp.InternalError("received a nil *LookupPlayersResponse and nil error while calling LookupPlayers. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *playerLookupServer) serveLookupPlayerSeason(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveLookupPlayerSeasonJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveLookupPlayerSeasonProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *playerLookupServer) serveLookupPlayerSeasonJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "LookupPlayerSeason")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(LookupPlayerSeasonRequest)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.PlayerLookup.LookupPlayerSeason
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*LookupPlayerSeasonRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*LookupPlayerSeasonRequest) when calling interceptor")
+					}
+					return s.PlayerLookup.LookupPlayerSeason(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*LookupPlayerSeasonResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*LookupPlayerSeasonResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *LookupPlayerSeasonResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *LookupPlayerSeasonResponse and nil error while calling LookupPlayerSeason. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *playerLookupServer) serveLookupPlayerSeasonProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "LookupPlayerSeason")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(LookupPlayerSeasonRequest)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.PlayerLookup.LookupPlayerSeason
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *LookupPlayerSeasonRequest) (*LookupPlayerSeasonResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*LookupPlayerSeasonRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*LookupPlayerSeasonRequest) when calling interceptor")
+					}
+					return s.PlayerLookup.LookupPlayerSeason(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*LookupPlayerSeasonResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*LookupPlayerSeasonResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *LookupPlayerSeasonResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *LookupPlayerSeasonResponse and nil error while calling LookupPlayerSeason. nil responses are not supported"))
 		return
 	}
 
@@ -1087,22 +1369,26 @@ func callClientError(ctx context.Context, h *twirp.ClientHooks, err twirp.Error)
 }
 
 var twirpFileDescriptor0 = []byte{
-	// 262 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0x41, 0x4b, 0xc3, 0x40,
-	0x10, 0x85, 0x49, 0x6a, 0xab, 0x1d, 0x6b, 0x0f, 0x83, 0x42, 0xa8, 0x8a, 0x31, 0x78, 0xc8, 0x41,
-	0x12, 0x52, 0x8f, 0x7a, 0x12, 0x3c, 0x08, 0x55, 0x64, 0x8f, 0x22, 0x84, 0x6d, 0xb2, 0x2b, 0xc1,
-	0xe9, 0x6e, 0xcc, 0x26, 0x41, 0xff, 0xbd, 0xb8, 0xdb, 0x22, 0x8a, 0xbd, 0x2d, 0xef, 0xbd, 0x6f,
-	0xe7, 0xcd, 0xc0, 0x8c, 0x4b, 0x4a, 0xfb, 0x2c, 0xad, 0x89, 0x7f, 0x8a, 0x26, 0x27, 0xad, 0xdf,
-	0xba, 0x3a, 0xa9, 0x1b, 0xdd, 0x6a, 0x1c, 0x71, 0x49, 0x49, 0x9f, 0x45, 0x37, 0x70, 0xb8, 0xb0,
-	0xfa, 0x93, 0x0d, 0x19, 0x26, 0xde, 0x3b, 0x61, 0x5a, 0xbc, 0x80, 0x29, 0x97, 0x94, 0xaf, 0xd1,
-	0xaa, 0x34, 0x81, 0x17, 0x0e, 0xe2, 0x21, 0x9b, 0x70, 0x49, 0x2e, 0x7a, 0x5f, 0x9a, 0xe8, 0x0e,
-	0x8e, 0xfe, 0xd0, 0xa6, 0xd6, 0xca, 0x08, 0xbc, 0x84, 0x5d, 0x87, 0x3a, 0x6e, 0x7f, 0x8e, 0x89,
-	0x1b, 0x98, 0xac, 0x61, 0x25, 0x35, 0xdb, 0x44, 0xa2, 0x07, 0x80, 0x1f, 0x19, 0xa7, 0xe0, 0x57,
-	0x65, 0xe0, 0x85, 0x5e, 0x3c, 0x64, 0x7e, 0x55, 0x22, 0xc2, 0x8e, 0xe2, 0x2b, 0x11, 0xf8, 0xa1,
-	0x17, 0x8f, 0x99, 0x7d, 0xe3, 0x31, 0x8c, 0x0b, 0xea, 0x96, 0xb9, 0x35, 0x06, 0xd6, 0xd8, 0xfb,
-	0x16, 0x1e, 0xf9, 0x4a, 0xcc, 0x5f, 0x60, 0xe2, 0xbe, 0x73, 0xdd, 0x70, 0x01, 0x07, 0xbf, 0x5a,
-	0xe2, 0xc9, 0xa6, 0xcc, 0x7f, 0xab, 0xcf, 0x4e, 0xb7, 0xb8, 0x6e, 0xb5, 0xdb, 0xf3, 0xe7, 0xb3,
-	0x0f, 0x29, 0x29, 0x2d, 0xb4, 0x6a, 0x1b, 0x5e, 0xb4, 0x26, 0x7d, 0x15, 0x2a, 0x75, 0xa7, 0xbe,
-	0xe6, 0x92, 0xfa, 0x6c, 0x39, 0xb2, 0x37, 0xbe, 0xfa, 0x0a, 0x00, 0x00, 0xff, 0xff, 0xdc, 0x9e,
-	0x51, 0x11, 0x81, 0x01, 0x00, 0x00,
+	// 328 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x52, 0x41, 0x4f, 0x32, 0x31,
+	0x14, 0xcc, 0xc2, 0x07, 0x1f, 0x3c, 0x91, 0x98, 0x17, 0x4d, 0x70, 0xd1, 0x08, 0x1b, 0x0f, 0x7b,
+	0x30, 0xbb, 0x01, 0x4f, 0x46, 0x4f, 0x26, 0x1c, 0x48, 0xd0, 0x98, 0xf5, 0xa6, 0x87, 0x4d, 0x61,
+	0x5b, 0x43, 0x2c, 0x6d, 0xa5, 0x0b, 0xd1, 0x9f, 0xe6, 0xbf, 0x33, 0xb6, 0x05, 0x41, 0x57, 0x6f,
+	0xcd, 0xbc, 0x99, 0x79, 0x9d, 0xc9, 0x03, 0x9f, 0x30, 0x1e, 0x2f, 0x7b, 0xb1, 0xe2, 0xe4, 0x8d,
+	0xce, 0x53, 0x2e, 0xe5, 0xf3, 0x42, 0x45, 0x6a, 0x2e, 0x73, 0x89, 0x55, 0xc2, 0x78, 0xb4, 0xec,
+	0x05, 0x57, 0xb0, 0x3f, 0x32, 0xf8, 0x9d, 0x21, 0xe9, 0x84, 0xbe, 0x2c, 0xa8, 0xce, 0xf1, 0x14,
+	0x9a, 0x84, 0xf1, 0xd4, 0x49, 0xa7, 0x99, 0x6e, 0x79, 0x9d, 0x72, 0x58, 0x49, 0x1a, 0x84, 0x71,
+	0x4b, 0x1d, 0x66, 0x3a, 0x18, 0xc0, 0xc1, 0x37, 0xb5, 0x56, 0x52, 0x68, 0x8a, 0x67, 0xf0, 0xdf,
+	0x4a, 0xad, 0x6e, 0xa7, 0x8f, 0x91, 0x5d, 0x18, 0x39, 0xb1, 0x60, 0x32, 0x59, 0x51, 0x82, 0x1b,
+	0x80, 0x2f, 0x18, 0x9b, 0x50, 0x9a, 0x66, 0x2d, 0xaf, 0xe3, 0x85, 0x95, 0xa4, 0x34, 0xcd, 0x10,
+	0xe1, 0x9f, 0x20, 0x33, 0xda, 0x2a, 0x75, 0xbc, 0xb0, 0x9e, 0x98, 0x37, 0xb6, 0xa1, 0x3e, 0xe1,
+	0x8b, 0x71, 0x6a, 0x06, 0x65, 0x33, 0xa8, 0x7d, 0x02, 0xb7, 0x64, 0x46, 0x83, 0x01, 0x1c, 0x6e,
+	0xfe, 0xea, 0x9e, 0x12, 0x2d, 0xc5, 0x2a, 0x58, 0x08, 0x7b, 0x2e, 0x94, 0x36, 0x78, 0xba, 0xde,
+	0xd5, 0x54, 0x1b, 0xf4, 0x61, 0x16, 0x5c, 0x80, 0x5f, 0x64, 0xe3, 0x12, 0xb6, 0xa1, 0xbe, 0x2e,
+	0xc7, 0x19, 0xd4, 0x94, 0x2b, 0xa6, 0xff, 0xee, 0x41, 0xc3, 0xaa, 0xac, 0x03, 0x8e, 0x60, 0x77,
+	0xab, 0x28, 0x3c, 0x5a, 0xf5, 0x51, 0xd4, 0xbe, 0x7f, 0xfc, 0xcb, 0xd4, 0xed, 0x7e, 0x04, 0xfc,
+	0xf9, 0x33, 0xec, 0x16, 0x89, 0xb6, 0xc2, 0xfb, 0xc1, 0x5f, 0x14, 0x6b, 0x7e, 0xdd, 0x7d, 0x38,
+	0x79, 0x65, 0x8c, 0xc7, 0x13, 0x29, 0xf2, 0x39, 0x99, 0xe4, 0x3a, 0x7e, 0xa2, 0x22, 0xb6, 0xa7,
+	0x74, 0x49, 0x18, 0x5f, 0xf6, 0xc6, 0x55, 0x73, 0x43, 0xe7, 0x1f, 0x01, 0x00, 0x00, 0xff, 0xff,
+	0xdc, 0xe7, 0x39, 0xbb, 0x61, 0x02, 0x00, 0x00,
 }

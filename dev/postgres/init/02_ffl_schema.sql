@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS ffl.season (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     league_id INTEGER NOT NULL REFERENCES ffl.league(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    afl_season_id INTEGER REFERENCES afl.season(id)
 );
 
 -- Create round table
@@ -105,8 +106,7 @@ CREATE TABLE IF NOT EXISTS ffl.player (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    afl_player_id INTEGER NOT NULL,
-    drv_name VARCHAR(255) NOT NULL
+    afl_player_id INTEGER NOT NULL
 );
 
 -- Create player_season table
@@ -120,6 +120,8 @@ CREATE TABLE IF NOT EXISTS ffl.player_season (
     from_round_id INTEGER REFERENCES ffl.round(id),
     to_round_id INTEGER REFERENCES ffl.round(id),
     afl_player_season_id INTEGER,
+    notes TEXT,
+    cost_cents INTEGER,
     CONSTRAINT uni_player_season UNIQUE (player_id, club_season_id)
 );
 

@@ -42,7 +42,7 @@
           <p class="text-sm text-text-muted mb-3">
             Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
-          <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
+          <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" :afl-club-match-map="aflClubMatchMap" />
         </div>
       </div>
 
@@ -65,6 +65,7 @@ import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
 import { useAflState } from '../../afl/composables/useAflState'
+import { buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 
 const props = defineProps<{ seasonId: string; matchId: string }>()
 
@@ -95,6 +96,8 @@ const aflRoundTo = computed(() => {
   if (!aflRoundId || !aflSeasonId.value) return null
   return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
 })
+
+const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))
 
 const sides = computed(() => {
   if (!match.value) return []

@@ -25,12 +25,29 @@ import (
 )
 
 // stubPlayerLookup returns a fixed candidate list regardless of which AFL IDs are requested.
+// LookupPlayerSeason reads directly from afl.player_season in the test DB so the
+// addFFLPlayerToSeason flow works against real seeded data without standing up
+// the AFL service over Twirp.
 type stubPlayerLookup struct {
+	pool       *pgxpool.Pool
 	candidates []application.PlayerCandidate
 }
 
 func (s *stubPlayerLookup) LookupPlayers(_ context.Context, _ []int) ([]application.PlayerCandidate, error) {
 	return s.candidates, nil
+}
+
+func (s *stubPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeasonID int) (int, error) {
+	if s.pool == nil {
+		return 0, fmt.Errorf("stubPlayerLookup: pool not set; cannot resolve afl.player_season %d", aflPlayerSeasonID)
+	}
+	var aflPlayerID int
+	err := s.pool.QueryRow(ctx,
+		"SELECT player_id FROM afl.player_season WHERE id = $1", aflPlayerSeasonID).Scan(&aflPlayerID)
+	if err != nil {
+		return 0, fmt.Errorf("lookup afl.player_season %d: %w", aflPlayerSeasonID, err)
+	}
+	return aflPlayerID, nil
 }
 
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {
@@ -50,10 +67,13 @@ func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.D
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New(), application.EventRepos{
-		Rounds:        pg.NewRoundRepository(q),
-		PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-		PlayerMatches: pg.NewPlayerMatchRepository(q),
+	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+		},
+		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
@@ -78,7 +98,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 
 	var jeremyFflID int
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player (drv_name, afl_player_id) VALUES ('Jeremy Cameron', $1) RETURNING id",
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id",
 		jeremyAFLID).Scan(&jeremyFflID))
 
 	var jeremyPSID int

@@ -58,3 +58,7 @@ backups/
 # Playwright output
 frontend/web/playwright-report/
 frontend/web/test-results/
+
+# Generated intermediate SDL files for supergraph composition
+dev/router/afl-schema.graphql
+dev/router/ffl-schema.graphql

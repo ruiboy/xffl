@@ -14,8 +14,8 @@ SELECT v.name FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM afl.player WHERE name = v.name);
 
 -- Add to ffl.player
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, ap.name FROM afl.player ap
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap
 WHERE ap.name IN ('Dan Houston', 'Luke Davies-Uniacke', 'Dante Visentini', 'Josh Treacy')
 AND NOT EXISTS (SELECT 1 FROM ffl.player fp WHERE fp.afl_player_id = ap.id);
 

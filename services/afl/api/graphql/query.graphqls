@@ -13,14 +13,24 @@ type Query {
   aflPlayerSearch(query: String!): [AFLPlayer!]!
 }
 
-type AFLSeason {
+type AFLSeason @key(fields: "id") {
   id: ID!
   name: String!
   ladder: [AFLClubSeason!]!
   rounds: [AFLRound!]!
+  playerSeasons(filter: AFLPlayerSeasonFilter, first: Int, after: String): AFLPlayerSeasonConnection!
 }
 
-type AFLRound {
+input AFLPlayerSeasonFilter {
+  query: String
+}
+
+type AFLPlayerSeasonConnection {
+  nodes: [AFLPlayerSeason!]!
+  pageInfo: PageInfo!
+}
+
+type AFLRound @key(fields: "id") {
   id: ID!
   name: String!
   season: AFLSeason!
@@ -62,9 +72,11 @@ type AFLClubMatch {
   rushedBehinds: Int!
   score: Int!
   playerMatches: [AFLPlayerMatch!]!
+  matchId: ID!
+  match: AFLMatch
 }
 
-type AFLPlayer {
+type AFLPlayer @key(fields: "id") {
   id: ID!
   name: String!
 }
@@ -79,6 +91,8 @@ type AFLPlayerSeason @key(fields: "id") {
 type AFLPlayerMatch @key(fields: "id") {
   id: ID!
   playerSeasonId: ID!
+  clubMatchId: ID!
+  clubMatch: AFLClubMatch
   player: AFLPlayer!
   status: String!
   kicks: Int!

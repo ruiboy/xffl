@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import { setupFflSession } from './helpers'
 
 // Helpers
 async function goToTeamBuilder(page: import('@playwright/test').Page) {
@@ -347,6 +348,45 @@ test.describe('FFL Team Builder', () => {
       await goToTeamBuilder(page)
       await page.getByRole('button', { name: 'Manage' }).click()
       await expect(page.getByRole('heading', { name: /Squad \(/ })).toBeVisible()
+    })
+  })
+
+  // ── Traded players in available pool ─────────────────────────────────────
+  // After trading a player out from the Squad, they should appear muted under
+  // the "Traded" toggle in the Team Builder available pane (manage mode only).
+
+  test.describe('traded players', () => {
+    test('a traded player surfaces under Traded in the available pool', async ({ page }) => {
+      // Step 1: Trade Henry Smith out via the Squad page.
+      await setupFflSession(page)
+      await page.getByRole('link', { name: 'Squad' }).click()
+      await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+      await page.waitForLoadState('networkidle')
+
+      await page.getByRole('button', { name: 'Manage' }).click()
+      const henrysRow = page.getByRole('row', { name: /Henry Smith/ })
+      await henrysRow.getByRole('button', { name: 'Remove' }).click()
+      const removeDialog = page.getByRole('heading', { name: 'Remove Player' }).locator('..')
+      await removeDialog.getByRole('button', { name: 'Remove' }).click()
+      await expect(page.getByText('Saved')).toBeVisible()
+
+      // Step 2: Open Round 3 Team Builder. Round 3 has no FFL player_matches
+      // in the seed, so Henry isn't in any slot — `tradedPlayers` will surface
+      // him. (Round 1/2 still have him assigned from seed data, where the
+      // Traded section is intentionally suppressed.) IDs are stable thanks to
+      // the RESTART IDENTITY reset in resetDb: season=1, rounds=1..3.
+      await page.goto('/ffl/seasons/1/rounds/3/team-builder')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: 'Manage' }).click()
+
+      // Traded toggle is visible with a count.
+      const tradedToggle = page.getByRole('button', { name: /Traded \(\d+\)/ })
+      await expect(tradedToggle).toBeVisible()
+      await tradedToggle.click()
+
+      // Henry Smith now appears in the available pool's Traded section.
+      const squadPanel = page.getByRole('heading', { name: /Squad \(/ }).locator('..')
+      await expect(squadPanel.getByText('Henry Smith')).toBeVisible()
     })
   })
 })

@@ -156,6 +156,15 @@ See `ai/architecture/integrations.md` for the production adapter pattern (ACL, o
 2. Build `dev/import/<source>/main.go` with `--reconcile` and import modes
 3. Run reconciliation, review and commit `reconcile.csv`, then import
 
+## Recipe: Add a new entity to the search index
+
+Source services must be unaware of the search index. All indexing logic lives in the search service. See ADR-015 for the boundary rules.
+
+1. **Source service — domain event** — ensure a domain event fires when the entity is created or modified. Name it as a past-tense domain fact (e.g. `EntityUpdated`). Do not add search-specific mutations or logic to the source service. See ADR-004 for event naming rules.
+2. **Search service — incremental sync** — add a handler in `application/handlers.go` that subscribes to the domain event and indexes the document into the appropriate collection.
+3. **Search service — full reindex** — extend the existing reindex use case to fetch and index the new entity type from the source service's GraphQL API. The reindex entry point must remain a single command covering all indexed entity types.
+4. **Typesense** — if the new entity needs distinct search behaviour (different query fields, filters), add a separate collection in the Typesense infrastructure layer following the existing collection pattern.
+
 ## Testing
 
 See `ai/architecture/testing.md` for full conventions — Go (unit/integration) and frontend e2e (Playwright).

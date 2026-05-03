@@ -9,6 +9,12 @@ import (
 	"context"
 )
 
+// FindAFLPlayerByID is the resolver for the findAFLPlayerByID field.
+// FFL is not the owner of AFLPlayer; return a stub so the router can fetch from the AFL subgraph.
+func (r *entityResolver) FindAFLPlayerByID(ctx context.Context, id string) (*AFLPlayer, error) {
+	return &AFLPlayer{ID: id}, nil
+}
+
 // FindAFLPlayerMatchByID is the resolver for the findAFLPlayerMatchByID field.
 // FFL is not the owner of AFLPlayerMatch; return a stub so the router can fetch from the AFL subgraph.
 func (r *entityResolver) FindAFLPlayerMatchByID(ctx context.Context, id string) (*AFLPlayerMatch, error) {
@@ -19,6 +25,18 @@ func (r *entityResolver) FindAFLPlayerMatchByID(ctx context.Context, id string) 
 // FFL is not the owner of AFLPlayerSeason; return a stub so the router can fetch from the AFL subgraph.
 func (r *entityResolver) FindAFLPlayerSeasonByID(ctx context.Context, id string) (*AFLPlayerSeason, error) {
 	return &AFLPlayerSeason{ID: id}, nil
+}
+
+// FindAFLRoundByID is the resolver for the findAFLRoundByID field.
+// FFL is not the owner of AFLRound; return a stub so the router can fetch from the AFL subgraph.
+func (r *entityResolver) FindAFLRoundByID(ctx context.Context, id string) (*AFLRound, error) {
+	return &AFLRound{ID: id}, nil
+}
+
+// FindAFLSeasonByID is the resolver for the findAFLSeasonByID field.
+// FFL is not the owner of AFLSeason; return a stub so the router can fetch from the AFL subgraph.
+func (r *entityResolver) FindAFLSeasonByID(ctx context.Context, id string) (*AFLSeason, error) {
+	return &AFLSeason{ID: id}, nil
 }
 
 // Entity returns EntityResolver implementation.

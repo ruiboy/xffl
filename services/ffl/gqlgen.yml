@@ -31,11 +31,13 @@ models:
     fields:
       ladder: { resolver: true }
       rounds: { resolver: true }
+      aflSeason: { resolver: true }
 
   FFLRound:
     fields:
       season: { resolver: true }
       matches: { resolver: true }
+      aflRound: { resolver: true }
 
   FFLMatch:
     fields:
@@ -50,11 +52,16 @@ models:
     fields:
       playerMatches: { resolver: true }
 
+  FFLPlayer:
+    fields:
+      aflPlayer: { resolver: true }
+
   FFLPlayerSeason:
     fields:
       aflPlayerSeason: { resolver: true }
 
   FFLPlayerMatch:
     fields:
+      playerSeason: { resolver: true }
       aflPlayerMatchId: { resolver: true }
       aflPlayerMatch: { resolver: true }

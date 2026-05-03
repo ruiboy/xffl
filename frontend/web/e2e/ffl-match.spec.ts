@@ -38,7 +38,12 @@ test.describe('FFL Match', () => {
   })
 
   test('displays status badges', async ({ page }) => {
-    await expect(page.getByText('Played').first()).toBeVisible()
+    // Status derives from the AFL match's statsImportStatus, not from the FFL
+    // player_match.status column (commit 94033fe — "Gate team builder scores on
+    // AFL match stats import status"). The seed leaves Round 1's AFL match at
+    // stats_import_status='no_data', so badges read "Named" rather than
+    // "Played" until the AFL stats are imported.
+    await expect(page.getByText('Named').first()).toBeVisible()
   })
 
   test('displays total row', async ({ page }) => {

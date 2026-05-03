@@ -34,14 +34,14 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `DATABASE_URL="${TEST_DB}" CLOCK_OVERRIDE="${CLOCK_OVERRIDE}" PORT=8181 go run ./cmd/main.go`,
+      command: `DATABASE_URL="${TEST_DB}" CLOCK_OVERRIDE="${CLOCK_OVERRIDE}" AFL_BASE_URL="http://127.0.0.1:8180" PORT=8181 go run ./cmd/main.go`,
       cwd: '../../services/ffl',
       port: 8181,
       timeout: 60_000,
       reuseExistingServer: false,
     },
     {
-      command: 'ROUTER_URL=http://localhost:4001 CORS_ORIGIN=http://localhost:3001 PORT=8190 go run ./cmd/main.go',
+      command: 'ROUTER_URL=http://127.0.0.1:4001 CORS_ORIGIN=http://localhost:3001 PORT=8190 go run ./cmd/main.go',
       cwd: '../../services/gateway',
       port: 8190,
       timeout: 60_000,

@@ -39,3 +39,11 @@ func (a *AFLPlayerLookup) LookupPlayers(ctx context.Context, aflPlayerIDs []int)
 	}
 	return candidates, nil
 }
+
+func (a *AFLPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeasonID int) (int, error) {
+	resp, err := a.client.LookupPlayerSeason(ctx, &aflv1.LookupPlayerSeasonRequest{PlayerSeasonId: int32(aflPlayerSeasonID)})
+	if err != nil {
+		return 0, err
+	}
+	return int(resp.PlayerId), nil
+}

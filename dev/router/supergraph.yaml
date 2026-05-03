@@ -3,8 +3,8 @@ subgraphs:
   afl:
     routing_url: http://host.docker.internal:8080/query
     schema:
-      subgraph_url: http://localhost:8080/query
+      file: ./afl-schema.graphql
   ffl:
     routing_url: http://host.docker.internal:8081/query
     schema:
-      subgraph_url: http://localhost:8081/query
+      file: ./ffl-schema.graphql

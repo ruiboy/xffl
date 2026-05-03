@@ -9,6 +9,19 @@ import (
 	"context"
 )
 
+// FindAFLPlayerByID is the resolver for the findAFLPlayerByID field.
+func (r *entityResolver) FindAFLPlayerByID(ctx context.Context, id string) (*AFLPlayer, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	p, err := r.Queries.GetPlayer(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayer(p), nil
+}
+
 // FindAFLPlayerMatchByID is the resolver for the findAFLPlayerMatchByID field.
 func (r *entityResolver) FindAFLPlayerMatchByID(ctx context.Context, id string) (*AFLPlayerMatch, error) {
 	parsed, err := fromID(id)
@@ -38,6 +51,32 @@ func (r *entityResolver) FindAFLPlayerSeasonByID(ctx context.Context, id string)
 		return nil, err
 	}
 	return &AFLPlayerSeason{ID: id}, nil
+}
+
+// FindAFLRoundByID is the resolver for the findAFLRoundByID field.
+func (r *entityResolver) FindAFLRoundByID(ctx context.Context, id string) (*AFLRound, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.Queries.GetRound(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &AFLRound{ID: id}, nil
+}
+
+// FindAFLSeasonByID is the resolver for the findAFLSeasonByID field.
+func (r *entityResolver) FindAFLSeasonByID(ctx context.Context, id string) (*AFLSeason, error) {
+	parsed, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.Queries.GetSeason(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &AFLSeason{ID: id}, nil
 }
 
 // Entity returns EntityResolver implementation.

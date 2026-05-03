@@ -127,6 +127,10 @@ func (q *Queries) GetPlayerSeasons(ctx context.Context, clubSeasonID int) ([]dom
 	return q.playerSeasons.FindByClubSeasonID(ctx, clubSeasonID)
 }
 
+func (q *Queries) GetPlayerSeasonByID(ctx context.Context, id int) (domain.PlayerSeason, error) {
+	return q.playerSeasons.FindByID(ctx, id)
+}
+
 func (q *Queries) GetClubsByIDs(ctx context.Context, ids []int) (map[int]domain.Club, error) {
 	return q.clubs.FindByIDs(ctx, ids)
 }

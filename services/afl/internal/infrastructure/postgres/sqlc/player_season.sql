@@ -19,3 +19,15 @@ WHERE ps.id = ANY(@player_season_ids::int[]) AND ps.deleted_at IS NULL;
 SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
 WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
+
+-- name: FindPlayerSeasonsBySeasonID :many
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+JOIN afl.player p ON p.id = ps.player_id
+WHERE cs.season_id = @season_id
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+  AND p.deleted_at IS NULL
+  AND (sqlc.narg('name_query')::text IS NULL OR p.name ILIKE '%' || sqlc.narg('name_query') || '%')
+ORDER BY p.name ASC, ps.id ASC;

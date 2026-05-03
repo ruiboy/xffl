@@ -1006,3 +1006,331 @@ func TestImportAFLMatchStats(t *testing.T) {
 		assert.Equal(t, "partial", statusData.AflMatch.StatsImportStatus)
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Phase 20 — AFL graph traversal additions: club_match.match,
+// player_match.club_match, season.playerSeasons connection, federation entity
+// resolvers for AFLSeason / AFLRound.
+// ---------------------------------------------------------------------------
+
+func TestAFLClubMatch_MatchTraversal(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+	result := execQuery(t, server, `{
+		aflSeason(id: "`+seasonID+`") {
+			rounds {
+				matches {
+					id
+					homeClubMatch { matchId match { id venue } }
+					awayClubMatch { matchId match { id } }
+				}
+			}
+		}
+	}`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		AflSeason struct {
+			Rounds []struct {
+				Matches []struct {
+					ID            string `json:"id"`
+					HomeClubMatch struct {
+						MatchID string `json:"matchId"`
+						Match   *struct {
+							ID    string `json:"id"`
+							Venue string `json:"venue"`
+						} `json:"match"`
+					} `json:"homeClubMatch"`
+					AwayClubMatch struct {
+						MatchID string `json:"matchId"`
+						Match   *struct {
+							ID string `json:"id"`
+						} `json:"match"`
+					} `json:"awayClubMatch"`
+				} `json:"matches"`
+			} `json:"rounds"`
+		} `json:"aflSeason"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.AflSeason.Rounds, 1)
+	require.Len(t, data.AflSeason.Rounds[0].Matches, 1)
+	m := data.AflSeason.Rounds[0].Matches[0]
+
+	t.Run("home club match exposes matchId field and traverses back to match", func(t *testing.T) {
+		assert.Equal(t, m.ID, m.HomeClubMatch.MatchID)
+		require.NotNil(t, m.HomeClubMatch.Match)
+		assert.Equal(t, m.ID, m.HomeClubMatch.Match.ID)
+		assert.Equal(t, "Test Ground", m.HomeClubMatch.Match.Venue)
+	})
+	t.Run("away club match traversal returns the same match id", func(t *testing.T) {
+		require.NotNil(t, m.AwayClubMatch.Match)
+		assert.Equal(t, m.ID, m.AwayClubMatch.MatchID)
+		assert.Equal(t, m.ID, m.AwayClubMatch.Match.ID)
+	})
+}
+
+func TestAFLPlayerMatch_ClubMatchTraversal(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+	result := execQuery(t, server, `{
+		aflSeason(id: "`+seasonID+`") {
+			rounds {
+				matches {
+					homeClubMatch {
+						id
+						playerMatches {
+							id
+							clubMatchId
+							clubMatch { id club { name } score }
+						}
+					}
+				}
+			}
+		}
+	}`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		AflSeason struct {
+			Rounds []struct {
+				Matches []struct {
+					HomeClubMatch struct {
+						ID            string `json:"id"`
+						PlayerMatches []struct {
+							ID          string `json:"id"`
+							ClubMatchID string `json:"clubMatchId"`
+							ClubMatch   *struct {
+								ID    string `json:"id"`
+								Club  struct{ Name string } `json:"club"`
+								Score int                   `json:"score"`
+							} `json:"clubMatch"`
+						} `json:"playerMatches"`
+					} `json:"homeClubMatch"`
+				} `json:"matches"`
+			} `json:"rounds"`
+		} `json:"aflSeason"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.AflSeason.Rounds, 1)
+	cm := data.AflSeason.Rounds[0].Matches[0].HomeClubMatch
+	require.Len(t, cm.PlayerMatches, 1)
+	pm := cm.PlayerMatches[0]
+
+	t.Run("player match exposes clubMatchId field", func(t *testing.T) {
+		assert.Equal(t, cm.ID, pm.ClubMatchID)
+	})
+	t.Run("player match traverses to its club match (with club + score)", func(t *testing.T) {
+		require.NotNil(t, pm.ClubMatch)
+		assert.Equal(t, cm.ID, pm.ClubMatch.ID)
+		assert.Equal(t, "Sky Pilots", pm.ClubMatch.Club.Name)
+		assert.Equal(t, 85, pm.ClubMatch.Score)
+	})
+}
+
+func TestAFLSeason_PlayerSeasons(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+	ctx := context.Background()
+
+	// Add a second player so the filter has something to discriminate against.
+	var extraPlayerID, extraPSID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Henry Smith') RETURNING id").Scan(&extraPlayerID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		extraPlayerID, ids.awayClubSeaID).Scan(&extraPSID))
+
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+
+	t.Run("with no filter returns all player seasons in the season", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons {
+					nodes { id }
+					pageInfo { totalCount }
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflSeason struct {
+				PlayerSeasons struct {
+					Nodes []struct {
+						ID string `json:"id"`
+					} `json:"nodes"`
+					PageInfo struct {
+						TotalCount *int `json:"totalCount"`
+					} `json:"pageInfo"`
+				} `json:"playerSeasons"`
+			} `json:"aflSeason"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+
+		assert.Len(t, data.AflSeason.PlayerSeasons.Nodes, 2)
+		require.NotNil(t, data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+		assert.Equal(t, 2, *data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+	})
+
+	t.Run("with name filter returns only matching player seasons", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons(filter: { query: "henry" }) {
+					nodes { id player { name } }
+					pageInfo { totalCount }
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflSeason struct {
+				PlayerSeasons struct {
+					Nodes []struct {
+						ID     string `json:"id"`
+						Player struct{ Name string } `json:"player"`
+					} `json:"nodes"`
+					PageInfo struct {
+						TotalCount *int `json:"totalCount"`
+					} `json:"pageInfo"`
+				} `json:"playerSeasons"`
+			} `json:"aflSeason"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+
+		require.Len(t, data.AflSeason.PlayerSeasons.Nodes, 1)
+		assert.Equal(t, "Henry Smith", data.AflSeason.PlayerSeasons.Nodes[0].Player.Name)
+		require.NotNil(t, data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+		assert.Equal(t, 1, *data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+	})
+
+	t.Run("with non-matching filter returns empty list", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons(filter: { query: "zzz no match" }) {
+					nodes { id }
+					pageInfo { totalCount }
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflSeason struct {
+				PlayerSeasons struct {
+					Nodes    []struct{ ID string } `json:"nodes"`
+					PageInfo struct {
+						TotalCount *int `json:"totalCount"`
+					} `json:"pageInfo"`
+				} `json:"playerSeasons"`
+			} `json:"aflSeason"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+
+		assert.Empty(t, data.AflSeason.PlayerSeasons.Nodes)
+		require.NotNil(t, data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+		assert.Equal(t, 0, *data.AflSeason.PlayerSeasons.PageInfo.TotalCount)
+	})
+}
+
+func TestEntity_FindAFLSeasonByID(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// _entities is the federation contract — the router calls this with a
+	// representation containing __typename + key fields. Exercising it directly
+	// catches regressions where the entity resolver wasn't wired up.
+	// Note: the resolver returns an ID-only stub; non-key scalar fields (name)
+	// would be empty on the stub, but field resolvers (rounds, ladder) load
+	// lazily — so we traverse `rounds` to prove the entity resolves correctly.
+	query := fmt.Sprintf(`{
+		_entities(representations: [{ __typename: "AFLSeason", id: "%d" }]) {
+			... on AFLSeason {
+				id
+				rounds { id name }
+			}
+		}
+	}`, ids.seasonID)
+	result := execQuery(t, server, query)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		Entities []struct {
+			ID     string `json:"id"`
+			Rounds []struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"rounds"`
+		} `json:"_entities"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.Entities, 1)
+	assert.Equal(t, fmt.Sprintf("%d", ids.seasonID), data.Entities[0].ID)
+	require.Len(t, data.Entities[0].Rounds, 1)
+	assert.Equal(t, "Round 1", data.Entities[0].Rounds[0].Name)
+}
+
+func TestEntity_FindAFLRoundByID(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// As above: round entity is an ID-only stub. Traverse to matches via the
+	// dedicated field resolver to confirm resolution works end-to-end.
+	query := fmt.Sprintf(`{
+		_entities(representations: [{ __typename: "AFLRound", id: "%d" }]) {
+			... on AFLRound {
+				id
+				matches { id venue }
+			}
+		}
+	}`, ids.roundID)
+	result := execQuery(t, server, query)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		Entities []struct {
+			ID      string `json:"id"`
+			Matches []struct {
+				ID    string `json:"id"`
+				Venue string `json:"venue"`
+			} `json:"matches"`
+		} `json:"_entities"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	require.Len(t, data.Entities, 1)
+	assert.Equal(t, fmt.Sprintf("%d", ids.roundID), data.Entities[0].ID)
+	require.Len(t, data.Entities[0].Matches, 1)
+	assert.Equal(t, "Test Ground", data.Entities[0].Matches[0].Venue)
+}
+
+func TestEntity_FindAFLSeasonByID_UnknownIDErrors(t *testing.T) {
+	pool := connectDB(t)
+	seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	query := `{
+		_entities(representations: [{ __typename: "AFLSeason", id: "999999" }]) {
+			... on AFLSeason { id }
+		}
+	}`
+	result := execQuery(t, server, query)
+
+	t.Run("unknown season id surfaces a graphql error", func(t *testing.T) {
+		assert.NotEmpty(t, result.Errors)
+	})
+}

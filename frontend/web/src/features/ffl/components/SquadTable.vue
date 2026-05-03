@@ -21,9 +21,18 @@
             :key="pm.id"
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
-            <td class="py-2 pr-4 font-medium">{{ pm.player.name }}</td>
-            <td class="py-2 px-2"><StatusBadge :status="pm.status" /></td>
-            <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ pm.score }}</td>
+            <td class="py-2 pr-4">
+              <component
+                :is="pmAflMatchRoute(pm) ? 'router-link' : 'span'"
+                :to="pmAflMatchRoute(pm) ?? undefined"
+                class="font-medium hover:text-active transition-colors"
+              >{{ pm.player.aflPlayer.name }}</component>
+              <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+            </td>
+            <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
+            <td class="py-2 px-2 text-right tabular-nums font-semibold">
+              {{ pmShowScore(pm) ? pm.score : '' }}
+            </td>
           </tr>
         </template>
 
@@ -36,12 +45,22 @@
             :key="pm.id"
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
-            <td class="py-2 pr-4 font-medium text-text-muted">{{ pm.player.name }}</td>
-            <td class="py-2 px-2"><StatusBadge :status="pm.status" />
+            <td class="py-2 pr-4">
+              <component
+                :is="pmAflMatchRoute(pm) ? 'router-link' : 'span'"
+                :to="pmAflMatchRoute(pm) ?? undefined"
+                class="font-medium text-text-muted hover:text-active transition-colors"
+              >{{ pm.player.aflPlayer.name }}</component>
+              <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+            </td>
+            <td class="py-2 px-2">
+              <StatusBadge :status="pmStatus(pm)" />
               <span v-if="isSubActivated(pm)" class="text-xs text-green-500" title="Substitution activated">SUB</span>
               <span v-else-if="isInterchangeActivated(pm)" class="text-xs text-blue-500" title="Interchange activated">INT</span>
             </td>
-            <td class="py-2 px-2 text-right tabular-nums">{{ pm.score }}</td>
+            <td class="py-2 px-2 text-right tabular-nums">
+              {{ pmShowScore(pm) ? pm.score : '' }}
+            </td>
           </tr>
         </template>
       </tbody>
@@ -59,18 +78,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import StatusBadge from './StatusBadge.vue'
+import { derivePlayerStatus, showScore, aflMatchRoute, type AflClubMatchMap } from '../utils/aflPlayerMatch'
 
 interface PlayerMatch {
   id: string
-  player: { name: string }
+  player: { aflPlayer: { name: string } }
   position: string | null
   status: string | null
   backupPositions: string | null
   interchangePosition: string | null
   score: number
+  playerSeason?: {
+    aflPlayerSeason?: {
+      clubSeason?: { club?: { id: string; name: string } | null } | null
+    } | null
+  } | null
 }
 
-const props = defineProps<{ playerMatches: PlayerMatch[] }>()
+const props = defineProps<{
+  playerMatches: PlayerMatch[]
+  aflClubMatchMap?: AflClubMatchMap
+}>()
 
 const POSITION_ORDER = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
 type PositionKey = typeof POSITION_ORDER[number]
@@ -86,9 +114,33 @@ const POSITION_LABELS: Record<PositionKey, string> = {
 }
 
 const isBench = (pm: PlayerMatch) => pm.backupPositions != null || pm.interchangePosition != null
-
 const starters = computed(() => props.playerMatches.filter(pm => !isBench(pm)))
 const bench    = computed(() => props.playerMatches.filter(pm => isBench(pm)))
+
+function pmAflClubId(pm: PlayerMatch): string | null {
+  return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? null
+}
+
+function pmAflClub(pm: PlayerMatch): string | null {
+  return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
+}
+
+function pmMatchInfo(pm: PlayerMatch) {
+  const clubId = pmAflClubId(pm)
+  return clubId && props.aflClubMatchMap ? (props.aflClubMatchMap[clubId] ?? null) : null
+}
+
+function pmStatus(pm: PlayerMatch) {
+  return derivePlayerStatus(pmMatchInfo(pm)?.statsImportStatus, pm.score)
+}
+
+function pmShowScore(pm: PlayerMatch) {
+  return showScore(pmMatchInfo(pm)?.statsImportStatus, pm.score)
+}
+
+function pmAflMatchRoute(pm: PlayerMatch) {
+  return aflMatchRoute(pmMatchInfo(pm))
+}
 
 const starterGroups = computed(() => {
   const grouped: Partial<Record<string, PlayerMatch[]>> = {}
@@ -102,21 +154,23 @@ const starterGroups = computed(() => {
       position: pos,
       label: POSITION_LABELS[pos],
       players: grouped[pos]!,
-      total: grouped[pos]!.reduce((sum, pm) => sum + pm.score, 0),
+      total: grouped[pos]!.reduce((sum, pm) => sum + (pmShowScore(pm) ? pm.score : 0), 0),
     }))
 })
 
 const isSubActivated = (pm: PlayerMatch) => {
-  if (!pm.backupPositions || pm.status !== 'played') return false
+  if (!pm.backupPositions || pmStatus(pm) !== 'played') return false
   const backupPos = pm.backupPositions.split(',').map(p => p.trim())
-  return starters.value.some(s => s.status === 'dnp' && backupPos.includes(s.position ?? ''))
+  return starters.value.some(s => pmStatus(s) === 'dnp' && backupPos.includes(s.position ?? ''))
 }
 
 const isInterchangeActivated = (pm: PlayerMatch) => {
-  if (!pm.interchangePosition || pm.status !== 'played') return false
-  const starter = starters.value.find(s => s.position === pm.interchangePosition && s.status === 'played')
+  if (!pm.interchangePosition || pmStatus(pm) !== 'played') return false
+  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmStatus(s) === 'played')
   return starter != null && pm.score > starter.score
 }
 
-const total = computed(() => props.playerMatches.reduce((sum, pm) => sum + pm.score, 0))
+const total = computed(() =>
+  props.playerMatches.reduce((sum, pm) => sum + (pmShowScore(pm) ? pm.score : 0), 0)
+)
 </script>

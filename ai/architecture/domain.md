@@ -136,7 +136,7 @@ Hard rules enforced by `domain.ValidateTeam()`:
 
 ### FFL Player and AFL linkage
 
-Every FFL player corresponds to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and `PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys (no cross-schema joins). `Player.name` is derived from the AFL player (`drv_name` in DB).
+Every FFL player corresponds to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and `PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys (no cross-schema joins).
 
 ### Status
 

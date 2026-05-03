@@ -115,6 +115,44 @@ func (q *Queries) FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]Fi
 	return items, nil
 }
 
+const findPlayerSeasonsBySeasonID = `-- name: FindPlayerSeasonsBySeasonID :many
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+JOIN afl.player p ON p.id = ps.player_id
+WHERE cs.season_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+  AND p.deleted_at IS NULL
+  AND ($2::text IS NULL OR p.name ILIKE '%' || $2 || '%')
+ORDER BY p.name ASC, ps.id ASC
+`
+
+type FindPlayerSeasonsBySeasonIDParams struct {
+	SeasonID  int32
+	NameQuery *string
+}
+
+func (q *Queries) FindPlayerSeasonsBySeasonID(ctx context.Context, arg FindPlayerSeasonsBySeasonIDParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, findPlayerSeasonsBySeasonID, arg.SeasonID, arg.NameQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int32{}
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPlayersByPlayerSeasonIDs = `-- name: FindPlayersByPlayerSeasonIDs :many
 SELECT ps.id AS player_season_id, p.id AS player_id, p.name AS player_name
 FROM afl.player_season ps

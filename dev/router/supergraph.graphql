@@ -23,16 +23,17 @@ directive @link(url: String, as: String, for: link__Purpose, import: [link__Impo
 input AddFFLPlayerToSeasonInput
   @join__type(graph: FFL)
 {
-  playerId: ID!
   clubSeasonId: ID!
+  aflPlayerSeasonId: ID!
+  fromRoundId: ID
+  costCents: Int
 }
 
-input AddFFLSquadPlayerInput
+input RemoveFFLPlayerFromSeasonInput
   @join__type(graph: FFL)
 {
-  aflPlayerId: ID!
-  aflPlayerName: String!
-  clubSeasonId: ID!
+  id: ID!
+  toRoundId: ID!
 }
 
 type AFLClub
@@ -50,6 +51,8 @@ type AFLClubMatch
   rushedBehinds: Int!
   score: Int!
   playerMatches: [AFLPlayerMatch!]!
+  matchId: ID!
+  match: AFLMatch
 }
 
 type AFLClubSeason
@@ -88,10 +91,11 @@ type AFLMatch
 }
 
 type AFLPlayer
-  @join__type(graph: AFL)
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
 {
   id: ID!
-  name: String!
+  name: String! @join__field(graph: AFL)
 }
 
 type AFLPlayerMatch
@@ -100,6 +104,8 @@ type AFLPlayerMatch
 {
   id: ID!
   playerSeasonId: ID! @join__field(graph: AFL)
+  clubMatchId: ID! @join__field(graph: AFL)
+  clubMatch: AFLClubMatch @join__field(graph: AFL)
   player: AFLPlayer! @join__field(graph: AFL)
   status: String! @join__field(graph: AFL)
   kicks: Int! @join__field(graph: AFL)
@@ -123,22 +129,38 @@ type AFLPlayerSeason
   matches: [AFLPlayerMatch!]! @join__field(graph: AFL)
 }
 
-type AFLRound
+type AFLPlayerSeasonConnection
   @join__type(graph: AFL)
 {
+  nodes: [AFLPlayerSeason!]!
+  pageInfo: PageInfo!
+}
+
+input AFLPlayerSeasonFilter
+  @join__type(graph: AFL)
+{
+  query: String
+}
+
+type AFLRound
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
+{
   id: ID!
-  name: String!
-  season: AFLSeason!
-  matches: [AFLMatch!]!
+  name: String! @join__field(graph: AFL)
+  season: AFLSeason! @join__field(graph: AFL)
+  matches: [AFLMatch!]! @join__field(graph: AFL)
 }
 
 type AFLSeason
-  @join__type(graph: AFL)
+  @join__type(graph: AFL, key: "id")
+  @join__type(graph: FFL, key: "id")
 {
   id: ID!
-  name: String!
-  ladder: [AFLClubSeason!]!
-  rounds: [AFLRound!]!
+  name: String! @join__field(graph: AFL)
+  ladder: [AFLClubSeason!]! @join__field(graph: AFL)
+  rounds: [AFLRound!]! @join__field(graph: AFL)
+  playerSeasons(filter: AFLPlayerSeasonFilter, first: Int, after: String): AFLPlayerSeasonConnection! @join__field(graph: AFL)
 }
 
 input CalculateFFLFantasyScoreInput
@@ -168,13 +190,6 @@ input ConfirmFFLTeamSubmissionInput
 {
   clubMatchId: ID!
   players: [ConfirmedFFLPlayerInput!]!
-}
-
-input CreateFFLPlayerInput
-  @join__type(graph: FFL)
-{
-  name: String!
-  aflPlayerId: ID!
 }
 
 type FFLClub
@@ -225,8 +240,8 @@ type FFLPlayer
   @join__type(graph: FFL)
 {
   id: ID!
-  name: String!
   aflPlayerId: ID!
+  aflPlayer: AFLPlayer!
 }
 
 type FFLPlayerMatch
@@ -234,6 +249,7 @@ type FFLPlayerMatch
 {
   id: ID!
   playerSeasonId: ID!
+  playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
   status: String
@@ -252,6 +268,10 @@ type FFLPlayerSeason
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
   aflPlayerSeason: AFLPlayerSeason
+  fromRoundId: ID
+  toRoundId: ID
+  notes: String
+  costCents: Int
 }
 
 type FFLPlayerSeasonConnection
@@ -259,12 +279,12 @@ type FFLPlayerSeasonConnection
 {
   nodes: [FFLPlayerSeason!]!
   pageInfo: PageInfo!
-  totalCount: Int!
 }
 
 input FFLPlayerSeasonFilter
   @join__type(graph: FFL)
 {
+  """Not supported"""
   active: Boolean
 }
 
@@ -274,6 +294,7 @@ type FFLRound
   id: ID!
   name: String!
   aflRoundId: ID
+  aflRound: AFLRound
   season: FFLSeason!
   matches: [FFLMatch!]!
 }
@@ -285,6 +306,7 @@ type FFLSeason
   name: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
+  aflSeason: AFLSeason
 }
 
 input FFLTeamPlayerInput
@@ -335,23 +357,22 @@ type Mutation
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
-  createFFLPlayer(input: CreateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
-  updateFFLPlayer(input: UpdateFFLPlayerInput!): FFLPlayer! @join__field(graph: FFL)
-  deleteFFLPlayer(id: ID!): Boolean! @join__field(graph: FFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
-  removeFFLPlayerFromSeason(id: ID!): Boolean! @join__field(graph: FFL)
+  removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
+  updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
-  addFFLSquadPlayer(input: AddFFLSquadPlayerInput!): FFLPlayerSeason! @join__field(graph: FFL)
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 }
 
 type PageInfo
+  @join__type(graph: AFL)
   @join__type(graph: FFL)
 {
   hasNextPage: Boolean!
   endCursor: String
+  totalCount: Int
 }
 
 input ParseFFLTeamSubmissionInput
@@ -383,16 +404,16 @@ type Query
   aflPlayerSeason(id: ID!): AFLPlayerSeason @join__field(graph: AFL)
   aflLiveRound: AFLLiveRound @join__field(graph: AFL)
   aflPlayerSearch(query: String!): [AFLPlayer!]! @join__field(graph: AFL)
-  fflClubs: [FFLClub!]! @join__field(graph: FFL)
-  fflClub(id: ID!): FFLClub! @join__field(graph: FFL)
-  fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
-  fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflSeasons: [FFLSeason!]! @join__field(graph: FFL)
   fflSeason(id: ID!): FFLSeason! @join__field(graph: FFL)
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason @join__field(graph: FFL)
-  fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
   fflRound(id: ID!): FFLRound @join__field(graph: FFL)
   fflMatch(id: ID!): FFLMatch @join__field(graph: FFL)
+  fflClubs: [FFLClub!]! @join__field(graph: FFL)
+  fflClub(id: ID!): FFLClub! @join__field(graph: FFL)
+  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason @join__field(graph: FFL)
+  fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
+  fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
+  fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
 }
 
 type ResolvedPlayer
@@ -433,9 +454,9 @@ input UpdateAFLPlayerMatchInput
   behinds: Int
 }
 
-input UpdateFFLPlayerInput
+input UpdateFFLPlayerSeasonInput
   @join__type(graph: FFL)
 {
   id: ID!
-  name: String!
+  notes: String
 }

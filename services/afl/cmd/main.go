@@ -103,7 +103,7 @@ func main() {
 		}
 	})
 
-	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q))
+	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q), pg.NewPlayerSeasonRepository(q))
 	twirpHandler := aflv1.NewPlayerLookupServer(playerLookup)
 
 	mux := http.NewServeMux()

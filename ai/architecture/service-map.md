@@ -10,10 +10,13 @@
 ## Event Flow
 
 ```
-AFL.PlayerMatchUpdated → FFL (calculates fantasy score)
-                       → Search (indexes player match)
+AFL.PlayerMatchUpdated   → FFL (calculates fantasy score)
+                         → Search (indexes player match)
 
-FFL.FantasyScoreCalculated → Search (indexes/updates player)
+AFL.PlayerSeasonUpdated  → Search (indexes player season)
+                           [trigger not yet wired — Step 1 responsibility]
+
+FFL.FantasyScoreCalculated → Search (indexes fantasy score)
 ```
 
 ## Infrastructure

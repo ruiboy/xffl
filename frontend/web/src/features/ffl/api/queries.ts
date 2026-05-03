@@ -1,60 +1,5 @@
 import gql from 'graphql-tag'
 
-export const GET_FFL_TEAM_BUILDER = gql`
-  query GetFFLTeamBuilder($seasonId: ID!) {
-    fflSeason(id: $seasonId) {
-      id
-      name
-      ladder {
-        id
-        club { id name }
-        players {
-          nodes {
-            id
-            player { id name }
-          }
-        }
-      }
-      rounds {
-        id
-        name
-        matches {
-          id
-          homeClubMatch {
-            id
-            club { id name }
-            score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              position
-              status
-              backupPositions
-              interchangePosition
-              score
-            }
-          }
-          awayClubMatch {
-            id
-            club { id name }
-            score
-            playerMatches {
-              id
-              playerSeasonId
-              player { id name }
-              position
-              status
-              backupPositions
-              interchangePosition
-              score
-            }
-          }
-        }
-      }
-    }
-  }
-`
 
 export const GET_FFL_SEASON_CLUBS = gql`
   query GetFFLSeasonClubs($seasonId: ID!) {
@@ -77,24 +22,36 @@ export const GET_FFL_CLUB_SEASON = gql`
       players {
         nodes {
           id
-          player { id name aflPlayerId }
+          player { id aflPlayerId aflPlayer { id name } }
           aflPlayerSeason {
             clubSeason {
-              club { name }
+              club { id name }
             }
           }
+          fromRoundId
+          toRoundId
+          notes
+          costCents
         }
-        totalCount
+        pageInfo { totalCount }
       }
     }
   }
 `
 
-export const SEARCH_AFL_PLAYERS = gql`
-  query SearchAFLPlayers($query: String!) {
-    aflPlayerSearch(query: $query) {
-      id
-      name
+export const GET_AFL_PLAYER_SEASONS = gql`
+  query GetAFLPlayerSeasonsBySeason($seasonId: ID!, $query: String) {
+    fflSeason(id: $seasonId) {
+      aflSeason {
+        playerSeasons(filter: { query: $query }) {
+          nodes {
+            id
+            player { id name }
+            clubSeason { club { name } }
+          }
+          pageInfo { totalCount }
+        }
+      }
     }
   }
 `
@@ -152,6 +109,16 @@ export const GET_FFL_ROUND = gql`
       id
       name
       aflRoundId
+      aflRound {
+        id
+        season { id }
+        matches {
+          id
+          statsImportStatus
+          homeClubMatch { club { id } }
+          awayClubMatch { club { id } }
+        }
+      }
       season {
         id
         name
@@ -169,12 +136,17 @@ export const GET_FFL_ROUND = gql`
           playerMatches {
             id
             playerSeasonId
-            player { name }
+            player { aflPlayer { name } }
             position
             status
             backupPositions
             interchangePosition
             score
+            playerSeason {
+              aflPlayerSeason {
+                clubSeason { club { id name } }
+              }
+            }
           }
         }
         awayClubMatch {
@@ -184,12 +156,17 @@ export const GET_FFL_ROUND = gql`
           playerMatches {
             id
             playerSeasonId
-            player { name }
+            player { aflPlayer { name } }
             position
             status
             backupPositions
             interchangePosition
             score
+            playerSeason {
+              aflPlayerSeason {
+                clubSeason { club { id name } }
+              }
+            }
           }
         }
       }
@@ -207,6 +184,16 @@ export const GET_FFL_MATCH = gql`
         id
         name
         aflRoundId
+        aflRound {
+          id
+          season { id }
+          matches {
+            id
+            statsImportStatus
+            homeClubMatch { club { id } }
+            awayClubMatch { club { id } }
+          }
+        }
         season { id name rounds { id name } }
       }
       homeClubMatch {
@@ -216,12 +203,17 @@ export const GET_FFL_MATCH = gql`
         playerMatches {
           id
           playerSeasonId
-          player { name }
+          player { aflPlayer { name } }
           position
           status
           backupPositions
           interchangePosition
           score
+          playerSeason {
+            aflPlayerSeason {
+              clubSeason { club { id name } }
+            }
+          }
         }
       }
       awayClubMatch {
@@ -231,12 +223,17 @@ export const GET_FFL_MATCH = gql`
         playerMatches {
           id
           playerSeasonId
-          player { name }
+          player { aflPlayer { name } }
           position
           status
           backupPositions
           interchangePosition
           score
+          playerSeason {
+            aflPlayerSeason {
+              clubSeason { club { id name } }
+            }
+          }
         }
       }
     }
@@ -310,12 +307,22 @@ export const GET_FFL_SEASON = gql`
             playerMatches {
               id
               playerSeasonId
-              player { id name }
+              player { id aflPlayer { id name } }
               position
               status
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  club { name }
+                  match {
+                    id
+                    statsImportStatus
+                    round { season { id } }
+                  }
+                }
+              }
             }
           }
           awayClubMatch {
@@ -325,12 +332,22 @@ export const GET_FFL_SEASON = gql`
             playerMatches {
               id
               playerSeasonId
-              player { id name }
+              player { id aflPlayer { id name } }
               position
               status
               backupPositions
               interchangePosition
               score
+              aflPlayerMatch {
+                clubMatch {
+                  club { name }
+                  match {
+                    id
+                    statsImportStatus
+                    round { season { id } }
+                  }
+                }
+              }
             }
           }
         }

@@ -19,12 +19,14 @@ type FFLSeason {
   name: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
+  aflSeason: AFLSeason
 }
 
 type FFLRound {
   id: ID!
   name: String!
   aflRoundId: ID
+  aflRound: AFLRound
   season: FFLSeason!
   matches: [FFLMatch!]!
 }
@@ -67,8 +69,8 @@ type FFLClubMatch {
 
 type FFLPlayer {
   id: ID!
-  name: String!
   aflPlayerId: ID!
+  aflPlayer: AFLPlayer!
 }
 
 type FFLPlayerSeason {
@@ -77,21 +79,26 @@ type FFLPlayerSeason {
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
   aflPlayerSeason: AFLPlayerSeason
+  fromRoundId: ID
+  toRoundId: ID
+  notes: String
+  costCents: Int
 }
 
 type FFLPlayerSeasonConnection {
   nodes: [FFLPlayerSeason!]!
   pageInfo: PageInfo!
-  totalCount: Int!
 }
 
 input FFLPlayerSeasonFilter {
+  "Not supported"
   active: Boolean
 }
 
 type FFLPlayerMatch {
   id: ID!
   playerSeasonId: ID!
+  playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
   status: String
@@ -103,6 +110,18 @@ type FFLPlayerMatch {
 }
 
 # --- Stub types owned by the AFL subgraph — resolved via federation. ---
+
+type AFLSeason @key(fields: "id") {
+  id: ID!
+}
+
+type AFLRound @key(fields: "id") {
+  id: ID!
+}
+
+type AFLPlayer @key(fields: "id") {
+  id: ID!
+}
 
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!
