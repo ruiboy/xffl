@@ -4,95 +4,95 @@ BEGIN;
 
 -- Cheetahs
 
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Lachlan McAndrew' FROM afl.player ap WHERE ap.name = 'Lachlan McAndrew'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Lachlan McAndrew'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Darcy Fogarty' FROM afl.player ap WHERE ap.name = 'Darcy Fogarty'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Darcy Fogarty'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Will Ashcroft' FROM afl.player ap WHERE ap.name = 'Will Ashcroft'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Will Ashcroft'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Lachie Neale' FROM afl.player ap WHERE ap.name = 'Lachie Neale'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Lachie Neale'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nick Haynes' FROM afl.player ap WHERE ap.name = 'Nick Haynes'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nick Haynes'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nic Newman' FROM afl.player ap WHERE ap.name = 'Nic Newman'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nic Newman'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Caleb Serong' FROM afl.player ap WHERE ap.name = 'Caleb Serong'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Caleb Serong'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tanner Bruhn' FROM afl.player ap WHERE ap.name = 'Tanner Bruhn'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tanner Bruhn'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Matt Rowell' FROM afl.player ap WHERE ap.name = 'Matt Rowell'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Matt Rowell'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Ben King' FROM afl.player ap WHERE ap.name = 'Ben King'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Ben King'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Kieren Briggs' FROM afl.player ap WHERE ap.name = 'Kieren Briggs'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Kieren Briggs'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Clayton Oliver' FROM afl.player ap WHERE ap.name = 'Clayton Oliver'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Clayton Oliver'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Lloyd Meek' FROM afl.player ap WHERE ap.name = 'Lloyd Meek'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Lloyd Meek'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tristan Xerri' FROM afl.player ap WHERE ap.name = 'Tristan Xerri'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tristan Xerri'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Harry Sheezel' FROM afl.player ap WHERE ap.name = 'Harry Sheezel'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Harry Sheezel'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Colby McKercher' FROM afl.player ap WHERE ap.name = 'Colby McKercher'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Colby McKercher'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nick Larkey' FROM afl.player ap WHERE ap.name = 'Nick Larkey'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nick Larkey'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Trent Rivers' FROM afl.player ap WHERE ap.name = 'Trent Rivers'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Trent Rivers'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jayden Short' FROM afl.player ap WHERE ap.name = 'Jayden Short'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jayden Short'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Sam Lalor' FROM afl.player ap WHERE ap.name = 'Sam Lalor'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Sam Lalor'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jack Sinclair' FROM afl.player ap WHERE ap.name = 'Jack Sinclair'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jack Sinclair'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Hugo Garcia' FROM afl.player ap WHERE ap.name = 'Hugo Garcia'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Hugo Garcia'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Mattaes Phillipou' FROM afl.player ap WHERE ap.name = 'Mattaes Phillipou'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Mattaes Phillipou'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Errol Gulden' FROM afl.player ap WHERE ap.name = 'Errol Gulden'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Errol Gulden'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'James Rowbottom' FROM afl.player ap WHERE ap.name = 'James Rowbottom'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'James Rowbottom'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Isaac Heeney' FROM afl.player ap WHERE ap.name = 'Isaac Heeney'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Isaac Heeney'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Charlie Curnow' FROM afl.player ap WHERE ap.name = 'Charlie Curnow'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Charlie Curnow'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tim English' FROM afl.player ap WHERE ap.name = 'Tim English'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tim English'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Aaron Naughton' FROM afl.player ap WHERE ap.name = 'Aaron Naughton'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Aaron Naughton'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Ryley Sanders' FROM afl.player ap WHERE ap.name = 'Ryley Sanders'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Ryley Sanders'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
 
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
@@ -139,95 +139,95 @@ ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
 -- The Howling Cows
 
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jordan Dawson' FROM afl.player ap WHERE ap.name = 'Jordan Dawson'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jordan Dawson'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Riley Thilthorpe' FROM afl.player ap WHERE ap.name = 'Riley Thilthorpe'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Riley Thilthorpe'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jacob Weitering' FROM afl.player ap WHERE ap.name = 'Jacob Weitering'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jacob Weitering'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Darcy Cameron' FROM afl.player ap WHERE ap.name = 'Darcy Cameron'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Darcy Cameron'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nick Daicos' FROM afl.player ap WHERE ap.name = 'Nick Daicos'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nick Daicos'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jamie Elliott' FROM afl.player ap WHERE ap.name = 'Jamie Elliott'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jamie Elliott'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Will Setterfield' FROM afl.player ap WHERE ap.name = 'Will Setterfield'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Will Setterfield'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Mason Redman' FROM afl.player ap WHERE ap.name = 'Mason Redman'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Mason Redman'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Luke Ryan' FROM afl.player ap WHERE ap.name = 'Luke Ryan'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Luke Ryan'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tom Stewart' FROM afl.player ap WHERE ap.name = 'Tom Stewart'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tom Stewart'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Touk Miller' FROM afl.player ap WHERE ap.name = 'Touk Miller'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Touk Miller'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Noah Anderson' FROM afl.player ap WHERE ap.name = 'Noah Anderson'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Noah Anderson'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Christian Petracca' FROM afl.player ap WHERE ap.name = 'Christian Petracca'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Christian Petracca'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'John Noble' FROM afl.player ap WHERE ap.name = 'John Noble'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'John Noble'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Toby Greene' FROM afl.player ap WHERE ap.name = 'Toby Greene'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Toby Greene'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Harry Himmelberg' FROM afl.player ap WHERE ap.name = 'Harry Himmelberg'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Harry Himmelberg'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jesse Hogan' FROM afl.player ap WHERE ap.name = 'Jesse Hogan'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jesse Hogan'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jack Gunston' FROM afl.player ap WHERE ap.name = 'Jack Gunston'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jack Gunston'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jack Steele' FROM afl.player ap WHERE ap.name = 'Jack Steele'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jack Steele'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jordon Sweet' FROM afl.player ap WHERE ap.name = 'Jordon Sweet'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jordon Sweet'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Zak Butters' FROM afl.player ap WHERE ap.name = 'Zak Butters'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Zak Butters'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Connor Rozee' FROM afl.player ap WHERE ap.name = 'Connor Rozee'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Connor Rozee'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Ollie Wines' FROM afl.player ap WHERE ap.name = 'Ollie Wines'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Ollie Wines'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Toby Nankervis' FROM afl.player ap WHERE ap.name = 'Toby Nankervis'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Toby Nankervis'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jacob Hopper' FROM afl.player ap WHERE ap.name = 'Jacob Hopper'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jacob Hopper'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Rowan Marshall' FROM afl.player ap WHERE ap.name = 'Rowan Marshall'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Rowan Marshall'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jake Lloyd' FROM afl.player ap WHERE ap.name = 'Jake Lloyd'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jake Lloyd'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nick Blakey' FROM afl.player ap WHERE ap.name = 'Nick Blakey'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nick Blakey'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jack Graham' FROM afl.player ap WHERE ap.name = 'Jack Graham'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jack Graham'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Marcus Bontempelli' FROM afl.player ap WHERE ap.name = 'Marcus Bontempelli'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Marcus Bontempelli'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
 
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
@@ -274,95 +274,95 @@ ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
 -- Ruiboys
 
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Reilly OBrien' FROM afl.player ap WHERE ap.name = 'Reilly OBrien'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Reilly OBrien'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Taylor Walker' FROM afl.player ap WHERE ap.name = 'Taylor Walker'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Taylor Walker'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Henry Smith' FROM afl.player ap WHERE ap.name = 'Henry Smith'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Henry Smith'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Hugh McCluggage' FROM afl.player ap WHERE ap.name = 'Hugh McCluggage'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Hugh McCluggage'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Dayne Zorko' FROM afl.player ap WHERE ap.name = 'Dayne Zorko'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Dayne Zorko'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Harris Andrews' FROM afl.player ap WHERE ap.name = 'Harris Andrews'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Harris Andrews'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'George Hewett' FROM afl.player ap WHERE ap.name = 'George Hewett'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'George Hewett'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Cooper Lord' FROM afl.player ap WHERE ap.name = 'Cooper Lord'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Cooper Lord'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Ned Long' FROM afl.player ap WHERE ap.name = 'Ned Long'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Ned Long'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Josh Daicos' FROM afl.player ap WHERE ap.name = 'Josh Daicos'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Josh Daicos'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jye Caldwell' FROM afl.player ap WHERE ap.name = 'Jye Caldwell'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jye Caldwell'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Luke Jackson' FROM afl.player ap WHERE ap.name = 'Luke Jackson'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Luke Jackson'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tom Atkins' FROM afl.player ap WHERE ap.name = 'Tom Atkins'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tom Atkins'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jeremy Cameron' FROM afl.player ap WHERE ap.name = 'Jeremy Cameron'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jeremy Cameron'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Alex Davies' FROM afl.player ap WHERE ap.name = 'Alex Davies'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Alex Davies'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jamarra Ugle-Hagan' FROM afl.player ap WHERE ap.name = 'Jamarra Ugle-Hagan'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jamarra Ugle-Hagan'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Lachie Ash' FROM afl.player ap WHERE ap.name = 'Lachie Ash'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Lachie Ash'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Connor Idun' FROM afl.player ap WHERE ap.name = 'Connor Idun'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Connor Idun'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Karl Amon' FROM afl.player ap WHERE ap.name = 'Karl Amon'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Karl Amon'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tom Powell' FROM afl.player ap WHERE ap.name = 'Tom Powell'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tom Powell'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Max Gawn' FROM afl.player ap WHERE ap.name = 'Max Gawn'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Max Gawn'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Willem Drew' FROM afl.player ap WHERE ap.name = 'Willem Drew'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Willem Drew'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Mitch Georgiades' FROM afl.player ap WHERE ap.name = 'Mitch Georgiades'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Mitch Georgiades'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tim Taranto' FROM afl.player ap WHERE ap.name = 'Tim Taranto'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tim Taranto'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jack Macrae' FROM afl.player ap WHERE ap.name = 'Jack Macrae'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jack Macrae'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Marcus Windhager' FROM afl.player ap WHERE ap.name = 'Marcus Windhager'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Marcus Windhager'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Callum Wilkie' FROM afl.player ap WHERE ap.name = 'Callum Wilkie'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Callum Wilkie'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Matthew Kennedy' FROM afl.player ap WHERE ap.name = 'Matthew Kennedy'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Matthew Kennedy'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Sam Darcy' FROM afl.player ap WHERE ap.name = 'Sam Darcy'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Sam Darcy'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Bailey Dale' FROM afl.player ap WHERE ap.name = 'Bailey Dale'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Bailey Dale'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
 
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
@@ -409,95 +409,95 @@ ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
 -- Slashers
 
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Josh Dunkley' FROM afl.player ap WHERE ap.name = 'Josh Dunkley'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Josh Dunkley'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Logan Morris' FROM afl.player ap WHERE ap.name = 'Logan Morris'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Logan Morris'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Marc Pittonet' FROM afl.player ap WHERE ap.name = 'Marc Pittonet'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Marc Pittonet'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Patrick Cripps' FROM afl.player ap WHERE ap.name = 'Patrick Cripps'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Patrick Cripps'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Sam Walsh' FROM afl.player ap WHERE ap.name = 'Sam Walsh'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Sam Walsh'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Harry McKay' FROM afl.player ap WHERE ap.name = 'Harry McKay'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Harry McKay'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jagga Smith' FROM afl.player ap WHERE ap.name = 'Jagga Smith'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jagga Smith'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Zach Merrett' FROM afl.player ap WHERE ap.name = 'Zach Merrett'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Zach Merrett'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Darcy Parish' FROM afl.player ap WHERE ap.name = 'Darcy Parish'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Darcy Parish'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Andrew McGrath' FROM afl.player ap WHERE ap.name = 'Andrew McGrath'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Andrew McGrath'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Andrew Brayshaw' FROM afl.player ap WHERE ap.name = 'Andrew Brayshaw'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Andrew Brayshaw'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Patrick Voss' FROM afl.player ap WHERE ap.name = 'Patrick Voss'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Patrick Voss'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Bailey Smith' FROM afl.player ap WHERE ap.name = 'Bailey Smith'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Bailey Smith'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Max Holmes' FROM afl.player ap WHERE ap.name = 'Max Holmes'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Max Holmes'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jarrod Witts' FROM afl.player ap WHERE ap.name = 'Jarrod Witts'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jarrod Witts'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Finn Callaghan' FROM afl.player ap WHERE ap.name = 'Finn Callaghan'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Finn Callaghan'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Lachie Whitfield' FROM afl.player ap WHERE ap.name = 'Lachie Whitfield'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Lachie Whitfield'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Aaron Cadman' FROM afl.player ap WHERE ap.name = 'Aaron Cadman'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Aaron Cadman'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jai Newcombe' FROM afl.player ap WHERE ap.name = 'Jai Newcombe'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jai Newcombe'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Conor Nash' FROM afl.player ap WHERE ap.name = 'Conor Nash'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Conor Nash'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'James Sicily' FROM afl.player ap WHERE ap.name = 'James Sicily'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'James Sicily'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Christian Salem' FROM afl.player ap WHERE ap.name = 'Christian Salem'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Christian Salem'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tom De Koning' FROM afl.player ap WHERE ap.name = 'Tom De Koning'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tom De Koning'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Nasiah Wanganeen-Milera' FROM afl.player ap WHERE ap.name = 'Nasiah Wanganeen-Milera'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Nasiah Wanganeen-Milera'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Sam Flanders' FROM afl.player ap WHERE ap.name = 'Sam Flanders'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Sam Flanders'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Brodie Grundy' FROM afl.player ap WHERE ap.name = 'Brodie Grundy'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Brodie Grundy'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Jake Waterman' FROM afl.player ap WHERE ap.name = 'Jake Waterman'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Jake Waterman'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Tom Liberatore' FROM afl.player ap WHERE ap.name = 'Tom Liberatore'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Tom Liberatore'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Ed Richards' FROM afl.player ap WHERE ap.name = 'Ed Richards'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Ed Richards'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
-INSERT INTO ffl.player (afl_player_id, drv_name)
-SELECT ap.id, 'Joel Freijah' FROM afl.player ap WHERE ap.name = 'Joel Freijah'
+INSERT INTO ffl.player (afl_player_id)
+SELECT ap.id FROM afl.player ap WHERE ap.name = 'Joel Freijah'
 AND NOT EXISTS (SELECT 1 FROM ffl.player WHERE afl_player_id = ap.id);
 
 INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
