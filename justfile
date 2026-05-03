@@ -20,6 +20,7 @@ dev-seed:
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/03_afl_historical.sql
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/04_ffl_players.sql
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/05_ffl_trades.sql
+    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/06_ffl_round_data.sql
     @echo "Test data loaded"
 
 # Stop local infrastructure
