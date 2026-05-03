@@ -63,6 +63,7 @@ type FFLClubSeason {
 type FFLClubMatch {
   id: ID!
   club: FFLClub!
+  dataStatus: String!
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }

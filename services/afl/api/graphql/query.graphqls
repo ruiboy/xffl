@@ -42,8 +42,7 @@ type AFLMatch {
   venue: String
   startTime: String
   result: String
-  statsImportStatus: String!
-  statsImportedAt: String
+  dataStatus: String!
   round: AFLRound!
   homeClubMatch: AFLClubMatch
   awayClubMatch: AFLClubMatch

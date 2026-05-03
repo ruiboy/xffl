@@ -79,6 +79,7 @@ type ComplexityRoot struct {
 
 	FFLClubMatch struct {
 		Club          func(childComplexity int) int
+		DataStatus    func(childComplexity int) int
 		ID            func(childComplexity int) int
 		PlayerMatches func(childComplexity int) int
 		Score         func(childComplexity int) int
@@ -402,6 +403,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubMatch.Club(childComplexity), true
+	case "FFLClubMatch.dataStatus":
+		if e.ComplexityRoot.FFLClubMatch.DataStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubMatch.DataStatus(childComplexity), true
 	case "FFLClubMatch.id":
 		if e.ComplexityRoot.FFLClubMatch.ID == nil {
 			break
@@ -1274,6 +1281,7 @@ type FFLClubSeason {
 type FFLClubMatch {
   id: ID!
   club: FFLClub!
+  dataStatus: String!
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }
@@ -2264,6 +2272,35 @@ func (ec *executionContext) fieldContext_FFLClubMatch_club(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLClubMatch_dataStatus(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubMatch_dataStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.DataStatus, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubMatch_dataStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLClubMatch_score(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2888,6 +2925,8 @@ func (ec *executionContext) fieldContext_FFLMatch_homeClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_id(ctx, field)
 			case "club":
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_FFLClubMatch_dataStatus(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
@@ -2927,6 +2966,8 @@ func (ec *executionContext) fieldContext_FFLMatch_awayClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_id(ctx, field)
 			case "club":
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_FFLClubMatch_dataStatus(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
@@ -8102,6 +8143,11 @@ func (ec *executionContext) _FFLClubMatch(ctx context.Context, sel ast.Selection
 			}
 		case "club":
 			out.Values[i] = ec._FFLClubMatch_club(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "dataStatus":
+			out.Values[i] = ec._FFLClubMatch_dataStatus(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

@@ -42,8 +42,7 @@ CREATE TABLE IF NOT EXISTS afl.match (
     away_club_match_id INTEGER,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
-    stats_import_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
-    stats_imported_at TIMESTAMP WITH TIME ZONE,
+    data_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
     drv_result VARCHAR(50)
 );
 

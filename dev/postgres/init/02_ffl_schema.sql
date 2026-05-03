@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS ffl.club_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     match_id INTEGER NOT NULL REFERENCES ffl.match(id) ON DELETE CASCADE,
     club_season_id INTEGER NOT NULL REFERENCES ffl.club_season(id) ON DELETE CASCADE,
+    data_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
     drv_score INTEGER DEFAULT 0,
     drv_premiership_points INTEGER DEFAULT 0,
     CONSTRAINT uni_ffl_club_match UNIQUE (club_season_id, match_id)

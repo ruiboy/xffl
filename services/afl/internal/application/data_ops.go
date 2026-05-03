@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"xffl/contracts/events"
 	"xffl/services/afl/internal/domain"
@@ -234,9 +233,9 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		result.UnmatchedPlayers = append(result.UnmatchedPlayers, unmatched...)
 	}
 
-	// Update match import status (outside transaction — best-effort).
-	if err := c.matches.UpdateImportStatus(ctx, matchID, domain.MatchStatsPartial, time.Now()); err != nil {
-		slog.WarnContext(ctx, "failed to update match import status", slog.Int("match_id", matchID), slog.Any("error", err))
+	// Update match data status (outside transaction — best-effort).
+	if err := c.matches.UpdateDataStatus(ctx, matchID, domain.MatchDataPartial); err != nil {
+		slog.WarnContext(ctx, "failed to update match data status", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
 	// Fire PlayerMatchUpdated events.
@@ -266,25 +265,15 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 	return result, nil
 }
 
-// MarkMatchStatsComplete sets stats_import_status to "complete" (or back to "partial").
-func (c *DataOpsCommands) MarkMatchStatsComplete(ctx context.Context, matchID int, complete bool) (domain.Match, error) {
-	match, err := c.matches.FindByID(ctx, matchID)
-	if err != nil {
-		return domain.Match{}, fmt.Errorf("load match: %w", err)
+// MarkMatchStatsFinal sets data_status to "final" (or back to "partial").
+func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, final bool) (domain.Match, error) {
+	status := domain.MatchDataPartial
+	if final {
+		status = domain.MatchDataFinal
 	}
 
-	status := domain.MatchStatsPartial
-	if complete {
-		status = domain.MatchStatsComplete
-	}
-
-	importedAt := time.Now()
-	if match.StatsImportedAt != nil {
-		importedAt = *match.StatsImportedAt
-	}
-
-	if err := c.matches.UpdateImportStatus(ctx, matchID, status, importedAt); err != nil {
-		return domain.Match{}, fmt.Errorf("update import status: %w", err)
+	if err := c.matches.UpdateDataStatus(ctx, matchID, status); err != nil {
+		return domain.Match{}, fmt.Errorf("update data status: %w", err)
 	}
 
 	return c.matches.FindByID(ctx, matchID)

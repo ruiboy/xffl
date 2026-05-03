@@ -29,13 +29,6 @@ input AddFFLPlayerToSeasonInput
   costCents: Int
 }
 
-input RemoveFFLPlayerFromSeasonInput
-  @join__type(graph: FFL)
-{
-  id: ID!
-  toRoundId: ID!
-}
-
 type AFLClub
   @join__type(graph: AFL)
 {
@@ -83,8 +76,7 @@ type AFLMatch
   venue: String
   startTime: String
   result: String
-  statsImportStatus: String!
-  statsImportedAt: String
+  dataStatus: String!
   round: AFLRound!
   homeClubMatch: AFLClubMatch
   awayClubMatch: AFLClubMatch
@@ -204,6 +196,7 @@ type FFLClubMatch
 {
   id: ID!
   club: FFLClub!
+  dataStatus: String!
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }
@@ -414,6 +407,13 @@ type Query
   fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
   fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
+}
+
+input RemoveFFLPlayerFromSeasonInput
+  @join__type(graph: FFL)
+{
+  id: ID!
+  toRoundId: ID!
 }
 
 type ResolvedPlayer

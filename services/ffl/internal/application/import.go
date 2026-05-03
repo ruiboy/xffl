@@ -148,6 +148,10 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 			}
 			result = append(result, pm)
 		}
+
+		if err := repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataSubmitted); err != nil {
+			return fmt.Errorf("update club match data status: %w", err)
+		}
 		return nil
 	})
 

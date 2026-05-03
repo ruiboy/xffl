@@ -991,19 +991,19 @@ func TestImportAFLMatchStats(t *testing.T) {
 	t.Run("no unmatched players", func(t *testing.T) {
 		assert.Empty(t, imp.UnmatchedPlayers)
 	})
-	t.Run("match import status set to partial", func(t *testing.T) {
+	t.Run("match data status set to partial", func(t *testing.T) {
 		statusResult := execQuery(t, server, fmt.Sprintf(`{
-			aflMatch(id: "%d") { statsImportStatus }
+			aflMatch(id: "%d") { dataStatus }
 		}`, ids.matchID))
 		require.Empty(t, statusResult.Errors)
 
 		var statusData struct {
 			AflMatch struct {
-				StatsImportStatus string `json:"statsImportStatus"`
+				DataStatus string `json:"dataStatus"`
 			} `json:"aflMatch"`
 		}
 		require.NoError(t, json.Unmarshal(statusResult.Data, &statusData))
-		assert.Equal(t, "partial", statusData.AflMatch.StatsImportStatus)
+		assert.Equal(t, "partial", statusData.AflMatch.DataStatus)
 	})
 }
 

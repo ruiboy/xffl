@@ -39,7 +39,7 @@ type Querier interface {
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
 	UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
-	UpdateMatchImportStatus(ctx context.Context, arg UpdateMatchImportStatusParams) error
+	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }

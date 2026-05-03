@@ -15,13 +15,13 @@ const (
 	MatchResultNoResult MatchResult = "no_result"
 )
 
-// MatchStatsStatus tracks how complete the imported player stats are for a match.
-type MatchStatsStatus string
+// MatchDataStatus tracks how complete the stats data is for a match.
+type MatchDataStatus string
 
 const (
-	MatchStatsNoData   MatchStatsStatus = "no_data"
-	MatchStatsPartial  MatchStatsStatus = "partial"
-	MatchStatsComplete MatchStatsStatus = "complete"
+	MatchDataNoData  MatchDataStatus = "no_data"
+	MatchDataPartial MatchDataStatus = "partial"
+	MatchDataFinal   MatchDataStatus = "final"
 )
 
 // PremiershipPoints awarded per match result.
@@ -32,15 +32,14 @@ const (
 )
 
 type Match struct {
-	ID                int
-	RoundID           int
-	Home              ClubMatch
-	Away              ClubMatch
-	Venue             string
-	StartTime         time.Time
-	Result            MatchResult
-	StatsImportStatus MatchStatsStatus
-	StatsImportedAt   *time.Time
+	ID         int
+	RoundID    int
+	Home       ClubMatch
+	Away       ClubMatch
+	Venue      string
+	StartTime  time.Time
+	Result     MatchResult
+	DataStatus MatchDataStatus
 }
 
 // Winner returns a pointer to the winning ClubMatch, or nil for a draw.
@@ -61,5 +60,5 @@ type MatchRepository interface {
 	FindByID(ctx context.Context, id int) (Match, error)
 	FindByIDWithDetails(ctx context.Context, id int) (Match, error)
 	FindByIDs(ctx context.Context, ids []int) (map[int]Match, error)
-	UpdateImportStatus(ctx context.Context, matchID int, status MatchStatsStatus, importedAt time.Time) error
+	UpdateDataStatus(ctx context.Context, matchID int, status MatchDataStatus) error
 }

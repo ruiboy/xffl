@@ -75,15 +75,14 @@ type ComplexityRoot struct {
 	}
 
 	AFLMatch struct {
-		AwayClubMatch     func(childComplexity int) int
-		HomeClubMatch     func(childComplexity int) int
-		ID                func(childComplexity int) int
-		Result            func(childComplexity int) int
-		Round             func(childComplexity int) int
-		StartTime         func(childComplexity int) int
-		StatsImportStatus func(childComplexity int) int
-		StatsImportedAt   func(childComplexity int) int
-		Venue             func(childComplexity int) int
+		AwayClubMatch func(childComplexity int) int
+		DataStatus    func(childComplexity int) int
+		HomeClubMatch func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Result        func(childComplexity int) int
+		Round         func(childComplexity int) int
+		StartTime     func(childComplexity int) int
+		Venue         func(childComplexity int) int
 	}
 
 	AFLPlayer struct {
@@ -379,6 +378,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLMatch.AwayClubMatch(childComplexity), true
+	case "AFLMatch.dataStatus":
+		if e.ComplexityRoot.AFLMatch.DataStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLMatch.DataStatus(childComplexity), true
 	case "AFLMatch.homeClubMatch":
 		if e.ComplexityRoot.AFLMatch.HomeClubMatch == nil {
 			break
@@ -409,18 +414,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLMatch.StartTime(childComplexity), true
-	case "AFLMatch.statsImportStatus":
-		if e.ComplexityRoot.AFLMatch.StatsImportStatus == nil {
-			break
-		}
-
-		return e.ComplexityRoot.AFLMatch.StatsImportStatus(childComplexity), true
-	case "AFLMatch.statsImportedAt":
-		if e.ComplexityRoot.AFLMatch.StatsImportedAt == nil {
-			break
-		}
-
-		return e.ComplexityRoot.AFLMatch.StatsImportedAt(childComplexity), true
 	case "AFLMatch.venue":
 		if e.ComplexityRoot.AFLMatch.Venue == nil {
 			break
@@ -1050,8 +1043,7 @@ type AFLMatch {
   venue: String
   startTime: String
   result: String
-  statsImportStatus: String!
-  statsImportedAt: String
+  dataStatus: String!
   round: AFLRound!
   homeClubMatch: AFLClubMatch
   awayClubMatch: AFLClubMatch
@@ -1756,10 +1748,8 @@ func (ec *executionContext) fieldContext_AFLClubMatch_match(_ context.Context, f
 				return ec.fieldContext_AFLMatch_startTime(ctx, field)
 			case "result":
 				return ec.fieldContext_AFLMatch_result(ctx, field)
-			case "statsImportStatus":
-				return ec.fieldContext_AFLMatch_statsImportStatus(ctx, field)
-			case "statsImportedAt":
-				return ec.fieldContext_AFLMatch_statsImportedAt(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_AFLMatch_dataStatus(ctx, field)
 			case "round":
 				return ec.fieldContext_AFLMatch_round(ctx, field)
 			case "homeClubMatch":
@@ -2224,14 +2214,14 @@ func (ec *executionContext) fieldContext_AFLMatch_result(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _AFLMatch_statsImportStatus(ctx context.Context, field graphql.CollectedField, obj *AFLMatch) (ret graphql.Marshaler) {
+func (ec *executionContext) _AFLMatch_dataStatus(ctx context.Context, field graphql.CollectedField, obj *AFLMatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AFLMatch_statsImportStatus,
+		ec.fieldContext_AFLMatch_dataStatus,
 		func(ctx context.Context) (any, error) {
-			return obj.StatsImportStatus, nil
+			return obj.DataStatus, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -2240,36 +2230,7 @@ func (ec *executionContext) _AFLMatch_statsImportStatus(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_AFLMatch_statsImportStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AFLMatch",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AFLMatch_statsImportedAt(ctx context.Context, field graphql.CollectedField, obj *AFLMatch) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AFLMatch_statsImportedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.StatsImportedAt, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_AFLMatch_statsImportedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AFLMatch_dataStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AFLMatch",
 		Field:      field,
@@ -3307,10 +3268,8 @@ func (ec *executionContext) fieldContext_AFLRound_matches(_ context.Context, fie
 				return ec.fieldContext_AFLMatch_startTime(ctx, field)
 			case "result":
 				return ec.fieldContext_AFLMatch_result(ctx, field)
-			case "statsImportStatus":
-				return ec.fieldContext_AFLMatch_statsImportStatus(ctx, field)
-			case "statsImportedAt":
-				return ec.fieldContext_AFLMatch_statsImportedAt(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_AFLMatch_dataStatus(ctx, field)
 			case "round":
 				return ec.fieldContext_AFLMatch_round(ctx, field)
 			case "homeClubMatch":
@@ -4127,10 +4086,8 @@ func (ec *executionContext) fieldContext_Mutation_markAFLMatchStatsComplete(ctx 
 				return ec.fieldContext_AFLMatch_startTime(ctx, field)
 			case "result":
 				return ec.fieldContext_AFLMatch_result(ctx, field)
-			case "statsImportStatus":
-				return ec.fieldContext_AFLMatch_statsImportStatus(ctx, field)
-			case "statsImportedAt":
-				return ec.fieldContext_AFLMatch_statsImportedAt(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_AFLMatch_dataStatus(ctx, field)
 			case "round":
 				return ec.fieldContext_AFLMatch_round(ctx, field)
 			case "homeClubMatch":
@@ -4420,10 +4377,8 @@ func (ec *executionContext) fieldContext_Query_aflMatch(ctx context.Context, fie
 				return ec.fieldContext_AFLMatch_startTime(ctx, field)
 			case "result":
 				return ec.fieldContext_AFLMatch_result(ctx, field)
-			case "statsImportStatus":
-				return ec.fieldContext_AFLMatch_statsImportStatus(ctx, field)
-			case "statsImportedAt":
-				return ec.fieldContext_AFLMatch_statsImportedAt(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_AFLMatch_dataStatus(ctx, field)
 			case "round":
 				return ec.fieldContext_AFLMatch_round(ctx, field)
 			case "homeClubMatch":
@@ -6816,13 +6771,11 @@ func (ec *executionContext) _AFLMatch(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._AFLMatch_startTime(ctx, field, obj)
 		case "result":
 			out.Values[i] = ec._AFLMatch_result(ctx, field, obj)
-		case "statsImportStatus":
-			out.Values[i] = ec._AFLMatch_statsImportStatus(ctx, field, obj)
+		case "dataStatus":
+			out.Values[i] = ec._AFLMatch_dataStatus(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "statsImportedAt":
-			out.Values[i] = ec._AFLMatch_statsImportedAt(ctx, field, obj)
 		case "round":
 			field := field
 

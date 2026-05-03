@@ -75,7 +75,7 @@ func (r *mutationResolver) MarkAFLMatchStatsComplete(ctx context.Context, matchI
 	if err != nil {
 		return nil, err
 	}
-	match, err := r.DataOps.MarkMatchStatsComplete(ctx, id, complete)
+	match, err := r.DataOps.MarkMatchStatsFinal(ctx, id, complete)
 	if err != nil {
 		return nil, err
 	}

@@ -8,8 +8,7 @@ export const GET_AFL_ROUND_STATS = gql`
       season { id }
       matches {
         id
-        statsImportStatus
-        statsImportedAt
+        dataStatus
         homeClubMatch { id club { id name } score playerMatches { id } }
         awayClubMatch { id club { id name } score playerMatches { id } }
       }
@@ -29,10 +28,11 @@ export const GET_FFL_DATA_OPS = gql`
       rounds {
         id
         name
+        aflRoundId
         matches {
           id
-          homeClubMatch { id club { id name } }
-          awayClubMatch { id club { id name } }
+          homeClubMatch { id club { id name } dataStatus score }
+          awayClubMatch { id club { id name } dataStatus score }
         }
       }
     }

@@ -201,22 +201,17 @@ func NewMatchRepository(q *sqlcgen.Queries) *MatchRepository {
 	return &MatchRepository{q: q}
 }
 
-func matchFromRow(id, roundID, homeID, awayID int32, venue string, startDt pgtype.Timestamptz, result, status string, importedAt pgtype.Timestamptz) domain.Match {
-	m := domain.Match{
-		ID:                int(id),
-		RoundID:           int(roundID),
-		Home:              domain.ClubMatch{ID: int(homeID)},
-		Away:              domain.ClubMatch{ID: int(awayID)},
-		Venue:             venue,
-		StartTime:         startDt.Time,
-		Result:            domain.MatchResult(result),
-		StatsImportStatus: domain.MatchStatsStatus(status),
+func matchFromRow(id, roundID, homeID, awayID int32, venue string, startDt pgtype.Timestamptz, result, status string) domain.Match {
+	return domain.Match{
+		ID:         int(id),
+		RoundID:    int(roundID),
+		Home:       domain.ClubMatch{ID: int(homeID)},
+		Away:       domain.ClubMatch{ID: int(awayID)},
+		Venue:      venue,
+		StartTime:  startDt.Time,
+		Result:     domain.MatchResult(result),
+		DataStatus: domain.MatchDataStatus(status),
 	}
-	if importedAt.Valid {
-		t := importedAt.Time
-		m.StatsImportedAt = &t
-	}
-	return m
 }
 
 func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]domain.Match, error) {
@@ -227,7 +222,7 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 	out := make([]domain.Match, len(rows))
 	for i, row := range rows {
 		out[i] = matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
-			row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt)
+			row.Venue, row.StartDt, row.DrvResult, row.DataStatus)
 	}
 	return out, nil
 }
@@ -238,7 +233,7 @@ func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, e
 		return domain.Match{}, err
 	}
 	return matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
-		row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt), nil
+		row.Venue, row.StartDt, row.DrvResult, row.DataStatus), nil
 }
 
 func (r *MatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.Match, error) {
@@ -253,17 +248,16 @@ func (r *MatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]dom
 	out := make(map[int]domain.Match, len(rows))
 	for _, row := range rows {
 		m := matchFromRow(row.ID, row.RoundID, row.HomeClubMatchID, row.AwayClubMatchID,
-			row.Venue, row.StartDt, row.DrvResult, row.StatsImportStatus, row.StatsImportedAt)
+			row.Venue, row.StartDt, row.DrvResult, row.DataStatus)
 		out[m.ID] = m
 	}
 	return out, nil
 }
 
-func (r *MatchRepository) UpdateImportStatus(ctx context.Context, matchID int, status domain.MatchStatsStatus, importedAt time.Time) error {
-	return r.q.UpdateMatchImportStatus(ctx, sqlcgen.UpdateMatchImportStatusParams{
-		ID:                int32(matchID),
-		StatsImportStatus: string(status),
-		StatsImportedAt:   pgtype.Timestamptz{Time: importedAt, Valid: true},
+func (r *MatchRepository) UpdateDataStatus(ctx context.Context, matchID int, status domain.MatchDataStatus) error {
+	return r.q.UpdateMatchDataStatus(ctx, sqlcgen.UpdateMatchDataStatusParams{
+		ID:         int32(matchID),
+		DataStatus: string(status),
 	})
 }
 

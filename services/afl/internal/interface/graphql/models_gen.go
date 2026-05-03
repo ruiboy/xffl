@@ -35,15 +35,14 @@ type AFLLiveRound struct {
 }
 
 type AFLMatch struct {
-	ID                string        `json:"id"`
-	Venue             *string       `json:"venue,omitempty"`
-	StartTime         *string       `json:"startTime,omitempty"`
-	Result            *string       `json:"result,omitempty"`
-	StatsImportStatus string        `json:"statsImportStatus"`
-	StatsImportedAt   *string       `json:"statsImportedAt,omitempty"`
-	Round             *AFLRound     `json:"round"`
-	HomeClubMatch     *AFLClubMatch `json:"homeClubMatch,omitempty"`
-	AwayClubMatch     *AFLClubMatch `json:"awayClubMatch,omitempty"`
+	ID            string        `json:"id"`
+	Venue         *string       `json:"venue,omitempty"`
+	StartTime     *string       `json:"startTime,omitempty"`
+	Result        *string       `json:"result,omitempty"`
+	DataStatus    string        `json:"dataStatus"`
+	Round         *AFLRound     `json:"round"`
+	HomeClubMatch *AFLClubMatch `json:"homeClubMatch,omitempty"`
+	AwayClubMatch *AFLClubMatch `json:"awayClubMatch,omitempty"`
 }
 
 type AFLPlayer struct {
