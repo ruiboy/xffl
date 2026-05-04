@@ -56,6 +56,7 @@ type AFLClub {
 type AFLClubSeason {
   id: ID!
   club: AFLClub!
+  season: AFLSeason!
   played: Int!
   won: Int!
   lost: Int!
@@ -67,6 +68,7 @@ type AFLClubSeason {
 
 type AFLClubMatch {
   id: ID!
+  clubSeasonId: ID!
   club: AFLClub!
   rushedBehinds: Int!
   score: Int!

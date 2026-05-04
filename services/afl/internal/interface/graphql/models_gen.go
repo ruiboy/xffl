@@ -9,6 +9,7 @@ type AFLClub struct {
 
 type AFLClubMatch struct {
 	ID            string            `json:"id"`
+	ClubSeasonID  string            `json:"clubSeasonId"`
 	Club          *AFLClub          `json:"club"`
 	RushedBehinds int               `json:"rushedBehinds"`
 	Score         int               `json:"score"`
@@ -18,15 +19,16 @@ type AFLClubMatch struct {
 }
 
 type AFLClubSeason struct {
-	ID                string   `json:"id"`
-	Club              *AFLClub `json:"club"`
-	Played            int      `json:"played"`
-	Won               int      `json:"won"`
-	Lost              int      `json:"lost"`
-	Drawn             int      `json:"drawn"`
-	For               int      `json:"for"`
-	Against           int      `json:"against"`
-	PremiershipPoints int      `json:"premiershipPoints"`
+	ID                string     `json:"id"`
+	Club              *AFLClub   `json:"club"`
+	Season            *AFLSeason `json:"season"`
+	Played            int        `json:"played"`
+	Won               int        `json:"won"`
+	Lost              int        `json:"lost"`
+	Drawn             int        `json:"drawn"`
+	For               int        `json:"for"`
+	Against           int        `json:"against"`
+	PremiershipPoints int        `json:"premiershipPoints"`
 }
 
 type AFLLiveRound struct {
@@ -139,7 +141,27 @@ type PageInfo struct {
 	TotalCount  *int    `json:"totalCount,omitempty"`
 }
 
+type PlayerSourceMappingInput struct {
+	Source         string `json:"source"`
+	ExternalSeason string `json:"externalSeason"`
+	ExternalClub   string `json:"externalClub"`
+	ExternalPlayer string `json:"externalPlayer"`
+}
+
 type Query struct {
+}
+
+type ResolveAFLPlayerMatchInput struct {
+	ClubMatchID    string                    `json:"clubMatchId"`
+	PlayerSeasonID string                    `json:"playerSeasonId"`
+	Kicks          int                       `json:"kicks"`
+	Handballs      int                       `json:"handballs"`
+	Marks          int                       `json:"marks"`
+	Hitouts        int                       `json:"hitouts"`
+	Tackles        int                       `json:"tackles"`
+	Goals          int                       `json:"goals"`
+	Behinds        int                       `json:"behinds"`
+	SourceMapping  *PlayerSourceMappingInput `json:"sourceMapping,omitempty"`
 }
 
 type UnmatchedAFLPlayer struct {

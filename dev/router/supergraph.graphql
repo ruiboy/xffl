@@ -364,6 +364,7 @@ type Mutation
   @join__type(graph: FFL)
 {
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason! @join__field(graph: AFL)
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
@@ -401,6 +402,15 @@ type ParseFFLTeamSubmissionResult
   needsReview: [Int!]!
 }
 
+input PlayerSourceMappingInput
+  @join__type(graph: AFL)
+{
+  source: String!
+  externalSeason: String!
+  externalClub: String!
+  externalPlayer: String!
+}
+
 type Query
   @join__type(graph: AFL)
   @join__type(graph: FFL)
@@ -431,6 +441,21 @@ input RemoveFFLPlayerFromSeasonInput
 {
   id: ID!
   toRoundId: ID!
+}
+
+input ResolveAFLPlayerMatchInput
+  @join__type(graph: AFL)
+{
+  clubMatchId: ID!
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  sourceMapping: PlayerSourceMappingInput
 }
 
 type ResolvedPlayer

@@ -1,5 +1,6 @@
 type Mutation {
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason!
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
@@ -8,6 +9,26 @@ type Mutation {
 input AddAFLPlayerInput {
   name: String!
   clubSeasonId: ID!
+}
+
+input ResolveAFLPlayerMatchInput {
+  clubMatchId: ID!
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  sourceMapping: PlayerSourceMappingInput
+}
+
+input PlayerSourceMappingInput {
+  source: String!
+  externalSeason: String!
+  externalClub: String!
+  externalPlayer: String!
 }
 
 type ImportAFLMatchStatsResult {

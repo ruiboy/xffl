@@ -48,6 +48,10 @@ models:
         resolver: true
       awayClubMatch:
         resolver: true
+  AFLClubSeason:
+    fields:
+      season:
+        resolver: true
   AFLClubMatch:
     fields:
       playerMatches:

@@ -7,7 +7,6 @@ package graphql
 
 import (
 	"context"
-
 	"xffl/services/afl/internal/application"
 	"xffl/services/afl/internal/domain"
 )
@@ -26,6 +25,48 @@ func (r *mutationResolver) AddAFLPlayer(ctx context.Context, input AddAFLPlayerI
 		return nil, err
 	}
 	return &AFLPlayerSeason{ID: toID(ps.ID)}, nil
+}
+
+// ResolveAFLPlayerMatch is the resolver for the resolveAFLPlayerMatch field.
+func (r *mutationResolver) ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	playerSeasonID, err := fromID(input.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+
+	params := application.ResolveAFLPlayerMatchParams{
+		ClubMatchID:    clubMatchID,
+		PlayerSeasonID: playerSeasonID,
+		Kicks:          input.Kicks,
+		Handballs:      input.Handballs,
+		Marks:          input.Marks,
+		Hitouts:        input.Hitouts,
+		Tackles:        input.Tackles,
+		Goals:          input.Goals,
+		Behinds:        input.Behinds,
+	}
+	if input.SourceMapping != nil {
+		params.SourceMapping = &application.PlayerSourceMapping{
+			Source:         input.SourceMapping.Source,
+			ExternalSeason: input.SourceMapping.ExternalSeason,
+			ExternalClub:   input.SourceMapping.ExternalClub,
+			ExternalPlayer: input.SourceMapping.ExternalPlayer,
+		}
+	}
+
+	pm, err := r.DataOps.ResolveAFLPlayerMatch(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerMatch(pm, player), nil
 }
 
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.

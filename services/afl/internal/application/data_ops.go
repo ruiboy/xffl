@@ -354,6 +354,99 @@ func (c *DataOpsCommands) buildCandidates(ctx context.Context, clubSeasonID int)
 	return candidates, nil
 }
 
+// PlayerSourceMapping holds the external identity to persist when a name mismatch was resolved manually.
+type PlayerSourceMapping struct {
+	Source         string
+	ExternalSeason string
+	ExternalClub   string
+	ExternalPlayer string
+}
+
+// ResolveAFLPlayerMatchParams is the input for resolving an unmatched player and writing their stats.
+type ResolveAFLPlayerMatchParams struct {
+	ClubMatchID    int
+	PlayerSeasonID int
+	Kicks          int
+	Handballs      int
+	Marks          int
+	Hitouts        int
+	Tackles        int
+	Goals          int
+	Behinds        int
+	SourceMapping  *PlayerSourceMapping // non-nil when the footywire name differed from the stored player name
+}
+
+// ResolveAFLPlayerMatch persists an optional source name mapping and upserts the player match record.
+// The source mapping (if provided) is written before the transaction so a retry will auto-resolve.
+func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params ResolveAFLPlayerMatchParams) (domain.PlayerMatch, error) {
+	if params.SourceMapping != nil {
+		m := params.SourceMapping
+		if err := c.playerSourceMap.Store(ctx, m.Source, m.ExternalSeason, m.ExternalClub, m.ExternalPlayer, params.PlayerSeasonID); err != nil {
+			return domain.PlayerMatch{}, fmt.Errorf("store player source mapping: %w", err)
+		}
+	}
+
+	var result domain.PlayerMatch
+	var roundID int
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
+			ClubMatchID:    params.ClubMatchID,
+			PlayerSeasonID: params.PlayerSeasonID,
+			Kicks:          &params.Kicks,
+			Handballs:      &params.Handballs,
+			Marks:          &params.Marks,
+			Hitouts:        &params.Hitouts,
+			Tackles:        &params.Tackles,
+			Goals:          &params.Goals,
+			Behinds:        &params.Behinds,
+		})
+		if err != nil {
+			return err
+		}
+		result = pm
+
+		playerMatches, err := repos.PlayerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		clubMatch, err := repos.ClubMatches.FindByID(ctx, params.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		roundID, err = repos.ClubMatches.FindRoundID(ctx, params.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		clubMatch.PlayerMatches = playerMatches
+		return repos.ClubMatches.UpdateScore(ctx, params.ClubMatchID, clubMatch.Score())
+	})
+	if err != nil {
+		return domain.PlayerMatch{}, err
+	}
+
+	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
+		PlayerMatchID:  result.ID,
+		PlayerSeasonID: result.PlayerSeasonID,
+		ClubMatchID:    result.ClubMatchID,
+		RoundID:        roundID,
+		Kicks:          result.Kicks,
+		Handballs:      result.Handballs,
+		Marks:          result.Marks,
+		Hitouts:        result.Hitouts,
+		Tackles:        result.Tackles,
+		Goals:          result.Goals,
+		Behinds:        result.Behinds,
+	})
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to marshal PlayerMatchUpdated event", slog.Any("error", err))
+		return result, nil
+	}
+	if err := c.dispatcher.Publish(ctx, events.PlayerMatchUpdated, payload); err != nil {
+		slog.ErrorContext(ctx, "failed to publish PlayerMatchUpdated event", slog.Any("error", err))
+	}
+	return result, nil
+}
+
 // AddAFLPlayerParams holds the input for creating a new AFL player and their season record.
 type AddAFLPlayerParams struct {
 	Name        string
