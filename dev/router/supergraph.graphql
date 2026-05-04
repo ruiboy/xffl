@@ -20,6 +20,13 @@ directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on
 
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
+input AddAFLPlayerInput
+  @join__type(graph: AFL)
+{
+  name: String!
+  clubSeasonId: ID!
+}
+
 input AddFFLPlayerToSeasonInput
   @join__type(graph: FFL)
 {
@@ -356,6 +363,7 @@ type Mutation
   @join__type(graph: AFL)
   @join__type(graph: FFL)
 {
+  addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason! @join__field(graph: AFL)
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)

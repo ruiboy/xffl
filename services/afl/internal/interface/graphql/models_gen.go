@@ -116,6 +116,11 @@ type AFLSeason struct {
 
 func (AFLSeason) IsEntity() {}
 
+type AddAFLPlayerInput struct {
+	Name         string `json:"name"`
+	ClubSeasonID string `json:"clubSeasonId"`
+}
+
 type ImportAFLMatchStatsResult struct {
 	MatchID          string                `json:"matchId"`
 	HomeClubName     string                `json:"homeClubName"`

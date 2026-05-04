@@ -83,6 +83,7 @@ func main() {
 		pg.NewRoundRepository(q, pool),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewDataopsMatchSourceRepository(q),
+		pg.NewDataopsPlayerSourceRepository(q),
 		footywireClient,
 		footywireClient,
 		footywire.NewLevenshteinResolver(),

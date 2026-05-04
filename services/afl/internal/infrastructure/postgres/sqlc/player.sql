@@ -1,3 +1,8 @@
+-- name: InsertPlayer :one
+INSERT INTO afl.player (name)
+VALUES ($1)
+RETURNING id, name;
+
 -- name: FindPlayerByID :one
 SELECT id, name
 FROM afl.player

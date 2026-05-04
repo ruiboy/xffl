@@ -433,6 +433,14 @@ func NewPlayerRepository(q *sqlcgen.Queries) *PlayerRepository {
 	return &PlayerRepository{q: q}
 }
 
+func (r *PlayerRepository) Create(ctx context.Context, name string) (domain.Player, error) {
+	row, err := r.q.InsertPlayer(ctx, name)
+	if err != nil {
+		return domain.Player{}, err
+	}
+	return domain.Player{ID: int(row.ID), Name: row.Name}, nil
+}
+
 func (r *PlayerRepository) FindByID(ctx context.Context, id int) (domain.Player, error) {
 	row, err := r.q.FindPlayerByID(ctx, int32(id))
 	if err != nil {
@@ -598,6 +606,23 @@ type PlayerSeasonRepository struct{ q *sqlcgen.Queries }
 
 func NewPlayerSeasonRepository(q *sqlcgen.Queries) *PlayerSeasonRepository {
 	return &PlayerSeasonRepository{q: q}
+}
+
+func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID, clubSeasonID int) (domain.PlayerSeason, error) {
+	row, err := r.q.InsertPlayerSeason(ctx, sqlcgen.InsertPlayerSeasonParams{
+		PlayerID:     int32(playerID),
+		ClubSeasonID: int32(clubSeasonID),
+	})
+	if err != nil {
+		return domain.PlayerSeason{}, err
+	}
+	return domain.PlayerSeason{
+		ID:           int(row.ID),
+		PlayerID:     int(row.PlayerID),
+		ClubSeasonID: int(row.ClubSeasonID),
+		FromRoundID:  int32PtrToIntPtr(row.FromRoundID),
+		ToRoundID:    int32PtrToIntPtr(row.ToRoundID),
+	}, nil
 }
 
 func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.PlayerSeason, error) {

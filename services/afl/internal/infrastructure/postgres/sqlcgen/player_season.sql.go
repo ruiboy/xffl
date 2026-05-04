@@ -203,3 +203,35 @@ func (q *Queries) FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeason
 	}
 	return items, nil
 }
+
+const insertPlayerSeason = `-- name: InsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id
+`
+
+type InsertPlayerSeasonParams struct {
+	PlayerID     int32
+	ClubSeasonID int32
+}
+
+type InsertPlayerSeasonRow struct {
+	ID           int32
+	PlayerID     int32
+	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
+}
+
+func (q *Queries) InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error) {
+	row := q.db.QueryRow(ctx, insertPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
+	var i InsertPlayerSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+	)
+	return i, err
+}

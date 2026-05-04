@@ -7,8 +7,26 @@ package graphql
 
 import (
 	"context"
+
+	"xffl/services/afl/internal/application"
 	"xffl/services/afl/internal/domain"
 )
+
+// AddAFLPlayer is the resolver for the addAFLPlayer field.
+func (r *mutationResolver) AddAFLPlayer(ctx context.Context, input AddAFLPlayerInput) (*AFLPlayerSeason, error) {
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.DataOps.AddAFLPlayer(ctx, application.AddAFLPlayerParams{
+		Name:         input.Name,
+		ClubSeasonID: clubSeasonID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &AFLPlayerSeason{ID: toID(ps.ID)}, nil
+}
 
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
 func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error) {

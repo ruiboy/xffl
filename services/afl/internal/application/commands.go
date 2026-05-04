@@ -12,6 +12,8 @@ import (
 
 // WriteRepos provides repository access within a transaction.
 type WriteRepos struct {
+	Players       domain.PlayerRepository
+	PlayerSeasons domain.PlayerSeasonRepository
 	PlayerMatches domain.PlayerMatchRepository
 	ClubMatches   domain.ClubMatchRepository
 }

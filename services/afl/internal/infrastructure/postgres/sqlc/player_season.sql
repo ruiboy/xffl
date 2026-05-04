@@ -20,6 +20,11 @@ SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
 WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
 
+-- name: InsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id;
+
 -- name: FindLatestPlayerSeasonByPlayerID :one
 SELECT ps.id
 FROM afl.player_season ps

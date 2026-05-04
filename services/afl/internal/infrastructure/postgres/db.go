@@ -36,6 +36,8 @@ func (db *DB) WithTx(ctx context.Context, fn func(repos application.WriteRepos) 
 
 	txQ := sqlcgen.New(tx)
 	repos := application.WriteRepos{
+		Players:       NewPlayerRepository(txQ),
+		PlayerSeasons: NewPlayerSeasonRepository(txQ),
 		PlayerMatches: NewPlayerMatchRepository(txQ),
 		ClubMatches:   NewClubMatchRepository(txQ),
 	}

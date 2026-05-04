@@ -43,18 +43,19 @@ type ImportAFLStatsResult struct {
 
 // DataOpsCommands handles AFL stats import operations.
 type DataOpsCommands struct {
-	tx            TxManager
-	matches       domain.MatchRepository
-	clubMatches   domain.ClubMatchRepository
-	clubSeasons   domain.ClubSeasonRepository
-	clubs         domain.ClubRepository
-	rounds        domain.RoundRepository
-	playerSeasons domain.PlayerSeasonRepository
-	sourceMap     DataopsMatchSourceRepository
-	statsParser   StatsParser
-	discovery     FixtureDiscovery
-	resolver      PlayerResolver
-	dispatcher    sharedevents.Dispatcher
+	tx              TxManager
+	matches         domain.MatchRepository
+	clubMatches     domain.ClubMatchRepository
+	clubSeasons     domain.ClubSeasonRepository
+	clubs           domain.ClubRepository
+	rounds          domain.RoundRepository
+	playerSeasons   domain.PlayerSeasonRepository
+	sourceMap       DataopsMatchSourceRepository
+	playerSourceMap DataopsPlayerSourceRepository
+	statsParser     StatsParser
+	discovery       FixtureDiscovery
+	resolver        PlayerResolver
+	dispatcher      sharedevents.Dispatcher
 }
 
 func NewDataOpsCommands(
@@ -66,24 +67,26 @@ func NewDataOpsCommands(
 	rounds domain.RoundRepository,
 	playerSeasons domain.PlayerSeasonRepository,
 	sourceMap DataopsMatchSourceRepository,
+	playerSourceMap DataopsPlayerSourceRepository,
 	statsParser StatsParser,
 	discovery FixtureDiscovery,
 	resolver PlayerResolver,
 	dispatcher sharedevents.Dispatcher,
 ) *DataOpsCommands {
 	return &DataOpsCommands{
-		tx:            tx,
-		matches:       matches,
-		clubMatches:   clubMatches,
-		clubSeasons:   clubSeasons,
-		clubs:         clubs,
-		rounds:        rounds,
-		playerSeasons: playerSeasons,
-		sourceMap:     sourceMap,
-		statsParser:   statsParser,
-		discovery:     discovery,
-		resolver:      resolver,
-		dispatcher:    dispatcher,
+		tx:              tx,
+		matches:         matches,
+		clubMatches:     clubMatches,
+		clubSeasons:     clubSeasons,
+		clubs:           clubs,
+		rounds:          rounds,
+		playerSeasons:   playerSeasons,
+		sourceMap:       sourceMap,
+		playerSourceMap: playerSourceMap,
+		statsParser:     statsParser,
+		discovery:       discovery,
+		resolver:        resolver,
+		dispatcher:      dispatcher,
 	}
 }
 
@@ -349,6 +352,30 @@ func (c *DataOpsCommands) buildCandidates(ctx context.Context, clubSeasonID int)
 		}
 	}
 	return candidates, nil
+}
+
+// AddAFLPlayerParams holds the input for creating a new AFL player and their season record.
+type AddAFLPlayerParams struct {
+	Name        string
+	ClubSeasonID int
+}
+
+// AddAFLPlayer creates a new afl.player and afl.player_season record within a transaction.
+func (c *DataOpsCommands) AddAFLPlayer(ctx context.Context, params AddAFLPlayerParams) (domain.PlayerSeason, error) {
+	var result domain.PlayerSeason
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		player, err := repos.Players.Create(ctx, params.Name)
+		if err != nil {
+			return fmt.Errorf("create player: %w", err)
+		}
+		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, params.ClubSeasonID)
+		if err != nil {
+			return fmt.Errorf("create player season: %w", err)
+		}
+		result = ps
+		return nil
+	})
+	return result, err
 }
 
 // filterByClub returns only the player stats whose ClubName matches (case-insensitive prefix).
