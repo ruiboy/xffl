@@ -63,3 +63,18 @@ type DataopsMatchSourceRepository interface {
 	FindByMatchID(ctx context.Context, source string, matchID int) (externalID string, found bool, err error)
 	Store(ctx context.Context, source, externalID string, matchID int) error
 }
+
+// PlayerSourceKey uniquely identifies a player in an external source.
+type PlayerSourceKey struct {
+	Source         string
+	ExternalSeason string
+	ExternalClub   string
+	ExternalPlayer string
+}
+
+// DataopsPlayerSourceRepository persists the mapping of external player names → afl.player_season IDs
+// per the ACL pattern (ADR-016). Rows are only written when a name mismatch is manually resolved.
+type DataopsPlayerSourceRepository interface {
+	FindPlayerSeasonID(ctx context.Context, source, externalSeason, externalClub, externalPlayer string) (playerSeasonID int, found bool, err error)
+	Store(ctx context.Context, source, externalSeason, externalClub, externalPlayer string, playerSeasonID int) error
+}

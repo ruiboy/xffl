@@ -684,6 +684,21 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	return out, nil
 }
 
+func (r *PlayerSeasonRepository) FindLatestByPlayerID(ctx context.Context, playerID int) (domain.PlayerSeason, bool, error) {
+	id, err := r.q.FindLatestPlayerSeasonByPlayerID(ctx, int32(playerID))
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return domain.PlayerSeason{}, false, nil
+		}
+		return domain.PlayerSeason{}, false, err
+	}
+	ps, err := r.FindByID(ctx, int(id))
+	if err != nil {
+		return domain.PlayerSeason{}, false, err
+	}
+	return ps, true, nil
+}
+
 // --- DataopsMatchSourceRepository ---
 
 type DataopsMatchSourceRepository struct{ q *sqlcgen.Queries }
@@ -712,5 +727,39 @@ func (r *DataopsMatchSourceRepository) Store(ctx context.Context, source, extern
 		Source:     source,
 		ExternalID: externalID,
 		MatchID:    int32(matchID),
+	})
+}
+
+// --- DataopsPlayerSourceRepository ---
+
+type DataopsPlayerSourceRepository struct{ q *sqlcgen.Queries }
+
+func NewDataopsPlayerSourceRepository(q *sqlcgen.Queries) *DataopsPlayerSourceRepository {
+	return &DataopsPlayerSourceRepository{q: q}
+}
+
+func (r *DataopsPlayerSourceRepository) FindPlayerSeasonID(ctx context.Context, source, externalSeason, externalClub, externalPlayer string) (int, bool, error) {
+	id, err := r.q.FindDataopsPlayerSource(ctx, sqlcgen.FindDataopsPlayerSourceParams{
+		Source:         source,
+		ExternalSeason: externalSeason,
+		ExternalClub:   externalClub,
+		ExternalPlayer: externalPlayer,
+	})
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+	return int(id), true, nil
+}
+
+func (r *DataopsPlayerSourceRepository) Store(ctx context.Context, source, externalSeason, externalClub, externalPlayer string, playerSeasonID int) error {
+	return r.q.UpsertDataopsPlayerSource(ctx, sqlcgen.UpsertDataopsPlayerSourceParams{
+		Source:         source,
+		ExternalSeason: externalSeason,
+		ExternalClub:   externalClub,
+		ExternalPlayer: externalPlayer,
+		PlayerSeasonID: int32(playerSeasonID),
 	})
 }

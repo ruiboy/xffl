@@ -104,9 +104,9 @@ ADR: ADR-018 (Twirp for cross-service communication)
     - `addAFLPlayer(input: AddAFLPlayerInput!)` takes `name` + `clubSeasonId` only — season is implied by club season; lives on AFL service
     - Remove from commit 5f8fcaf: `AFLPlayerCandidate` type, `candidates` field on `UnmatchedAFLPlayer`, confidence-ranked dropdown, inline expandable table in DataOpsView, `CONFIRM_AFL_PLAYER_MATCH` frontend mutation
     **Tasks:**
-    - [ ] `afl.dataops_player_source` schema + migration (AFL init + test-e2e init)
-    - [ ] AFL service: `PlayerSourceMapRepository` port + postgres adapter; lookup wired into import before fuzzy match
-    - [ ] AFL service: `AFLPlayer.latestPlayerSeason` field (resolver: highest season year for that player)
+    - [x] `afl.dataops_player_source` schema + migration (AFL init + test-e2e init)
+    - [x] AFL service: `PlayerSourceMapRepository` port + postgres adapter; lookup wired into import before fuzzy match
+    - [x] AFL service: `AFLPlayer.latestPlayerSeason` field (resolver: highest season year for that player)
     - [ ] AFL service: simplify `ImportAFLMatchStats` result — strip `candidates` from `UnmatchedAFLPlayer`, keep name + stats + clubMatchId
     - [ ] AFL service: `addAFLPlayer(name, seasonId, clubSeasonId)` use case + mutation → creates `afl.player` + `afl.player_season`
     - [ ] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`

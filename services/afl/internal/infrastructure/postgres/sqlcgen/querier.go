@@ -18,6 +18,8 @@ type Querier interface {
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
+	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
+	FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
@@ -41,6 +43,7 @@ type Querier interface {
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
 	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
+	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }
 

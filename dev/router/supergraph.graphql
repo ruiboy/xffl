@@ -88,6 +88,7 @@ type AFLPlayer
 {
   id: ID!
   name: String! @join__field(graph: AFL)
+  latestPlayerSeason: AFLPlayerSeason @join__field(graph: AFL)
 }
 
 type AFLPlayerCandidate

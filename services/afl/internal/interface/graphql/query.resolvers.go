@@ -376,11 +376,19 @@ func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error)
 
 // AflPlayerSearch is the resolver for the aflPlayerSearch field.
 func (r *queryResolver) AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error) {
-	players, err := r.Queries.SearchPlayers(ctx, query)
+	results, err := r.Queries.SearchPlayersWithLatestSeason(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayers(players), nil
+	out := make([]*AFLPlayer, len(results))
+	for i, res := range results {
+		p := convertPlayer(res.Player)
+		if res.HasLatestSeason {
+			p.LatestPlayerSeason = &AFLPlayerSeason{ID: toID(res.LatestSeasonID)}
+		}
+		out[i] = p
+	}
+	return out, nil
 }
 
 // AFLClubMatch returns AFLClubMatchResolver implementation.

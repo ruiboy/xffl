@@ -52,6 +52,16 @@ type AflDataopsMatchSource struct {
 	UpdatedAt  pgtype.Timestamptz
 }
 
+type AflDataopsPlayerSource struct {
+	Source         string
+	ExternalSeason string
+	ExternalClub   string
+	ExternalPlayer string
+	PlayerSeasonID int32
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+}
+
 type AflLeague struct {
 	ID        int32
 	CreatedAt pgtype.Timestamptz

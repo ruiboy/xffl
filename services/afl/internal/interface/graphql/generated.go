@@ -86,8 +86,9 @@ type ComplexityRoot struct {
 	}
 
 	AFLPlayer struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LatestPlayerSeason func(childComplexity int) int
+		Name               func(childComplexity int) int
 	}
 
 	AFLPlayerCandidate struct {
@@ -446,6 +447,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLPlayer.ID(childComplexity), true
+	case "AFLPlayer.latestPlayerSeason":
+		if e.ComplexityRoot.AFLPlayer.LatestPlayerSeason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLPlayer.LatestPlayerSeason(childComplexity), true
 	case "AFLPlayer.name":
 		if e.ComplexityRoot.AFLPlayer.Name == nil {
 			break
@@ -1197,6 +1204,7 @@ type AFLClubMatch {
 type AFLPlayer @key(fields: "id") {
   id: ID!
   name: String!
+  latestPlayerSeason: AFLPlayerSeason
 }
 
 type AFLPlayerSeason @key(fields: "id") {
@@ -2548,6 +2556,45 @@ func (ec *executionContext) fieldContext_AFLPlayer_name(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _AFLPlayer_latestPlayerSeason(ctx context.Context, field graphql.CollectedField, obj *AFLPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLPlayer_latestPlayerSeason,
+		func(ctx context.Context) (any, error) {
+			return obj.LatestPlayerSeason, nil
+		},
+		nil,
+		ec.marshalOAFLPlayerSeason2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerSeason,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLPlayer_latestPlayerSeason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLPlayerSeason_id(ctx, field)
+			case "player":
+				return ec.fieldContext_AFLPlayerSeason_player(ctx, field)
+			case "clubSeason":
+				return ec.fieldContext_AFLPlayerSeason_clubSeason(ctx, field)
+			case "matches":
+				return ec.fieldContext_AFLPlayerSeason_matches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerSeason", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AFLPlayerCandidate_playerSeasonId(ctx context.Context, field graphql.CollectedField, obj *AFLPlayerCandidate) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2795,6 +2842,8 @@ func (ec *executionContext) fieldContext_AFLPlayerMatch_player(_ context.Context
 				return ec.fieldContext_AFLPlayer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AFLPlayer_name(ctx, field)
+			case "latestPlayerSeason":
+				return ec.fieldContext_AFLPlayer_latestPlayerSeason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayer", field.Name)
 		},
@@ -3149,6 +3198,8 @@ func (ec *executionContext) fieldContext_AFLPlayerSeason_player(_ context.Contex
 				return ec.fieldContext_AFLPlayer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AFLPlayer_name(ctx, field)
+			case "latestPlayerSeason":
+				return ec.fieldContext_AFLPlayer_latestPlayerSeason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayer", field.Name)
 		},
@@ -3710,6 +3761,8 @@ func (ec *executionContext) fieldContext_Entity_findAFLPlayerByID(ctx context.Co
 				return ec.fieldContext_AFLPlayer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AFLPlayer_name(ctx, field)
+			case "latestPlayerSeason":
+				return ec.fieldContext_AFLPlayer_latestPlayerSeason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayer", field.Name)
 		},
@@ -4827,6 +4880,8 @@ func (ec *executionContext) fieldContext_Query_aflPlayerSearch(ctx context.Conte
 				return ec.fieldContext_AFLPlayer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AFLPlayer_name(ctx, field)
+			case "latestPlayerSeason":
+				return ec.fieldContext_AFLPlayer_latestPlayerSeason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLPlayer", field.Name)
 		},
@@ -7447,6 +7502,8 @@ func (ec *executionContext) _AFLPlayer(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "latestPlayerSeason":
+			out.Values[i] = ec._AFLPlayer_latestPlayerSeason(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

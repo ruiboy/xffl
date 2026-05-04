@@ -78,6 +78,7 @@ type AFLClubMatch {
 type AFLPlayer @key(fields: "id") {
   id: ID!
   name: String!
+  latestPlayerSeason: AFLPlayerSeason
 }
 
 type AFLPlayerSeason @key(fields: "id") {

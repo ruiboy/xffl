@@ -25,4 +25,5 @@ type PlayerSeasonRepository interface {
 	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
 	FindByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int) ([]PlayerSeasonWithPlayer, error)
 	FindIDsBySeasonID(ctx context.Context, seasonID int, nameQuery *string) ([]int, error)
+	FindLatestByPlayerID(ctx context.Context, playerID int) (PlayerSeason, bool, error)
 }

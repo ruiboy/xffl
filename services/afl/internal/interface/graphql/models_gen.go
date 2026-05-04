@@ -46,8 +46,9 @@ type AFLMatch struct {
 }
 
 type AFLPlayer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID                 string           `json:"id"`
+	Name               string           `json:"name"`
+	LatestPlayerSeason *AFLPlayerSeason `json:"latestPlayerSeason,omitempty"`
 }
 
 func (AFLPlayer) IsEntity() {}

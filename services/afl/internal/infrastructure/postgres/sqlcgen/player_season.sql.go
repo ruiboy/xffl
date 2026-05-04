@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const findLatestPlayerSeasonByPlayerID = `-- name: FindLatestPlayerSeasonByPlayerID :one
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY cs.season_id DESC
+LIMIT 1
+`
+
+func (q *Queries) FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, findLatestPlayerSeasonByPlayerID, playerID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const findPlayerSeasonByID = `-- name: FindPlayerSeasonByID :one
 SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season

@@ -20,6 +20,16 @@ SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
 WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
 
+-- name: FindLatestPlayerSeasonByPlayerID :one
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY cs.season_id DESC
+LIMIT 1;
+
 -- name: FindPlayerSeasonsBySeasonID :many
 SELECT ps.id
 FROM afl.player_season ps
