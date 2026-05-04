@@ -97,14 +97,21 @@ ADR: ADR-018 (Twirp for cross-service communication)
     - Player search is a shared UX pattern but two separate components: `features/data-ops/` and `features/ffl/` each own theirs so they can diverge naturally
     - Both components display latest AFL club name + season name alongside player name to aid disambiguation
     - Selecting a player from the list is the mapping action; "Add new player" button is used for when the player isn't found
-    - `afl.dataops_player_source` table (mirrors `afl.dataops_match_source`): maps footywire (season, club, player name) → `afl.player_season.id`; row only written when a name mismatch was manually resolved — not for natural name matches
-    - AFL Stats Import player flow: search → select existing OR add new → ensure `afl.player_season` exists → add `afl.player_match`; selecting a non-matching player creates the `dataops_player_source` row so future imports auto-resolve
-    - FFL Add Player flow: same search → select/add AFL player → ensure `afl.player_season` → ensure `ffl.player` → add `ffl.player_season`
+    - `afl.dataops_player_source` table (mirrors `afl.dataops_match_source`): PK `(source, external_season, external_club, external_player)` → `player_season_id`; club included because footywire identity is per-club; row only written when a name mismatch was manually resolved — not for natural name matches; looked up on import before fuzzy matching so future imports auto-resolve
+    - AFL Stats Import player flow: search → select existing OR add new → `resolveAFLPlayerMatch` mutation (creates `dataops_player_source` row if name differed + upserts `afl.player_match`)
+    - FFL Add Player flow: same search → select existing (`addFFLPlayerToSeason`, existing) OR add new (two sequential frontend calls: `addAFLPlayer` on AFL service → `addFFLPlayerToSeason` on FFL service with returned `aflPlayerSeasonId`); FFL clubs have no correlation with AFL clubs so FFL service cannot derive AFL context
+    - "Add new player" modal in FFL includes name input + AFL club season dropdown (user specifies AFL club explicitly)
+    - `addAFLPlayer(input: AddAFLPlayerInput!)` takes `name` + `clubSeasonId` only — season is implied by club season; lives on AFL service
+    - Remove from commit 5f8fcaf: `AFLPlayerCandidate` type, `candidates` field on `UnmatchedAFLPlayer`, confidence-ranked dropdown, inline expandable table in DataOpsView, `CONFIRM_AFL_PLAYER_MATCH` frontend mutation
     **Tasks:**
-    - [ ] `afl.dataops_player_source` schema + migration
-    - [ ] Backend: player search query enriched with latest club/season; mutations for add player, ensure player season, create source mapping
-    - [ ] Frontend data-ops: player search component + reworked AFL stats import unmatched-player flow
-    - [ ] Frontend FFL: player search component + reworked add player flow
+    - [ ] `afl.dataops_player_source` schema + migration (AFL init + test-e2e init)
+    - [ ] AFL service: `PlayerSourceMapRepository` port + postgres adapter; lookup wired into import before fuzzy match
+    - [ ] AFL service: `AFLPlayer.latestPlayerSeason` field (resolver: highest season year for that player)
+    - [ ] AFL service: simplify `ImportAFLMatchStats` result — strip `candidates` from `UnmatchedAFLPlayer`, keep name + stats + clubMatchId
+    - [ ] AFL service: `addAFLPlayer(name, seasonId, clubSeasonId)` use case + mutation → creates `afl.player` + `afl.player_season`
+    - [ ] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`
+    - [ ] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
+    - [ ] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
   
 ## Step 6 — Score reconciliation *(every round)*
 
