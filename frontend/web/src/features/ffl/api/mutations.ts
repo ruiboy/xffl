@@ -41,3 +41,11 @@ export const SET_FFL_TEAM = gql`
     }
   }
 `
+
+export const ADD_AFL_PLAYER = gql`
+  mutation AddAFLPlayerForFFL($input: AddAFLPlayerInput!) {
+    addAFLPlayer(input: $input) {
+      id
+    }
+  }
+`

@@ -235,3 +235,36 @@ func (q *Queries) InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeason
 	)
 	return i, err
 }
+
+const upsertPlayerSeason = `-- name: UpsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+ON CONFLICT (player_id, club_season_id) DO UPDATE SET player_id = EXCLUDED.player_id
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id
+`
+
+type UpsertPlayerSeasonParams struct {
+	PlayerID     int32
+	ClubSeasonID int32
+}
+
+type UpsertPlayerSeasonRow struct {
+	ID           int32
+	PlayerID     int32
+	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
+}
+
+func (q *Queries) UpsertPlayerSeason(ctx context.Context, arg UpsertPlayerSeasonParams) (UpsertPlayerSeasonRow, error) {
+	row := q.db.QueryRow(ctx, upsertPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
+	var i UpsertPlayerSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+	)
+	return i, err
+}

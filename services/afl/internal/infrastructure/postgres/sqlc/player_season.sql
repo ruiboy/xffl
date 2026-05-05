@@ -25,6 +25,12 @@ INSERT INTO afl.player_season (player_id, club_season_id)
 VALUES ($1, $2)
 RETURNING id, player_id, club_season_id, from_round_id, to_round_id;
 
+-- name: UpsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+ON CONFLICT (player_id, club_season_id) DO UPDATE SET player_id = EXCLUDED.player_id
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id;
+
 -- name: FindLatestPlayerSeasonByPlayerID :one
 SELECT ps.id
 FROM afl.player_season ps

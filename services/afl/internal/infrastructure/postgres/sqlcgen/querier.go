@@ -47,6 +47,7 @@ type Querier interface {
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
 	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
+	UpsertPlayerSeason(ctx context.Context, arg UpsertPlayerSeasonParams) (UpsertPlayerSeasonRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

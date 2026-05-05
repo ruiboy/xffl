@@ -1,8 +1,10 @@
 type Mutation {
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason!
-  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
+  addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason!
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
 }
 
@@ -11,25 +13,25 @@ input AddAFLPlayerInput {
   clubSeasonId: ID!
 }
 
-input ResolveAFLPlayerMatchInput {
-  clubMatchId: ID!
-  playerSeasonId: ID!
-  kicks: Int!
-  handballs: Int!
-  marks: Int!
-  hitouts: Int!
-  tackles: Int!
-  goals: Int!
-  behinds: Int!
-  sourceMapping: PlayerSourceMappingInput
+input AddAFLPlayerSeasonInput {
+  playerId: ID!
+  clubSeasonId: ID!
 }
 
-input PlayerSourceMappingInput {
-  source: String!
-  externalSeason: String!
-  externalClub: String!
-  externalPlayer: String!
+input UpdateAFLPlayerMatchInput {
+  playerSeasonId: ID!
+  clubMatchId: ID!
+  status: String
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
 }
+
+"---- Import flow ----"
 
 type ImportAFLMatchStatsResult {
   matchId: ID!
@@ -50,24 +52,17 @@ type UnmatchedAFLPlayer {
   tackles: Int!
   goals: Int!
   behinds: Int!
-  candidates: [AFLPlayerCandidate!]!
 }
 
-type AFLPlayerCandidate {
-  playerSeasonId: ID!
-  name: String!
-  confidence: Float!
-}
-
-input UpdateAFLPlayerMatchInput {
-  playerSeasonId: ID!
+input ResolveAFLPlayerMatchInput {
   clubMatchId: ID!
-  status: String
-  kicks: Int
-  handballs: Int
-  marks: Int
-  hitouts: Int
-  tackles: Int
-  goals: Int
-  behinds: Int
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  parsedName: String
 }

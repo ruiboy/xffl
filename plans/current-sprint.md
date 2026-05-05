@@ -107,11 +107,11 @@ ADR: ADR-018 (Twirp for cross-service communication)
     - [x] `afl.dataops_player_source` schema + migration (AFL init + test-e2e init)
     - [x] AFL service: `PlayerSourceMapRepository` port + postgres adapter; lookup wired into import before fuzzy match
     - [x] AFL service: `AFLPlayer.latestPlayerSeason` field (resolver: highest season year for that player)
-    - [ ] AFL service: simplify `ImportAFLMatchStats` result — strip `candidates` from `UnmatchedAFLPlayer`, keep name + stats + clubMatchId
+    - [x] AFL service: simplify `ImportAFLMatchStats` result — strip `candidates` from `UnmatchedAFLPlayer`, keep name + stats + clubMatchId
     - [x] AFL service: `addAFLPlayer(name, clubSeasonId)` use case + mutation → creates `afl.player` + `afl.player_season`
     - [x] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`
-    - [ ] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
-    - [ ] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
+    - [x] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
+    - [x] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
   
 ## Step 6 — Score reconciliation *(every round)*
 

@@ -27,6 +27,23 @@ func (r *mutationResolver) AddAFLPlayer(ctx context.Context, input AddAFLPlayerI
 	return &AFLPlayerSeason{ID: toID(ps.ID)}, nil
 }
 
+// AddAFLPlayerSeason is the resolver for the addAFLPlayerSeason field.
+func (r *mutationResolver) AddAFLPlayerSeason(ctx context.Context, input AddAFLPlayerSeasonInput) (*AFLPlayerSeason, error) {
+	playerID, err := fromID(input.PlayerID)
+	if err != nil {
+		return nil, err
+	}
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := r.DataOps.AddAFLPlayerSeason(ctx, playerID, clubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return &AFLPlayerSeason{ID: toID(ps.ID)}, nil
+}
+
 // ResolveAFLPlayerMatch is the resolver for the resolveAFLPlayerMatch field.
 func (r *mutationResolver) ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
 	clubMatchID, err := fromID(input.ClubMatchID)
@@ -48,14 +65,7 @@ func (r *mutationResolver) ResolveAFLPlayerMatch(ctx context.Context, input Reso
 		Tackles:        input.Tackles,
 		Goals:          input.Goals,
 		Behinds:        input.Behinds,
-	}
-	if input.SourceMapping != nil {
-		params.SourceMapping = &application.PlayerSourceMapping{
-			Source:         input.SourceMapping.Source,
-			ExternalSeason: input.SourceMapping.ExternalSeason,
-			ExternalClub:   input.SourceMapping.ExternalClub,
-			ExternalPlayer: input.SourceMapping.ExternalPlayer,
-		}
+		ParsedName:     input.ParsedName,
 	}
 
 	pm, err := r.DataOps.ResolveAFLPlayerMatch(ctx, params)
@@ -116,14 +126,6 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 	}
 	unmatched := make([]*UnmatchedAFLPlayer, len(result.UnmatchedPlayers))
 	for i, u := range result.UnmatchedPlayers {
-		candidates := make([]*AFLPlayerCandidate, len(u.Candidates))
-		for j, c := range u.Candidates {
-			candidates[j] = &AFLPlayerCandidate{
-				PlayerSeasonID: toID(c.Candidate.PlayerSeasonID),
-				Name:           c.Candidate.Name,
-				Confidence:     c.Confidence,
-			}
-		}
 		unmatched[i] = &UnmatchedAFLPlayer{
 			ParsedName:  u.ParsedName,
 			ClubMatchID: toID(u.ClubMatchID),
@@ -134,7 +136,6 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 			Tackles:     u.Tackles,
 			Goals:       u.Goals,
 			Behinds:     u.Behinds,
-			Candidates:  candidates,
 		}
 	}
 	return &ImportAFLMatchStatsResult{

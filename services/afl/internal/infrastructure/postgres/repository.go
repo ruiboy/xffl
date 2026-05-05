@@ -609,7 +609,7 @@ func NewPlayerSeasonRepository(q *sqlcgen.Queries) *PlayerSeasonRepository {
 }
 
 func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID, clubSeasonID int) (domain.PlayerSeason, error) {
-	row, err := r.q.InsertPlayerSeason(ctx, sqlcgen.InsertPlayerSeasonParams{
+	row, err := r.q.UpsertPlayerSeason(ctx, sqlcgen.UpsertPlayerSeasonParams{
 		PlayerID:     int32(playerID),
 		ClubSeasonID: int32(clubSeasonID),
 	})

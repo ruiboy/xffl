@@ -191,78 +191,17 @@
       <p v-else class="text-text-faint">No players on squad.</p>
     </template>
 
+    <PlayerSearchModal
+      :show="addModalOpen"
+      :ffl-season-id="props.seasonId"
+      :ffl-club-season-id="clubSeasonId"
+      :rounds="rounds"
+      :default-from-round-id="defaultRoundId()"
+      @close="addModalOpen = false"
+      @added="onPlayerAdded"
+    />
+
     <Teleport to="body">
-      <!-- Add player: search dialog (step 1) -->
-      <div v-if="addStep === 'search'" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="cancelAddSearch" />
-        <div class="relative z-10 w-96 h-[30rem] flex flex-col rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
-          <h3 class="text-base font-semibold text-text mb-4 shrink-0">Add Player</h3>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search by name..."
-            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none mb-3 shrink-0"
-            autofocus
-          />
-          <div class="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
-            <div v-if="searchLoading" class="text-text-faint text-sm py-2">Searching...</div>
-            <div v-else-if="searchResults.length > 0">
-              <div
-                v-for="node in searchResults"
-                :key="node.id"
-                class="flex items-center justify-between border-b border-border-subtle py-2"
-              >
-                <div>
-                  <div class="text-sm text-text">{{ node.player.name }}</div>
-                  <div class="text-xs text-text-muted">{{ node.clubSeason.club.name }}</div>
-                </div>
-                <button
-                  @click="selectAddPlayer(node)"
-                  class="rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors"
-                >Add</button>
-              </div>
-            </div>
-            <div v-else-if="searchQuery.length >= 2 && !searchLoading" class="text-text-faint text-sm py-2">
-              No players found.
-            </div>
-          </div>
-          <div class="flex justify-end mt-4 shrink-0">
-            <button
-              @click="cancelAddSearch"
-              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
-            >Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add player: confirm round dialog (step 2) -->
-      <div v-if="addStep === 'confirm' && pendingAddNode" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="cancelAddConfirm" />
-        <div class="relative z-10 w-80 rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
-          <h3 class="text-base font-semibold text-text mb-1">Add Player</h3>
-          <p class="text-sm font-medium text-text mb-0.5">{{ pendingAddNode.player.name }}</p>
-          <p class="text-xs text-text-muted mb-4">{{ pendingAddNode.clubSeason.club.name }}</p>
-          <label class="text-xs text-text-muted block mb-1">From round</label>
-          <select
-            v-model="addRoundId"
-            class="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text mb-5 focus:outline-none focus:border-active"
-          >
-            <option v-for="r in rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-          <div class="flex gap-2 justify-end">
-            <button
-              @click="cancelAddConfirm"
-              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
-            >Back</button>
-            <button
-              @click="confirmAdd"
-              :disabled="modalSubmitting || !addRoundId"
-              class="rounded-lg px-3 py-1.5 text-sm font-medium bg-active text-active-text hover:opacity-90 transition-colors disabled:opacity-40"
-            >{{ modalSubmitting ? '…' : 'Add' }}</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Remove player modal -->
       <div v-if="modal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="closeModal" />
@@ -290,7 +229,6 @@
           </div>
         </div>
       </div>
-
     </Teleport>
   </div>
 </template>
@@ -298,8 +236,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_CLUB_SEASON, GET_AFL_PLAYER_SEASONS, GET_FFL_SEASON_POSITIONS } from '../api/queries'
-import { REMOVE_FFL_PLAYER_FROM_SEASON, ADD_FFL_PLAYER_TO_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
+import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS } from '../api/queries'
+import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
@@ -307,6 +245,7 @@ import IconManage from '../components/icons/IconManage.vue'
 import IconBin from '../components/icons/IconBin.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
+import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 
 const props = defineProps<{ seasonId: string; clubId: string }>()
 
@@ -407,47 +346,7 @@ const groupedPlayers = computed(() => {
   })
 })
 
-// --- Manage mode: search + add/remove ---
-
-const searchQuery = ref('')
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
-const debouncedQuery = ref('')
-
-watch(searchQuery, (val) => {
-  if (searchTimeout) clearTimeout(searchTimeout)
-  if (val.length < 2) {
-    debouncedQuery.value = ''
-    return
-  }
-  searchTimeout = setTimeout(() => {
-    debouncedQuery.value = val
-  }, 300)
-})
-
-const { result: searchResult, loading: searchLoading } = useQuery(
-  GET_AFL_PLAYER_SEASONS,
-  () => ({ seasonId: props.seasonId, query: debouncedQuery.value }),
-  () => ({ enabled: debouncedQuery.value.length >= 2 })
-)
-
-const squadAflPlayerIds = computed(() => {
-  const ids = new Set<string>()
-  for (const row of players.value) {
-    if (row.player.aflPlayerId) ids.add(row.player.aflPlayerId)
-  }
-  return ids
-})
-
-interface AFLPlayerSeasonNode {
-  id: string
-  player: { id: string; name: string }
-  clubSeason: { club: { name: string } }
-}
-
-const searchResults = computed((): AFLPlayerSeasonNode[] => {
-  const nodes: AFLPlayerSeasonNode[] = searchResult.value?.fflSeason?.aflSeason?.playerSeasons?.nodes ?? []
-  return nodes.filter(n => !squadAflPlayerIds.value.has(n.player.id))
-})
+// --- Manage mode: add/remove ---
 
 // Saved flash
 const saveMessage = ref('')
@@ -464,7 +363,6 @@ const modal = ref<RemoveModalState | null>(null)
 const modalSubmitting = ref(false)
 
 const { mutate: removePlayerMutation } = useMutation(REMOVE_FFL_PLAYER_FROM_SEASON)
-const { mutate: addPlayerMutation } = useMutation(ADD_FFL_PLAYER_TO_SEASON)
 const { mutate: updatePlayerSeasonMutation } = useMutation(UPDATE_FFL_PLAYER_SEASON)
 
 function defaultRoundId(): string {
@@ -492,52 +390,17 @@ async function confirmModal() {
   }
 }
 
-// Add player: two-step flow (search → confirm)
-const addStep = ref<null | 'search' | 'confirm'>(null)
-const pendingAddNode = ref<AFLPlayerSeasonNode | null>(null)
-const addRoundId = ref<string>('')
+// Add player modal
+const addModalOpen = ref(false)
 
 function openAddSearch() {
-  addStep.value = 'search'
-  searchQuery.value = ''
-  debouncedQuery.value = ''
-  addRoundId.value = defaultRoundId()
+  addModalOpen.value = true
 }
 
-function selectAddPlayer(node: AFLPlayerSeasonNode) {
-  pendingAddNode.value = node
-  addStep.value = 'confirm'
-}
-
-function cancelAddConfirm() {
-  addStep.value = 'search'
-}
-
-function cancelAddSearch() {
-  addStep.value = null
-  pendingAddNode.value = null
-  searchQuery.value = ''
-  debouncedQuery.value = ''
-}
-
-async function confirmAdd() {
-  if (!pendingAddNode.value || !clubSeasonId.value) return
-  modalSubmitting.value = true
-  try {
-    await addPlayerMutation({
-      input: {
-        clubSeasonId: clubSeasonId.value,
-        aflPlayerSeasonId: pendingAddNode.value.id,
-        ...(addRoundId.value ? { fromRoundId: addRoundId.value } : {}),
-      },
-    })
-    await refetchSquad()
-    flashSaved()
-    addStep.value = null
-    pendingAddNode.value = null
-  } finally {
-    modalSubmitting.value = false
-  }
+async function onPlayerAdded() {
+  addModalOpen.value = false
+  await refetchSquad()
+  flashSaved()
 }
 
 // Inline row expansion

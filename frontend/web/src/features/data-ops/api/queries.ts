@@ -9,8 +9,8 @@ export const GET_AFL_ROUND_STATS = gql`
       matches {
         id
         dataStatus
-        homeClubMatch { id club { id name } score playerMatches { id } }
-        awayClubMatch { id club { id name } score playerMatches { id } }
+        homeClubMatch { id clubSeasonId club { id name } score playerMatches { id } }
+        awayClubMatch { id clubSeasonId club { id name } score playerMatches { id } }
       }
     }
   }
@@ -33,6 +33,23 @@ export const GET_FFL_DATA_OPS = gql`
           id
           homeClubMatch { id club { id name } dataStatus score }
           awayClubMatch { id club { id name } dataStatus score }
+        }
+      }
+    }
+  }
+`
+
+export const SEARCH_AFL_PLAYERS = gql`
+  query SearchAFLPlayers($query: String!) {
+    aflPlayerSearch(query: $query) {
+      id
+      name
+      latestPlayerSeason {
+        id
+        clubSeason {
+          id
+          club { name }
+          season { name }
         }
       }
     }

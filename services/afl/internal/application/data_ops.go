@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"xffl/contracts/events"
 	"xffl/services/afl/internal/domain"
@@ -16,8 +17,7 @@ const (
 	confidenceThreshold   = 0.85
 )
 
-// UnmatchedAFLPlayer holds the parsed stats and candidate pool for a player
-// who could not be confidently matched during import.
+// UnmatchedAFLPlayer holds the parsed stats for a player who could not be matched during import.
 type UnmatchedAFLPlayer struct {
 	ParsedName  string
 	ClubMatchID int
@@ -28,7 +28,6 @@ type UnmatchedAFLPlayer struct {
 	Tackles     int
 	Goals       int
 	Behinds     int
-	Candidates  []PlayerMatch // sorted by descending confidence; may be empty
 }
 
 // ImportAFLStatsResult summarises what was written for each club in a match.
@@ -171,34 +170,48 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		var written []domain.PlayerMatch
 		var unmatched []UnmatchedAFLPlayer
 
+		seasonStr := strconv.Itoa(round.SeasonID)
+		clubSeasonStr := strconv.Itoa(w.cm.ClubSeasonID)
+
 		err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 			written = make([]domain.PlayerMatch, 0, len(playerStats))
 			for _, ps := range playerStats {
-				resolveName := ps.Name
-				if ps.CanonicalName != "" {
-					resolveName = ps.CanonicalName
-				}
-				matches, err := c.resolver.Resolve(ctx, resolveName, w.clubName, candidates)
+				// Check source map before fuzzy matching — auto-resolves previously confirmed mismatches.
+				var psID int
+				mappedID, found, err := c.playerSourceMap.FindPlayerSeasonID(ctx, footywireSource, seasonStr, clubSeasonStr, ps.Name)
 				if err != nil {
-					slog.WarnContext(ctx, "resolver error", slog.String("player", ps.Name), slog.Any("error", err))
-					unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
-						Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
-						Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds})
-					continue
-				}
-				if len(matches) == 0 || matches[0].Confidence < confidenceThreshold {
-					slog.WarnContext(ctx, "no confident match for player",
-						slog.String("player", ps.Name),
-						slog.String("canonicalName", ps.CanonicalName),
-						slog.String("club", w.clubName),
-					)
-					unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
-						Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
-						Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds, Candidates: matches})
-					continue
+					slog.WarnContext(ctx, "player source map lookup failed", slog.String("player", ps.Name), slog.Any("error", err))
+				} else if found {
+					psID = mappedID
 				}
 
-				psID := matches[0].Candidate.PlayerSeasonID
+				if psID == 0 {
+					resolveName := ps.Name
+					if ps.CanonicalName != "" {
+						resolveName = ps.CanonicalName
+					}
+					matches, err := c.resolver.Resolve(ctx, resolveName, w.clubName, candidates)
+					if err != nil {
+						slog.WarnContext(ctx, "resolver error", slog.String("player", ps.Name), slog.Any("error", err))
+						unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
+							Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
+							Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds})
+						continue
+					}
+					if len(matches) == 0 || matches[0].Confidence < confidenceThreshold {
+						slog.WarnContext(ctx, "no confident match for player",
+							slog.String("player", ps.Name),
+							slog.String("canonicalName", ps.CanonicalName),
+							slog.String("club", w.clubName),
+						)
+						unmatched = append(unmatched, UnmatchedAFLPlayer{ParsedName: ps.Name, ClubMatchID: w.cm.ID,
+							Kicks: ps.Kicks, Handballs: ps.Handballs, Marks: ps.Marks, Hitouts: ps.Hitouts,
+							Tackles: ps.Tackles, Goals: ps.Goals, Behinds: ps.Behinds})
+						continue
+					}
+					psID = matches[0].Candidate.PlayerSeasonID
+				}
+
 				status := "played"
 				kicks, handballs, marks, hitouts, tackles, goals, behinds :=
 					ps.Kicks, ps.Handballs, ps.Marks, ps.Hitouts, ps.Tackles, ps.Goals, ps.Behinds
@@ -354,14 +367,6 @@ func (c *DataOpsCommands) buildCandidates(ctx context.Context, clubSeasonID int)
 	return candidates, nil
 }
 
-// PlayerSourceMapping holds the external identity to persist when a name mismatch was resolved manually.
-type PlayerSourceMapping struct {
-	Source         string
-	ExternalSeason string
-	ExternalClub   string
-	ExternalPlayer string
-}
-
 // ResolveAFLPlayerMatchParams is the input for resolving an unmatched player and writing their stats.
 type ResolveAFLPlayerMatchParams struct {
 	ClubMatchID    int
@@ -373,15 +378,24 @@ type ResolveAFLPlayerMatchParams struct {
 	Tackles        int
 	Goals          int
 	Behinds        int
-	SourceMapping  *PlayerSourceMapping // non-nil when the footywire name differed from the stored player name
+	ParsedName     *string // non-nil when the footywire name differed from the matched player name
 }
 
 // ResolveAFLPlayerMatch persists an optional source name mapping and upserts the player match record.
 // The source mapping (if provided) is written before the transaction so a retry will auto-resolve.
 func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params ResolveAFLPlayerMatchParams) (domain.PlayerMatch, error) {
-	if params.SourceMapping != nil {
-		m := params.SourceMapping
-		if err := c.playerSourceMap.Store(ctx, m.Source, m.ExternalSeason, m.ExternalClub, m.ExternalPlayer, params.PlayerSeasonID); err != nil {
+	if params.ParsedName != nil {
+		cm, err := c.clubMatches.FindByID(ctx, params.ClubMatchID)
+		if err != nil {
+			return domain.PlayerMatch{}, fmt.Errorf("load club match for source mapping: %w", err)
+		}
+		cs, err := c.clubSeasons.FindByID(ctx, cm.ClubSeasonID)
+		if err != nil {
+			return domain.PlayerMatch{}, fmt.Errorf("load club season for source mapping: %w", err)
+		}
+		seasonStr := strconv.Itoa(cs.SeasonID)
+		clubSeasonStr := strconv.Itoa(cm.ClubSeasonID)
+		if err := c.playerSourceMap.Store(ctx, footywireSource, seasonStr, clubSeasonStr, *params.ParsedName, params.PlayerSeasonID); err != nil {
 			return domain.PlayerMatch{}, fmt.Errorf("store player source mapping: %w", err)
 		}
 	}
@@ -462,6 +476,21 @@ func (c *DataOpsCommands) AddAFLPlayer(ctx context.Context, params AddAFLPlayerP
 			return fmt.Errorf("create player: %w", err)
 		}
 		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, params.ClubSeasonID)
+		if err != nil {
+			return fmt.Errorf("create player season: %w", err)
+		}
+		result = ps
+		return nil
+	})
+	return result, err
+}
+
+// AddAFLPlayerSeason creates a new afl.player_season for an existing player at the given club season.
+// Used when a known player moves club or needs a record for the current season.
+func (c *DataOpsCommands) AddAFLPlayerSeason(ctx context.Context, playerID, clubSeasonID int) (domain.PlayerSeason, error) {
+	var result domain.PlayerSeason
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		ps, err := repos.PlayerSeasons.Create(ctx, playerID, clubSeasonID)
 		if err != nil {
 			return fmt.Errorf("create player season: %w", err)
 		}

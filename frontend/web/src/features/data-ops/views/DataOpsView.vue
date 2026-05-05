@@ -120,14 +120,13 @@
                           · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched — review below
                         </span>
                       </div>
-                      <!-- Unmatched player review table -->
+                      <!-- Unmatched players -->
                       <div v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="mt-2 border border-border rounded-lg overflow-hidden">
                         <table class="w-full">
                           <thead>
                             <tr class="border-b border-border bg-surface-raised">
-                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Parsed name</th>
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Unmatched player</th>
                               <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Stats</th>
-                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Best match</th>
                               <th class="px-3 py-2 text-right text-xs font-medium text-text-faint"></th>
                             </tr>
                           </thead>
@@ -136,45 +135,22 @@
                               v-for="(up, ui) in scrapeResult[match.id].unmatchedPlayers"
                               :key="ui"
                               class="border-b border-border last:border-0"
-                              :class="unmatchedConfirmed[match.id]?.[ui] ? 'bg-green-500/5' : ''"
+                              :class="resolvedUnmatched[match.id]?.[ui] ? 'bg-green-500/5' : ''"
                             >
-                              <td class="px-3 py-2 text-sm font-medium whitespace-nowrap">{{ up.parsedName }}</td>
+                              <td class="px-3 py-2 whitespace-nowrap">
+                                <span class="text-sm font-medium">{{ up.parsedName }}</span>
+                                <span class="text-xs text-text-faint ml-2">{{ clubMatchClubMap[up.clubMatchId] }}</span>
+                              </td>
                               <td class="px-3 py-2 text-xs text-text-faint whitespace-nowrap tabular-nums">
                                 {{ up.goals }}g {{ up.kicks }}k {{ up.handballs }}hb {{ up.marks }}m {{ up.tackles }}t {{ up.hitouts }}ho
                               </td>
-                              <td class="px-3 py-2">
-                                <template v-if="unmatchedConfirmed[match.id]?.[ui]">
-                                  <span class="text-green-500 text-xs font-medium">✓ Confirmed</span>
-                                </template>
-                                <template v-else-if="up.candidates.length === 0">
-                                  <span class="text-text-faint text-xs">No candidates</span>
-                                </template>
-                                <template v-else>
-                                  <select
-                                    v-model="unmatchedSelections[match.id + ':' + ui]"
-                                    class="rounded border border-border bg-surface px-2 py-1 text-xs text-text focus:outline-none focus:ring-1 focus:ring-active"
-                                  >
-                                    <option value="">Select player…</option>
-                                    <option
-                                      v-for="c in up.candidates"
-                                      :key="c.playerSeasonId"
-                                      :value="c.playerSeasonId"
-                                    >{{ c.name }} ({{ (c.confidence * 100).toFixed(0) }}%)</option>
-                                  </select>
-                                </template>
-                              </td>
                               <td class="px-3 py-2 text-right">
+                                <span v-if="resolvedUnmatched[match.id]?.[ui]" class="text-green-500 text-xs font-medium">✓ Resolved</span>
                                 <button
-                                  v-if="!unmatchedConfirmed[match.id]?.[ui] && up.candidates.length > 0"
-                                  @click="confirmUnmatched(match.id, ui, up)"
-                                  :disabled="!unmatchedSelections[match.id + ':' + ui] || confirmingUnmatched[match.id + ':' + ui]"
-                                  class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
-                                >{{ confirmingUnmatched[match.id + ':' + ui] ? '…' : 'Confirm' }}</button>
-                                <button
-                                  v-else-if="!unmatchedConfirmed[match.id]?.[ui]"
-                                  class="rounded border border-border px-2 py-1 text-xs text-text-faint"
-                                  disabled
-                                >Skip</button>
+                                  v-else
+                                  @click="openResolveModal(match, ui, up)"
+                                  class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                                >Resolve</button>
                               </td>
                             </tr>
                           </tbody>
@@ -189,6 +165,15 @@
         </div>
       </template>
     </div>
+
+    <!-- Player search modal -->
+    <PlayerSearchModal
+      v-if="resolveModalPlayer"
+      :show="!!resolveModalPlayer"
+      :player="resolveModalPlayer"
+      @close="resolveModalPlayer = null"
+      @resolved="onPlayerResolved"
+    />
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Tab: FFL Teams                              -->
@@ -369,10 +354,11 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, CONFIRM_AFL_PLAYER_MATCH } from '../api/mutations'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
+import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 
 const { liveSeasonId, liveRoundId } = useFflState()
 
@@ -411,7 +397,6 @@ type UnmatchedAFLPlayer = {
   parsedName: string
   clubMatchId: string
   kicks: number; handballs: number; marks: number; hitouts: number; tackles: number; goals: number; behinds: number
-  candidates: { playerSeasonId: string; name: string; confidence: number }[]
 }
 
 type ScrapeResult = {
@@ -425,20 +410,25 @@ const scrapeResult = ref<Record<string, ScrapeResult>>({})
 const scrapeError = ref<Record<string, string>>({})
 const togglingFinal = ref<Record<string, boolean>>({})
 
-// unmatched review: keyed by "matchId:rowIndex"
-const unmatchedSelections = ref<Record<string, string>>({})
-const confirmingUnmatched = ref<Record<string, boolean>>({})
-// keyed by matchId → rowIndex → true when confirmed
-const unmatchedConfirmed = ref<Record<string, Record<number, boolean>>>({})
+// keyed by matchId → rowIndex → true when resolved
+const resolvedUnmatched = ref<Record<string, Record<number, boolean>>>({})
+
+// resolve modal state
+type ModalPlayer = UnmatchedAFLPlayer & { clubName: string } & {
+  clubSeasonId: string
+  matchId: string
+  rowIndex: number
+}
+const resolveModalPlayer = ref<ModalPlayer | null>(null)
 
 const { mutate: importStatsMutation } = useMutation(IMPORT_AFL_MATCH_STATS)
 const { mutate: markCompleteMutation } = useMutation(MARK_AFL_MATCH_STATS_COMPLETE)
-const { mutate: confirmPlayerMatchMutation } = useMutation(CONFIRM_AFL_PLAYER_MATCH)
 
 async function scrape(match: any) {
   scraping.value[match.id] = true
   scrapeError.value[match.id] = ''
   scrapeResult.value[match.id] = undefined as any
+  resolvedUnmatched.value[match.id] = {}
   try {
     const res = await importStatsMutation({ matchId: match.id })
     const data = res?.data?.importAFLMatchStats
@@ -466,34 +456,43 @@ async function toggleFinal(match: any) {
   }
 }
 
-async function confirmUnmatched(matchId: string, rowIndex: number, up: UnmatchedAFLPlayer) {
-  const key = `${matchId}:${rowIndex}`
-  const playerSeasonId = unmatchedSelections.value[key]
-  if (!playerSeasonId) return
-  confirmingUnmatched.value[key] = true
-  try {
-    await confirmPlayerMatchMutation({
-      input: {
-        playerSeasonId,
-        clubMatchId: up.clubMatchId,
-        status: 'played',
-        kicks: up.kicks,
-        handballs: up.handballs,
-        marks: up.marks,
-        hitouts: up.hitouts,
-        tackles: up.tackles,
-        goals: up.goals,
-        behinds: up.behinds,
-      },
-    })
-    if (!unmatchedConfirmed.value[matchId]) unmatchedConfirmed.value[matchId] = {}
-    unmatchedConfirmed.value[matchId][rowIndex] = true
-    await refetchRoundStats()
-  } catch (e: any) {
-    scrapeError.value[matchId] = e.message ?? 'Confirm failed'
-  } finally {
-    confirmingUnmatched.value[key] = false
+// Build a map from clubMatchId → clubSeasonId using the round query result
+const clubMatchSeasonMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const m of aflMatches.value) {
+    if (m.homeClubMatch) map[m.homeClubMatch.id] = m.homeClubMatch.clubSeasonId
+    if (m.awayClubMatch) map[m.awayClubMatch.id] = m.awayClubMatch.clubSeasonId
   }
+  return map
+})
+
+const clubMatchClubMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const m of aflMatches.value) {
+    if (m.homeClubMatch) map[m.homeClubMatch.id] = m.homeClubMatch.club.name
+    if (m.awayClubMatch) map[m.awayClubMatch.id] = m.awayClubMatch.club.name
+  }
+  return map
+})
+
+function openResolveModal(match: any, rowIndex: number, up: UnmatchedAFLPlayer) {
+  resolveModalPlayer.value = {
+    ...up,
+    clubSeasonId: clubMatchSeasonMap.value[up.clubMatchId] ?? '',
+    clubName: clubMatchClubMap.value[up.clubMatchId] ?? '',
+    matchId: match.id,
+    rowIndex,
+  }
+}
+
+async function onPlayerResolved() {
+  const modal = resolveModalPlayer.value
+  if (modal) {
+    if (!resolvedUnmatched.value[modal.matchId]) resolvedUnmatched.value[modal.matchId] = {}
+    resolvedUnmatched.value[modal.matchId][modal.rowIndex] = true
+  }
+  resolveModalPlayer.value = null
+  await refetchRoundStats()
 }
 
 const CLUB_ABBREV: Record<string, string> = {
