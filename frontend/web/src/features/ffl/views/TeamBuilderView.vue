@@ -522,11 +522,11 @@ function playerMatchInfo(player: SquadPlayer) {
 }
 
 function playerStatus(player: SquadPlayer) {
-  return derivePlayerStatus(playerMatchInfo(player)?.statsImportStatus, player.score)
+  return derivePlayerStatus(playerMatchInfo(player)?.dataStatus, player.score)
 }
 
 function playerShowScore(player: SquadPlayer) {
-  return computeShowScore(playerMatchInfo(player)?.statsImportStatus, player.score)
+  return computeShowScore(playerMatchInfo(player)?.dataStatus, player.score)
 }
 
 function playerAflMatchRoute(player: SquadPlayer) {

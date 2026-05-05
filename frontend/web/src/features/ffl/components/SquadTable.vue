@@ -131,11 +131,11 @@ function pmMatchInfo(pm: PlayerMatch) {
 }
 
 function pmStatus(pm: PlayerMatch) {
-  return derivePlayerStatus(pmMatchInfo(pm)?.statsImportStatus, pm.score)
+  return derivePlayerStatus(pmMatchInfo(pm)?.dataStatus, pm.score)
 }
 
 function pmShowScore(pm: PlayerMatch) {
-  return showScore(pmMatchInfo(pm)?.statsImportStatus, pm.score)
+  return showScore(pmMatchInfo(pm)?.dataStatus, pm.score)
 }
 
 function pmAflMatchRoute(pm: PlayerMatch) {

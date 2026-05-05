@@ -114,7 +114,7 @@ export const GET_FFL_ROUND = gql`
         season { id }
         matches {
           id
-          statsImportStatus
+          dataStatus
           homeClubMatch { club { id } }
           awayClubMatch { club { id } }
         }
@@ -189,7 +189,7 @@ export const GET_FFL_MATCH = gql`
           season { id }
           matches {
             id
-            statsImportStatus
+            dataStatus
             homeClubMatch { club { id } }
             awayClubMatch { club { id } }
           }
@@ -318,7 +318,7 @@ export const GET_FFL_SEASON = gql`
                   club { name }
                   match {
                     id
-                    statsImportStatus
+                    dataStatus
                     round { season { id } }
                   }
                 }
@@ -343,7 +343,7 @@ export const GET_FFL_SEASON = gql`
                   club { name }
                   match {
                     id
-                    statsImportStatus
+                    dataStatus
                     round { season { id } }
                   }
                 }
