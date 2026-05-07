@@ -28,7 +28,14 @@
       <template v-else>
         <!-- Round selector -->
         <div class="mb-5 max-w-xs">
-          <label class="block text-xs font-medium text-text-muted mb-1">Round</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-text-muted">Round</label>
+            <router-link
+              v-if="aflSeasonId && selectedAflRoundId"
+              :to="{ name: 'afl-round', params: { seasonId: aflSeasonId, roundId: selectedAflRoundId } }"
+              class="text-xs text-text-faint hover:text-active transition-colors"
+            >View round →</router-link>
+          </div>
           <select
             v-model="selectedAflRoundId"
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
@@ -185,7 +192,14 @@
 
         <!-- Round selector -->
         <div class="mb-5 max-w-xs">
-          <label class="block text-xs font-medium text-text-muted mb-1">Round</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-text-muted">Round</label>
+            <router-link
+              v-if="liveSeasonId && selectedRoundId"
+              :to="{ name: 'ffl-round', params: { seasonId: liveSeasonId, roundId: selectedRoundId } }"
+              class="text-xs text-text-faint hover:text-active transition-colors"
+            >View round →</router-link>
+          </div>
           <select
             v-model="selectedRoundId"
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
