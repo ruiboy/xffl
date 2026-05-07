@@ -34,8 +34,8 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/ffl/seasons/:seasonId/rounds/:roundId/team-builder',
-      name: 'ffl-team-builder',
+      path: '/ffl/club-matches/:clubMatchId/edit',
+      name: 'ffl-club-match-edit',
       component: () => import('@/features/ffl/views/TeamBuilderView.vue'),
       props: true,
     },
@@ -69,13 +69,6 @@ const router = createRouter({
       component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
     },
-
-    // Redirects from old hierarchical paths
-    { path: '/ffl/seasons/:seasonId/rounds/:roundId', redirect: to => ({ name: 'ffl-round', params: { roundId: to.params.roundId } }) },
-    { path: '/ffl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'ffl-match', params: { matchId: to.params.matchId } }) },
-    { path: '/afl/seasons/:seasonId/rounds/:roundId', redirect: to => ({ name: 'afl-round', params: { roundId: to.params.roundId } }) },
-    { path: '/afl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'afl-match', params: { matchId: to.params.matchId } }) },
-    { path: '/admin/afl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'afl-match-edit', params: { matchId: to.params.matchId } }) },
   ],
 })
 

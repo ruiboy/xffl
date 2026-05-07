@@ -239,10 +239,16 @@
                     {{ row.dataStatus !== 'no_data' ? row.score : '—' }}
                   </td>
                   <td class="py-3 text-right">
-                    <button
-                      @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
-                      class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
-                    >{{ activeImportClubMatchId === row.clubMatchId ? 'Cancel' : 'Import Team' }}</button>
+                    <div class="flex items-center justify-end gap-2">
+                      <router-link
+                        :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
+                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                      >Team Builder</router-link>
+                      <button
+                        @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                      >{{ activeImportClubMatchId === row.clubMatchId ? 'Cancel' : 'Import Team' }}</button>
+                    </div>
                   </td>
                 </tr>
 

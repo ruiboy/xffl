@@ -107,7 +107,7 @@ Add `fflClubSeason(id: ID!): FFLClubSeason` to the FFL query root + resolver. Th
 
 ---
 
-## Phase 3 — `ffl-team-builder` → `ffl-club-match-edit` at `/ffl/club-matches/:id/edit`
+## Phase 3 — `ffl-team-builder` → `ffl-club-match-edit` at `/ffl/club-matches/:id/edit` ✅ DONE
 
 TeamBuilderView currently takes `seasonId` + `roundId` as props and reads `selectedClubId` from shared state. The new route passes a `clubMatchId` (the `ffl.club_match` PK).
 
@@ -123,7 +123,7 @@ Add `fflClubMatch(id: ID!): FFLClubMatch` to the FFL query root + resolver.
 
 ### What needs to change in callers
 - **`App.vue:30`** — remove the team builder nav link entirely. The team builder is a contextual action; in-page links from the round/match/data-ops pages will always have `clubMatchId` naturally from their loaded data. No `liveClubMatchId` needed in shared state.
-- `features/ffl/views/SquadView.vue:11` — links to team builder with `seasonId + liveRoundId`; after migration replace with the club's `clubMatchId` for the live round, available from the squad query result.
+- `features/ffl/views/SquadView.vue:11` — team builder link changed to `ffl-round` (liveRoundId) instead; squad view has no clubMatchId readily available without an extra query (noted in revisit.md).
 - `features/ffl/views/MatchView.vue:35` — has `round.id`; needs the user's club_match ID for that round, available from the match data already loaded.
 - `features/data-ops/views/DataOpsView.vue` — `row.clubMatchId` already available; link directly to `/ffl/club-matches/:id/edit` per row (replaces the `setClub` workaround).
 

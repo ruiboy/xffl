@@ -57,15 +57,9 @@ test.describe('FFL Home', () => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
 
-  test('global nav shows Team Builder and Squad links', async ({ page }) => {
+  test('global nav shows Squad link', async ({ page }) => {
     const topNav = page.getByRole('navigation').first()
-    await expect(topNav.getByRole('link', { name: 'Team Builder' })).toBeVisible()
     await expect(topNav.getByRole('link', { name: 'Squad' })).toBeVisible()
-  })
-
-  test('global Team Builder link navigates to team builder for live round', async ({ page }) => {
-    await page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' }).click()
-    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
   })
 
   test('round 3 has the open live-round ring indicator', async ({ page }) => {

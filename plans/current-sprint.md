@@ -81,15 +81,15 @@ ADR: ADR-018 (Twirp for cross-service communication)
   - AFL stats import and FFL Team import pages to align more closely in intent and UX:
     - AFL Stats import
       - [x] ~~On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.~~ → replaced by holistic player search (see below)
-      - [ ] Link round to AFL Round page.
+      - [x] Link round to AFL Round page.
       - [x] Link match to AFL Match page.
       - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).
       - [ ] Set status of all matches where stats are imported in data seed. 
     - FFL Team import
       - [x] Round page should list all FFL teams and show current status (similar to AFL Stats import page). Then each row facilitates import somehow.
       - [x] FFL team (= club match) should have status tracking, not tied to import, but set by import. Status = team submitted, portial score (?), final score.
-      - [ ] Link round to FFL Round page.
-      - [ ] Link each team to FFL Team Builder page
+      - [x] Link round to FFL Round page.
+      - [x] Link each team to FFL Team Builder page
       - [x] Improve UI: Form is a bit ugly right now. Team format should default selected club.
     - [ ] Function to recalculate FFL stats for a team. Call on team import. Maybe have button in data ops.
   - Holistic player search (replaces inline unmatched-player review in AFL stats import)

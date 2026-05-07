@@ -26,15 +26,6 @@
           </router-link>
           <template v-if="isFfl">
             <router-link
-              v-if="selectedClubId && liveRoundId && liveSeasonId"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: liveSeasonId, roundId: liveRoundId } }"
-              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-              title="Team Builder"
-            >
-              <IconTeamBuilder class="w-4 h-4" />
-              Team Builder
-            </router-link>
-            <router-link
               v-if="selectedClubId && selectedClubSeasonId"
               :to="{ name: 'ffl-club-season', params: { clubSeasonId: selectedClubSeasonId } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
@@ -98,13 +89,12 @@ import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
-import IconTeamBuilder from '@/features/ffl/components/icons/IconTeamBuilder.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
-const { selectedClubId, liveSeasonId, liveRoundId, setClub } = useFflState()
+const { selectedClubId, liveSeasonId, setClub } = useFflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))

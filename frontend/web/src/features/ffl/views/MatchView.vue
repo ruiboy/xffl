@@ -31,8 +31,8 @@
               <span v-else>{{ side.label }}</span>
             </h2>
             <router-link
-              v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: round?.season?.id, roundId: round!.id } }"
+              v-if="myClubMatchId && side.clubMatch?.club.id === selectedClubId"
+              :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: myClubMatchId } }"
               title="Team Builder"
               class="rounded p-1 text-active hover:bg-active/10 transition-colors"
             >
@@ -83,10 +83,12 @@ const breadcrumbs = computed(() => {
   ]
 })
 
-const isMyClubMatch = computed(() => {
-  if (!match.value || !selectedClubId.value) return false
-  return match.value.homeClubMatch?.club.id === selectedClubId.value ||
-    match.value.awayClubMatch?.club.id === selectedClubId.value
+const myClubMatchId = computed(() => {
+  if (!match.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
+  if (match.value.homeClubMatch?.club.id === clubId) return match.value.homeClubMatch.id
+  if (match.value.awayClubMatch?.club.id === clubId) return match.value.awayClubMatch.id
+  return null
 })
 
 const aflRoundTo = computed(() => {

@@ -7,8 +7,8 @@
         {{ clubSeason?.club.name ?? '' }}
       </h1>
       <router-link
-        v-if="isMyClub && liveRoundId"
-        :to="{ name: 'ffl-team-builder', params: { seasonId: clubSeason?.season.id, roundId: liveRoundId } }"
+        v-if="isMyClub && liveClubMatchId"
+        :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: liveClubMatchId } }"
         class="ml-auto flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
       >
         <IconTeamBuilder class="w-4 h-4" />
@@ -236,7 +236,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS } from '../api/queries'
+import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS, GET_FFL_ROUND_CLUB_MATCHES } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -262,6 +262,22 @@ const { result: squadResult, loading: squadLoading, error: squadError, refetch: 
 )
 
 const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
+
+// Live round club match — only fetched when viewing your own club
+const { result: liveRoundMatchesResult } = useQuery(
+  GET_FFL_ROUND_CLUB_MATCHES,
+  () => ({ id: liveRoundId.value }),
+  () => ({ enabled: isMyClub.value && !!liveRoundId.value }),
+)
+
+const liveClubMatchId = computed(() => {
+  const matches = liveRoundMatchesResult.value?.fflRound?.matches ?? []
+  for (const m of matches) {
+    if (m.homeClubMatch.clubSeasonId === props.clubSeasonId) return m.homeClubMatch.id
+    if (m.awayClubMatch.clubSeasonId === props.clubSeasonId) return m.awayClubMatch.id
+  }
+  return null
+})
 
 const breadcrumbs = computed(() => {
   if (!clubSeason.value) return []

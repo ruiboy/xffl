@@ -213,6 +213,8 @@ type FFLClubMatch
 {
   id: ID!
   clubSeasonId: ID!
+  roundId: ID
+  seasonId: ID
   club: FFLClub!
   dataStatus: String!
   score: Int!
@@ -429,6 +431,7 @@ type Query
   fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
   fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
+  fflClubMatch(id: ID!): FFLClubMatch @join__field(graph: FFL)
 }
 
 input RemoveFFLPlayerFromSeasonInput

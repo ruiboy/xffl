@@ -24,7 +24,7 @@
             :match="match"
             :to="{ name: 'ffl-match', params: { matchId: match.id } }"
             :my-club-id="selectedClubId ?? undefined"
-            :build-team-to="myMatch?.id === match.id ? { name: 'ffl-team-builder', params: { seasonId: season?.id, roundId: props.roundId } } : undefined"
+            :build-team-to="myClubMatchId && myMatch?.id === match.id ? { name: 'ffl-club-match-edit', params: { clubMatchId: myClubMatchId } } : undefined"
           />
         </div>
       </section>
@@ -115,10 +115,19 @@ const breadcrumbs = computed(() => {
 
 const myMatch = computed(() => {
   if (!round.value || !selectedClubId.value) return null
-  return round.value.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+  return round.value.matches.find((m: { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }) =>
     m.homeClubMatch?.club.id === selectedClubId.value ||
     m.awayClubMatch?.club.id === selectedClubId.value
   ) ?? null
+})
+
+const myClubMatchId = computed(() => {
+  if (!myMatch.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
+  const m = myMatch.value as { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }
+  if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch.id
+  if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch.id
+  return null
 })
 
 interface PlayerMatch {

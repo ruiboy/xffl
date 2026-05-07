@@ -57,7 +57,7 @@ test.describe('FFL Match', () => {
 
   test('Team Builder button navigates to team builder', async ({ page }) => {
     await page.getByTitle('Team Builder').click()
-    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+    await expect(page).toHaveURL(/\/ffl\/club-matches\/.*\/edit/)
   })
 
   test('shows breadcrumb with FFL, season and round', async ({ page }) => {

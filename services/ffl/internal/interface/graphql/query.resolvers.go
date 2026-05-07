@@ -381,6 +381,36 @@ func (r *queryResolver) FflRoundByAflRound(ctx context.Context, aflRoundID strin
 	return convertRound(*round), nil
 }
 
+// FflClubMatch is the resolver for the fflClubMatch field.
+func (r *queryResolver) FflClubMatch(ctx context.Context, id string) (*FFLClubMatch, error) {
+	cmID, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	cm, err := r.Queries.GetClubMatch(ctx, cmID)
+	if err != nil {
+		return nil, err
+	}
+	club, err := r.Queries.GetClubForClubSeason(ctx, cm.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	match, err := r.Queries.GetMatch(ctx, cm.MatchID)
+	if err != nil {
+		return nil, err
+	}
+	round, err := r.Queries.GetRound(ctx, match.RoundID)
+	if err != nil {
+		return nil, err
+	}
+	result := convertClubMatch(cm, club)
+	roundID := toID(match.RoundID)
+	seasonID := toID(round.SeasonID)
+	result.RoundID = &roundID
+	result.SeasonID = &seasonID
+	return result, nil
+}
+
 // FFLClubMatch returns FFLClubMatchResolver implementation.
 func (r *Resolver) FFLClubMatch() FFLClubMatchResolver { return &fFLClubMatchResolver{r} }
 
