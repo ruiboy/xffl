@@ -22,7 +22,7 @@ test.describe('FFL Home', () => {
 
   test('club name in ladder links to squad page', async ({ page }) => {
     await page.getByRole('link', { name: 'Ruiboys' }).first().click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 
@@ -42,7 +42,7 @@ test.describe('FFL Home', () => {
 
   test('round circle navigates to round page', async ({ page }) => {
     await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/rounds\//)
+    await page.waitForURL(/\/ffl\/rounds\//)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
   })

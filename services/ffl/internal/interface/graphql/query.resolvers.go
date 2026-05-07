@@ -323,16 +323,12 @@ func (r *queryResolver) FflClub(ctx context.Context, id string) (*FFLClub, error
 }
 
 // FflClubSeason is the resolver for the fflClubSeason field.
-func (r *queryResolver) FflClubSeason(ctx context.Context, seasonID string, clubID string) (*FFLClubSeason, error) {
-	sID, err := fromID(seasonID)
+func (r *queryResolver) FflClubSeason(ctx context.Context, id string) (*FFLClubSeason, error) {
+	csID, err := fromID(id)
 	if err != nil {
 		return nil, err
 	}
-	cID, err := fromID(clubID)
-	if err != nil {
-		return nil, err
-	}
-	cs, err := r.Queries.GetClubSeasonByClubAndSeason(ctx, cID, sID)
+	cs, err := r.Queries.GetClubSeason(ctx, csID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +336,7 @@ func (r *queryResolver) FflClubSeason(ctx context.Context, seasonID string, club
 	if err != nil {
 		return nil, err
 	}
-	season, err := r.Queries.GetSeason(ctx, sID)
+	season, err := r.Queries.GetSeason(ctx, cs.SeasonID)
 	if err != nil {
 		return nil, err
 	}

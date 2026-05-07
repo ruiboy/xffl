@@ -23,7 +23,7 @@
           <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
           <td class="py-2 pr-4 font-medium">
             <router-link
-              :to="{ name: 'ffl-squad', params: { seasonId, clubId: entry.club.id } }"
+              :to="{ name: 'ffl-club-season', params: { clubSeasonId: entry.id } }"
               class="flex items-center gap-2 hover:text-active transition-colors"
             >
               <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />
@@ -58,5 +58,5 @@ interface LadderEntry {
   percentage: number
 }
 
-defineProps<{ ladder: LadderEntry[]; seasonId: string }>()
+defineProps<{ ladder: LadderEntry[] }>()
 </script>

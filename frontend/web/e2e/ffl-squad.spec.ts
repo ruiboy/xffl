@@ -5,7 +5,7 @@ test.describe('FFL Squad', () => {
   test.beforeEach(async ({ page }) => {
     await setupFflSession(page)
     await page.getByRole('link', { name: 'Squad' }).click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await page.waitForLoadState('networkidle')
   })
 
@@ -74,7 +74,7 @@ test.describe('FFL Squad', () => {
   test('Manage button hidden when viewing another club squad', async ({ page }) => {
     await page.goto('/ffl')
     await page.locator('main').getByRole('link', { name: 'Ruiboys' }).first().click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('button', { name: 'Manage' })).not.toBeVisible()
   })

@@ -25,7 +25,7 @@
             <h2 class="text-lg font-semibold">
               <router-link
                 v-if="side.clubMatch"
-                :to="{ name: 'ffl-squad', params: { seasonId: round?.season?.id, clubId: side.clubMatch.club.id } }"
+                :to="{ name: 'ffl-club-season', params: { clubSeasonId: side.clubMatch.clubSeasonId } }"
                 class="hover:text-active transition-colors"
               >{{ side.label }}</router-link>
               <span v-else>{{ side.label }}</span>

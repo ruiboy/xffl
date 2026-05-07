@@ -30,7 +30,7 @@
             </div>
             <router-link
               v-if="selectedClubSeason"
-              :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: selectedClubSeason.club.id } }"
+              :to="{ name: 'ffl-club-season', params: { clubSeasonId: selectedClubSeason.id } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
             >
               <IconSquad class="w-4 h-4" />
@@ -407,7 +407,6 @@ interface BenchDualSlot {
 const { selectedClubId } = useFflState()
 const managing = ref(false)
 
-// Three parallel queries
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
   GET_FFL_ROUND,
   () => ({ id: props.roundId }),
@@ -418,16 +417,10 @@ const { result: seasonResult, loading: seasonLoading } = useQuery(
   () => ({ seasonId: props.seasonId }),
   { errorPolicy: 'all' },
 )
-const { result: clubSeasonResult } = useQuery(
-  GET_FFL_CLUB_SEASON,
-  () => ({ seasonId: props.seasonId, clubId: selectedClubId.value! }),
-  () => ({ enabled: !!selectedClubId.value, errorPolicy: 'all' }),
-)
 
 const round = computed(() => roundResult.value?.fflRound ?? null)
 const currentRound = round
 const season = computed(() => seasonResult.value?.fflSeason ?? null)
-const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
 
 const loading = computed(() => roundLoading.value || seasonLoading.value)
 const error = computed(() => roundError.value ?? null)
@@ -435,6 +428,14 @@ const error = computed(() => roundError.value ?? null)
 const selectedClubSeason = computed(() =>
   season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
 )
+
+const { result: clubSeasonResult } = useQuery(
+  GET_FFL_CLUB_SEASON,
+  () => ({ id: selectedClubSeason.value?.id ?? '' }),
+  () => ({ enabled: !!selectedClubSeason.value?.id, errorPolicy: 'all' }),
+)
+
+const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
 
 const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))
 

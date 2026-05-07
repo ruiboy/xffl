@@ -212,6 +212,7 @@ type FFLClubMatch
   @join__type(graph: FFL)
 {
   id: ID!
+  clubSeasonId: ID!
   club: FFLClub!
   dataStatus: String!
   score: Int!
@@ -328,6 +329,7 @@ input FFLTeamPlayerInput
   interchangePosition: String
 }
 
+"""---- Import flow ----"""
 type ImportAFLMatchStatsResult
   @join__type(graph: AFL)
 {
@@ -366,9 +368,9 @@ type Mutation
 {
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason! @join__field(graph: AFL)
   addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason! @join__field(graph: AFL)
-  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
@@ -423,7 +425,7 @@ type Query
   fflMatch(id: ID!): FFLMatch @join__field(graph: FFL)
   fflClubs: [FFLClub!]! @join__field(graph: FFL)
   fflClub(id: ID!): FFLClub! @join__field(graph: FFL)
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason @join__field(graph: FFL)
+  fflClubSeason(id: ID!): FFLClubSeason @join__field(graph: FFL)
   fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
   fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)

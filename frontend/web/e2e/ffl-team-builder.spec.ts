@@ -337,7 +337,7 @@ test.describe('FFL Team Builder', () => {
 
     test('Squad link in header navigates to squad page', async ({ page }) => {
       await page.locator('main').getByRole('link', { name: 'Squad' }).click()
-      await expect(page).toHaveURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+      await expect(page).toHaveURL(/\/ffl\/club-seasons\//)
     })
   })
 
@@ -360,7 +360,7 @@ test.describe('FFL Team Builder', () => {
       // Step 1: Trade Henry Smith out via the Squad page.
       await setupFflSession(page)
       await page.getByRole('link', { name: 'Squad' }).click()
-      await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+      await page.waitForURL(/\/ffl\/club-seasons\//)
       await page.waitForLoadState('networkidle')
 
       await page.getByRole('button', { name: 'Manage' }).click()

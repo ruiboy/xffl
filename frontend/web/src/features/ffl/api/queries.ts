@@ -14,8 +14,8 @@ export const GET_FFL_SEASON_CLUBS = gql`
 `
 
 export const GET_FFL_CLUB_SEASON = gql`
-  query GetFFLClubSeason($seasonId: ID!, $clubId: ID!) {
-    fflClubSeason(seasonId: $seasonId, clubId: $clubId) {
+  query GetFFLClubSeason($id: ID!) {
+    fflClubSeason(id: $id) {
       id
       club { id name }
       season { id name }
@@ -197,6 +197,7 @@ export const GET_FFL_MATCH = gql`
       }
       homeClubMatch {
         id
+        clubSeasonId
         club { id name }
         score
         playerMatches {
@@ -217,6 +218,7 @@ export const GET_FFL_MATCH = gql`
       }
       awayClubMatch {
         id
+        clubSeasonId
         club { id name }
         score
         playerMatches {

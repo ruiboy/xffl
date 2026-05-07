@@ -67,7 +67,7 @@ test.describe('FFL Match', () => {
 
   test('club name links to squad page', async ({ page }) => {
     await page.locator('main').getByRole('link', { name: 'Ruiboys' }).first().click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 })

@@ -8,7 +8,7 @@
       </h1>
       <router-link
         v-if="isMyClub && liveRoundId"
-        :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: liveRoundId } }"
+        :to="{ name: 'ffl-team-builder', params: { seasonId: clubSeason?.season.id, roundId: liveRoundId } }"
         class="ml-auto flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
       >
         <IconTeamBuilder class="w-4 h-4" />
@@ -193,8 +193,8 @@
 
     <PlayerSearchModal
       :show="addModalOpen"
-      :ffl-season-id="props.seasonId"
-      :ffl-club-season-id="clubSeasonId"
+      :ffl-season-id="clubSeason?.season.id ?? ''"
+      :ffl-club-season-id="props.clubSeasonId"
       :rounds="rounds"
       :default-from-round-id="defaultRoundId()"
       @close="addModalOpen = false"
@@ -247,22 +247,21 @@ import { clubLogoUrl } from '../utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 
-const props = defineProps<{ seasonId: string; clubId: string }>()
+const props = defineProps<{ clubSeasonId: string }>()
 
 const { selectedClubId, liveRoundId } = useFflState()
 const managing = ref(false)
 const showTraded = ref(false)
 
-const isMyClub = computed(() => !!selectedClubId.value && props.clubId === selectedClubId.value)
+const isMyClub = computed(() => !!selectedClubId.value && clubSeason.value?.club.id === selectedClubId.value)
 
-// Squad query — driven by route clubId
+// Squad query — driven by route clubSeasonId
 const { result: squadResult, loading: squadLoading, error: squadError, refetch: refetchSquad } = useQuery(
   GET_FFL_CLUB_SEASON,
-  () => ({ seasonId: props.seasonId, clubId: props.clubId }),
+  () => ({ id: props.clubSeasonId }),
 )
 
 const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
-const clubSeasonId = computed(() => clubSeason.value?.id ?? '')
 
 const breadcrumbs = computed(() => {
   if (!clubSeason.value) return []
@@ -289,7 +288,11 @@ const tradedPlayers = computed(() => [...players.value.filter((p: PlayerSeasonRo
 
 // --- Round history ---
 
-const { result: seasonResult } = useQuery(GET_FFL_SEASON_POSITIONS, () => ({ id: props.seasonId }))
+const { result: seasonResult } = useQuery(
+  GET_FFL_SEASON_POSITIONS,
+  () => ({ id: clubSeason.value?.season.id ?? '' }),
+  () => ({ enabled: !!clubSeason.value?.season.id }),
+)
 
 const rounds = computed(() => seasonResult.value?.fflSeason?.rounds ?? [])
 

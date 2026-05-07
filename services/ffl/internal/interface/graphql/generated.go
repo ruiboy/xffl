@@ -79,6 +79,7 @@ type ComplexityRoot struct {
 
 	FFLClubMatch struct {
 		Club          func(childComplexity int) int
+		ClubSeasonID  func(childComplexity int) int
 		DataStatus    func(childComplexity int) int
 		ID            func(childComplexity int) int
 		PlayerMatches func(childComplexity int) int
@@ -186,7 +187,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		FflClub            func(childComplexity int, id string) int
-		FflClubSeason      func(childComplexity int, seasonID string, clubID string) int
+		FflClubSeason      func(childComplexity int, id string) int
 		FflClubs           func(childComplexity int) int
 		FflMatch           func(childComplexity int, id string) int
 		FflPlayer          func(childComplexity int, id string) int
@@ -273,7 +274,7 @@ type QueryResolver interface {
 	FflMatch(ctx context.Context, id string) (*FFLMatch, error)
 	FflClubs(ctx context.Context) ([]*FFLClub, error)
 	FflClub(ctx context.Context, id string) (*FFLClub, error)
-	FflClubSeason(ctx context.Context, seasonID string, clubID string) (*FFLClubSeason, error)
+	FflClubSeason(ctx context.Context, id string) (*FFLClubSeason, error)
 	FflPlayers(ctx context.Context) ([]*FFLPlayer, error)
 	FflPlayer(ctx context.Context, id string) (*FFLPlayer, error)
 	FflRoundByAflRound(ctx context.Context, aflRoundID string) (*FFLRound, error)
@@ -403,6 +404,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubMatch.Club(childComplexity), true
+	case "FFLClubMatch.clubSeasonId":
+		if e.ComplexityRoot.FFLClubMatch.ClubSeasonID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubMatch.ClubSeasonID(childComplexity), true
 	case "FFLClubMatch.dataStatus":
 		if e.ComplexityRoot.FFLClubMatch.DataStatus == nil {
 			break
@@ -896,7 +903,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.FflClubSeason(childComplexity, args["seasonId"].(string), args["clubId"].(string)), true
+		return e.ComplexityRoot.Query.FflClubSeason(childComplexity, args["id"].(string)), true
 	case "Query.fflClubs":
 		if e.ComplexityRoot.Query.FflClubs == nil {
 			break
@@ -1224,7 +1231,7 @@ input FFLTeamPlayerInput {
 
   fflClubs: [FFLClub!]!
   fflClub(id: ID!): FFLClub!
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
+  fflClubSeason(id: ID!): FFLClubSeason
 
   fflPlayers: [FFLPlayer!]!
   fflPlayer(id: ID!): FFLPlayer!
@@ -1280,6 +1287,7 @@ type FFLClubSeason {
 
 type FFLClubMatch {
   id: ID!
+  clubSeasonId: ID!
   club: FFLClub!
   dataStatus: String!
   score: Int!
@@ -1649,16 +1657,11 @@ func (ec *executionContext) field_Query__entities_args(ctx context.Context, rawA
 func (ec *executionContext) field_Query_fflClubSeason_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "seasonId", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["seasonId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "clubId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["clubId"] = arg1
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2225,6 +2228,35 @@ func (ec *executionContext) _FFLClubMatch_id(ctx context.Context, field graphql.
 }
 
 func (ec *executionContext) fieldContext_FFLClubMatch_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLClubMatch_clubSeasonId(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubMatch_clubSeasonId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClubSeasonID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubMatch_clubSeasonId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FFLClubMatch",
 		Field:      field,
@@ -2923,6 +2955,8 @@ func (ec *executionContext) fieldContext_FFLMatch_homeClubMatch(_ context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FFLClubMatch_id(ctx, field)
+			case "clubSeasonId":
+				return ec.fieldContext_FFLClubMatch_clubSeasonId(ctx, field)
 			case "club":
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
 			case "dataStatus":
@@ -2964,6 +2998,8 @@ func (ec *executionContext) fieldContext_FFLMatch_awayClubMatch(_ context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FFLClubMatch_id(ctx, field)
+			case "clubSeasonId":
+				return ec.fieldContext_FFLClubMatch_clubSeasonId(ctx, field)
 			case "club":
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
 			case "dataStatus":
@@ -5043,7 +5079,7 @@ func (ec *executionContext) _Query_fflClubSeason(ctx context.Context, field grap
 		ec.fieldContext_Query_fflClubSeason,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().FflClubSeason(ctx, fc.Args["seasonId"].(string), fc.Args["clubId"].(string))
+			return ec.Resolvers.Query().FflClubSeason(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOFFLClubSeason2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLClubSeason,
@@ -8138,6 +8174,11 @@ func (ec *executionContext) _FFLClubMatch(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("FFLClubMatch")
 		case "id":
 			out.Values[i] = ec._FFLClubMatch_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clubSeasonId":
+			out.Values[i] = ec._FFLClubMatch_clubSeasonId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

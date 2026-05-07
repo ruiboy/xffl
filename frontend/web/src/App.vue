@@ -35,8 +35,8 @@
               Team Builder
             </router-link>
             <router-link
-              v-if="selectedClubId && liveSeasonId"
-              :to="{ name: 'ffl-squad', params: { seasonId: liveSeasonId, clubId: selectedClubId } }"
+              v-if="selectedClubId && selectedClubSeasonId"
+              :to="{ name: 'ffl-club-season', params: { clubSeasonId: selectedClubSeasonId } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
               title="Squad"
             >
@@ -118,6 +118,8 @@ const { result: clubsResult } = useQuery(
 )
 
 const rawClubs = computed(() => clubsResult.value?.fflSeason?.ladder ?? [])
+
+const selectedClubSeasonId = computed(() => clubs.value.find(cs => cs.club.id === selectedClubId.value)?.id ?? '')
 
 // Persist the last non-empty clubs list so the ClubSelector doesn't
 // disappear during transient cache re-evaluations after mutations.

@@ -21,7 +21,7 @@ Route names are updated alongside paths — rename every reference in the same p
 
 ---
 
-## Phase 1 — Simple routes (drop seasonId from path)
+## Phase 1 — Simple routes (drop seasonId from path) ✅ DONE
 
 These routes only need `seasonId` removed from the URL; the view components use it only as a passthrough to GraphQL queries that can derive it from the leaf entity.
 
@@ -88,7 +88,7 @@ Files that reference the above route names (from grep):
 
 ---
 
-## Phase 2 — `ffl-squad` → `ffl-club-season` at `/ffl/club-seasons/:id`
+## Phase 2 — `ffl-squad` → `ffl-club-season` at `/ffl/club-seasons/:id` ✅ DONE
 
 **What changes:** `SquadView` currently takes `seasonId` + `clubId`. The new route passes `clubSeasonId` (the `ffl.club_season` PK) directly.
 

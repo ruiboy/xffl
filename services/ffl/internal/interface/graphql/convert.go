@@ -118,10 +118,11 @@ func convertClubSeason(cs domain.ClubSeason, club domain.Club, season domain.Sea
 
 func convertClubMatch(cm domain.ClubMatch, club domain.Club) *FFLClubMatch {
 	return &FFLClubMatch{
-		ID:         toID(cm.ID),
-		Club:       convertClub(club),
-		DataStatus: string(cm.DataStatus),
-		Score:      cm.StoredScore,
+		ID:           toID(cm.ID),
+		ClubSeasonID: toID(cm.ClubSeasonID),
+		Club:         convertClub(club),
+		DataStatus:   string(cm.DataStatus),
+		Score:        cm.StoredScore,
 	}
 }
 
