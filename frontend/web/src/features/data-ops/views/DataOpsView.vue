@@ -372,6 +372,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
 import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE } from '../api/mutations'
@@ -381,13 +382,17 @@ import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 
 const { liveSeasonId, liveRoundId } = useFflState()
+const route = useRoute()
+
+const initialTab = (route.query.tab as string) || 'team-submission'
+const initialRound = (route.query.round as string) || ''
 
 // ---- Tabs ----
 const tabs = [
   { id: 'team-submission', label: 'FFL Teams' },
   { id: 'afl-stats', label: 'AFL Stats' },
 ]
-const activeTab = ref('afl-stats')
+const activeTab = ref(initialTab)
 
 // ════════════════════════════════════════════
 // AFL Stats Import
@@ -396,7 +401,7 @@ const activeTab = ref('afl-stats')
 const { result: liveRoundResult, loading: loadingLiveRound, error: liveRoundError } = useQuery(GET_AFL_LIVE_ROUND)
 
 const aflRounds = computed(() => liveRoundResult.value?.aflLiveRound?.round?.season?.rounds ?? [])
-const selectedAflRoundId = ref('')
+const selectedAflRoundId = ref(initialTab === 'afl-stats' && initialRound ? initialRound : '')
 
 watch(liveRoundResult, (val) => {
   if (val?.aflLiveRound?.round?.id && !selectedAflRoundId.value) {
@@ -568,7 +573,7 @@ const { result: seasonResult, loading: loadingSeasonData, error: seasonError, re
 
 const season = computed(() => seasonResult.value?.fflSeason ?? null)
 
-const selectedRoundId = ref(liveRoundId.value)
+const selectedRoundId = ref(initialTab === 'team-submission' && initialRound ? initialRound : liveRoundId.value)
 
 watch(liveRoundId, (val) => {
   if (val && !selectedRoundId.value) selectedRoundId.value = val

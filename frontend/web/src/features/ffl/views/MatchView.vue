@@ -46,9 +46,17 @@
         </div>
       </div>
 
-      <div v-if="aflRoundTo" class="mt-8">
-        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+      <div class="mt-8 flex items-center gap-6">
+        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
           AFL Round ↗
+        </router-link>
+        <router-link
+          v-if="round"
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: round.id } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
         </router-link>
       </div>
     </template>
@@ -64,6 +72,7 @@ import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 
 const props = defineProps<{ matchId: string }>()

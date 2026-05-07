@@ -38,6 +38,16 @@
         </div>
       </section>
 
+      <div class="mt-8">
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: props.roundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
+        </router-link>
+      </div>
+
     </template>
   </div>
 </template>
@@ -51,6 +61,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ roundId: string }>()
 

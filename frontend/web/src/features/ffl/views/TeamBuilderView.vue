@@ -350,6 +350,16 @@
         </div>
       </template>
       <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
+
+      <div v-if="bootstrapRoundId" class="mt-8">
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: bootstrapRoundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
+        </router-link>
+      </div>
     </template>
   </div>
 </template>
@@ -367,6 +377,7 @@ import { derivePlayerStatus, showScore as computeShowScore, aflMatchRoute, build
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconBin from '../components/icons/IconBin.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useFflState } from '../composables/useFflState'
 
 const props = defineProps<{ clubMatchId: string }>()

@@ -57,9 +57,16 @@
 
       </section>
 
-      <div v-if="aflRoundTo" class="mt-8">
-        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+      <div class="mt-8 flex items-center gap-6">
+        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
           AFL Round ↗
+        </router-link>
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: props.roundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
         </router-link>
       </div>
 
@@ -76,6 +83,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ roundId: string }>()
 
