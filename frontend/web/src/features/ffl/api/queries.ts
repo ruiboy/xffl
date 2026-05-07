@@ -186,7 +186,6 @@ export const GET_FFL_MATCH = gql`
         aflRoundId
         aflRound {
           id
-          season { id }
           matches {
             id
             dataStatus

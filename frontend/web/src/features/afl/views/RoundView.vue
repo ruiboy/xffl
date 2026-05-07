@@ -12,7 +12,6 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
-        :season-id="props.seasonId"
       />
 
       <section class="mb-8">
@@ -22,7 +21,7 @@
             v-for="match in data.round.matches"
             :key="match.id"
             :match="match"
-            :to="{ name: 'afl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            :to="{ name: 'afl-match', params: { matchId: match.id } }"
           />
         </div>
       </section>
@@ -53,7 +52,7 @@ import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
 
-const props = defineProps<{ seasonId: string; roundId: string }>()
+const props = defineProps<{ roundId: string }>()
 
 const { liveRoundId } = useAflState()
 const { result, loading, error } = useQuery(GET_AFL_ROUND, () => ({ roundId: props.roundId }))

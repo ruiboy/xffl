@@ -16,13 +16,13 @@ const router = createRouter({
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },
     {
-      path: '/ffl/seasons/:seasonId/rounds/:roundId',
+      path: '/ffl/rounds/:roundId',
       name: 'ffl-round',
       component: () => import('@/features/ffl/views/RoundView.vue'),
       props: true,
     },
     {
-      path: '/ffl/seasons/:seasonId/matches/:matchId',
+      path: '/ffl/matches/:matchId',
       name: 'ffl-match',
       component: () => import('@/features/ffl/views/MatchView.vue'),
       props: true,
@@ -52,23 +52,30 @@ const router = createRouter({
       component: () => import('@/features/afl/views/HomeView.vue'),
     },
     {
-      path: '/afl/seasons/:seasonId/rounds/:roundId',
+      path: '/afl/rounds/:roundId',
       name: 'afl-round',
       component: () => import('@/features/afl/views/RoundView.vue'),
       props: true,
     },
     {
-      path: '/afl/seasons/:seasonId/matches/:matchId',
+      path: '/afl/matches/:matchId',
       name: 'afl-match',
       component: () => import('@/features/afl/views/MatchView.vue'),
       props: true,
     },
     {
-      path: '/admin/afl/seasons/:seasonId/matches/:matchId',
-      name: 'afl-admin-match',
+      path: '/afl/matches/:matchId/edit',
+      name: 'afl-match-edit',
       component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
     },
+
+    // Redirects from old hierarchical paths
+    { path: '/ffl/seasons/:seasonId/rounds/:roundId', redirect: to => ({ name: 'ffl-round', params: { roundId: to.params.roundId } }) },
+    { path: '/ffl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'ffl-match', params: { matchId: to.params.matchId } }) },
+    { path: '/afl/seasons/:seasonId/rounds/:roundId', redirect: to => ({ name: 'afl-round', params: { roundId: to.params.roundId } }) },
+    { path: '/afl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'afl-match', params: { matchId: to.params.matchId } }) },
+    { path: '/admin/afl/seasons/:seasonId/matches/:matchId', redirect: to => ({ name: 'afl-match-edit', params: { matchId: to.params.matchId } }) },
   ],
 })
 

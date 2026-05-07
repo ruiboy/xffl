@@ -8,8 +8,8 @@ test.describe('Admin match view', () => {
     await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
     const matchLink = page.getByRole('link', { name: /Adelaide Crows.+v.+Brisbane Lions/ }).first()
     const href = await matchLink.getAttribute('href')
-    // Replace /afl/ with /admin/afl/ to get admin route
-    const adminHref = href!.replace('/afl/', '/admin/afl/')
+    // Append /edit to match href to get edit route
+    const adminHref = href! + '/edit'
     await page.goto(adminHref)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
   })

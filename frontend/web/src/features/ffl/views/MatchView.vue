@@ -25,14 +25,14 @@
             <h2 class="text-lg font-semibold">
               <router-link
                 v-if="side.clubMatch"
-                :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: side.clubMatch.club.id } }"
+                :to="{ name: 'ffl-squad', params: { seasonId: round?.season?.id, clubId: side.clubMatch.club.id } }"
                 class="hover:text-active transition-colors"
               >{{ side.label }}</router-link>
               <span v-else>{{ side.label }}</span>
             </h2>
             <router-link
               v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: round!.id } }"
+              :to="{ name: 'ffl-team-builder', params: { seasonId: round?.season?.id, roundId: round!.id } }"
               title="Team Builder"
               class="rounded p-1 text-active hover:bg-active/10 transition-colors"
             >
@@ -64,13 +64,11 @@ import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
-import { useAflState } from '../../afl/composables/useAflState'
 import { buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 
-const props = defineProps<{ seasonId: string; matchId: string }>()
+const props = defineProps<{ matchId: string }>()
 
 const { selectedClubId } = useFflState()
-const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_MATCH, () => ({ id: props.matchId }))
 
 const match = computed(() => result.value?.fflMatch ?? null)
@@ -81,7 +79,7 @@ const breadcrumbs = computed(() => {
   return [
     { label: 'FFL' },
     { label: round.value.season.name, to: { name: 'home' } },
-    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: round.value.id } } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { roundId: round.value.id } } },
   ]
 })
 
@@ -93,8 +91,8 @@ const isMyClubMatch = computed(() => {
 
 const aflRoundTo = computed(() => {
   const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId || !aflSeasonId.value) return null
-  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
+  if (!aflRoundId) return null
+  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))

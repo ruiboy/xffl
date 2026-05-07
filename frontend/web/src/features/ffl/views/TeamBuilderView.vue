@@ -445,12 +445,12 @@ const breadcrumbs = computed(() => {
   const crumbs: { label: string; to?: object }[] = [
     { label: 'FFL' },
     { label: round.value.season.name, to: { name: 'home' } },
-    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { roundId: props.roundId } } },
   ]
   if (currentMatch.value) {
     const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
     const away = currentMatch.value.awayClubMatch?.club.name ?? '?'
-    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { seasonId: props.seasonId, matchId: currentMatch.value.id } } })
+    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { matchId: currentMatch.value.id } } })
   }
   return crumbs
 })

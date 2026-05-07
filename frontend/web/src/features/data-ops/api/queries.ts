@@ -5,7 +5,6 @@ export const GET_AFL_ROUND_STATS = gql`
     aflRound(id: $roundId) {
       id
       name
-      season { id }
       matches {
         id
         dataStatus

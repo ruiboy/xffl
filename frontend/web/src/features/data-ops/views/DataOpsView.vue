@@ -31,8 +31,8 @@
           <div class="flex items-center justify-between mb-1">
             <label class="block text-xs font-medium text-text-muted">Round</label>
             <router-link
-              v-if="aflSeasonId && selectedAflRoundId"
-              :to="{ name: 'afl-round', params: { seasonId: aflSeasonId, roundId: selectedAflRoundId } }"
+              v-if="selectedAflRoundId"
+              :to="{ name: 'afl-round', params: { roundId: selectedAflRoundId } }"
               class="text-xs text-text-faint hover:text-active transition-colors"
             >View round →</router-link>
           </div>
@@ -63,8 +63,8 @@
                 <tr class="border-b border-border" :class="{ 'border-b-0': scrapeResult[match.id] || scrapeError[match.id] }">
                   <td class="py-3 pr-4 text-sm font-semibold whitespace-nowrap">
                     <router-link
-                      v-if="aflSeasonId"
-                      :to="{ name: 'afl-match', params: { seasonId: aflSeasonId, matchId: match.id } }"
+                      v-if="match.id"
+                      :to="{ name: 'afl-match', params: { matchId: match.id } }"
                       class="text-text hover:text-active transition-colors"
                     >
                       {{ abbrevClub(match.homeClubMatch?.club.name) }}
@@ -196,7 +196,7 @@
             <label class="block text-xs font-medium text-text-muted">Round</label>
             <router-link
               v-if="liveSeasonId && selectedRoundId"
-              :to="{ name: 'ffl-round', params: { seasonId: liveSeasonId, roundId: selectedRoundId } }"
+              :to="{ name: 'ffl-round', params: { roundId: selectedRoundId } }"
               class="text-xs text-text-faint hover:text-active transition-colors"
             >View round →</router-link>
           </div>
@@ -405,7 +405,6 @@ const { result: roundStatsResult, loading: loadingRoundStats, refetch: refetchRo
 )
 
 const aflMatches = computed(() => roundStatsResult.value?.aflRound?.matches ?? [])
-const aflSeasonId = computed(() => roundStatsResult.value?.aflRound?.season?.id ?? '')
 
 type UnmatchedAFLPlayer = {
   parsedName: string

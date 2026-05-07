@@ -1,14 +1,12 @@
 export interface AflClubMatchInfo {
   matchId: string
   dataStatus: string
-  seasonId: string
 }
 
 export type AflClubMatchMap = Record<string, AflClubMatchInfo>
 
 export interface AflRoundForMap {
   id: string
-  season: { id: string }
   matches: Array<{
     id: string
     dataStatus: string
@@ -21,7 +19,7 @@ export function buildAflClubMatchMap(aflRound: AflRoundForMap | null | undefined
   if (!aflRound) return {}
   const map: AflClubMatchMap = {}
   for (const match of aflRound.matches) {
-    const info: AflClubMatchInfo = { matchId: match.id, dataStatus: match.dataStatus, seasonId: aflRound.season.id }
+    const info: AflClubMatchInfo = { matchId: match.id, dataStatus: match.dataStatus }
     if (match.homeClubMatch?.club?.id) map[match.homeClubMatch.club.id] = info
     if (match.awayClubMatch?.club?.id) map[match.awayClubMatch.club.id] = info
   }
@@ -37,7 +35,7 @@ export function showScore(dataStatus: string | null | undefined, score: number |
   return score != null && !!dataStatus && dataStatus !== 'no_data'
 }
 
-export function aflMatchRoute(info: AflClubMatchInfo | null | undefined): { name: string; params: { seasonId: string; matchId: string } } | null {
+export function aflMatchRoute(info: AflClubMatchInfo | null | undefined): { name: string; params: { matchId: string } } | null {
   if (!info) return null
-  return { name: 'afl-match', params: { seasonId: info.seasonId, matchId: info.matchId } }
+  return { name: 'afl-match', params: { matchId: info.matchId } }
 }

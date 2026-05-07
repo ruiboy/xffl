@@ -13,7 +13,6 @@
         class="mb-8"
         :rounds="season?.rounds ?? []"
         :live-round-id="liveRoundId"
-        :season-id="props.seasonId"
       />
 
       <section class="mb-8">
@@ -23,9 +22,9 @@
             v-for="match in round.matches"
             :key="match.id"
             :match="match"
-            :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            :to="{ name: 'ffl-match', params: { matchId: match.id } }"
             :my-club-id="selectedClubId ?? undefined"
-            :build-team-to="myMatch?.id === match.id ? { name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } } : undefined"
+            :build-team-to="myMatch?.id === match.id ? { name: 'ffl-team-builder', params: { seasonId: season?.id, roundId: props.roundId } } : undefined"
           />
         </div>
       </section>
@@ -73,17 +72,14 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
-import { useAflState } from '../../afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
-const props = defineProps<{ seasonId: string; roundId: string }>()
-
+const props = defineProps<{ roundId: string }>()
 
 const { liveRoundId, selectedClubId } = useFflState()
-const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
 const round = computed(() => result.value?.fflRound ?? null)
@@ -105,8 +101,8 @@ const roundStartDate = computed(() => {
 
 const aflRoundTo = computed(() => {
   const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId || !aflSeasonId.value) return null
-  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
+  if (!aflRoundId) return null
+  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const breadcrumbs = computed(() => {
