@@ -18,6 +18,8 @@ type Querier interface {
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
+	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
+	FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
@@ -36,12 +38,16 @@ type Querier interface {
 	FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
+	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
 	UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
-	UpdateMatchImportStatus(ctx context.Context, arg UpdateMatchImportStatusParams) error
+	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
+	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
+	UpsertPlayerSeason(ctx context.Context, arg UpsertPlayerSeasonParams) (UpsertPlayerSeasonRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

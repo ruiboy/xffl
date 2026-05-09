@@ -3,7 +3,7 @@
     <router-link
       v-for="round in rounds"
       :key="round.id"
-      :to="{ name: 'ffl-round', params: { seasonId, roundId: round.id } }"
+      :to="{ name: 'ffl-round', params: { roundId: round.id } }"
       class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
       :class="activeRoundId === round.id
         ? 'bg-active text-active-text'
@@ -27,7 +27,6 @@ interface Round {
 
 defineProps<{
   rounds: Round[]
-  seasonId: string
   liveRoundId: string
 }>()
 

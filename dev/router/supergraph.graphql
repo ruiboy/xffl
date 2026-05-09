@@ -20,6 +20,20 @@ directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on
 
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
+input AddAFLPlayerInput
+  @join__type(graph: AFL)
+{
+  name: String!
+  clubSeasonId: ID!
+}
+
+input AddAFLPlayerSeasonInput
+  @join__type(graph: AFL)
+{
+  playerId: ID!
+  clubSeasonId: ID!
+}
+
 input AddFFLPlayerToSeasonInput
   @join__type(graph: FFL)
 {
@@ -27,13 +41,6 @@ input AddFFLPlayerToSeasonInput
   aflPlayerSeasonId: ID!
   fromRoundId: ID
   costCents: Int
-}
-
-input RemoveFFLPlayerFromSeasonInput
-  @join__type(graph: FFL)
-{
-  id: ID!
-  toRoundId: ID!
 }
 
 type AFLClub
@@ -47,6 +54,7 @@ type AFLClubMatch
   @join__type(graph: AFL)
 {
   id: ID!
+  clubSeasonId: ID!
   club: AFLClub!
   rushedBehinds: Int!
   score: Int!
@@ -60,6 +68,7 @@ type AFLClubSeason
 {
   id: ID!
   club: AFLClub!
+  season: AFLSeason!
   played: Int!
   won: Int!
   lost: Int!
@@ -83,8 +92,7 @@ type AFLMatch
   venue: String
   startTime: String
   result: String
-  statsImportStatus: String!
-  statsImportedAt: String
+  dataStatus: String!
   round: AFLRound!
   homeClubMatch: AFLClubMatch
   awayClubMatch: AFLClubMatch
@@ -96,6 +104,7 @@ type AFLPlayer
 {
   id: ID!
   name: String! @join__field(graph: AFL)
+  latestPlayerSeason: AFLPlayerSeason @join__field(graph: AFL)
 }
 
 type AFLPlayerMatch
@@ -203,7 +212,11 @@ type FFLClubMatch
   @join__type(graph: FFL)
 {
   id: ID!
+  clubSeasonId: ID!
+  roundId: ID
+  seasonId: ID
   club: FFLClub!
+  dataStatus: String!
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }
@@ -318,6 +331,7 @@ input FFLTeamPlayerInput
   interchangePosition: String
 }
 
+"""---- Import flow ----"""
 type ImportAFLMatchStatsResult
   @join__type(graph: AFL)
 {
@@ -326,7 +340,7 @@ type ImportAFLMatchStatsResult
   awayClubName: String!
   homePlayerCount: Int!
   awayPlayerCount: Int!
-  unmatchedPlayers: [String!]!
+  unmatchedPlayers: [UnmatchedAFLPlayer!]!
 }
 
 scalar join__FieldSet
@@ -354,8 +368,11 @@ type Mutation
   @join__type(graph: AFL)
   @join__type(graph: FFL)
 {
+  addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason! @join__field(graph: AFL)
+  addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason! @join__field(graph: AFL)
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
@@ -410,10 +427,33 @@ type Query
   fflMatch(id: ID!): FFLMatch @join__field(graph: FFL)
   fflClubs: [FFLClub!]! @join__field(graph: FFL)
   fflClub(id: ID!): FFLClub! @join__field(graph: FFL)
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason @join__field(graph: FFL)
+  fflClubSeason(id: ID!): FFLClubSeason @join__field(graph: FFL)
   fflPlayers: [FFLPlayer!]! @join__field(graph: FFL)
   fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
+  fflClubMatch(id: ID!): FFLClubMatch @join__field(graph: FFL)
+}
+
+input RemoveFFLPlayerFromSeasonInput
+  @join__type(graph: FFL)
+{
+  id: ID!
+  toRoundId: ID!
+}
+
+input ResolveAFLPlayerMatchInput
+  @join__type(graph: AFL)
+{
+  clubMatchId: ID!
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  parsedName: String
 }
 
 type ResolvedPlayer
@@ -437,6 +477,20 @@ input SetFFLTeamInput
 {
   clubMatchId: ID!
   players: [FFLTeamPlayerInput!]!
+}
+
+type UnmatchedAFLPlayer
+  @join__type(graph: AFL)
+{
+  parsedName: String!
+  clubMatchId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
 }
 
 input UpdateAFLPlayerMatchInput

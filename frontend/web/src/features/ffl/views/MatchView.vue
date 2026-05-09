@@ -25,14 +25,14 @@
             <h2 class="text-lg font-semibold">
               <router-link
                 v-if="side.clubMatch"
-                :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: side.clubMatch.club.id } }"
+                :to="{ name: 'ffl-club-season', params: { clubSeasonId: side.clubMatch.clubSeasonId } }"
                 class="hover:text-active transition-colors"
               >{{ side.label }}</router-link>
               <span v-else>{{ side.label }}</span>
             </h2>
             <router-link
-              v-if="isMyClubMatch && side.clubMatch?.club.id === selectedClubId"
-              :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: round!.id } }"
+              v-if="myClubMatchId && side.clubMatch?.club.id === selectedClubId"
+              :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: myClubMatchId } }"
               title="Team Builder"
               class="rounded p-1 text-active hover:bg-active/10 transition-colors"
             >
@@ -46,9 +46,17 @@
         </div>
       </div>
 
-      <div v-if="aflRoundTo" class="mt-8">
-        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+      <div class="mt-8 flex items-center gap-6">
+        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
           AFL Round ↗
+        </router-link>
+        <router-link
+          v-if="round"
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: round.id } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
         </router-link>
       </div>
     </template>
@@ -64,13 +72,12 @@ import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
-import { useAflState } from '../../afl/composables/useAflState'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 
-const props = defineProps<{ seasonId: string; matchId: string }>()
+const props = defineProps<{ matchId: string }>()
 
 const { selectedClubId } = useFflState()
-const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_MATCH, () => ({ id: props.matchId }))
 
 const match = computed(() => result.value?.fflMatch ?? null)
@@ -81,20 +88,22 @@ const breadcrumbs = computed(() => {
   return [
     { label: 'FFL' },
     { label: round.value.season.name, to: { name: 'home' } },
-    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: round.value.id } } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { roundId: round.value.id } } },
   ]
 })
 
-const isMyClubMatch = computed(() => {
-  if (!match.value || !selectedClubId.value) return false
-  return match.value.homeClubMatch?.club.id === selectedClubId.value ||
-    match.value.awayClubMatch?.club.id === selectedClubId.value
+const myClubMatchId = computed(() => {
+  if (!match.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
+  if (match.value.homeClubMatch?.club.id === clubId) return match.value.homeClubMatch.id
+  if (match.value.awayClubMatch?.club.id === clubId) return match.value.awayClubMatch.id
+  return null
 })
 
 const aflRoundTo = computed(() => {
   const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId || !aflSeasonId.value) return null
-  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
+  if (!aflRoundId) return null
+  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))

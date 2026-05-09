@@ -333,6 +333,7 @@ func (r *ClubMatchRepository) FindByMatchID(ctx context.Context, matchID int) ([
 			ID:           int(row.ID),
 			MatchID:      int(row.MatchID),
 			ClubSeasonID: int(row.ClubSeasonID),
+			DataStatus:   domain.ClubMatchDataStatus(row.DataStatus),
 			StoredScore:  derefOr(row.DrvScore),
 		}
 	}
@@ -348,6 +349,7 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 		ID:           int(row.ID),
 		MatchID:      int(row.MatchID),
 		ClubSeasonID: int(row.ClubSeasonID),
+		DataStatus:   domain.ClubMatchDataStatus(row.DataStatus),
 		StoredScore:  derefOr(row.DrvScore),
 	}, nil
 }
@@ -357,6 +359,13 @@ func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int
 	return r.q.UpdateClubMatchScore(ctx, sqlcgen.UpdateClubMatchScoreParams{
 		ID:       int32(id),
 		DrvScore: &s,
+	})
+}
+
+func (r *ClubMatchRepository) UpdateDataStatus(ctx context.Context, id int, status domain.ClubMatchDataStatus) error {
+	return r.q.UpdateClubMatchDataStatus(ctx, sqlcgen.UpdateClubMatchDataStatusParams{
+		ID:         int32(id),
+		DataStatus: string(status),
 	})
 }
 

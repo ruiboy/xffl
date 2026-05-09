@@ -13,7 +13,6 @@
         class="mb-8"
         :rounds="season?.rounds ?? []"
         :live-round-id="liveRoundId"
-        :season-id="props.seasonId"
       />
 
       <section class="mb-8">
@@ -23,9 +22,9 @@
             v-for="match in round.matches"
             :key="match.id"
             :match="match"
-            :to="{ name: 'ffl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            :to="{ name: 'ffl-match', params: { matchId: match.id } }"
             :my-club-id="selectedClubId ?? undefined"
-            :build-team-to="myMatch?.id === match.id ? { name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: props.roundId } } : undefined"
+            :build-team-to="myClubMatchId && myMatch?.id === match.id ? { name: 'ffl-club-match-edit', params: { clubMatchId: myClubMatchId } } : undefined"
           />
         </div>
       </section>
@@ -58,9 +57,16 @@
 
       </section>
 
-      <div v-if="aflRoundTo" class="mt-8">
-        <router-link :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
+      <div class="mt-8 flex items-center gap-6">
+        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="text-sm text-text-muted hover:text-text transition-colors">
           AFL Round ↗
+        </router-link>
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: props.roundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
         </router-link>
       </div>
 
@@ -73,17 +79,15 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
-import { useAflState } from '../../afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
-const props = defineProps<{ seasonId: string; roundId: string }>()
-
+const props = defineProps<{ roundId: string }>()
 
 const { liveRoundId, selectedClubId } = useFflState()
-const { liveSeasonId: aflSeasonId } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
 const round = computed(() => result.value?.fflRound ?? null)
@@ -105,8 +109,8 @@ const roundStartDate = computed(() => {
 
 const aflRoundTo = computed(() => {
   const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId || !aflSeasonId.value) return null
-  return { name: 'afl-round', params: { seasonId: aflSeasonId.value, roundId: aflRoundId } }
+  if (!aflRoundId) return null
+  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const breadcrumbs = computed(() => {
@@ -119,10 +123,19 @@ const breadcrumbs = computed(() => {
 
 const myMatch = computed(() => {
   if (!round.value || !selectedClubId.value) return null
-  return round.value.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
+  return round.value.matches.find((m: { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }) =>
     m.homeClubMatch?.club.id === selectedClubId.value ||
     m.awayClubMatch?.club.id === selectedClubId.value
   ) ?? null
+})
+
+const myClubMatchId = computed(() => {
+  if (!myMatch.value || !selectedClubId.value) return null
+  const clubId = selectedClubId.value
+  const m = myMatch.value as { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }
+  if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch.id
+  if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch.id
+  return null
 })
 
 interface PlayerMatch {

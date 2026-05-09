@@ -20,6 +20,27 @@ SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
 WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
 
+-- name: InsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id;
+
+-- name: UpsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+ON CONFLICT (player_id, club_season_id) DO UPDATE SET player_id = EXCLUDED.player_id
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id;
+
+-- name: FindLatestPlayerSeasonByPlayerID :one
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY cs.season_id DESC
+LIMIT 1;
+
 -- name: FindPlayerSeasonsBySeasonID :many
 SELECT ps.id
 FROM afl.player_season ps

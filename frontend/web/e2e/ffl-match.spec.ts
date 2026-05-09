@@ -6,7 +6,7 @@ test.describe('FFL Match', () => {
     await page.goto('/ffl')
     await page.locator('main nav').getByRole('link', { name: '1', exact: true }).click()
     await page.locator('.cursor-pointer').filter({ hasText: 'Ruiboys' }).filter({ hasText: 'The Howling Cows' }).click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/matches\//)
+    await page.waitForURL(/\/ffl\/matches\//)
   })
 
   test('displays match header with teams', async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('FFL Match', () => {
 
   test('Team Builder button navigates to team builder', async ({ page }) => {
     await page.getByTitle('Team Builder').click()
-    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+    await expect(page).toHaveURL(/\/ffl\/club-matches\/.*\/edit/)
   })
 
   test('shows breadcrumb with FFL, season and round', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('FFL Match', () => {
 
   test('club name links to squad page', async ({ page }) => {
     await page.locator('main').getByRole('link', { name: 'Ruiboys' }).first().click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 })

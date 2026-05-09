@@ -12,7 +12,6 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
-        :season-id="props.seasonId"
       />
 
       <section class="mb-8">
@@ -22,7 +21,7 @@
             v-for="match in data.round.matches"
             :key="match.id"
             :match="match"
-            :to="{ name: 'afl-match', params: { seasonId: props.seasonId, matchId: match.id } }"
+            :to="{ name: 'afl-match', params: { matchId: match.id } }"
           />
         </div>
       </section>
@@ -39,6 +38,16 @@
         </div>
       </section>
 
+      <div class="mt-8">
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: props.roundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
+        </router-link>
+      </div>
+
     </template>
   </div>
 </template>
@@ -52,8 +61,9 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
-const props = defineProps<{ seasonId: string; roundId: string }>()
+const props = defineProps<{ roundId: string }>()
 
 const { liveRoundId } = useAflState()
 const { result, loading, error } = useQuery(GET_AFL_ROUND, () => ({ roundId: props.roundId }))

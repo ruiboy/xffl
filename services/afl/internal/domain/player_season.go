@@ -20,9 +20,11 @@ type PlayerSeasonWithPlayer struct {
 }
 
 type PlayerSeasonRepository interface {
+	Create(ctx context.Context, playerID, clubSeasonID int) (PlayerSeason, error)
 	FindByID(ctx context.Context, id int) (PlayerSeason, error)
 	FindByIDs(ctx context.Context, ids []int) (map[int]PlayerSeason, error)
 	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
 	FindByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int) ([]PlayerSeasonWithPlayer, error)
 	FindIDsBySeasonID(ctx context.Context, seasonID int, nameQuery *string) ([]int, error)
+	FindLatestByPlayerID(ctx context.Context, playerID int) (PlayerSeason, bool, error)
 }

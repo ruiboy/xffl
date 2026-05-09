@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const findLatestPlayerSeasonByPlayerID = `-- name: FindLatestPlayerSeasonByPlayerID :one
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY cs.season_id DESC
+LIMIT 1
+`
+
+func (q *Queries) FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, findLatestPlayerSeasonByPlayerID, playerID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const findPlayerSeasonByID = `-- name: FindPlayerSeasonByID :one
 SELECT id, player_id, club_season_id, from_round_id, to_round_id
 FROM afl.player_season
@@ -184,4 +202,69 @@ func (q *Queries) FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeason
 		return nil, err
 	}
 	return items, nil
+}
+
+const insertPlayerSeason = `-- name: InsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id
+`
+
+type InsertPlayerSeasonParams struct {
+	PlayerID     int32
+	ClubSeasonID int32
+}
+
+type InsertPlayerSeasonRow struct {
+	ID           int32
+	PlayerID     int32
+	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
+}
+
+func (q *Queries) InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error) {
+	row := q.db.QueryRow(ctx, insertPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
+	var i InsertPlayerSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+	)
+	return i, err
+}
+
+const upsertPlayerSeason = `-- name: UpsertPlayerSeason :one
+INSERT INTO afl.player_season (player_id, club_season_id)
+VALUES ($1, $2)
+ON CONFLICT (player_id, club_season_id) DO UPDATE SET player_id = EXCLUDED.player_id
+RETURNING id, player_id, club_season_id, from_round_id, to_round_id
+`
+
+type UpsertPlayerSeasonParams struct {
+	PlayerID     int32
+	ClubSeasonID int32
+}
+
+type UpsertPlayerSeasonRow struct {
+	ID           int32
+	PlayerID     int32
+	ClubSeasonID int32
+	FromRoundID  *int32
+	ToRoundID    *int32
+}
+
+func (q *Queries) UpsertPlayerSeason(ctx context.Context, arg UpsertPlayerSeasonParams) (UpsertPlayerSeasonRow, error) {
+	row := q.db.QueryRow(ctx, upsertPlayerSeason, arg.PlayerID, arg.ClubSeasonID)
+	var i UpsertPlayerSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.ClubSeasonID,
+		&i.FromRoundID,
+		&i.ToRoundID,
+	)
+	return i, err
 }

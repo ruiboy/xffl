@@ -861,6 +861,7 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 		pg.NewRoundRepository(q, pool),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewDataopsMatchSourceRepository(q),
+		pg.NewDataopsPlayerSourceRepository(q),
 		parser,
 		discovery,
 		footywire.NewLevenshteinResolver(),
@@ -964,7 +965,8 @@ func TestImportAFLMatchStats(t *testing.T) {
 
 	mutation := fmt.Sprintf(`mutation {
 		importAFLMatchStats(matchId: "%d") {
-			matchId homePlayerCount awayPlayerCount unmatchedPlayers
+			matchId homePlayerCount awayPlayerCount
+			unmatchedPlayers { parsedName clubMatchId }
 		}
 	}`, ids.matchID)
 
@@ -973,10 +975,13 @@ func TestImportAFLMatchStats(t *testing.T) {
 
 	var data struct {
 		ImportAFLMatchStats struct {
-			MatchID          string   `json:"matchId"`
-			HomePlayerCount  int      `json:"homePlayerCount"`
-			AwayPlayerCount  int      `json:"awayPlayerCount"`
-			UnmatchedPlayers []string `json:"unmatchedPlayers"`
+			MatchID         string `json:"matchId"`
+			HomePlayerCount int    `json:"homePlayerCount"`
+			AwayPlayerCount int    `json:"awayPlayerCount"`
+			UnmatchedPlayers []struct {
+				ParsedName  string `json:"parsedName"`
+				ClubMatchID string `json:"clubMatchId"`
+			} `json:"unmatchedPlayers"`
 		} `json:"importAFLMatchStats"`
 	}
 	require.NoError(t, json.Unmarshal(result.Data, &data))
@@ -991,19 +996,19 @@ func TestImportAFLMatchStats(t *testing.T) {
 	t.Run("no unmatched players", func(t *testing.T) {
 		assert.Empty(t, imp.UnmatchedPlayers)
 	})
-	t.Run("match import status set to partial", func(t *testing.T) {
+	t.Run("match data status set to partial", func(t *testing.T) {
 		statusResult := execQuery(t, server, fmt.Sprintf(`{
-			aflMatch(id: "%d") { statsImportStatus }
+			aflMatch(id: "%d") { dataStatus }
 		}`, ids.matchID))
 		require.Empty(t, statusResult.Errors)
 
 		var statusData struct {
 			AflMatch struct {
-				StatsImportStatus string `json:"statsImportStatus"`
+				DataStatus string `json:"dataStatus"`
 			} `json:"aflMatch"`
 		}
 		require.NoError(t, json.Unmarshal(statusResult.Data, &statusData))
-		assert.Equal(t, "partial", statusData.AflMatch.StatsImportStatus)
+		assert.Equal(t, "partial", statusData.AflMatch.DataStatus)
 	})
 }
 

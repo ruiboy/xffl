@@ -98,6 +98,24 @@ func (q *Queries) FindPlayersByIDsWithClub(ctx context.Context, ids []int32) ([]
 	return items, nil
 }
 
+const insertPlayer = `-- name: InsertPlayer :one
+INSERT INTO afl.player (name)
+VALUES ($1)
+RETURNING id, name
+`
+
+type InsertPlayerRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error) {
+	row := q.db.QueryRow(ctx, insertPlayer, name)
+	var i InsertPlayerRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const searchPlayersByName = `-- name: SearchPlayersByName :many
 SELECT id, name
 FROM afl.player

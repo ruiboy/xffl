@@ -23,6 +23,7 @@ type FflClubMatch struct {
 	DeletedAt            pgtype.Timestamptz
 	MatchID              int32
 	ClubSeasonID         int32
+	DataStatus           string
 	DrvScore             *int32
 	DrvPremiershipPoints *int32
 }
@@ -73,7 +74,6 @@ type FflPlayer struct {
 	UpdatedAt   pgtype.Timestamptz
 	DeletedAt   pgtype.Timestamptz
 	AflPlayerID int32
-	DrvName     string
 }
 
 type FflPlayerMatch struct {

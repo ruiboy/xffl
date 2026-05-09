@@ -68,9 +68,9 @@ func convertRounds(rounds []domain.Round) []*AFLRound {
 
 func convertMatch(m domain.Match) *AFLMatch {
 	match := &AFLMatch{
-		ID:                toID(m.ID),
-		Venue:             toStringPtr(m.Venue),
-		StatsImportStatus: string(m.StatsImportStatus),
+		ID:         toID(m.ID),
+		Venue:      toStringPtr(m.Venue),
+		DataStatus: string(m.DataStatus),
 	}
 	if !m.StartTime.IsZero() {
 		t := m.StartTime.Format("2006-01-02T15:04:05Z")
@@ -79,10 +79,6 @@ func convertMatch(m domain.Match) *AFLMatch {
 	if m.Result != "" {
 		r := string(m.Result)
 		match.Result = &r
-	}
-	if m.StatsImportedAt != nil {
-		t := m.StatsImportedAt.Format("2006-01-02T15:04:05Z")
-		match.StatsImportedAt = &t
 	}
 	return match
 }
@@ -113,6 +109,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *AFLClubMatch {
 	return &AFLClubMatch{
 		ID:            toID(cm.ID),
 		Club:          convertClub(club),
+		ClubSeasonID:  toID(cm.ClubSeasonID),
 		RushedBehinds: cm.RushedBehinds,
 		Score:         cm.StoredScore,
 		MatchID:       toID(cm.MatchID),

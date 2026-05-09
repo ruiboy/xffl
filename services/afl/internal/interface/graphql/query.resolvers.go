@@ -45,6 +45,23 @@ func (r *aFLClubMatchResolver) Match(ctx context.Context, obj *AFLClubMatch) (*A
 	return convertMatch(match), nil
 }
 
+// Season is the resolver for the season field.
+func (r *aFLClubSeasonResolver) Season(ctx context.Context, obj *AFLClubSeason) (*AFLSeason, error) {
+	csID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	cs, err := r.Queries.GetClubSeasonByID(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	s, err := r.Queries.GetSeason(ctx, cs.SeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertSeason(s), nil
+}
+
 // Round is the resolver for the round field.
 func (r *aFLMatchResolver) Round(ctx context.Context, obj *AFLMatch) (*AFLRound, error) {
 	matchID, err := fromID(obj.ID)
@@ -376,15 +393,26 @@ func (r *queryResolver) AflLiveRound(ctx context.Context) (*AFLLiveRound, error)
 
 // AflPlayerSearch is the resolver for the aflPlayerSearch field.
 func (r *queryResolver) AflPlayerSearch(ctx context.Context, query string) ([]*AFLPlayer, error) {
-	players, err := r.Queries.SearchPlayers(ctx, query)
+	results, err := r.Queries.SearchPlayersWithLatestSeason(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	return convertPlayers(players), nil
+	out := make([]*AFLPlayer, len(results))
+	for i, res := range results {
+		p := convertPlayer(res.Player)
+		if res.HasLatestSeason {
+			p.LatestPlayerSeason = &AFLPlayerSeason{ID: toID(res.LatestSeasonID)}
+		}
+		out[i] = p
+	}
+	return out, nil
 }
 
 // AFLClubMatch returns AFLClubMatchResolver implementation.
 func (r *Resolver) AFLClubMatch() AFLClubMatchResolver { return &aFLClubMatchResolver{r} }
+
+// AFLClubSeason returns AFLClubSeasonResolver implementation.
+func (r *Resolver) AFLClubSeason() AFLClubSeasonResolver { return &aFLClubSeasonResolver{r} }
 
 // AFLMatch returns AFLMatchResolver implementation.
 func (r *Resolver) AFLMatch() AFLMatchResolver { return &aFLMatchResolver{r} }
@@ -405,6 +433,7 @@ func (r *Resolver) AFLSeason() AFLSeasonResolver { return &aFLSeasonResolver{r} 
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type aFLClubMatchResolver struct{ *Resolver }
+type aFLClubSeasonResolver struct{ *Resolver }
 type aFLMatchResolver struct{ *Resolver }
 type aFLPlayerMatchResolver struct{ *Resolver }
 type aFLPlayerSeasonResolver struct{ *Resolver }

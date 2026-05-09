@@ -6,12 +6,13 @@ type Query {
 
   fflClubs: [FFLClub!]!
   fflClub(id: ID!): FFLClub!
-  fflClubSeason(seasonId: ID!, clubId: ID!): FFLClubSeason
+  fflClubSeason(id: ID!): FFLClubSeason
 
   fflPlayers: [FFLPlayer!]!
   fflPlayer(id: ID!): FFLPlayer!
 
   fflRoundByAflRound(aflRoundId: ID!): FFLRound
+  fflClubMatch(id: ID!): FFLClubMatch
 }
 
 type FFLSeason {
@@ -62,7 +63,11 @@ type FFLClubSeason {
 
 type FFLClubMatch {
   id: ID!
+  clubSeasonId: ID!
+  roundId: ID
+  seasonId: ID
   club: FFLClub!
+  dataStatus: String!
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }

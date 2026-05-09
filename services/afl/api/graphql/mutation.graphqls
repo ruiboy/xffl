@@ -1,16 +1,21 @@
 type Mutation {
+  addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason!
+  addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason!
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
 }
 
-type ImportAFLMatchStatsResult {
-  matchId: ID!
-  homeClubName: String!
-  awayClubName: String!
-  homePlayerCount: Int!
-  awayPlayerCount: Int!
-  unmatchedPlayers: [String!]!
+input AddAFLPlayerInput {
+  name: String!
+  clubSeasonId: ID!
+}
+
+input AddAFLPlayerSeasonInput {
+  playerId: ID!
+  clubSeasonId: ID!
 }
 
 input UpdateAFLPlayerMatchInput {
@@ -24,4 +29,40 @@ input UpdateAFLPlayerMatchInput {
   tackles: Int
   goals: Int
   behinds: Int
+}
+
+"---- Import flow ----"
+
+type ImportAFLMatchStatsResult {
+  matchId: ID!
+  homeClubName: String!
+  awayClubName: String!
+  homePlayerCount: Int!
+  awayPlayerCount: Int!
+  unmatchedPlayers: [UnmatchedAFLPlayer!]!
+}
+
+type UnmatchedAFLPlayer {
+  parsedName: String!
+  clubMatchId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+}
+
+input ResolveAFLPlayerMatchInput {
+  clubMatchId: ID!
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  parsedName: String
 }

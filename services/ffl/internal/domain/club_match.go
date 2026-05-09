@@ -5,10 +5,20 @@ import (
 	"strings"
 )
 
+// ClubMatchDataStatus tracks whether a team has been submitted and scored.
+type ClubMatchDataStatus string
+
+const (
+	ClubMatchDataNoData    ClubMatchDataStatus = "no_data"
+	ClubMatchDataSubmitted ClubMatchDataStatus = "submitted"
+	ClubMatchDataFinal     ClubMatchDataStatus = "final"
+)
+
 type ClubMatch struct {
 	ID            int
 	MatchID       int
 	ClubSeasonID  int
+	DataStatus    ClubMatchDataStatus
 	StoredScore   int
 	PlayerMatches []PlayerMatch
 }
@@ -112,4 +122,5 @@ type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
 	UpdateScore(ctx context.Context, id int, score int) error
+	UpdateDataStatus(ctx context.Context, id int, status ClubMatchDataStatus) error
 }

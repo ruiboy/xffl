@@ -18,13 +18,12 @@ test.describe('FFL Data Ops', () => {
   })
 
   test('AFL Stats tab shows match table with correct columns', async ({ page }) => {
-    // AFL Stats is the default tab — table should be visible without clicking
+    await page.getByRole('button', { name: 'AFL Stats' }).click()
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('columnheader', { name: 'Match' })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Status' })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Score' })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'Players' })).toBeVisible()
-    await expect(page.getByRole('columnheader', { name: 'Imported' })).toBeVisible()
   })
 
   test.describe('FFL Teams tab', () => {
@@ -37,62 +36,81 @@ test.describe('FFL Data Ops', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Data Ops')
     })
 
-    test('club selector is populated', async ({ page }) => {
-      const select = page.locator('select').first()
-      const options = await select.locator('option').allTextContents()
-      expect(options.some(o => o.includes('Ruiboys'))).toBeTruthy()
+    test('club rows are populated', async ({ page }) => {
+      await expect(page.getByRole('cell', { name: 'Ruiboys' })).toBeVisible()
     })
 
     test('round selector defaults to the live round', async ({ page }) => {
       // Clock override puts us in Round 3.
-      const roundSelect = page.locator('select').nth(1)
+      const roundSelect = page.locator('select').first()
       await expect(roundSelect).toHaveValue(/\d+/)
       const selectedText = await roundSelect.locator('option:checked').textContent()
       expect(selectedText).toContain('Round 3')
     })
 
-    test('golden path: parse a post and reach the review phase', async ({ page }) => {
-      // Select Ruiboys
-      await page.locator('select').first().selectOption({ label: 'Ruiboys' })
+    test('import panel opens inside a card with Cancel and Read Team buttons', async ({ page }) => {
+      const ruiboysRow = page.getByRole('row').filter({ hasText: 'Ruiboys' }).first()
+      await ruiboysRow.getByRole('button', { name: 'Import Team' }).click()
 
-      // Round 3 should already be selected; wait for "no match" warning to disappear
-      await expect(page.locator('text=No match found')).not.toBeVisible()
+      // Import Team button should be gone once panel is open
+      await expect(ruiboysRow.getByRole('button', { name: 'Import Team' })).not.toBeVisible()
+
+      // Card should contain Cancel and Read Team buttons
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Read Team' })).toBeVisible()
+    })
+
+    test('cancel button inside card closes the import panel', async ({ page }) => {
+      const ruiboysRow = page.getByRole('row').filter({ hasText: 'Ruiboys' }).first()
+      await ruiboysRow.getByRole('button', { name: 'Import Team' }).click()
+
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
+      await page.getByRole('button', { name: 'Cancel' }).click()
+
+      // Panel should be closed and Import Team button should return
+      await expect(ruiboysRow.getByRole('button', { name: 'Import Team' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Cancel' })).not.toBeVisible()
+    })
+
+    test('golden path: read a post and reach the review phase', async ({ page }) => {
+      // Open import panel for Ruiboys
+      await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
 
       // Select team format
-      await page.locator('select').nth(2).selectOption('Ruiboys')
+      await page.locator('select').nth(1).selectOption('Ruiboys')
 
       // Paste post
       await page.locator('textarea').fill(minimalRuiboysPost)
 
-      // Parse button should be enabled
-      const parseBtn = page.getByRole('button', { name: 'Parse' })
-      await expect(parseBtn).toBeEnabled()
-      await parseBtn.click()
+      // Read Team button should be enabled
+      const readBtn = page.getByRole('button', { name: 'Read Team' })
+      await expect(readBtn).toBeEnabled()
+      await readBtn.click()
 
       // Review phase
       await expect(page.getByRole('button', { name: '← Back' })).toBeVisible({ timeout: 15000 })
-      await expect(page.getByText(/players parsed/)).toBeVisible()
+      await expect(page.getByText(/\d+ players/)).toBeVisible()
 
       // Table structure
       await expect(page.getByRole('columnheader', { name: 'Posted' })).toBeVisible()
       await expect(page.getByRole('columnheader', { name: 'Resolved' })).toBeVisible()
       await expect(page.getByRole('columnheader', { name: 'Position' })).toBeVisible()
-      await expect(page.getByRole('columnheader', { name: 'Score' })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: 'Score' }).first()).toBeVisible()
       await expect(page.getByRole('columnheader', { name: 'Confidence' })).toBeVisible()
     })
 
     test('back button returns to input phase', async ({ page }) => {
-      // Select Ruiboys, paste, parse
-      await page.locator('select').first().selectOption({ label: 'Ruiboys' })
-      await page.locator('select').nth(2).selectOption('Ruiboys')
+      // Open import panel for Ruiboys, select format, paste, read
+      await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
+      await page.locator('select').nth(1).selectOption('Ruiboys')
       await page.locator('textarea').fill(minimalRuiboysPost)
-      await page.getByRole('button', { name: 'Parse' }).click()
+      await page.getByRole('button', { name: 'Read Team' }).click()
 
       await expect(page.getByRole('button', { name: '← Back' })).toBeVisible({ timeout: 15000 })
       await page.getByRole('button', { name: '← Back' }).click()
 
       await expect(page.locator('textarea')).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Parse' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Read Team' })).toBeVisible()
     })
   })
 })

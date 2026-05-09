@@ -13,16 +13,16 @@
           <div class="flex items-center gap-3 ml-auto">
             <div class="flex items-center gap-1 rounded-lg border border-border px-1">
               <router-link
-                v-if="prevRound"
-                :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: prevRound.id } }"
+                v-if="prevClubMatchId"
+                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: prevClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Previous round"
               >‹</router-link>
               <span v-else class="w-6 h-6 flex items-center justify-center text-text-faint text-sm opacity-30">‹</span>
               <span class="text-sm text-text-muted tabular-nums">{{ currentRound?.name }}</span>
               <router-link
-                v-if="nextRound"
-                :to="{ name: 'ffl-team-builder', params: { seasonId: props.seasonId, roundId: nextRound.id } }"
+                v-if="nextClubMatchId"
+                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: nextClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Next round"
               >›</router-link>
@@ -30,7 +30,7 @@
             </div>
             <router-link
               v-if="selectedClubSeason"
-              :to="{ name: 'ffl-squad', params: { seasonId: props.seasonId, clubId: selectedClubSeason.club.id } }"
+              :to="{ name: 'ffl-club-season', params: { clubSeasonId: bootstrapClubSeasonId } }"
               class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
             >
               <IconSquad class="w-4 h-4" />
@@ -350,6 +350,16 @@
         </div>
       </template>
       <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
+
+      <div v-if="bootstrapRoundId" class="mt-8">
+        <router-link
+          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: bootstrapRoundId } }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconDataOps class="w-4 h-4" />
+          Data Ops
+        </router-link>
+      </div>
     </template>
   </div>
 </template>
@@ -357,7 +367,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON } from '../api/queries'
+import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH } from '../api/queries'
 import { SET_FFL_TEAM } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -367,9 +377,10 @@ import { derivePlayerStatus, showScore as computeShowScore, aflMatchRoute, build
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconBin from '../components/icons/IconBin.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useFflState } from '../composables/useFflState'
 
-const props = defineProps<{ seasonId: string; roundId: string }>()
+const props = defineProps<{ clubMatchId: string }>()
 
 const positions = [
   { key: 'goals',     label: 'Goals',     short: 'G',  count: 3 },
@@ -404,37 +415,53 @@ interface BenchDualSlot {
   positions: [PositionKey | null, NonStarPositionKey | null]
 }
 
-const { selectedClubId } = useFflState()
+const { selectedClubId, setClub } = useFflState()
 const managing = ref(false)
 
-// Three parallel queries
+const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
+  GET_FFL_CLUB_MATCH,
+  () => ({ id: props.clubMatchId }),
+  { errorPolicy: 'all' },
+)
+
+const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.roundId ?? '')
+const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
+const bootstrapClubSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.clubSeasonId ?? '')
+const bootstrapClubId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.club?.id ?? '')
+
+watch(bootstrapClubId, (id) => {
+  if (id) setClub(id)
+}, { immediate: true })
+
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
   GET_FFL_ROUND,
-  () => ({ id: props.roundId }),
-  { errorPolicy: 'all' },
+  () => ({ id: bootstrapRoundId.value }),
+  () => ({ enabled: !!bootstrapRoundId.value, errorPolicy: 'all' }),
 )
 const { result: seasonResult, loading: seasonLoading } = useQuery(
   GET_FFL_SEASON_CLUBS,
-  () => ({ seasonId: props.seasonId }),
-  { errorPolicy: 'all' },
-)
-const { result: clubSeasonResult } = useQuery(
-  GET_FFL_CLUB_SEASON,
-  () => ({ seasonId: props.seasonId, clubId: selectedClubId.value! }),
-  () => ({ enabled: !!selectedClubId.value, errorPolicy: 'all' }),
+  () => ({ seasonId: bootstrapSeasonId.value }),
+  () => ({ enabled: !!bootstrapSeasonId.value, errorPolicy: 'all' }),
 )
 
 const round = computed(() => roundResult.value?.fflRound ?? null)
 const currentRound = round
 const season = computed(() => seasonResult.value?.fflSeason ?? null)
-const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
 
-const loading = computed(() => roundLoading.value || seasonLoading.value)
+const loading = computed(() => bootstrapLoading.value || roundLoading.value || seasonLoading.value)
 const error = computed(() => roundError.value ?? null)
 
 const selectedClubSeason = computed(() =>
-  season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === selectedClubId.value) ?? null
+  season.value?.ladder.find((cs: { club: { id: string } }) => cs.club.id === bootstrapClubId.value) ?? null
 )
+
+const { result: clubSeasonResult } = useQuery(
+  GET_FFL_CLUB_SEASON,
+  () => ({ id: bootstrapClubSeasonId.value }),
+  () => ({ enabled: !!bootstrapClubSeasonId.value, errorPolicy: 'all' }),
+)
+
+const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
 
 const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))
 
@@ -445,42 +472,56 @@ const breadcrumbs = computed(() => {
   const crumbs: { label: string; to?: object }[] = [
     { label: 'FFL' },
     { label: round.value.season.name, to: { name: 'home' } },
-    { label: round.value.name, to: { name: 'ffl-round', params: { seasonId: props.seasonId, roundId: props.roundId } } },
+    { label: round.value.name, to: { name: 'ffl-round', params: { roundId: bootstrapRoundId.value } } },
   ]
   if (currentMatch.value) {
     const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
     const away = currentMatch.value.awayClubMatch?.club.name ?? '?'
-    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { seasonId: props.seasonId, matchId: currentMatch.value.id } } })
+    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { matchId: currentMatch.value.id } } })
   }
   return crumbs
 })
 
 const prevRound = computed(() => {
   const rounds = allRounds.value
-  const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
+  const idx = rounds.findIndex((r: { id: string }) => r.id === bootstrapRoundId.value)
   return idx > 0 ? rounds[idx - 1] : null
 })
 
 const nextRound = computed(() => {
   const rounds = allRounds.value
-  const idx = rounds.findIndex((r: { id: string }) => r.id === props.roundId)
+  const idx = rounds.findIndex((r: { id: string }) => r.id === bootstrapRoundId.value)
   return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
 })
 
+type RoundMatchEntry = { homeClubMatch?: { id: string; clubSeasonId: string } | null; awayClubMatch?: { id: string; clubSeasonId: string } | null }
+
+function clubMatchIdForRound(roundId: string): string | null {
+  const roundData = round.value?.season.rounds.find((r: { id: string }) => r.id === roundId)
+  if (!roundData) return null
+  const csId = bootstrapClubSeasonId.value
+  const m: RoundMatchEntry | undefined = roundData.matches?.find((m: RoundMatchEntry) =>
+    m.homeClubMatch?.clubSeasonId === csId || m.awayClubMatch?.clubSeasonId === csId
+  )
+  if (!m) return null
+  return m.homeClubMatch?.clubSeasonId === csId ? (m.homeClubMatch?.id ?? null) : (m.awayClubMatch?.id ?? null)
+}
+
+const prevClubMatchId = computed(() => prevRound.value ? clubMatchIdForRound(prevRound.value.id) : null)
+const nextClubMatchId = computed(() => nextRound.value ? clubMatchIdForRound(nextRound.value.id) : null)
+
 const currentMatch = computed(() => {
-  if (!round.value || !selectedClubId.value) return null
-  const clubId = selectedClubId.value
-  return round.value.matches.find((m: { homeClubMatch?: { club: { id: string } } | null; awayClubMatch?: { club: { id: string } } | null }) =>
-    m.homeClubMatch?.club.id === clubId || m.awayClubMatch?.club.id === clubId
+  if (!round.value) return null
+  return round.value.matches.find((m: { homeClubMatch?: { id: string } | null; awayClubMatch?: { id: string } | null }) =>
+    m.homeClubMatch?.id === props.clubMatchId || m.awayClubMatch?.id === props.clubMatchId
   ) ?? null
 })
 
 const clubMatch = computed(() => {
-  if (!currentMatch.value || !selectedClubId.value) return null
-  const clubId = selectedClubId.value
+  if (!currentMatch.value) return null
   const m = currentMatch.value
-  if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch
-  if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch
+  if (m.homeClubMatch?.id === props.clubMatchId) return m.homeClubMatch
+  if (m.awayClubMatch?.id === props.clubMatchId) return m.awayClubMatch
   return null
 })
 
@@ -522,11 +563,11 @@ function playerMatchInfo(player: SquadPlayer) {
 }
 
 function playerStatus(player: SquadPlayer) {
-  return derivePlayerStatus(playerMatchInfo(player)?.statsImportStatus, player.score)
+  return derivePlayerStatus(playerMatchInfo(player)?.dataStatus, player.score)
 }
 
 function playerShowScore(player: SquadPlayer) {
-  return computeShowScore(playerMatchInfo(player)?.statsImportStatus, player.score)
+  return computeShowScore(playerMatchInfo(player)?.dataStatus, player.score)
 }
 
 function playerAflMatchRoute(player: SquadPlayer) {
@@ -775,7 +816,7 @@ function setInterchange(value: string) {
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
-  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: props.roundId } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
   awaitRefetchQueries: true,
 }))
 const submitting = ref(false)

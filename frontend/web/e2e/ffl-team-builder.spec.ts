@@ -8,7 +8,7 @@ async function goToTeamBuilder(page: import('@playwright/test').Page) {
   // Wait for round data to load; use main-scoped selector to avoid matching the global nav link
   await expect(page.getByRole('heading', { name: 'Matches' })).toBeVisible({ timeout: 15000 })
   await page.locator('main').getByTitle('Team Builder').click()
-  await page.waitForURL(/\/ffl\/.*\/team-builder/)
+  await page.waitForURL(/\/ffl\/club-matches\/.*\/edit/)
 }
 
 function positionSection(page: import('@playwright/test').Page, name: string) {
@@ -337,7 +337,7 @@ test.describe('FFL Team Builder', () => {
 
     test('Squad link in header navigates to squad page', async ({ page }) => {
       await page.locator('main').getByRole('link', { name: 'Squad' }).click()
-      await expect(page).toHaveURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+      await expect(page).toHaveURL(/\/ffl\/club-seasons\//)
     })
   })
 
@@ -360,7 +360,7 @@ test.describe('FFL Team Builder', () => {
       // Step 1: Trade Henry Smith out via the Squad page.
       await setupFflSession(page)
       await page.getByRole('link', { name: 'Squad' }).click()
-      await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+      await page.waitForURL(/\/ffl\/club-seasons\//)
       await page.waitForLoadState('networkidle')
 
       await page.getByRole('button', { name: 'Manage' }).click()
@@ -374,8 +374,10 @@ test.describe('FFL Team Builder', () => {
       // in the seed, so Henry isn't in any slot — `tradedPlayers` will surface
       // him. (Round 1/2 still have him assigned from seed data, where the
       // Traded section is intentionally suppressed.) IDs are stable thanks to
-      // the RESTART IDENTITY reset in resetDb: season=1, rounds=1..3.
-      await page.goto('/ffl/seasons/1/rounds/3/team-builder')
+      // the RESTART IDENTITY reset in resetDb: The Howling Cows club_match for
+      // Round 3 always has id=6 (insert order: R1-Ruiboys=1, R1-Cows=2,
+      // R2-Ruiboys=3, R2-Cows=4, R3-Ruiboys=5, R3-Cows=6).
+      await page.goto('/ffl/club-matches/6/edit')
       await page.waitForLoadState('networkidle')
       await page.getByRole('button', { name: 'Manage' }).click()
 

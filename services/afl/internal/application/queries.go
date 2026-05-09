@@ -107,6 +107,33 @@ func (q *Queries) SearchPlayers(ctx context.Context, query string) ([]domain.Pla
 	return q.players.Search(ctx, query)
 }
 
+// PlayerWithLatestSeason pairs a player with the ID of their most recent player_season.
+type PlayerWithLatestSeason struct {
+	Player          domain.Player
+	LatestSeasonID  int
+	HasLatestSeason bool
+}
+
+func (q *Queries) SearchPlayersWithLatestSeason(ctx context.Context, query string) ([]PlayerWithLatestSeason, error) {
+	players, err := q.players.Search(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PlayerWithLatestSeason, len(players))
+	for i, p := range players {
+		ps, found, err := q.playerSeasons.FindLatestByPlayerID(ctx, p.ID)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = PlayerWithLatestSeason{
+			Player:          p,
+			LatestSeasonID:  ps.ID,
+			HasLatestSeason: found,
+		}
+	}
+	return out, nil
+}
+
 func (q *Queries) GetClubsByIDs(ctx context.Context, ids []int) (map[int]domain.Club, error) {
 	return q.clubs.FindByIDs(ctx, ids)
 }

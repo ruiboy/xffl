@@ -14,6 +14,7 @@ type PlayerWithClub struct {
 }
 
 type PlayerRepository interface {
+	Create(ctx context.Context, name string) (Player, error)
 	FindByID(ctx context.Context, id int) (Player, error)
 	FindByIDs(ctx context.Context, ids []int) ([]Player, error)
 	FindByIDsWithClub(ctx context.Context, ids []int) ([]PlayerWithClub, error)

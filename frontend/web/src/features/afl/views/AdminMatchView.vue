@@ -40,7 +40,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
-const props = defineProps<{ seasonId: string; matchId: string }>()
+const props = defineProps<{ matchId: string }>()
 
 const { result, loading, error } = useQuery(GET_AFL_MATCH, () => ({ matchId: props.matchId }))
 
@@ -52,7 +52,7 @@ const breadcrumbs = computed(() => {
   return [
     { label: 'AFL' },
     { label: round.season.name, to: { name: 'afl-home' } },
-    { label: round.name, to: { name: 'afl-round', params: { seasonId: props.seasonId, roundId: round.id } } },
+    { label: round.name, to: { name: 'afl-round', params: { roundId: round.id } } },
   ]
 })
 

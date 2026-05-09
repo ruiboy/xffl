@@ -202,11 +202,11 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 
 **Goal:** Adopt Apollo Federation so the frontend can traverse cross-service entity relationships in a single query. Replace the path-based gateway with Apollo Router. Establish `AFLPlayerSeason` as a first-class graph type.
 
-- [ ] Apollo Router — replace `services/gateway` with Apollo Router in Docker Compose; configure supergraph from both subgraphs
-- [ ] AFL subgraph — add `AFLPlayerSeason` type + entity resolver; add `@key` to `AFLPlayerMatch`; mount federation-compatible handler
-- [ ] FFL subgraph — add `aflPlayerSeason` field on `FFLPlayerSeason`; add `aflPlayerMatch` field on `FFLPlayerMatch`; reference resolvers; mount federation-compatible handler
-- [ ] Frontend — single Apollo client endpoint; remove operation-name routing link
-- [ ] Tests + e2e verification
+- [x] Apollo Router — replace `services/gateway` with Apollo Router in Docker Compose; configure supergraph from both subgraphs
+- [x] AFL subgraph — add `AFLPlayerSeason` type + entity resolver; add `@key` to `AFLPlayerMatch`; mount federation-compatible handler
+- [x] FFL subgraph — add `aflPlayerSeason` field on `FFLPlayerSeason`; add `aflPlayerMatch` field on `FFLPlayerMatch`; reference resolvers; mount federation-compatible handler
+- [x] Frontend — single Apollo client endpoint; remove operation-name routing link
+- [x] Tests + e2e verification
 
 ## Phase 20: Data Management — Import Infrastructure, Part II
 

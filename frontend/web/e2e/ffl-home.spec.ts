@@ -22,7 +22,7 @@ test.describe('FFL Home', () => {
 
   test('club name in ladder links to squad page', async ({ page }) => {
     await page.getByRole('link', { name: 'Ruiboys' }).first().click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/clubs\/.*\/squad/)
+    await page.waitForURL(/\/ffl\/club-seasons\//)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Ruiboys')
   })
 
@@ -42,7 +42,7 @@ test.describe('FFL Home', () => {
 
   test('round circle navigates to round page', async ({ page }) => {
     await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-    await page.waitForURL(/\/ffl\/seasons\/.*\/rounds\//)
+    await page.waitForURL(/\/ffl\/rounds\//)
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Round 1')
   })
@@ -57,15 +57,9 @@ test.describe('FFL Home', () => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
 
-  test('global nav shows Team Builder and Squad links', async ({ page }) => {
+  test('global nav shows Squad link', async ({ page }) => {
     const topNav = page.getByRole('navigation').first()
-    await expect(topNav.getByRole('link', { name: 'Team Builder' })).toBeVisible()
     await expect(topNav.getByRole('link', { name: 'Squad' })).toBeVisible()
-  })
-
-  test('global Team Builder link navigates to team builder for live round', async ({ page }) => {
-    await page.getByRole('navigation').first().getByRole('link', { name: 'Team Builder' }).click()
-    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
   })
 
   test('round 3 has the open live-round ring indicator', async ({ page }) => {

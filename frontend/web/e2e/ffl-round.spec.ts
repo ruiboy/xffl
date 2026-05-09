@@ -48,7 +48,7 @@ test.describe('FFL Round', () => {
 
   test('Team Builder button navigates to team builder', async ({ page }) => {
     await page.locator('main').getByTitle('Team Builder').click()
-    await expect(page).toHaveURL(/\/ffl\/.*\/team-builder/)
+    await expect(page).toHaveURL(/\/ffl\/club-matches\/.*\/edit/)
   })
 
   test('rounds display in numeric order', async ({ page }) => {

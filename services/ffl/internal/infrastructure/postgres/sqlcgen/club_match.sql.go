@@ -10,7 +10,7 @@ import (
 )
 
 const findClubMatchByID = `-- name: FindClubMatchByID :one
-SELECT id, match_id, club_season_id, drv_score
+SELECT id, match_id, club_season_id, data_status, drv_score
 FROM ffl.club_match
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -19,6 +19,7 @@ type FindClubMatchByIDRow struct {
 	ID           int32
 	MatchID      int32
 	ClubSeasonID int32
+	DataStatus   string
 	DrvScore     *int32
 }
 
@@ -29,13 +30,14 @@ func (q *Queries) FindClubMatchByID(ctx context.Context, id int32) (FindClubMatc
 		&i.ID,
 		&i.MatchID,
 		&i.ClubSeasonID,
+		&i.DataStatus,
 		&i.DrvScore,
 	)
 	return i, err
 }
 
 const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
-SELECT id, match_id, club_season_id, drv_score
+SELECT id, match_id, club_season_id, data_status, drv_score
 FROM ffl.club_match
 WHERE match_id = $1 AND deleted_at IS NULL
 `
@@ -44,6 +46,7 @@ type FindClubMatchesByMatchIDRow struct {
 	ID           int32
 	MatchID      int32
 	ClubSeasonID int32
+	DataStatus   string
 	DrvScore     *int32
 }
 
@@ -60,6 +63,7 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 			&i.ID,
 			&i.MatchID,
 			&i.ClubSeasonID,
+			&i.DataStatus,
 			&i.DrvScore,
 		); err != nil {
 			return nil, err
@@ -70,6 +74,23 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateClubMatchDataStatus = `-- name: UpdateClubMatchDataStatus :exec
+UPDATE ffl.club_match
+SET data_status = $2,
+    updated_at  = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchDataStatusParams struct {
+	ID         int32
+	DataStatus string
+}
+
+func (q *Queries) UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchDataStatus, arg.ID, arg.DataStatus)
+	return err
 }
 
 const updateClubMatchScore = `-- name: UpdateClubMatchScore :exec

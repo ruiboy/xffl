@@ -5,8 +5,7 @@ SELECT id, round_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
        COALESCE(drv_result, '') AS drv_result,
-       stats_import_status,
-       stats_imported_at
+       data_status
 FROM afl.match
 WHERE round_id = $1 AND deleted_at IS NULL;
 
@@ -17,8 +16,7 @@ SELECT id, round_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
        COALESCE(drv_result, '') AS drv_result,
-       stats_import_status,
-       stats_imported_at
+       data_status
 FROM afl.match
 WHERE id = $1 AND deleted_at IS NULL;
 
@@ -29,14 +27,12 @@ SELECT id, round_id,
        COALESCE(venue, '') AS venue,
        COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
        COALESCE(drv_result, '') AS drv_result,
-       stats_import_status,
-       stats_imported_at
+       data_status
 FROM afl.match
 WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
 
--- name: UpdateMatchImportStatus :exec
+-- name: UpdateMatchDataStatus :exec
 UPDATE afl.match
-SET stats_import_status = $2,
-    stats_imported_at   = $3,
-    updated_at          = CURRENT_TIMESTAMP
+SET data_status = $2,
+    updated_at  = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;

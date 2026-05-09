@@ -28,7 +28,14 @@
       <template v-else>
         <!-- Round selector -->
         <div class="mb-5 max-w-xs">
-          <label class="block text-xs font-medium text-text-muted mb-1">Round</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-text-muted">Round</label>
+            <router-link
+              v-if="selectedAflRoundId"
+              :to="{ name: 'afl-round', params: { roundId: selectedAflRoundId } }"
+              class="text-xs text-text-faint hover:text-active transition-colors"
+            >View round →</router-link>
+          </div>
           <select
             v-model="selectedAflRoundId"
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
@@ -48,7 +55,6 @@
                 <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Status</th>
                 <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Score</th>
                 <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Players</th>
-                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Imported</th>
                 <th class="pb-2 text-right text-xs font-medium text-text-faint"></th>
               </tr>
             </thead>
@@ -57,13 +63,15 @@
                 <tr class="border-b border-border" :class="{ 'border-b-0': scrapeResult[match.id] || scrapeError[match.id] }">
                   <td class="py-3 pr-4 text-sm font-semibold whitespace-nowrap">
                     <router-link
-                      v-if="aflSeasonId"
-                      :to="{ name: 'afl-match', params: { seasonId: aflSeasonId, matchId: match.id } }"
-                      class="text-text hover:text-active transition-colors"
+                      v-if="match.id"
+                      :to="{ name: 'afl-match', params: { matchId: match.id } }"
+                      target="_blank" rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-text hover:text-active transition-colors"
                     >
                       {{ abbrevClub(match.homeClubMatch?.club.name) }}
                       <span class="font-normal text-text-faint text-xs mx-1.5">vs</span>
                       {{ abbrevClub(match.awayClubMatch?.club.name) }}
+                      <svg class="w-3 h-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </router-link>
                     <template v-else>
                       {{ abbrevClub(match.homeClubMatch?.club.name) }}
@@ -74,11 +82,11 @@
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="statusBadge(match.statsImportStatus)"
-                    >{{ statusLabel(match.statsImportStatus) }}</span>
+                      :class="statusBadge(match.dataStatus)"
+                    >{{ statusLabel(match.dataStatus) }}</span>
                   </td>
                   <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap tabular-nums">
-                    <template v-if="match.homeClubMatch?.score != null && match.awayClubMatch?.score != null && match.statsImportStatus !== 'no_data'">
+                    <template v-if="match.homeClubMatch?.score != null && match.awayClubMatch?.score != null && match.dataStatus !== 'no_data'">
                       {{ match.homeClubMatch.score }}
                       <span class="text-text-faint mx-1">vs</span>
                       {{ match.awayClubMatch.score }}
@@ -86,22 +94,19 @@
                     <template v-else>—</template>
                   </td>
                   <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap">
-                    <template v-if="match.statsImportStatus === 'partial' || match.statsImportStatus === 'complete'">
+                    <template v-if="match.dataStatus === 'partial' || match.dataStatus === 'final'">
                       {{ match.homeClubMatch?.playerMatches?.length ?? 0 }} - {{ match.awayClubMatch?.playerMatches?.length ?? 0 }}
                     </template>
                     <template v-else>—</template>
                   </td>
-                  <td class="py-3 pr-4 text-xs text-text-faint whitespace-nowrap">
-                    {{ match.statsImportedAt ? formatDate(match.statsImportedAt) : '—' }}
-                  </td>
                   <td class="py-3 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-2">
                       <button
-                        v-if="match.statsImportStatus !== 'no_data'"
-                        @click="toggleComplete(match)"
-                        :disabled="togglingComplete[match.id]"
+                        v-if="match.dataStatus !== 'no_data'"
+                        @click="toggleFinal(match)"
+                        :disabled="togglingFinal[match.id]"
                         class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
-                      >{{ match.statsImportStatus === 'complete' ? 'Mark Partial' : 'Mark Complete' }}</button>
+                      >{{ match.dataStatus === 'final' ? 'Mark Partial' : 'Mark Final' }}</button>
                       <button
                         @click="scrape(match)"
                         :disabled="scraping[match.id]"
@@ -110,16 +115,56 @@
                     </div>
                   </td>
                 </tr>
-                <!-- Feedback sub-row -->
+                <!-- Feedback / unmatched review sub-row -->
                 <tr v-if="scrapeResult[match.id] || scrapeError[match.id]" class="border-b border-border">
-                  <td colspan="6" class="pb-2.5 pt-0 text-xs">
-                    <span v-if="scrapeError[match.id]" class="text-red-400">{{ scrapeError[match.id] }}</span>
+                  <td colspan="5" class="pb-3 pt-0">
+                    <span v-if="scrapeError[match.id]" class="text-xs text-red-400">{{ scrapeError[match.id] }}</span>
                     <template v-else-if="scrapeResult[match.id]">
-                      <span class="text-green-500 font-medium">Imported</span>
-                      <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-2">
-                        · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched:
-                        {{ scrapeResult[match.id].unmatchedPlayers.join(', ') }}
-                      </span>
+                      <div class="text-xs mb-1">
+                        <span class="text-green-500 font-medium">Imported</span>
+                        <span class="text-text-faint ml-1">
+                          · {{ scrapeResult[match.id].homePlayerCount + scrapeResult[match.id].awayPlayerCount }} players
+                        </span>
+                        <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-1">
+                          · {{ scrapeResult[match.id].unmatchedPlayers.length }} unlinked — review below
+                        </span>
+                      </div>
+                      <!-- Unmatched players -->
+                      <div v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="mt-2 border border-border rounded-lg overflow-hidden">
+                        <table class="w-full">
+                          <thead>
+                            <tr class="border-b border-border bg-surface-raised">
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Unlinked player</th>
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Stats</th>
+                              <th class="px-3 py-2 text-right text-xs font-medium text-text-faint"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr
+                              v-for="(up, ui) in scrapeResult[match.id].unmatchedPlayers"
+                              :key="ui"
+                              class="border-b border-border last:border-0"
+                              :class="resolvedUnmatched[match.id]?.[ui] ? 'bg-green-500/5' : ''"
+                            >
+                              <td class="px-3 py-2 whitespace-nowrap">
+                                <span class="text-sm font-medium">{{ up.parsedName }}</span>
+                                <span class="text-xs text-text-faint ml-2">{{ clubMatchClubMap[up.clubMatchId] }}</span>
+                              </td>
+                              <td class="px-3 py-2 text-xs text-text-faint whitespace-nowrap tabular-nums">
+                                {{ up.goals }}g {{ up.kicks }}k {{ up.handballs }}hb {{ up.marks }}m {{ up.tackles }}t {{ up.hitouts }}ho
+                              </td>
+                              <td class="px-3 py-2 text-right">
+                                <span v-if="resolvedUnmatched[match.id]?.[ui]" class="text-green-500 text-xs font-medium">✓ Linked</span>
+                                <button
+                                  v-else
+                                  @click="openResolveModal(match, ui, up)"
+                                  class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                                >Link Player</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </template>
                   </td>
                 </tr>
@@ -130,193 +175,262 @@
       </template>
     </div>
 
+    <!-- Player search modal -->
+    <PlayerSearchModal
+      v-if="resolveModalPlayer"
+      :show="!!resolveModalPlayer"
+      :player="resolveModalPlayer"
+      @close="resolveModalPlayer = null"
+      @resolved="onPlayerResolved"
+    />
+
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Tab: Team Submission                        -->
+    <!-- Tab: FFL Teams                              -->
     <!-- ═══════════════════════════════════════════ -->
     <div v-if="activeTab === 'team-submission'">
       <div v-if="loadingSeasonData" class="text-text-faint">Loading...</div>
       <div v-else-if="seasonError" class="text-red-400">{{ seasonError.message }}</div>
       <template v-else-if="season">
 
-        <!-- Step 1: Input -->
-        <template v-if="phase === 'input'">
-          <div class="space-y-5 max-w-xl">
-
-            <!-- Club + Round selectors -->
-            <div class="flex gap-4">
-              <div class="flex-1">
-                <label class="block text-xs font-medium text-text-muted mb-1">Club</label>
-                <select
-                  v-model="selectedClubSeasonId"
-                  class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-                >
-                  <option value="">Select club…</option>
-                  <option v-for="cs in season.ladder" :key="cs.id" :value="cs.id">
-                    {{ cs.club.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="flex-1">
-                <label class="block text-xs font-medium text-text-muted mb-1">Round</label>
-                <select
-                  v-model="selectedRoundId"
-                  class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-                >
-                  <option value="">Select round…</option>
-                  <option v-for="r in season.rounds" :key="r.id" :value="r.id">
-                    {{ r.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Team format -->
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Team format</label>
-              <select
-                v-model="teamName"
-                class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-              >
-                <option value="">Auto-detect</option>
-                <option value="Ruiboys">Ruiboys</option>
-                <option value="Slashers">Slashers</option>
-                <option value="Cheetahs">Cheetahs</option>
-                <option value="THC">THC</option>
-              </select>
-            </div>
-
-            <!-- Paste area -->
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Team (eg Forum post)</label>
-              <textarea
-                v-model="post"
-                rows="16"
-                placeholder="Paste team here…"
-                class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
-              />
-            </div>
-
-            <!-- Error -->
-            <p v-if="parseError" class="text-sm text-red-400">{{ parseError }}</p>
-
-            <!-- Warning: no club_match found -->
-            <p v-if="selectedClubSeasonId && selectedRoundId && !clubMatchId" class="text-sm text-yellow-500">
-              No match found for this club in the selected round.
-            </p>
-
-            <button
-              @click="onParse"
-              :disabled="!canParse || parsing"
-              class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {{ parsing ? 'Parsing…' : 'Parse' }}
-            </button>
+        <!-- Round selector -->
+        <div class="mb-5 max-w-xs">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-text-muted">Round</label>
+            <router-link
+              v-if="liveSeasonId && selectedRoundId"
+              :to="{ name: 'ffl-round', params: { roundId: selectedRoundId } }"
+              class="text-xs text-text-faint hover:text-active transition-colors"
+            >View round →</router-link>
           </div>
-        </template>
+          <select
+            v-model="selectedRoundId"
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+          >
+            <option v-for="r in season.rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+        </div>
 
-        <!-- Step 2: Review -->
-        <template v-if="phase === 'review'">
-          <div class="mb-4 flex items-center gap-4">
-            <button
-              @click="goBack"
-              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-            >
-              ← Back
-            </button>
-            <span class="text-sm text-text-muted">
-              {{ resolvedPlayers.length }} players parsed ·
-              <span :class="needsReview.length > 0 ? 'text-yellow-500' : 'text-green-500'">
-                {{ needsReview.length }} need review
-              </span>
-            </span>
-            <button
-              @click="onConfirm"
-              :disabled="confirming || unresolvedCount > 0 || imported"
-              class="ml-auto rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {{ confirming ? 'Saving…' : 'Confirm & Import' }}
-            </button>
-          </div>
-
-          <p v-if="unresolvedCount > 0" class="mb-3 text-sm text-red-400">
-            {{ unresolvedCount }} player(s) could not be resolved and will be skipped.
-            Confirm is disabled until all are resolved or remove them from the post.
-          </p>
-          <p v-if="compositionWarnings.length > 0" class="mb-3 text-sm text-yellow-500">
-            Invalid team: {{ compositionWarnings.join(' · ') }}
-          </p>
-          <p v-if="confirmError" class="mb-3 text-sm text-red-400">{{ confirmError }}</p>
-          <p v-if="confirmSuccess" class="mb-3 text-sm text-green-500">{{ confirmSuccess }}</p>
-
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead>
-                <tr class="border-b border-border">
-                  <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Posted</th>
-                  <th class="pb-2"></th>
-                  <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Resolved</th>
-                  <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Position</th>
-                  <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Score</th>
-                  <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Confidence</th>
-                </tr>
-              </thead>
-              <tbody>
+        <!-- Club list for selected round -->
+        <div v-if="!selectedRound" class="text-text-faint text-sm">Select a round.</div>
+        <div v-else-if="!fflClubRows.length" class="text-text-faint text-sm">No matches in this round.</div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Club</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Status</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Score</th>
+                <th class="pb-2 text-right text-xs font-medium text-text-faint"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="row in fflClubRows" :key="row.clubMatchId">
+                <!-- Club row -->
                 <tr
-                  v-for="(rp, i) in resolvedPlayers"
-                  :key="i"
-                  class="border-b border-border last:border-0"
-                  :class="rowClass(i)"
+                  class="border-b border-border"
+                  :class="{ 'border-b-0': activeImportClubMatchId === row.clubMatchId }"
                 >
-                  <td class="pl-4 pr-2 py-3 font-mono text-sm font-medium text-text whitespace-nowrap">{{ rp.parsedName }}</td>
-                  <td class="pr-3 py-3 text-xs text-text-faint whitespace-nowrap">{{ rp.clubHint }}</td>
-                  <td class="py-3 text-text-faint text-sm select-none px-1">→</td>
-                  <td class="pl-4 pr-2 py-3 text-sm font-semibold text-text whitespace-nowrap">
-                    <span v-if="rp.resolvedName">{{ rp.resolvedName }}</span>
-                    <span v-else class="text-red-400 font-normal">Unresolved</span>
+                  <td class="py-3 pr-4">
+                    <router-link
+                      :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
+                      target="_blank" rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-sm font-semibold text-text hover:text-active transition-colors"
+                    >{{ row.clubName }}<svg class="w-3 h-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></router-link>
                   </td>
-                  <td class="pr-4 py-3 text-xs text-text-muted whitespace-nowrap">{{ rp.resolvedClub ?? '—' }}</td>
-                  <td class="px-4 py-3 text-sm whitespace-nowrap">
-                    <span :class="POSITION_COLORS[rp.position] ?? 'text-text-muted'">{{ displayPosition(rp) }}</span>
-                  </td>
-                  <td class="px-4 py-3 text-right tabular-nums text-sm text-text">
-                    {{ rp.score ?? '—' }}
-                  </td>
-                  <td class="pl-4 pr-4 py-3 text-right">
+                  <td class="py-3 pr-4 whitespace-nowrap">
                     <span
-                      class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      :class="confidenceBadge(rp.confidence)"
-                    >
-                      {{ (rp.confidence * 100).toFixed(0) }}%
-                    </span>
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="fflStatusBadge(row.dataStatus)"
+                    >{{ fflStatusLabel(row.dataStatus) }}</span>
+                  </td>
+                  <td class="py-3 pr-4 text-xs text-text-faint tabular-nums">
+                    {{ row.dataStatus !== 'no_data' ? row.score : '—' }}
+                  </td>
+                  <td class="py-3 text-right">
+                    <span v-if="importedResult[row.clubMatchId]" class="text-sm text-green-500">{{ importedResult[row.clubMatchId] }}</span>
+                    <button
+                      v-else-if="activeImportClubMatchId !== row.clubMatchId"
+                      @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                      class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                    >Import Team</button>
                   </td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        </template>
+
+                <!-- Inline import panel -->
+                <tr v-if="activeImportClubMatchId === row.clubMatchId" class="border-b border-border">
+                  <td colspan="4" class="pb-4 pt-2 px-2">
+                    <div class="rounded-xl border border-border bg-surface-raised shadow-sm p-5">
+                    <div v-if="importPhase === 'input'" class="space-y-4 max-w-xl mx-auto">
+                      <!-- Team format -->
+                      <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Team format</label>
+                        <select
+                          v-model="teamName"
+                          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+                        >
+                          <option value="">Auto-detect</option>
+                          <option value="Ruiboys">Ruiboys</option>
+                          <option value="Slashers">Slashers</option>
+                          <option value="Cheetahs">Cheetahs</option>
+                          <option value="THC">THC</option>
+                        </select>
+                      </div>
+                      <!-- Paste area -->
+                      <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Team (e.g. forum post)</label>
+                        <textarea
+                          v-model="post"
+                          rows="14"
+                          placeholder="Paste team here…"
+                          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
+                        />
+                      </div>
+                      <p v-if="parseError" class="text-sm text-red-400">{{ parseError }}</p>
+                      <div class="flex items-center justify-between">
+                        <button
+                          @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                          class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+                        >Cancel</button>
+                        <button
+                          @click="onParse"
+                          :disabled="!canParse || parsing"
+                          class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >{{ parsing ? 'Reading…' : 'Read Team' }}</button>
+                      </div>
+                    </div>
+
+                    <!-- Review table -->
+                    <div v-else-if="importPhase === 'review'">
+                      <div class="mb-3 flex items-center gap-3">
+                        <button
+                          @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                          class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+                        >Cancel</button>
+                        <button
+                          @click="importPhase = 'input'"
+                          class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+                        >← Back</button>
+                        <span class="text-sm text-text-muted">
+                          {{ resolvedPlayers.length }} players ·
+                          <span :class="needsReview.length > 0 ? 'text-yellow-500' : 'text-green-500'">
+                            {{ needsReview.length }} need review
+                          </span>
+                        </span>
+                        <button
+                          @click="onConfirm"
+                          :disabled="confirming || unresolvedCount > 0 || imported"
+                          class="ml-auto rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >{{ confirming ? 'Saving…' : 'Confirm & Import' }}</button>
+                      </div>
+                      <p v-if="unresolvedCount > 0" class="mb-2 text-sm text-red-400">
+                        {{ unresolvedCount }} player(s) unresolved — confirm disabled.
+                      </p>
+                      <p v-if="compositionWarnings.length > 0" class="mb-2 text-sm text-yellow-500">
+                        Invalid team: {{ compositionWarnings.join(' · ') }}
+                      </p>
+                      <p v-if="confirmError" class="mb-2 text-sm text-red-400">{{ confirmError }}</p>
+
+                      <table class="w-full">
+                        <thead>
+                          <tr class="border-b border-border">
+                            <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Posted</th>
+                            <th class="pb-2"></th>
+                            <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Resolved</th>
+                            <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Position</th>
+                            <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Score</th>
+                            <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Confidence</th>
+                            <th class="pb-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(rp, i) in resolvedPlayers"
+                            :key="i"
+                            class="border-b border-border last:border-0"
+                            :class="rowClass(i)"
+                          >
+                            <td class="pl-4 pr-4 py-3">
+                              <div class="font-mono text-sm font-medium text-text">{{ rp.parsedName }}</div>
+                              <div class="text-xs text-text-faint">{{ rp.clubHint }}</div>
+                            </td>
+                            <td class="py-3 text-text-faint text-sm select-none px-1">→</td>
+                            <td class="pl-4 pr-4 py-3">
+                              <div class="text-sm font-semibold text-text">
+                                <span v-if="rp.resolvedName">{{ rp.resolvedName }}</span>
+                                <span v-else class="text-red-400 font-normal">Unresolved</span>
+                              </div>
+                              <div class="text-xs text-text-muted">{{ rp.resolvedClub ?? '—' }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap">
+                              <span :class="POSITION_COLORS[rp.position] ?? 'text-text-muted'">{{ displayPosition(rp) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums text-sm text-text">
+                              {{ rp.score ?? '—' }}
+                            </td>
+                            <td class="pl-4 pr-4 py-3 text-right">
+                              <span
+                                class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                :class="confidenceBadge(rp.confidence)"
+                              >{{ (rp.confidence * 100).toFixed(0) }}%</span>
+                            </td>
+                            <td class="pr-4 py-3 text-right">
+                              <button
+                                v-if="rp.confidence < 1"
+                                @click="openLinkModal(i)"
+                                class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                              >Fix</button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
 
       </template>
+
+      <FflPlayerLinkModal
+        :show="linkModalRowIndex !== null"
+        :ffl-season-id="season?.id ?? ''"
+        :ffl-club-season-id="activeImportClubSeasonId"
+        :parsed-name="linkModalPlayer?.parsedName ?? ''"
+        :club-hint="linkModalPlayer?.clubHint ?? ''"
+        @close="linkModalRowIndex = null"
+        @linked="onPlayerLinked"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
 import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
+import PlayerSearchModal from '../components/PlayerSearchModal.vue'
+import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
 
 const { liveSeasonId, liveRoundId } = useFflState()
+const route = useRoute()
+
+const initialTab = (route.query.tab as string) || 'team-submission'
+const initialRound = (route.query.round as string) || ''
 
 // ---- Tabs ----
 const tabs = [
   { id: 'team-submission', label: 'FFL Teams' },
   { id: 'afl-stats', label: 'AFL Stats' },
 ]
-const activeTab = ref('afl-stats')
+const activeTab = ref(initialTab)
 
 // ════════════════════════════════════════════
 // AFL Stats Import
@@ -325,7 +439,7 @@ const activeTab = ref('afl-stats')
 const { result: liveRoundResult, loading: loadingLiveRound, error: liveRoundError } = useQuery(GET_AFL_LIVE_ROUND)
 
 const aflRounds = computed(() => liveRoundResult.value?.aflLiveRound?.round?.season?.rounds ?? [])
-const selectedAflRoundId = ref('')
+const selectedAflRoundId = ref(initialTab === 'afl-stats' && initialRound ? initialRound : '')
 
 watch(liveRoundResult, (val) => {
   if (val?.aflLiveRound?.round?.id && !selectedAflRoundId.value) {
@@ -340,13 +454,34 @@ const { result: roundStatsResult, loading: loadingRoundStats, refetch: refetchRo
 )
 
 const aflMatches = computed(() => roundStatsResult.value?.aflRound?.matches ?? [])
-const aflSeasonId = computed(() => roundStatsResult.value?.aflRound?.season?.id ?? '')
 
-// Track per-match scrape state
+type UnmatchedAFLPlayer = {
+  parsedName: string
+  clubMatchId: string
+  kicks: number; handballs: number; marks: number; hitouts: number; tackles: number; goals: number; behinds: number
+}
+
+type ScrapeResult = {
+  homeClubName: string; awayClubName: string
+  homePlayerCount: number; awayPlayerCount: number
+  unmatchedPlayers: UnmatchedAFLPlayer[]
+}
+
 const scraping = ref<Record<string, boolean>>({})
-const scrapeResult = ref<Record<string, { homeClubName: string; awayClubName: string; homePlayerCount: number; awayPlayerCount: number; unmatchedPlayers: string[] }>>({})
+const scrapeResult = ref<Record<string, ScrapeResult>>({})
 const scrapeError = ref<Record<string, string>>({})
-const togglingComplete = ref<Record<string, boolean>>({})
+const togglingFinal = ref<Record<string, boolean>>({})
+
+// keyed by matchId → rowIndex → true when resolved
+const resolvedUnmatched = ref<Record<string, Record<number, boolean>>>({})
+
+// resolve modal state
+type ModalPlayer = UnmatchedAFLPlayer & { clubName: string } & {
+  clubSeasonId: string
+  matchId: string
+  rowIndex: number
+}
+const resolveModalPlayer = ref<ModalPlayer | null>(null)
 
 const { mutate: importStatsMutation } = useMutation(IMPORT_AFL_MATCH_STATS)
 const { mutate: markCompleteMutation } = useMutation(MARK_AFL_MATCH_STATS_COMPLETE)
@@ -355,6 +490,7 @@ async function scrape(match: any) {
   scraping.value[match.id] = true
   scrapeError.value[match.id] = ''
   scrapeResult.value[match.id] = undefined as any
+  resolvedUnmatched.value[match.id] = {}
   try {
     const res = await importStatsMutation({ matchId: match.id })
     const data = res?.data?.importAFLMatchStats
@@ -367,19 +503,58 @@ async function scrape(match: any) {
   }
 }
 
-async function toggleComplete(match: any) {
-  togglingComplete.value[match.id] = true
+async function toggleFinal(match: any) {
+  togglingFinal.value[match.id] = true
   try {
     await markCompleteMutation({
       matchId: match.id,
-      complete: match.statsImportStatus !== 'complete',
+      complete: match.dataStatus !== 'final',
     })
     await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Update failed'
   } finally {
-    togglingComplete.value[match.id] = false
+    togglingFinal.value[match.id] = false
   }
+}
+
+// Build a map from clubMatchId → clubSeasonId using the round query result
+const clubMatchSeasonMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const m of aflMatches.value) {
+    if (m.homeClubMatch) map[m.homeClubMatch.id] = m.homeClubMatch.clubSeasonId
+    if (m.awayClubMatch) map[m.awayClubMatch.id] = m.awayClubMatch.clubSeasonId
+  }
+  return map
+})
+
+const clubMatchClubMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const m of aflMatches.value) {
+    if (m.homeClubMatch) map[m.homeClubMatch.id] = m.homeClubMatch.club.name
+    if (m.awayClubMatch) map[m.awayClubMatch.id] = m.awayClubMatch.club.name
+  }
+  return map
+})
+
+function openResolveModal(match: any, rowIndex: number, up: UnmatchedAFLPlayer) {
+  resolveModalPlayer.value = {
+    ...up,
+    clubSeasonId: clubMatchSeasonMap.value[up.clubMatchId] ?? '',
+    clubName: clubMatchClubMap.value[up.clubMatchId] ?? '',
+    matchId: match.id,
+    rowIndex,
+  }
+}
+
+async function onPlayerResolved() {
+  const modal = resolveModalPlayer.value
+  if (modal) {
+    if (!resolvedUnmatched.value[modal.matchId]) resolvedUnmatched.value[modal.matchId] = {}
+    resolvedUnmatched.value[modal.matchId][modal.rowIndex] = true
+  }
+  resolveModalPlayer.value = null
+  await refetchRoundStats()
 }
 
 const CLUB_ABBREV: Record<string, string> = {
@@ -401,29 +576,34 @@ function abbrevClub(name: string | undefined): string {
 }
 
 function statusLabel(status: string): string {
-  if (status === 'complete') return 'Complete'
+  if (status === 'final') return 'Final'
   if (status === 'partial') return 'Partial'
   return 'No data'
 }
 
 function statusBadge(status: string): string {
-  if (status === 'complete') return 'bg-green-500/15 text-green-500'
+  if (status === 'final') return 'bg-green-500/15 text-green-500'
   if (status === 'partial') return 'bg-yellow-500/15 text-yellow-500'
   return 'bg-surface-raised text-text-faint'
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-AU', {
-    day: 'numeric', month: 'numeric', year: '2-digit',
-    hour: 'numeric', minute: '2-digit',
-  })
+function fflStatusLabel(status: string): string {
+  if (status === 'final') return 'Final'
+  if (status === 'submitted') return 'Submitted'
+  return 'Not submitted'
+}
+
+function fflStatusBadge(status: string): string {
+  if (status === 'final') return 'bg-green-500/15 text-green-500'
+  if (status === 'submitted') return 'bg-yellow-500/15 text-yellow-500'
+  return 'bg-surface-raised text-text-faint'
 }
 
 // ════════════════════════════════════════════
-// Team Submission (unchanged)
+// FFL Team Submission
 // ════════════════════════════════════════════
 
-const { result: seasonResult, loading: loadingSeasonData, error: seasonError } = useQuery(
+const { result: seasonResult, loading: loadingSeasonData, error: seasonError, refetch: refetchSeasonData } = useQuery(
   GET_FFL_DATA_OPS,
   () => ({ seasonId: liveSeasonId.value }),
   () => ({ enabled: !!liveSeasonId.value }),
@@ -431,31 +611,91 @@ const { result: seasonResult, loading: loadingSeasonData, error: seasonError } =
 
 const season = computed(() => seasonResult.value?.fflSeason ?? null)
 
-const selectedClubSeasonId = ref('')
-const selectedRoundId = ref(liveRoundId.value)
-const teamName = ref('')
-const post = ref('')
+const selectedRoundId = ref(initialTab === 'team-submission' && initialRound ? initialRound : liveRoundId.value)
 
-const selectedClubId = computed(() => {
-  const cs = season.value?.ladder.find((l: any) => l.id === selectedClubSeasonId.value)
-  return cs?.club.id ?? ''
-})
+watch(liveRoundId, (val) => {
+  if (val && !selectedRoundId.value) selectedRoundId.value = val
+}, { immediate: true })
 
 const selectedRound = computed(() =>
   season.value?.rounds.find((r: any) => r.id === selectedRoundId.value) ?? null,
 )
 
-const clubMatchId = computed(() => {
-  if (!selectedRound.value || !selectedClubId.value) return ''
+type FflClubRow = {
+  clubMatchId: string
+  clubSeasonId: string
+  clubName: string
+  dataStatus: string
+  score: number
+}
+
+const fflClubRows = computed<FflClubRow[]>(() => {
+  if (!selectedRound.value) return []
+  const rows: FflClubRow[] = []
   for (const match of selectedRound.value.matches) {
-    if (match.homeClubMatch?.club.id === selectedClubId.value) return match.homeClubMatch.id
-    if (match.awayClubMatch?.club.id === selectedClubId.value) return match.awayClubMatch.id
+    if (match.homeClubMatch) {
+      rows.push({
+        clubMatchId: match.homeClubMatch.id,
+        clubSeasonId: match.homeClubMatch.clubSeasonId,
+        clubName: match.homeClubMatch.club.name,
+        dataStatus: match.homeClubMatch.dataStatus ?? 'no_data',
+        score: match.homeClubMatch.score ?? 0,
+      })
+    }
+    if (match.awayClubMatch) {
+      rows.push({
+        clubMatchId: match.awayClubMatch.id,
+        clubSeasonId: match.awayClubMatch.clubSeasonId,
+        clubName: match.awayClubMatch.club.name,
+        dataStatus: match.awayClubMatch.dataStatus ?? 'no_data',
+        score: match.awayClubMatch.score ?? 0,
+      })
+    }
   }
-  return ''
+  return rows
 })
 
+// ---- Import panel (inline, per-club-match) ----
+
+const activeImportClubMatchId = ref('')
+const activeImportClubSeasonId = ref('')
+const importedResult = ref<Record<string, string>>({})
+
+function toggleImportPanel(clubMatchId: string, clubSeasonId: string, clubName: string) {
+  if (activeImportClubMatchId.value === clubMatchId) {
+    activeImportClubMatchId.value = ''
+    activeImportClubSeasonId.value = ''
+    resetImportState()
+  } else {
+    activeImportClubMatchId.value = clubMatchId
+    activeImportClubSeasonId.value = clubSeasonId
+    delete importedResult.value[clubMatchId]
+    resetImportState()
+    // Pre-select team format matching club name
+    teamName.value = ['Ruiboys', 'Slashers', 'Cheetahs', 'THC'].find(n =>
+      clubName.toLowerCase().includes(n.toLowerCase())
+    ) ?? ''
+  }
+}
+
+function resetImportState() {
+  importPhase.value = 'input'
+  post.value = ''
+  parseError.value = ''
+  confirmError.value = ''
+  imported.value = false
+  resolvedPlayers.value = []
+  needsReview.value = []
+}
+
+const importPhase = ref<'input' | 'review'>('input')
+const teamName = ref('')
+const post = ref('')
+const parseError = ref('')
+const parsing = ref(false)
+
 const canParse = computed(() =>
-  !!selectedClubSeasonId.value && !!selectedRoundId.value && !!clubMatchId.value && post.value.trim().length > 0,
+  !!activeImportClubMatchId.value && post.value.trim().length > 0,
 )
 
 type ResolvedPlayer = {
@@ -464,29 +704,30 @@ type ResolvedPlayer = {
   score: number | null; notes: string; playerSeasonId: string | null; confidence: number
 }
 
-const phase = ref<'input' | 'review'>('input')
 const resolvedPlayers = ref<ResolvedPlayer[]>([])
 const needsReview = ref<number[]>([])
-const parseError = ref('')
-const parsing = ref(false)
 
 const { mutate: parseMutation } = useMutation(PARSE_TEAM_SUBMISSION)
 
 async function onParse() {
   parseError.value = ''
   confirmError.value = ''
-  confirmSuccess.value = ''
   imported.value = false
   parsing.value = true
   try {
     const res = await parseMutation({
-      input: { clubSeasonId: selectedClubSeasonId.value, clubMatchId: clubMatchId.value, teamName: teamName.value, post: post.value },
+      input: {
+        clubSeasonId: activeImportClubSeasonId.value,
+        clubMatchId: activeImportClubMatchId.value,
+        teamName: teamName.value,
+        post: post.value,
+      },
     })
     const data = res?.data?.parseFFLTeamSubmission
     if (!data) throw new Error('No result returned')
     resolvedPlayers.value = data.resolvedPlayers
     needsReview.value = data.needsReview
-    phase.value = 'review'
+    importPhase.value = 'review'
   } catch (e: any) {
     parseError.value = e.message ?? 'Parse failed'
   } finally {
@@ -494,16 +735,8 @@ async function onParse() {
   }
 }
 
-function goBack() {
-  phase.value = 'input'
-  confirmError.value = ''
-  confirmSuccess.value = ''
-  imported.value = false
-}
-
 const confirming = ref(false)
 const confirmError = ref('')
-const confirmSuccess = ref('')
 const imported = ref(false)
 
 const { mutate: confirmMutation } = useMutation(CONFIRM_TEAM_SUBMISSION)
@@ -524,7 +757,6 @@ const compositionWarnings = computed(() => {
 
 async function onConfirm() {
   confirmError.value = ''
-  confirmSuccess.value = ''
   confirming.value = true
   try {
     const players = resolvedPlayers.value
@@ -536,15 +768,44 @@ async function onConfirm() {
         interchangePosition: rp.interchangePosition || null,
         score: rp.score,
       }))
-    const res = await confirmMutation({ input: { clubMatchId: clubMatchId.value, players } })
+    const res = await confirmMutation({ input: { clubMatchId: activeImportClubMatchId.value, players } })
     const saved = res?.data?.confirmFFLTeamSubmission ?? []
-    confirmSuccess.value = `Imported ${saved.length} player records.`
+    importedResult.value[activeImportClubMatchId.value] = `Imported ${saved.length} player records.`
     imported.value = true
+    activeImportClubMatchId.value = ''
+    activeImportClubSeasonId.value = ''
+    await refetchSeasonData()
   } catch (e: any) {
     confirmError.value = e.message ?? 'Confirm failed'
   } finally {
     confirming.value = false
   }
+}
+
+// ---- FFL player link modal ----
+
+const linkModalRowIndex = ref<number | null>(null)
+
+const linkModalPlayer = computed(() =>
+  linkModalRowIndex.value !== null ? resolvedPlayers.value[linkModalRowIndex.value] : null,
+)
+
+function openLinkModal(i: number) {
+  linkModalRowIndex.value = i
+}
+
+function onPlayerLinked(data: { playerSeasonId: string; resolvedName: string; resolvedClub: string }) {
+  if (linkModalRowIndex.value === null) return
+  const i = linkModalRowIndex.value
+  resolvedPlayers.value[i] = {
+    ...resolvedPlayers.value[i],
+    playerSeasonId: data.playerSeasonId,
+    resolvedName: data.resolvedName,
+    resolvedClub: data.resolvedClub,
+    confidence: 1,
+  }
+  needsReview.value = needsReview.value.filter(idx => idx !== i)
+  linkModalRowIndex.value = null
 }
 
 function displayPosition(rp: ResolvedPlayer): string {
