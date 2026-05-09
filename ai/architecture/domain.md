@@ -222,7 +222,24 @@ Same structure as AFL (played, won, lost, drawn, for, against, premiership point
 
 ---
 
-## Calculation flow
+## Data Calculation Flow
+
+### Mental Model
+
+Two **inputs** determine when scores and ladders can be computed:
+- **AFL Match** data status — tracks player stats completeness
+- **FFL ClubMatch** data status — tracks team submission and confirmation
+
+Everything else (PlayerMatch scores, ClubMatch scores, Match results, ClubSeason ladder standings) is **derived**. Derived fields always reflect the current best-known calculation; the data status combination tells you whether to treat the value as provisional or final.
+
+Two tiers of calculation:
+- **Provisional** — AFL Match ∈ {partial, final} AND FFL ClubMatch ∈ {submitted, final}
+- **Final** — AFL Match = final AND FFL ClubMatch = final
+
+Only final results update the official ladder (ClubSeason derived fields).
+Provisional ladder is computed on-demand from current derived scores — no dedicated event.
+
+### Event Flow
 
 The following events chain AFL and FFL score and ladder derivation. Both services react to each other's finalization events.
 
