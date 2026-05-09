@@ -1,90 +1,96 @@
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    @click.self="$emit('close')"
-  >
-    <div class="bg-surface rounded-xl border border-border w-full max-w-lg mx-4 p-6">
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h2 class="text-base font-semibold text-text">Resolve player</h2>
-          <p class="text-xs text-text-muted mt-0.5">{{ player.parsedName }}<span v-if="player.clubName" class="ml-2 text-text-faint">· {{ player.clubName }}</span></p>
+  <Teleport to="body">
+    <div
+      v-if="show"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      @click.self="$emit('close')"
+    >
+      <div class="relative z-10 w-full max-w-lg mx-4 rounded-xl border border-border bg-surface-raised p-6 shadow-2xl">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-text">Link Player</h3>
+            <p class="text-xs text-text-muted mt-0.5">{{ player.parsedName }}<span v-if="player.clubName" class="ml-2 text-text-faint">· {{ player.clubName }}</span></p>
+          </div>
+          <button @click="$emit('close')" class="text-text-faint hover:text-text text-lg leading-none">×</button>
         </div>
-        <button @click="$emit('close')" class="text-text-faint hover:text-text text-lg leading-none">×</button>
-      </div>
 
-      <!-- Search mode -->
-      <div v-if="!addingNew" class="space-y-3">
-        <input
-          v-model="searchQuery"
-          @input="onSearchInput"
-          placeholder="Search players…"
-          autofocus
-          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-        />
+        <!-- Search mode -->
+        <div v-if="!addingNew">
+          <input
+            v-model="searchQuery"
+            @input="onSearchInput"
+            placeholder="Search players…"
+            autofocus
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none mb-3"
+          />
 
-        <div class="border border-border rounded-lg overflow-hidden h-48 overflow-y-auto">
-          <div v-if="searching" class="flex items-center justify-center h-full text-xs text-text-faint">Searching…</div>
-          <div v-else-if="searchQuery.length >= 2 && results.length === 0" class="flex items-center justify-center h-full text-xs text-text-faint">No players found.</div>
-          <div v-else-if="!results.length" class="flex items-center justify-center h-full text-xs text-text-faint">Type to search…</div>
-          <div
-            v-for="p in results"
-            :key="p.id"
-            class="flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-surface-raised"
-          >
-            <div class="min-w-0 mr-3">
-              <span class="text-sm text-text font-medium">{{ p.name }}</span>
-              <template v-if="p.latestPlayerSeason">
-                <span class="text-xs text-text-faint ml-2 whitespace-nowrap">
-                  {{ p.latestPlayerSeason.clubSeason.club.name }} · {{ p.latestPlayerSeason.clubSeason.season.name }}
-                </span>
-              </template>
-              <span v-else class="text-xs text-text-faint ml-2">no season on record</span>
+          <div class="h-52 overflow-y-auto -mx-1 px-1 mb-3">
+            <div v-if="searching" class="text-text-faint text-sm py-2">Searching…</div>
+            <div v-else-if="searchQuery.length >= 2 && results.length === 0" class="text-text-faint text-sm py-2">No players found.</div>
+            <div v-else-if="!results.length" class="text-text-faint text-sm py-2">Type to search…</div>
+            <div v-else>
+              <div
+                v-for="p in results"
+                :key="p.id"
+                class="flex items-center justify-between border-b border-border-subtle py-2"
+              >
+                <div class="min-w-0 mr-3">
+                  <div class="text-sm text-text font-medium">{{ p.name }}</div>
+                  <div v-if="p.latestPlayerSeason" class="text-xs text-text-muted">
+                    {{ p.latestPlayerSeason.clubSeason.club.name }} · {{ p.latestPlayerSeason.clubSeason.season.name }}
+                  </div>
+                  <div v-else class="text-xs text-text-faint">no season on record</div>
+                </div>
+                <button
+                  @click="selectPlayer(p)"
+                  :disabled="resolving"
+                  class="shrink-0 rounded border border-active px-2 py-0.5 text-xs font-medium text-active hover:bg-active hover:text-active-text transition-colors disabled:opacity-40"
+                >Link</button>
+              </div>
             </div>
+          </div>
+
+          <p v-if="error" class="mb-3 text-sm text-red-400">{{ error }}</p>
+
+          <div class="flex items-center justify-between border-t border-border pt-3">
             <button
-              @click="selectPlayer(p)"
-              :disabled="resolving"
-              class="shrink-0 rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
-            >Select</button>
+              @click="addingNew = true"
+              class="text-xs text-active hover:underline"
+            >+ Add new player</button>
+            <button
+              @click="$emit('close')"
+              class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+            >Cancel</button>
           </div>
         </div>
 
-        <div class="pt-1 border-t border-border">
-          <button
-            @click="addingNew = true"
-            class="text-xs text-active hover:underline"
-          >+ Add new player</button>
+        <!-- Add new player mode -->
+        <div v-else class="space-y-3">
+          <p class="text-xs text-text-muted">
+            Adding as a new AFL player to the same club as this match.
+          </p>
+          <input
+            v-model="newPlayerName"
+            placeholder="Player name…"
+            autofocus
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none"
+          />
+          <div class="flex gap-2">
+            <button
+              @click="addingNew = false"
+              class="rounded-lg border border-border px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
+            >← Back</button>
+            <button
+              @click="addAndResolve"
+              :disabled="!newPlayerName.trim() || resolving"
+              class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >{{ resolving ? 'Adding…' : 'Add & Link' }}</button>
+          </div>
+          <p v-if="error" class="text-xs text-red-400">{{ error }}</p>
         </div>
-
-        <p v-if="error" class="text-xs text-red-400">{{ error }}</p>
-      </div>
-
-      <!-- Add new player mode -->
-      <div v-else class="space-y-3">
-        <p class="text-xs text-text-muted">
-          Adding as a new AFL player to the same club as this match.
-        </p>
-        <input
-          v-model="newPlayerName"
-          placeholder="Player name…"
-          autofocus
-          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-        />
-        <div class="flex gap-2">
-          <button
-            @click="addingNew = false"
-            class="rounded-lg border border-border px-3 py-2 text-sm text-text hover:bg-surface-hover transition-colors"
-          >← Back</button>
-          <button
-            @click="addAndResolve"
-            :disabled="!newPlayerName.trim() || resolving"
-            class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >{{ resolving ? 'Adding…' : 'Add & Resolve' }}</button>
-        </div>
-        <p v-if="error" class="text-xs text-red-400">{{ error }}</p>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

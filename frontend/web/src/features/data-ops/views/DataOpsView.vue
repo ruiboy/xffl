@@ -124,7 +124,7 @@
                           · {{ scrapeResult[match.id].homePlayerCount + scrapeResult[match.id].awayPlayerCount }} players
                         </span>
                         <span v-if="scrapeResult[match.id].unmatchedPlayers.length > 0" class="text-yellow-500 ml-1">
-                          · {{ scrapeResult[match.id].unmatchedPlayers.length }} unmatched — review below
+                          · {{ scrapeResult[match.id].unmatchedPlayers.length }} unlinked — review below
                         </span>
                       </div>
                       <!-- Unmatched players -->
@@ -132,7 +132,7 @@
                         <table class="w-full">
                           <thead>
                             <tr class="border-b border-border bg-surface-raised">
-                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Unmatched player</th>
+                              <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Unlinked player</th>
                               <th class="px-3 py-2 text-left text-xs font-medium text-text-faint">Stats</th>
                               <th class="px-3 py-2 text-right text-xs font-medium text-text-faint"></th>
                             </tr>
@@ -152,12 +152,12 @@
                                 {{ up.goals }}g {{ up.kicks }}k {{ up.handballs }}hb {{ up.marks }}m {{ up.tackles }}t {{ up.hitouts }}ho
                               </td>
                               <td class="px-3 py-2 text-right">
-                                <span v-if="resolvedUnmatched[match.id]?.[ui]" class="text-green-500 text-xs font-medium">✓ Resolved</span>
+                                <span v-if="resolvedUnmatched[match.id]?.[ui]" class="text-green-500 text-xs font-medium">✓ Linked</span>
                                 <button
                                   v-else
                                   @click="openResolveModal(match, ui, up)"
                                   class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
-                                >Resolve</button>
+                                >Link Player</button>
                               </td>
                             </tr>
                           </tbody>

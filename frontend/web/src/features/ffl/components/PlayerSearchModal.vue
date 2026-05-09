@@ -23,7 +23,7 @@
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none mb-3"
           />
 
-          <div class="min-h-[8rem] max-h-64 overflow-y-auto -mx-1 px-1 mb-3">
+          <div class="h-52 overflow-y-auto -mx-1 px-1 mb-3">
             <div v-if="searching" class="text-text-faint text-sm py-2">Searching…</div>
             <div v-else-if="searchQuery.length >= 2 && results.length === 0" class="text-text-faint text-sm py-2">No players found.</div>
             <div v-else>
