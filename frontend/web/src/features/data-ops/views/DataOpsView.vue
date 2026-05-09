@@ -65,11 +65,13 @@
                     <router-link
                       v-if="match.id"
                       :to="{ name: 'afl-match', params: { matchId: match.id } }"
-                      class="text-text hover:text-active transition-colors"
+                      target="_blank" rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-text hover:text-active transition-colors"
                     >
                       {{ abbrevClub(match.homeClubMatch?.club.name) }}
                       <span class="font-normal text-text-faint text-xs mx-1.5">vs</span>
                       {{ abbrevClub(match.awayClubMatch?.club.name) }}
+                      <svg class="w-3 h-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </router-link>
                     <template v-else>
                       {{ abbrevClub(match.homeClubMatch?.club.name) }}
@@ -228,7 +230,13 @@
                   class="border-b border-border"
                   :class="{ 'border-b-0': activeImportClubMatchId === row.clubMatchId }"
                 >
-                  <td class="py-3 pr-4 text-sm font-semibold">{{ row.clubName }}</td>
+                  <td class="py-3 pr-4">
+                    <router-link
+                      :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
+                      target="_blank" rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-sm font-semibold text-text hover:text-active transition-colors"
+                    >{{ row.clubName }}<svg class="w-3 h-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></router-link>
+                  </td>
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
@@ -239,23 +247,20 @@
                     {{ row.dataStatus !== 'no_data' ? row.score : '—' }}
                   </td>
                   <td class="py-3 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <router-link
-                        :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
-                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
-                      >Team Builder</router-link>
-                      <button
-                        @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
-                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
-                      >{{ activeImportClubMatchId === row.clubMatchId ? 'Cancel' : 'Import Team' }}</button>
-                    </div>
+                    <span v-if="importedResult[row.clubMatchId]" class="text-sm text-green-500">{{ importedResult[row.clubMatchId] }}</span>
+                    <button
+                      v-else-if="activeImportClubMatchId !== row.clubMatchId"
+                      @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                      class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                    >Import Team</button>
                   </td>
                 </tr>
 
                 <!-- Inline import panel -->
                 <tr v-if="activeImportClubMatchId === row.clubMatchId" class="border-b border-border">
-                  <td colspan="4" class="pb-4 pt-1">
-                    <div v-if="importPhase === 'input'" class="space-y-4 max-w-xl pl-1">
+                  <td colspan="4" class="pb-4 pt-2 px-2">
+                    <div class="rounded-xl border border-border bg-surface-raised shadow-sm p-5">
+                    <div v-if="importPhase === 'input'" class="space-y-4 max-w-xl mx-auto">
                       <!-- Team format -->
                       <div>
                         <label class="block text-xs font-medium text-text-muted mb-1">Team format</label>
@@ -281,16 +286,26 @@
                         />
                       </div>
                       <p v-if="parseError" class="text-sm text-red-400">{{ parseError }}</p>
-                      <button
-                        @click="onParse"
-                        :disabled="!canParse || parsing"
-                        class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >{{ parsing ? 'Parsing…' : 'Parse' }}</button>
+                      <div class="flex items-center justify-between">
+                        <button
+                          @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                          class="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-hover transition-colors"
+                        >Cancel</button>
+                        <button
+                          @click="onParse"
+                          :disabled="!canParse || parsing"
+                          class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >{{ parsing ? 'Reading…' : 'Read Team' }}</button>
+                      </div>
                     </div>
 
                     <!-- Review table -->
-                    <div v-else-if="importPhase === 'review'" class="pl-1">
-                      <div class="mb-3 flex items-center gap-4">
+                    <div v-else-if="importPhase === 'review'">
+                      <div class="mb-3 flex items-center gap-3">
+                        <button
+                          @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
+                          class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+                        >Cancel</button>
                         <button
                           @click="importPhase = 'input'"
                           class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -314,17 +329,17 @@
                         Invalid team: {{ compositionWarnings.join(' · ') }}
                       </p>
                       <p v-if="confirmError" class="mb-2 text-sm text-red-400">{{ confirmError }}</p>
-                      <p v-if="confirmSuccess" class="mb-2 text-sm text-green-500">{{ confirmSuccess }}</p>
 
                       <table class="w-full">
                         <thead>
                           <tr class="border-b border-border">
-                            <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Posted</th>
+                            <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Posted</th>
                             <th class="pb-2"></th>
-                            <th colspan="2" class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Resolved</th>
+                            <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Resolved</th>
                             <th class="px-4 pb-2 text-left text-xs font-medium text-text-faint">Position</th>
                             <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Score</th>
                             <th class="px-4 pb-2 text-right text-xs font-medium text-text-faint">Confidence</th>
+                            <th class="pb-2"></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -334,14 +349,18 @@
                             class="border-b border-border last:border-0"
                             :class="rowClass(i)"
                           >
-                            <td class="pl-4 pr-2 py-3 font-mono text-sm font-medium text-text whitespace-nowrap">{{ rp.parsedName }}</td>
-                            <td class="pr-3 py-3 text-xs text-text-faint whitespace-nowrap">{{ rp.clubHint }}</td>
-                            <td class="py-3 text-text-faint text-sm select-none px-1">→</td>
-                            <td class="pl-4 pr-2 py-3 text-sm font-semibold text-text whitespace-nowrap">
-                              <span v-if="rp.resolvedName">{{ rp.resolvedName }}</span>
-                              <span v-else class="text-red-400 font-normal">Unresolved</span>
+                            <td class="pl-4 pr-4 py-3">
+                              <div class="font-mono text-sm font-medium text-text">{{ rp.parsedName }}</div>
+                              <div class="text-xs text-text-faint">{{ rp.clubHint }}</div>
                             </td>
-                            <td class="pr-4 py-3 text-xs text-text-muted whitespace-nowrap">{{ rp.resolvedClub ?? '—' }}</td>
+                            <td class="py-3 text-text-faint text-sm select-none px-1">→</td>
+                            <td class="pl-4 pr-4 py-3">
+                              <div class="text-sm font-semibold text-text">
+                                <span v-if="rp.resolvedName">{{ rp.resolvedName }}</span>
+                                <span v-else class="text-red-400 font-normal">Unresolved</span>
+                              </div>
+                              <div class="text-xs text-text-muted">{{ rp.resolvedClub ?? '—' }}</div>
+                            </td>
                             <td class="px-4 py-3 text-sm whitespace-nowrap">
                               <span :class="POSITION_COLORS[rp.position] ?? 'text-text-muted'">{{ displayPosition(rp) }}</span>
                             </td>
@@ -354,9 +373,17 @@
                                 :class="confidenceBadge(rp.confidence)"
                               >{{ (rp.confidence * 100).toFixed(0) }}%</span>
                             </td>
+                            <td class="pr-4 py-3 text-right">
+                              <button
+                                v-if="rp.confidence < 1"
+                                @click="openLinkModal(i)"
+                                class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                              >Fix</button>
+                            </td>
                           </tr>
                         </tbody>
                       </table>
+                    </div>
                     </div>
                   </td>
                 </tr>
@@ -366,6 +393,16 @@
         </div>
 
       </template>
+
+      <FflPlayerLinkModal
+        :show="linkModalRowIndex !== null"
+        :ffl-season-id="season?.id ?? ''"
+        :ffl-club-season-id="activeImportClubSeasonId"
+        :parsed-name="linkModalPlayer?.parsedName ?? ''"
+        :club-hint="linkModalPlayer?.clubHint ?? ''"
+        @close="linkModalRowIndex = null"
+        @linked="onPlayerLinked"
+      />
     </div>
   </div>
 </template>
@@ -380,6 +417,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
+import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
 
 const { liveSeasonId, liveRoundId } = useFflState()
 const route = useRoute()
@@ -598,7 +636,7 @@ const fflClubRows = computed<FflClubRow[]>(() => {
     if (match.homeClubMatch) {
       rows.push({
         clubMatchId: match.homeClubMatch.id,
-        clubSeasonId: match.homeClubMatch.club.id,
+        clubSeasonId: match.homeClubMatch.clubSeasonId,
         clubName: match.homeClubMatch.club.name,
         dataStatus: match.homeClubMatch.dataStatus ?? 'no_data',
         score: match.homeClubMatch.score ?? 0,
@@ -607,7 +645,7 @@ const fflClubRows = computed<FflClubRow[]>(() => {
     if (match.awayClubMatch) {
       rows.push({
         clubMatchId: match.awayClubMatch.id,
-        clubSeasonId: match.awayClubMatch.club.id,
+        clubSeasonId: match.awayClubMatch.clubSeasonId,
         clubName: match.awayClubMatch.club.name,
         dataStatus: match.awayClubMatch.dataStatus ?? 'no_data',
         score: match.awayClubMatch.score ?? 0,
@@ -621,6 +659,7 @@ const fflClubRows = computed<FflClubRow[]>(() => {
 
 const activeImportClubMatchId = ref('')
 const activeImportClubSeasonId = ref('')
+const importedResult = ref<Record<string, string>>({})
 
 function toggleImportPanel(clubMatchId: string, clubSeasonId: string, clubName: string) {
   if (activeImportClubMatchId.value === clubMatchId) {
@@ -630,6 +669,7 @@ function toggleImportPanel(clubMatchId: string, clubSeasonId: string, clubName: 
   } else {
     activeImportClubMatchId.value = clubMatchId
     activeImportClubSeasonId.value = clubSeasonId
+    delete importedResult.value[clubMatchId]
     resetImportState()
     // Pre-select team format matching club name
     teamName.value = ['Ruiboys', 'Slashers', 'Cheetahs', 'THC'].find(n =>
@@ -643,7 +683,6 @@ function resetImportState() {
   post.value = ''
   parseError.value = ''
   confirmError.value = ''
-  confirmSuccess.value = ''
   imported.value = false
   resolvedPlayers.value = []
   needsReview.value = []
@@ -673,7 +712,6 @@ const { mutate: parseMutation } = useMutation(PARSE_TEAM_SUBMISSION)
 async function onParse() {
   parseError.value = ''
   confirmError.value = ''
-  confirmSuccess.value = ''
   imported.value = false
   parsing.value = true
   try {
@@ -699,7 +737,6 @@ async function onParse() {
 
 const confirming = ref(false)
 const confirmError = ref('')
-const confirmSuccess = ref('')
 const imported = ref(false)
 
 const { mutate: confirmMutation } = useMutation(CONFIRM_TEAM_SUBMISSION)
@@ -720,7 +757,6 @@ const compositionWarnings = computed(() => {
 
 async function onConfirm() {
   confirmError.value = ''
-  confirmSuccess.value = ''
   confirming.value = true
   try {
     const players = resolvedPlayers.value
@@ -734,14 +770,42 @@ async function onConfirm() {
       }))
     const res = await confirmMutation({ input: { clubMatchId: activeImportClubMatchId.value, players } })
     const saved = res?.data?.confirmFFLTeamSubmission ?? []
-    confirmSuccess.value = `Imported ${saved.length} player records.`
+    importedResult.value[activeImportClubMatchId.value] = `Imported ${saved.length} player records.`
     imported.value = true
+    activeImportClubMatchId.value = ''
+    activeImportClubSeasonId.value = ''
     await refetchSeasonData()
   } catch (e: any) {
     confirmError.value = e.message ?? 'Confirm failed'
   } finally {
     confirming.value = false
   }
+}
+
+// ---- FFL player link modal ----
+
+const linkModalRowIndex = ref<number | null>(null)
+
+const linkModalPlayer = computed(() =>
+  linkModalRowIndex.value !== null ? resolvedPlayers.value[linkModalRowIndex.value] : null,
+)
+
+function openLinkModal(i: number) {
+  linkModalRowIndex.value = i
+}
+
+function onPlayerLinked(data: { playerSeasonId: string; resolvedName: string; resolvedClub: string }) {
+  if (linkModalRowIndex.value === null) return
+  const i = linkModalRowIndex.value
+  resolvedPlayers.value[i] = {
+    ...resolvedPlayers.value[i],
+    playerSeasonId: data.playerSeasonId,
+    resolvedName: data.resolvedName,
+    resolvedClub: data.resolvedClub,
+    confidence: 1,
+  }
+  needsReview.value = needsReview.value.filter(idx => idx !== i)
+  linkModalRowIndex.value = null
 }
 
 function displayPosition(rp: ResolvedPlayer): string {

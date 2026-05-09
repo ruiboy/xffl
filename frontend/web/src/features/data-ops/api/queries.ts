@@ -30,8 +30,21 @@ export const GET_FFL_DATA_OPS = gql`
         aflRoundId
         matches {
           id
-          homeClubMatch { id club { id name } dataStatus score }
-          awayClubMatch { id club { id name } dataStatus score }
+          homeClubMatch { id clubSeasonId club { id name } dataStatus score }
+          awayClubMatch { id clubSeasonId club { id name } dataStatus score }
+        }
+      }
+    }
+  }
+`
+
+export const GET_AFL_SEASON_CLUB_SEASONS = gql`
+  query GetAFLSeasonClubSeasonsForDataOps($fflSeasonId: ID!) {
+    fflSeason(id: $fflSeasonId) {
+      aflSeason {
+        ladder {
+          id
+          club { name }
         }
       }
     }

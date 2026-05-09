@@ -50,6 +50,14 @@ export const ADD_AFL_PLAYER_SEASON = gql`
   }
 `
 
+export const ADD_FFL_PLAYER_TO_SEASON = gql`
+  mutation AddFFLPlayerToSeasonForDataOps($input: AddFFLPlayerToSeasonInput!) {
+    addFFLPlayerToSeason(input: $input) {
+      id
+    }
+  }
+`
+
 export const PARSE_TEAM_SUBMISSION = gql`
   mutation ParseFFLTeamSubmission($input: ParseFFLTeamSubmissionInput!) {
     parseFFLTeamSubmission(input: $input) {
