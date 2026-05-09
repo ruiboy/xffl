@@ -131,8 +131,8 @@ test.describe('FFL Squad', () => {
       await page.getByPlaceholder('Search by name...').fill('Jordan')
       await expect(page.getByText('Jordan Dawson')).toBeVisible()
       await page.getByRole('button', { name: 'Add', exact: true }).click()
-      // After search → confirm, the only Add button on the page is the confirm one.
-      await page.getByRole('button', { name: 'Add', exact: true }).click()
+      // After search → confirm, the confirm button says "Add Player"
+      await page.getByRole('button', { name: 'Add Player', exact: true }).click()
       await expect(page.getByText('Saved')).toBeVisible()
       await expect(page.getByRole('cell', { name: 'Jordan Dawson' })).toBeVisible()
     })

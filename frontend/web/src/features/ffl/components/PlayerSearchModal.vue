@@ -18,7 +18,7 @@
             v-model="searchQuery"
             @input="onSearchInput"
             type="text"
-            placeholder="Search by name…"
+            placeholder="Search by name..."
             autofocus
             class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-text-faint focus:border-active focus:outline-none mb-3"
           />

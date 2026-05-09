@@ -416,6 +416,10 @@ function openAddSearch() {
   addModalOpen.value = true
 }
 
+function cancelAddSearch() {
+  addModalOpen.value = false
+}
+
 async function onPlayerAdded() {
   addModalOpen.value = false
   await refetchSquad()
