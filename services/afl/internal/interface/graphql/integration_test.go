@@ -861,6 +861,7 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 		pg.NewRoundRepository(q, pool),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewDataopsMatchSourceRepository(q),
+		pg.NewDataopsPlayerSourceRepository(q),
 		parser,
 		discovery,
 		footywire.NewLevenshteinResolver(),
@@ -964,7 +965,8 @@ func TestImportAFLMatchStats(t *testing.T) {
 
 	mutation := fmt.Sprintf(`mutation {
 		importAFLMatchStats(matchId: "%d") {
-			matchId homePlayerCount awayPlayerCount unmatchedPlayers
+			matchId homePlayerCount awayPlayerCount
+			unmatchedPlayers { parsedName clubMatchId }
 		}
 	}`, ids.matchID)
 
@@ -973,10 +975,13 @@ func TestImportAFLMatchStats(t *testing.T) {
 
 	var data struct {
 		ImportAFLMatchStats struct {
-			MatchID          string   `json:"matchId"`
-			HomePlayerCount  int      `json:"homePlayerCount"`
-			AwayPlayerCount  int      `json:"awayPlayerCount"`
-			UnmatchedPlayers []string `json:"unmatchedPlayers"`
+			MatchID         string `json:"matchId"`
+			HomePlayerCount int    `json:"homePlayerCount"`
+			AwayPlayerCount int    `json:"awayPlayerCount"`
+			UnmatchedPlayers []struct {
+				ParsedName  string `json:"parsedName"`
+				ClubMatchID string `json:"clubMatchId"`
+			} `json:"unmatchedPlayers"`
 		} `json:"importAFLMatchStats"`
 	}
 	require.NoError(t, json.Unmarshal(result.Data, &data))

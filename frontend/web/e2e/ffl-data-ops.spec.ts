@@ -48,7 +48,31 @@ test.describe('FFL Data Ops', () => {
       expect(selectedText).toContain('Round 3')
     })
 
-    test('golden path: parse a post and reach the review phase', async ({ page }) => {
+    test('import panel opens inside a card with Cancel and Read Team buttons', async ({ page }) => {
+      const ruiboysRow = page.getByRole('row').filter({ hasText: 'Ruiboys' }).first()
+      await ruiboysRow.getByRole('button', { name: 'Import Team' }).click()
+
+      // Import Team button should be gone once panel is open
+      await expect(ruiboysRow.getByRole('button', { name: 'Import Team' })).not.toBeVisible()
+
+      // Card should contain Cancel and Read Team buttons
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Read Team' })).toBeVisible()
+    })
+
+    test('cancel button inside card closes the import panel', async ({ page }) => {
+      const ruiboysRow = page.getByRole('row').filter({ hasText: 'Ruiboys' }).first()
+      await ruiboysRow.getByRole('button', { name: 'Import Team' }).click()
+
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
+      await page.getByRole('button', { name: 'Cancel' }).click()
+
+      // Panel should be closed and Import Team button should return
+      await expect(ruiboysRow.getByRole('button', { name: 'Import Team' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Cancel' })).not.toBeVisible()
+    })
+
+    test('golden path: read a post and reach the review phase', async ({ page }) => {
       // Open import panel for Ruiboys
       await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
 
@@ -58,10 +82,10 @@ test.describe('FFL Data Ops', () => {
       // Paste post
       await page.locator('textarea').fill(minimalRuiboysPost)
 
-      // Parse button should be enabled
-      const parseBtn = page.getByRole('button', { name: 'Parse' })
-      await expect(parseBtn).toBeEnabled()
-      await parseBtn.click()
+      // Read Team button should be enabled
+      const readBtn = page.getByRole('button', { name: 'Read Team' })
+      await expect(readBtn).toBeEnabled()
+      await readBtn.click()
 
       // Review phase
       await expect(page.getByRole('button', { name: '← Back' })).toBeVisible({ timeout: 15000 })
@@ -76,17 +100,17 @@ test.describe('FFL Data Ops', () => {
     })
 
     test('back button returns to input phase', async ({ page }) => {
-      // Open import panel for Ruiboys, select format, paste, parse
+      // Open import panel for Ruiboys, select format, paste, read
       await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
       await page.locator('select').nth(1).selectOption('Ruiboys')
       await page.locator('textarea').fill(minimalRuiboysPost)
-      await page.getByRole('button', { name: 'Parse' }).click()
+      await page.getByRole('button', { name: 'Read Team' }).click()
 
       await expect(page.getByRole('button', { name: '← Back' })).toBeVisible({ timeout: 15000 })
       await page.getByRole('button', { name: '← Back' }).click()
 
       await expect(page.locator('textarea')).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Parse' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Read Team' })).toBeVisible()
     })
   })
 })

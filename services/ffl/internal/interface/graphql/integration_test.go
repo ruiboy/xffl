@@ -528,10 +528,10 @@ func TestFflClubSeason(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
+	clubSeaID := fmt.Sprintf("%d", ids.homeClubSeaID)
 	seasonID := fmt.Sprintf("%d", ids.seasonID)
-	clubID := fmt.Sprintf("%d", ids.homeClubID)
 	result := execQuery(t, server, `{
-		fflClubSeason(seasonId: "`+seasonID+`", clubId: "`+clubID+`") {
+		fflClubSeason(id: "`+clubSeaID+`") {
 			id
 			club { name }
 			season { id name }
@@ -1218,10 +1218,9 @@ func TestFflClubSeason_PageInfoTotalCount(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 
-	seasonID := fmt.Sprintf("%d", ids.seasonID)
-	clubID := fmt.Sprintf("%d", ids.homeClubID)
+	clubSeaID := fmt.Sprintf("%d", ids.homeClubSeaID)
 	result := execQuery(t, server, `{
-		fflClubSeason(seasonId: "`+seasonID+`", clubId: "`+clubID+`") {
+		fflClubSeason(id: "`+clubSeaID+`") {
 			players {
 				nodes {
 					id
@@ -1369,10 +1368,9 @@ func TestRemoveFFLPlayerFromSeason_HistoryAndReAdd(t *testing.T) {
 	})
 
 	t.Run("traded row is still queryable via fflClubSeason.players with toRoundId set", func(t *testing.T) {
-		seasonID := fmt.Sprintf("%d", ids.seasonID)
-		awayClubID := fmt.Sprintf("%d", ids.awayClubID)
+		awayClubSeaID := fmt.Sprintf("%d", ids.awayClubSeaID)
 		result := execQuery(t, server, `{
-			fflClubSeason(seasonId: "`+seasonID+`", clubId: "`+awayClubID+`") {
+			fflClubSeason(id: "`+awayClubSeaID+`") {
 				players { nodes { id toRoundId } }
 			}
 		}`)
