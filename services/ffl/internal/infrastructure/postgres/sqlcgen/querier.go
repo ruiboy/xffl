@@ -38,6 +38,7 @@ type Querier interface {
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
 	FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error)
 	FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error)
+	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
 	FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)

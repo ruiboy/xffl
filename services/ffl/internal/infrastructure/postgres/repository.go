@@ -658,6 +658,22 @@ func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.P
 	return toPlayerSeason(row.ID, row.PlayerID, row.ClubSeasonID, row.AflPlayerSeasonID, row.FromRoundID, row.ToRoundID, row.Notes, row.CostCents), nil
 }
 
+func (r *PlayerSeasonRepository) FindByIDs(ctx context.Context, ids []int) ([]domain.PlayerSeason, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayerSeasonsByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeason, len(rows))
+	for i, row := range rows {
+		out[i] = toPlayerSeason(row.ID, row.PlayerID, row.ClubSeasonID, row.AflPlayerSeasonID, row.FromRoundID, row.ToRoundID, row.Notes, row.CostCents)
+	}
+	return out, nil
+}
+
 func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]domain.Player, error) {
 	int32IDs := make([]int32, len(ids))
 	for i, id := range ids {

@@ -209,6 +209,68 @@ func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerS
 	return items, nil
 }
 
+const findPlayerMatchesBySeasonIDsAndRoundID = `-- name: FindPlayerMatchesBySeasonIDsAndRoundID :many
+SELECT pm.id, pm.club_match_id, pm.player_season_id, pm.status,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON (m.home_club_match_id = cm.id OR m.away_club_match_id = cm.id) AND m.deleted_at IS NULL
+WHERE pm.player_season_id = ANY($1::int[])
+  AND m.round_id = $2
+  AND pm.deleted_at IS NULL
+`
+
+type FindPlayerMatchesBySeasonIDsAndRoundIDParams struct {
+	PlayerSeasonIds []int32
+	RoundID         int32
+}
+
+type FindPlayerMatchesBySeasonIDsAndRoundIDRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Status         *string
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, arg FindPlayerMatchesBySeasonIDsAndRoundIDParams) ([]FindPlayerMatchesBySeasonIDsAndRoundIDRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesBySeasonIDsAndRoundID, arg.PlayerSeasonIds, arg.RoundID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesBySeasonIDsAndRoundIDRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesBySeasonIDsAndRoundIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Status,
+			&i.Kicks,
+			&i.Handballs,
+			&i.Marks,
+			&i.Hitouts,
+			&i.Tackles,
+			&i.Goals,
+			&i.Behinds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

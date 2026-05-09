@@ -18,14 +18,15 @@ type PlayerMatch struct {
 
 // PlayerMatchStats holds the AFL stats for a single player match, returned by LookupPlayerMatch.
 type PlayerMatchStats struct {
-	ID        int
-	Status    string
-	Goals     int
-	Kicks     int
-	Handballs int
-	Marks     int
-	Tackles   int
-	Hitouts   int
+	ID             int
+	Status         string
+	Goals          int
+	Kicks          int
+	Handballs      int
+	Marks          int
+	Tackles        int
+	Hitouts        int
+	PlayerSeasonID int // populated by LookupPlayerMatchBySeasonRound; 0 when looked up by ID
 }
 
 // PlayerLookup fetches entities from the AFL service by ID, to return information required cross-service.
@@ -36,6 +37,9 @@ type PlayerLookup interface {
 	LookupPlayerSeason(ctx context.Context, aflPlayerSeasonID int) (int, error)
 	// LookupPlayerMatch fetches AFL match stats for a batch of AFL player match IDs.
 	LookupPlayerMatch(ctx context.Context, aflPlayerMatchIDs []int) ([]PlayerMatchStats, error)
+	// LookupPlayerMatchBySeasonRound fetches AFL match stats for a set of AFL player_season IDs
+	// within a specific AFL round. PlayerSeasonID is populated in each returned stat.
+	LookupPlayerMatchBySeasonRound(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]PlayerMatchStats, error)
 }
 
 // PlayerResolver fuzzy-matches a parsed name (with optional club hint) against

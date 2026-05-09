@@ -54,6 +54,10 @@ func (s *stubPlayerLookup) LookupPlayerMatch(_ context.Context, _ []int) ([]appl
 	return nil, nil
 }
 
+func (s *stubPlayerLookup) LookupPlayerMatchBySeasonRound(_ context.Context, _ []int, _ int) ([]application.PlayerMatchStats, error) {
+	return nil, nil
+}
+
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {
 	t.Helper()
 
@@ -77,6 +81,7 @@ func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.D
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
 			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
@@ -125,6 +130,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 			PlayerSeasons: pg.NewPlayerSeasonRepository(testQ),
 			PlayerMatches: pg.NewPlayerMatchRepository(testQ),
 			Matches:       pg.NewMatchRepository(testQ),
+			ClubMatches:   pg.NewClubMatchRepository(testQ),
 		},
 		PlayerLookup: stub,
 	})
@@ -298,6 +304,7 @@ func TestMarkFFLTeamFinal(t *testing.T) {
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
 			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})

@@ -81,6 +81,7 @@ func main() {
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
 			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: playerLookup,
 	})
@@ -94,7 +95,6 @@ func main() {
 	)
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
 	dispatcher.Subscribe(contractevents.AflMatchFinalized, scoreCommands.HandleAflMatchFinalized)
-	dispatcher.Subscribe(contractevents.FflTeamSubmitted, scoreCommands.HandleFflTeamSubmitted)
 	dispatcher.Subscribe(contractevents.FflTeamFinalized, scoreCommands.HandleFflTeamFinalized)
 	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, scoreCommands.HandleFflClubMatchScoreFinalized)
 	dispatcher.Subscribe(contractevents.FflMatchFinalized, scoreCommands.HandleFflMatchFinalized)

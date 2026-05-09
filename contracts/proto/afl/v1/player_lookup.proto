@@ -33,7 +33,19 @@ message LookupPlayerSeasonResponse {
 }
 
 message LookupPlayerMatchRequest {
-  repeated int32 player_match_ids = 1;
+  oneof key {
+    LookupByIDs          by_ids          = 1;
+    LookupBySeasonRound  by_season_round = 2;
+  }
+}
+
+message LookupByIDs {
+  repeated int32 ids = 1;
+}
+
+message LookupBySeasonRound {
+  repeated int32 player_season_ids = 1;
+  int32          round_id          = 2;
 }
 
 message LookupPlayerMatchResponse {
@@ -41,12 +53,13 @@ message LookupPlayerMatchResponse {
 }
 
 message PlayerMatchStats {
-  int32  id        = 1;
-  string status    = 2;
-  int32  goals     = 3;
-  int32  kicks     = 4;
-  int32  handballs = 5;
-  int32  marks     = 6;
-  int32  tackles   = 7;
-  int32  hitouts   = 8;
+  int32  id               = 1;
+  string status           = 2;
+  int32  goals            = 3;
+  int32  kicks            = 4;
+  int32  handballs        = 5;
+  int32  marks            = 6;
+  int32  tackles          = 7;
+  int32  hitouts          = 8;
+  int32  player_season_id = 9;
 }

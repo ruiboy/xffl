@@ -54,6 +54,7 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
 			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
@@ -1505,6 +1506,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
 			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})

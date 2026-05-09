@@ -76,12 +76,6 @@ func (c *ScoreCommands) HandleAflMatchFinalized(ctx context.Context, payload []b
 	return nil
 }
 
-// HandleFflTeamSubmitted reacts to FFL.TeamSubmitted. Currently a no-op at the score level
-// because player scores are already updated via AFL.PlayerMatchUpdated → CalculateFantasyScore.
-func (c *ScoreCommands) HandleFflTeamSubmitted(ctx context.Context, payload []byte) error {
-	return nil
-}
-
 // HandleFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and
 // emits FFL.ClubMatchScoreFinalized. Assumes AFL stats are final by the time this fires (the
 // data ops workflow enforces this order; RecalculateFflLadder is the safety net).

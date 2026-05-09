@@ -158,6 +158,7 @@ func setupCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})

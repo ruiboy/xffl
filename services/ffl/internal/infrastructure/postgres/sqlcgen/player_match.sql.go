@@ -9,16 +9,6 @@ import (
 	"context"
 )
 
-const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
-DELETE FROM ffl.player_match
-WHERE club_match_id = $1
-`
-
-func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error {
-	_, err := q.db.Exec(ctx, deletePlayerMatchesByClubMatchID, clubMatchID)
-	return err
-}
-
 const deletePlayerMatchByID = `-- name: DeletePlayerMatchByID :exec
 DELETE FROM ffl.player_match
 WHERE id = $1
@@ -26,6 +16,16 @@ WHERE id = $1
 
 func (q *Queries) DeletePlayerMatchByID(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, deletePlayerMatchByID, id)
+	return err
+}
+
+const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
+DELETE FROM ffl.player_match
+WHERE club_match_id = $1
+`
+
+func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error {
+	_, err := q.db.Exec(ctx, deletePlayerMatchesByClubMatchID, clubMatchID)
 	return err
 }
 

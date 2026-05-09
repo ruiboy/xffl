@@ -88,7 +88,7 @@ FFL.MatchFinalized
 
 #### Domain
 - [x] `Match.DeriveResult() MatchResult` — derives result from StoredScore
-- [x] `ClubSeasonStats` type + `CalculateLadder(matches []Match) map[int]ClubSeasonStats` — pure function
+- [x] `CalculateLadder(matches []Match) map[int]ClubSeason` — pure function; `ClubSeasonStats` was collapsed into `ClubSeason` (ID field added)
 
 #### Repository
 - [x] `UpdateMatchResult` + `FindFinalBySeasonID` on MatchRepository
@@ -104,22 +104,21 @@ FFL.MatchFinalized
 
 #### Domain
 - [x] `Match.DeriveResult() MatchResult` — pure function using StoredScore
-- [x] `ClubSeasonStats` + `CalculateLadder(matches []Match) map[int]ClubSeasonStats` — in `ladder.go`; includes `ExtraPoints` field
-- [x] `ClubSeason` struct — added `PremiershipPoints` + `ExtraPoints` fields
+- [x] `CalculateLadder(matches []Match) map[int]ClubSeason` — `ClubSeasonStats` collapsed into `ClubSeason`; includes `ExtraPoints` field
 
 #### Repository
 - [x] `MatchRepository.UpdateResult(ctx, matchID int, result MatchResult) error`
 - [x] `MatchRepository.FindFinalBySeasonID(ctx, seasonID int) ([]Match, error)`
-- [x] `ClubSeasonRepository.Update(ctx, clubSeasonID int, stats ClubSeasonStats) error`
+- [x] `ClubSeasonRepository.Update(ctx, cs ClubSeason) error`
 - [x] `ClubMatchRepository.CountFinalByMatchID(ctx, matchID int) (int, error)`
 
 #### Application — publishing
-- [x] `ImportRoundTeams` — publishes `FFL.TeamSubmitted` when data_status transitions to `submitted`
+- [x] `SetTeam` (was `ImportRoundTeams`) — publishes `FFL.TeamSubmitted` when data_status transitions to `submitted`
 - [x] `MarkTeamFinal` — publishes `FFL.TeamFinalized` when data_status transitions to `final`
 
 #### Application — handlers
 - [x] `HandleAflMatchFinalized` — for each finalized ffl.club_match in round, emits `FFL.ClubMatchScoreFinalized`
-- [x] `HandleFflTeamSubmitted` — no-op (scores already updated via PlayerMatchUpdated chain)
+- [x] `HandleFflTeamSubmitted` — removed; `SetTeam` calls `RecalculateClubMatchScore` directly after TX
 - [x] `HandleFflTeamFinalized` — emits `FFL.ClubMatchScoreFinalized`
 - [x] `HandleFflClubMatchScoreFinalized` — checks count; if both clubs final, emits `FFL.MatchFinalized`
 - [x] `HandleFflMatchFinalized` — sets ffl.match.drv_result; recalcs FFL ladder for season
@@ -128,6 +127,25 @@ FFL.MatchFinalized
 #### Data ops
 - [ ] `RecalculateFflScores(ctx, roundID int) error` — recalcs all FFL club_matches for AFL round (provisional and final)
 - [ ] `ProvisionalLadder(ctx, seasonID int) ([]ClubSeasonStats, error)` — on-demand query; includes submitted+partial matches
+
+### Phase 5 — Recalculate single club match score
+
+#### Twirp RPC
+- [x] `LookupPlayerMatch` refactored to `oneof {by_ids, by_season_round}` — single extensible endpoint
+- [x] `PlayerMatchStats` proto gains `player_season_id` field (populated by `by_season_round` path)
+- [x] AFL domain: `PlayerMatchRepository.FindByPlayerSeasonIDsAndRoundID` + SQL query
+- [x] AFL Twirp handler: dispatches on `oneof` key
+
+#### FFL use case
+- [x] `PlayerLookup` port: `LookupPlayerMatchBySeasonRound(aflPSIDs, aflRoundID)` method
+- [x] FFL rpc adapter: implements both `LookupPlayerMatch` (by_ids) and `LookupPlayerMatchBySeasonRound` (by_season_round)
+- [x] `PlayerSeasonRepository.FindByIDs` batch fetch (SQL + domain + repo)
+- [x] `EventRepos.ClubMatches` added for `clubMatchID → matchID → roundID → AFLRoundID` traversal
+- [x] `RecalculateClubMatchScore` — two-path lookup: linked rows use AFL player_match_id (fast path); unlinked rows use `LookupPlayerMatchBySeasonRound` and establish the link as a side effect
+- [x] `recalculateFFLClubMatchScore` GraphQL mutation wired up
+
+#### Frontend
+- [x] Recalculate button on each non-`no_data` row in FFL Teams tab
 
 ### Phase 4 — Data ops frontend
 

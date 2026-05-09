@@ -49,5 +49,6 @@ type PlayerMatchRepository interface {
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	FindByIDs(ctx context.Context, ids []int) ([]PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
+	FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerMatch, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }

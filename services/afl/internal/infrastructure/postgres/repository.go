@@ -651,6 +651,37 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonID(ctx context.Context, player
 	return out, nil
 }
 
+func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.PlayerMatch, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayerMatchesBySeasonIDsAndRoundID(ctx, sqlcgen.FindPlayerMatchesBySeasonIDsAndRoundIDParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerMatch, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerMatch{
+			ID:             int(row.ID),
+			ClubMatchID:    int(row.ClubMatchID),
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			Status:         derefOrStr(row.Status),
+			Kicks:          derefOr(row.Kicks),
+			Handballs:      derefOr(row.Handballs),
+			Marks:          derefOr(row.Marks),
+			Hitouts:        derefOr(row.Hitouts),
+			Tackles:        derefOr(row.Tackles),
+			Goals:          derefOr(row.Goals),
+			Behinds:        derefOr(row.Behinds),
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),
