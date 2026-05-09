@@ -19,6 +19,16 @@ func (q *Queries) DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatc
 	return err
 }
 
+const deletePlayerMatchByID = `-- name: DeletePlayerMatchByID :exec
+DELETE FROM ffl.player_match
+WHERE id = $1
+`
+
+func (q *Queries) DeletePlayerMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deletePlayerMatchByID, id)
+	return err
+}
+
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
 SELECT id, club_match_id, player_season_id,
        position, status, backup_positions, interchange_position, drv_score, afl_player_match_id

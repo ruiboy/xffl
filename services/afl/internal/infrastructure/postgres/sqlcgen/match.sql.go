@@ -11,6 +11,64 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const findFinalMatchesBySeasonID = `-- name: FindFinalMatchesBySeasonID :many
+SELECT m.id,
+       m.round_id,
+       COALESCE(home.id, 0)              AS home_club_match_id,
+       COALESCE(home.club_season_id, 0)  AS home_club_season_id,
+       COALESCE(home.drv_score, 0)       AS home_score,
+       COALESCE(away.id, 0)              AS away_club_match_id,
+       COALESCE(away.club_season_id, 0)  AS away_club_season_id,
+       COALESCE(away.drv_score, 0)       AS away_score
+FROM afl.match m
+JOIN afl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
+LEFT JOIN afl.club_match home ON home.id = m.home_club_match_id AND home.deleted_at IS NULL
+LEFT JOIN afl.club_match away ON away.id = m.away_club_match_id AND away.deleted_at IS NULL
+WHERE r.season_id = $1
+  AND m.data_status = 'final'
+  AND m.deleted_at IS NULL
+`
+
+type FindFinalMatchesBySeasonIDRow struct {
+	ID               int32
+	RoundID          int32
+	HomeClubMatchID  int32
+	HomeClubSeasonID int32
+	HomeScore        int32
+	AwayClubMatchID  int32
+	AwayClubSeasonID int32
+	AwayScore        int32
+}
+
+func (q *Queries) FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalMatchesBySeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findFinalMatchesBySeasonID, seasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindFinalMatchesBySeasonIDRow{}
+	for rows.Next() {
+		var i FindFinalMatchesBySeasonIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoundID,
+			&i.HomeClubMatchID,
+			&i.HomeClubSeasonID,
+			&i.HomeScore,
+			&i.AwayClubMatchID,
+			&i.AwayClubSeasonID,
+			&i.AwayScore,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findMatchByID = `-- name: FindMatchByID :one
 SELECT id, round_id,
        COALESCE(home_club_match_id, 0) AS home_club_match_id,
@@ -168,5 +226,22 @@ type UpdateMatchDataStatusParams struct {
 
 func (q *Queries) UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error {
 	_, err := q.db.Exec(ctx, updateMatchDataStatus, arg.ID, arg.DataStatus)
+	return err
+}
+
+const updateMatchResult = `-- name: UpdateMatchResult :exec
+UPDATE afl.match
+SET drv_result = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateMatchResultParams struct {
+	ID        int32
+	DrvResult *string
+}
+
+func (q *Queries) UpdateMatchResult(ctx context.Context, arg UpdateMatchResultParams) error {
+	_, err := q.db.Exec(ctx, updateMatchResult, arg.ID, arg.DrvResult)
 	return err
 }

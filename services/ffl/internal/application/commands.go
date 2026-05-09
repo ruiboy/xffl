@@ -29,6 +29,18 @@ type EventRepos struct {
 	Rounds        domain.RoundRepository
 	PlayerSeasons domain.PlayerSeasonRepository
 	PlayerMatches domain.PlayerMatchRepository
+	Matches       domain.MatchRepository
+}
+
+// TeamSubmitter is the narrow interface DataOpsCommands uses to delegate team persistence.
+type TeamSubmitter interface {
+	SetTeam(ctx context.Context, params SetTeamParams) ([]domain.PlayerMatch, error)
+}
+
+// SetTeamParams are the inputs to SetTeam.
+type SetTeamParams struct {
+	ClubMatchID int
+	Entries     []SetTeamEntry
 }
 
 // CommandsDeps bundles the dependencies Commands needs beyond the transaction
@@ -106,51 +118,225 @@ type SetTeamEntry struct {
 	Position            string
 	BackupPositions     *string
 	InterchangePosition *string
+	Score               *int // optional seed score for new players (AFL events are authoritative once set)
 }
 
-// SetTeam upserts all player match entries for a club match (the weekly team).
-// Returns an error if the team violates team composition rules.
-func (c *Commands) SetTeam(ctx context.Context, clubMatchID int, entries []SetTeamEntry) ([]domain.PlayerMatch, error) {
-	// Validate composition rules before touching the database.
-	params := make([]domain.UpsertPlayerMatchParams, len(entries))
-	for i, e := range entries {
-		pos := domain.Position(e.Position)
-		params[i] = domain.UpsertPlayerMatchParams{
-			Position:            &pos,
-			BackupPositions:     e.BackupPositions,
-			InterchangePosition: e.InterchangePosition,
-		}
-	}
-	if err := domain.ValidateTeam(params); err != nil {
-		return nil, err
-	}
-
+// SetTeam persists a complete team for a club match using diff-based persistence to
+// preserve afl_player_match_id links for returning players. It validates team composition
+// via the domain, computes a provisional score, updates data_status, and publishes
+// FFL.TeamSubmitted.
+func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.PlayerMatch, error) {
 	var result []domain.PlayerMatch
+	var matchID int
+
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		// Replace the team: delete all existing entries first, then insert fresh.
-		if err := repos.PlayerMatches.DeleteByClubMatchID(ctx, clubMatchID); err != nil {
+		// load the ClubMatch
+		cm, err := repos.ClubMatches.FindByID(ctx, params.ClubMatchID)
+		if err != nil {
+			return fmt.Errorf("find club match: %w", err)
+		}
+		matchID = cm.MatchID
+
+		// load the PlayerMatches - key by PlayerSeasonID to ease lookup when updating with
+		// the incoming changes in the next step
+		existing, err := repos.PlayerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+		if err != nil {
+			return fmt.Errorf("find existing player matches: %w", err)
+		}
+		existingByPS := make(map[int]domain.PlayerMatch, len(existing))
+		for _, pm := range existing {
+			existingByPS[pm.PlayerSeasonID] = pm
+		}
+
+		// build the new list of PlayerMatches, copy over existing data - ID, AFL Link etc -  for
+		// any PMs that already exist
+		newPlayers := make([]domain.PlayerMatch, 0, len(params.Entries))
+		inNewTeam := make(map[int]bool)
+		for _, e := range params.Entries {
+			if e.PlayerSeasonID == 0 {
+				continue
+			}
+			inNewTeam[e.PlayerSeasonID] = true
+			newPlayers = append(newPlayers, entryToPlayerMatch(e, params.ClubMatchID, existingByPS))
+		}
+
+		// validate and submit the team
+		if _, err := cm.SubmitTeam(newPlayers); err != nil {
 			return err
 		}
-		result = make([]domain.PlayerMatch, len(entries))
-		for i, e := range entries {
-			pos := domain.Position(e.Position)
-			status := domain.PlayerMatchStatusNamed
-			pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
-				ClubMatchID:         clubMatchID,
-				PlayerSeasonID:      e.PlayerSeasonID,
-				Position:            &pos,
-				Status:              &status,
-				BackupPositions:     e.BackupPositions,
-				InterchangePosition: e.InterchangePosition,
-			})
-			if err != nil {
-				return err
+
+		// do diff-based persistence: delete any PlayerMatches no longer needed, and upsert the rest
+		for _, pm := range existing {
+			if !inNewTeam[pm.PlayerSeasonID] {
+				if err := repos.PlayerMatches.DeleteByID(ctx, pm.ID); err != nil {
+					return fmt.Errorf("delete removed player_match %d: %w", pm.ID, err)
+				}
 			}
-			result[i] = pm
+		}
+
+		result = make([]domain.PlayerMatch, 0, len(cm.PlayerMatches))
+		for _, pm := range cm.PlayerMatches {
+			upserted, err := repos.PlayerMatches.Upsert(ctx, upsertParamsFromPlayerMatch(pm))
+			if err != nil {
+				return fmt.Errorf("upsert player_match for player_season %d: %w", pm.PlayerSeasonID, err)
+			}
+			result = append(result, upserted)
+		}
+
+		// compute the provisional score and set status
+		cm.PlayerMatches = result
+		if err := repos.ClubMatches.UpdateScore(ctx, cm.ID, cm.Score()); err != nil {
+			return fmt.Errorf("update club match score: %w", err)
+		}
+		if err := repos.ClubMatches.UpdateDataStatus(ctx, cm.ID, cm.DataStatus); err != nil {
+			return fmt.Errorf("update club match data status: %w", err)
 		}
 		return nil
 	})
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+
+	// dispatch event
+	match, err := c.eventRepos.Matches.FindByID(ctx, matchID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to load match for FflTeamSubmitted event", slog.Int("match_id", matchID), slog.Any("error", err))
+		return result, nil
+	}
+	b, err := json.Marshal(events.FflTeamSubmittedPayload{
+		ClubMatchID: params.ClubMatchID,
+		MatchID:     matchID,
+		RoundID:     match.RoundID,
+	})
+	if err == nil {
+		if err := c.dispatcher.Publish(ctx, events.FflTeamSubmitted, b); err != nil {
+			slog.WarnContext(ctx, "publish FflTeamSubmitted failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		}
+	}
+	return result, nil
+}
+
+// RecalculateClubMatchScore re-applies AFL stats to each player_match linked to an AFL player_match,
+// then re-sums the club_match total via ClubMatch.Score().
+func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID int) error {
+	// Load current player matches to collect AFL player match IDs (read outside TX).
+	pms, err := c.eventRepos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+	if err != nil {
+		return fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
+	}
+
+	var aflIDs []int
+	for _, pm := range pms {
+		if pm.AFLPlayerMatchID != nil {
+			aflIDs = append(aflIDs, *pm.AFLPlayerMatchID)
+		}
+	}
+
+	// Fetch AFL stats (network call outside TX).
+	statsByID := make(map[int]PlayerMatchStats)
+	if len(aflIDs) > 0 {
+		stats, err := c.playerLookup.LookupPlayerMatch(ctx, aflIDs)
+		if err != nil {
+			return fmt.Errorf("lookup player match stats: %w", err)
+		}
+		for _, s := range stats {
+			statsByID[s.ID] = s
+		}
+	}
+
+	// Apply updated stats and re-sum inside a transaction.
+	return c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		pms, err := repos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+		if err != nil {
+			return err
+		}
+
+		for _, pm := range pms {
+			if pm.AFLPlayerMatchID == nil {
+				continue
+			}
+			s, ok := statsByID[*pm.AFLPlayerMatchID]
+			if !ok {
+				continue
+			}
+			score := pm.CalculateScore(domain.AFLStats{
+				Goals:     s.Goals,
+				Kicks:     s.Kicks,
+				Handballs: s.Handballs,
+				Marks:     s.Marks,
+				Tackles:   s.Tackles,
+				Hitouts:   s.Hitouts,
+			})
+			status := domain.PlayerMatchStatus(s.Status)
+			if _, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
+				ClubMatchID:         pm.ClubMatchID,
+				PlayerSeasonID:      pm.PlayerSeasonID,
+				Position:            pm.Position,
+				Status:              &status,
+				BackupPositions:     pm.BackupPositions,
+				InterchangePosition: pm.InterchangePosition,
+				Score:               &score,
+			}); err != nil {
+				return fmt.Errorf("upsert player_match %d: %w", pm.ID, err)
+			}
+		}
+
+		// Re-load updated player matches to compute the new club total.
+		updated, err := repos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+		if err != nil {
+			return err
+		}
+		cm, err := repos.ClubMatches.FindByID(ctx, clubMatchID)
+		if err != nil {
+			return err
+		}
+		cm.PlayerMatches = updated
+		return repos.ClubMatches.UpdateScore(ctx, clubMatchID, cm.Score())
+	})
+}
+
+// entryToPlayerMatch converts a SetTeamEntry to a domain.PlayerMatch, enriching it
+// with the ID, score, and AFL link from the existing DB record for returning players.
+func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain.PlayerMatch) domain.PlayerMatch {
+	status := domain.PlayerMatchStatusNamed
+	pm := domain.PlayerMatch{
+		ClubMatchID:    clubMatchID,
+		PlayerSeasonID: e.PlayerSeasonID,
+		Status:         &status,
+	}
+	if e.BackupPositions != nil || e.InterchangePosition != nil {
+		pm.BackupPositions = e.BackupPositions
+		pm.InterchangePosition = e.InterchangePosition
+	} else {
+		pos := domain.Position(e.Position)
+		pm.Position = &pos
+	}
+	if ex, ok := existing[e.PlayerSeasonID]; ok {
+		pm.ID = ex.ID
+		pm.Score = ex.Score
+		pm.AFLPlayerMatchID = ex.AFLPlayerMatchID
+	} else if e.Score != nil {
+		pm.Score = *e.Score
+	}
+	return pm
+}
+
+// upsertParamsFromPlayerMatch converts a domain.PlayerMatch to UpsertPlayerMatchParams.
+// Score is passed as nil when zero so COALESCE in the upsert preserves any existing DB value.
+func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatchParams {
+	params := domain.UpsertPlayerMatchParams{
+		ClubMatchID:         pm.ClubMatchID,
+		PlayerSeasonID:      pm.PlayerSeasonID,
+		Position:            pm.Position,
+		Status:              pm.Status,
+		BackupPositions:     pm.BackupPositions,
+		InterchangePosition: pm.InterchangePosition,
+	}
+	if pm.Score != 0 {
+		s := pm.Score
+		params.Score = &s
+	}
+	return params
 }
 
 // CalculateFantasyScore calculates and stores the fantasy score for a player match

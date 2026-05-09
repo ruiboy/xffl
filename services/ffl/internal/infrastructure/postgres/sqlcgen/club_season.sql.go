@@ -12,7 +12,7 @@ import (
 const findClubSeasonByClubAndSeason = `-- name: FindClubSeasonByClubAndSeason :one
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,
-       drv_for, drv_against, drv_premiership_points
+       drv_for, drv_against, drv_extra_points, drv_premiership_points
 FROM ffl.club_season
 WHERE club_id = $1 AND season_id = $2 AND deleted_at IS NULL
 `
@@ -32,6 +32,7 @@ type FindClubSeasonByClubAndSeasonRow struct {
 	DrvDrawn             *int32
 	DrvFor               *int32
 	DrvAgainst           *int32
+	DrvExtraPoints       *int32
 	DrvPremiershipPoints *int32
 }
 
@@ -48,6 +49,7 @@ func (q *Queries) FindClubSeasonByClubAndSeason(ctx context.Context, arg FindClu
 		&i.DrvDrawn,
 		&i.DrvFor,
 		&i.DrvAgainst,
+		&i.DrvExtraPoints,
 		&i.DrvPremiershipPoints,
 	)
 	return i, err
@@ -56,7 +58,7 @@ func (q *Queries) FindClubSeasonByClubAndSeason(ctx context.Context, arg FindClu
 const findClubSeasonByID = `-- name: FindClubSeasonByID :one
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,
-       drv_for, drv_against, drv_premiership_points
+       drv_for, drv_against, drv_extra_points, drv_premiership_points
 FROM ffl.club_season
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -71,6 +73,7 @@ type FindClubSeasonByIDRow struct {
 	DrvDrawn             *int32
 	DrvFor               *int32
 	DrvAgainst           *int32
+	DrvExtraPoints       *int32
 	DrvPremiershipPoints *int32
 }
 
@@ -87,6 +90,7 @@ func (q *Queries) FindClubSeasonByID(ctx context.Context, id int32) (FindClubSea
 		&i.DrvDrawn,
 		&i.DrvFor,
 		&i.DrvAgainst,
+		&i.DrvExtraPoints,
 		&i.DrvPremiershipPoints,
 	)
 	return i, err
@@ -95,7 +99,7 @@ func (q *Queries) FindClubSeasonByID(ctx context.Context, id int32) (FindClubSea
 const findClubSeasonsBySeasonID = `-- name: FindClubSeasonsBySeasonID :many
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,
-       drv_for, drv_against, drv_premiership_points
+       drv_for, drv_against, drv_extra_points, drv_premiership_points
 FROM ffl.club_season
 WHERE season_id = $1 AND deleted_at IS NULL
 ORDER BY drv_premiership_points DESC, (drv_for - drv_against) DESC
@@ -111,6 +115,7 @@ type FindClubSeasonsBySeasonIDRow struct {
 	DrvDrawn             *int32
 	DrvFor               *int32
 	DrvAgainst           *int32
+	DrvExtraPoints       *int32
 	DrvPremiershipPoints *int32
 }
 
@@ -133,6 +138,7 @@ func (q *Queries) FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32)
 			&i.DrvDrawn,
 			&i.DrvFor,
 			&i.DrvAgainst,
+			&i.DrvExtraPoints,
 			&i.DrvPremiershipPoints,
 		); err != nil {
 			return nil, err
@@ -143,4 +149,45 @@ func (q *Queries) FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32)
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateFflClubSeason = `-- name: UpdateFflClubSeason :exec
+UPDATE ffl.club_season
+SET drv_played             = $2,
+    drv_won                = $3,
+    drv_lost               = $4,
+    drv_drawn              = $5,
+    drv_for                = $6,
+    drv_against            = $7,
+    drv_extra_points       = $8,
+    drv_premiership_points = $9,
+    updated_at             = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateFflClubSeasonParams struct {
+	ID                   int32
+	DrvPlayed            *int32
+	DrvWon               *int32
+	DrvLost              *int32
+	DrvDrawn             *int32
+	DrvFor               *int32
+	DrvAgainst           *int32
+	DrvExtraPoints       *int32
+	DrvPremiershipPoints *int32
+}
+
+func (q *Queries) UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error {
+	_, err := q.db.Exec(ctx, updateFflClubSeason,
+		arg.ID,
+		arg.DrvPlayed,
+		arg.DrvWon,
+		arg.DrvLost,
+		arg.DrvDrawn,
+		arg.DrvFor,
+		arg.DrvAgainst,
+		arg.DrvExtraPoints,
+		arg.DrvPremiershipPoints,
+	)
+	return err
 }

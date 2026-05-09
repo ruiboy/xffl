@@ -14,6 +14,10 @@ WHERE id = $1 AND deleted_at IS NULL;
 DELETE FROM ffl.player_match
 WHERE club_match_id = $1;
 
+-- name: DeletePlayerMatchByID :exec
+DELETE FROM ffl.player_match
+WHERE id = $1;
+
 -- name: FindPlayerMatchByPlayerSeasonAndRound :one
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
        pm.position, pm.status, pm.backup_positions, pm.interchange_position, pm.drv_score, pm.afl_player_match_id

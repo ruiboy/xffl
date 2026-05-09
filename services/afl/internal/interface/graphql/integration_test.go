@@ -1339,3 +1339,131 @@ func TestEntity_FindAFLSeasonByID_UnknownIDErrors(t *testing.T) {
 		assert.NotEmpty(t, result.Errors)
 	})
 }
+
+// ════════════════════════════════════════════════════════════════
+// RecalculateAFLLadder integration test
+// ════════════════════════════════════════════════════════════════
+
+func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
+	t.Helper()
+
+	q := sqlcgen.New(pool)
+	queries := application.NewQueries(
+		clock.RealClock{},
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
+
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db, memevents.New())
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		memevents.New(),
+	)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, ScoreCommands: scoreCommands}
+	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := gql.InjectLoaders(r.Context(), gql.NewLoaders(queries))
+		srv.ServeHTTP(w, r.WithContext(ctx))
+	})
+	return httptest.NewServer(h)
+}
+
+func TestRecalculateAFLLadder(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServerWithScoreCommands(t, pool)
+	defer server.Close()
+
+	// seedTestData leaves data_status as 'no_data'; mark it final so
+	// FindFinalBySeasonID picks it up (Sky Pilots 85 beat Mountain Goats 72).
+	_, err := pool.Exec(context.Background(),
+		"UPDATE afl.match SET data_status = 'final' WHERE id = $1", ids.matchID)
+	require.NoError(t, err)
+
+	mutation := fmt.Sprintf(`mutation {
+		recalculateAFLLadder(seasonId: "%d")
+	}`, ids.seasonID)
+
+	result := execQuery(t, server, mutation)
+	require.Empty(t, result.Errors)
+
+	var mutData struct {
+		RecalculateAFLLadder bool `json:"recalculateAFLLadder"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &mutData))
+
+	t.Run("mutation returns true", func(t *testing.T) {
+		assert.True(t, mutData.RecalculateAFLLadder)
+	})
+
+	// Verify the ladder was rebuilt from scratch using only the one final match.
+	// The stale seed values (played=5, pp=16/12) should be overwritten.
+	ladderResult := execQuery(t, server, fmt.Sprintf(`{
+		aflSeason(id: "%d") {
+			ladder { club { name } played won lost drawn for against premiershipPoints }
+		}
+	}`, ids.seasonID))
+	require.Empty(t, ladderResult.Errors)
+
+	var ladderData struct {
+		AflSeason struct {
+			Ladder []struct {
+				Club struct {
+					Name string `json:"name"`
+				} `json:"club"`
+				Played            int `json:"played"`
+				Won               int `json:"won"`
+				Lost              int `json:"lost"`
+				Drawn             int `json:"drawn"`
+				For               int `json:"for"`
+				Against           int `json:"against"`
+				PremiershipPoints int `json:"premiershipPoints"`
+			} `json:"ladder"`
+		} `json:"aflSeason"`
+	}
+	require.NoError(t, json.Unmarshal(ladderResult.Data, &ladderData))
+	require.Len(t, ladderData.AflSeason.Ladder, 2)
+
+	t.Run("ladder is rebuilt from the single final match result", func(t *testing.T) {
+		// Ladder ordered by premiership points descending: Sky Pilots first.
+		sky := ladderData.AflSeason.Ladder[0]
+		assert.Equal(t, "Sky Pilots", sky.Club.Name)
+		assert.Equal(t, 1, sky.Played)
+		assert.Equal(t, 1, sky.Won)
+		assert.Equal(t, 0, sky.Lost)
+		assert.Equal(t, 0, sky.Drawn)
+		assert.Equal(t, 85, sky.For)
+		assert.Equal(t, 72, sky.Against)
+		assert.Equal(t, 4, sky.PremiershipPoints) // 4 PP for a win
+
+		mtn := ladderData.AflSeason.Ladder[1]
+		assert.Equal(t, "Mountain Goats", mtn.Club.Name)
+		assert.Equal(t, 1, mtn.Played)
+		assert.Equal(t, 0, mtn.Won)
+		assert.Equal(t, 1, mtn.Lost)
+		assert.Equal(t, 0, mtn.Drawn)
+		assert.Equal(t, 72, mtn.For)
+		assert.Equal(t, 85, mtn.Against)
+		assert.Equal(t, 0, mtn.PremiershipPoints)
+	})
+
+	t.Run("stale pre-seeded ladder values are overwritten", func(t *testing.T) {
+		// Seed had played=5, pp=16 for Sky Pilots — recalculation from final matches
+		// replaces it with played=1, pp=4.
+		assert.NotEqual(t, 5, ladderData.AflSeason.Ladder[0].Played)
+		assert.NotEqual(t, 16, ladderData.AflSeason.Ladder[0].PremiershipPoints)
+	})
+}

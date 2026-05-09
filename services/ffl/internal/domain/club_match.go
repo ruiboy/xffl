@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -21,6 +22,134 @@ type ClubMatch struct {
 	DataStatus    ClubMatchDataStatus
 	StoredScore   int
 	PlayerMatches []PlayerMatch
+}
+
+// TeamSubmitted is the domain event raised when a club match team is submitted.
+// Yeah, this is not adding a lot of value right now, but it demonstrates the
+// concept of domain events (cf. integration events).
+type TeamSubmitted struct {
+	ClubMatchID int
+}
+
+// SubmitTeam validates the player list against team composition rules, replaces
+// the club match's player matches, and transitions data_status to submitted.
+// Returns a TeamSubmitted domain event on success.
+func (cm *ClubMatch) SubmitTeam(players []PlayerMatch) (TeamSubmitted, error) {
+	if err := validateTeam(players); err != nil {
+		return TeamSubmitted{}, err
+	}
+	cm.PlayerMatches = players
+	cm.DataStatus = ClubMatchDataSubmitted
+	return TeamSubmitted{ClubMatchID: cm.ID}, nil
+}
+
+// validateTeam enforces team composition rules against a set of player matches.
+// It returns a descriptive error if any rule is violated, or nil if the team is valid.
+// Teams need not be full — all constraints are upper bounds, not minimums.
+func validateTeam(entries []PlayerMatch) error {
+	starterCounts := make(map[Position]int)
+	var benchPlayers []PlayerMatch
+	interchangeCount := 0
+
+	for _, e := range entries {
+		if e.InterchangePosition != nil && e.BackupPositions == nil {
+			return fmt.Errorf("team: interchange position requires backup positions to be set")
+		}
+		if e.BackupPositions != nil {
+			benchPlayers = append(benchPlayers, e)
+			if e.InterchangePosition != nil {
+				interchangeCount++
+			}
+		} else {
+			if e.Position == nil {
+				return fmt.Errorf("team: starter must have a position")
+			}
+			starterCounts[*e.Position]++
+		}
+	}
+
+	// Rule 1: starter count per position ≤ PositionSlots[pos].
+	for pos, count := range starterCounts {
+		max, ok := PositionSlots[pos]
+		if !ok {
+			return fmt.Errorf("team: unknown position %q", pos)
+		}
+		if count > max {
+			return fmt.Errorf("team: position %q has %d players, maximum is %d", pos, count, max)
+		}
+	}
+
+	// Rule 2: total bench ≤ 4.
+	if len(benchPlayers) > 4 {
+		return fmt.Errorf("team: bench has %d players, maximum is 4", len(benchPlayers))
+	}
+
+	benchStarCount := 0
+	coveredPositions := make(map[Position]bool)
+
+	for _, bp := range benchPlayers {
+		if bp.BackupPositions == nil {
+			continue
+		}
+		positions := parsePositions(*bp.BackupPositions)
+		isBenchStar := len(positions) == 1 && positions[0] == PositionStar
+
+		if isBenchStar {
+			// Rule 3: at most 1 backup star.
+			benchStarCount++
+			if benchStarCount > 1 {
+				return fmt.Errorf("team: at most 1 backup star allowed on the bench")
+			}
+		} else {
+			// Rule 4: non-star bench players have exactly 2 backup positions, none "star".
+			if len(positions) != 2 {
+				return fmt.Errorf("team: non-star bench player must have exactly 2 backup positions, got %d", len(positions))
+			}
+			for _, pos := range positions {
+				if pos == PositionStar {
+					return fmt.Errorf("team: non-star bench player cannot list star as a backup position")
+				}
+				if _, ok := PositionSlots[pos]; !ok {
+					return fmt.Errorf("team: unknown backup position %q", pos)
+				}
+				// Rule 5: each non-star position covered by at most one bench player.
+				if coveredPositions[pos] {
+					return fmt.Errorf("team: position %q is already covered by another bench player", pos)
+				}
+				coveredPositions[pos] = true
+			}
+		}
+	}
+
+	// Rule 6: at most 1 interchange position across all bench players.
+	if interchangeCount > 1 {
+		return fmt.Errorf("team: at most 1 interchange position allowed, got %d", interchangeCount)
+	}
+
+	// Rule 7: interchange position must be a recognised Position and one of the player's own backup positions.
+	for _, bp := range benchPlayers {
+		if bp.InterchangePosition != nil {
+			pos := Position(*bp.InterchangePosition)
+			if _, ok := PositionSlots[pos]; !ok {
+				return fmt.Errorf("team: interchange position %q is not a valid position", pos)
+			}
+			if !containsPosition(*bp.BackupPositions, pos) {
+				return fmt.Errorf("team: interchange position %q is not one of this player's backup positions", pos)
+			}
+		}
+	}
+
+	return nil
+}
+
+// containsPosition checks whether a comma-separated positions string contains pos.
+func containsPosition(positions string, pos Position) bool {
+	for _, p := range strings.Split(positions, ",") {
+		if Position(strings.TrimSpace(p)) == pos {
+			return true
+		}
+	}
+	return false
 }
 
 // Score computes the total fantasy score for this club match.
@@ -108,19 +237,10 @@ func (cm ClubMatch) Score() int {
 	return total
 }
 
-// containsPosition checks whether a comma-separated positions string contains pos.
-func containsPosition(positions string, pos Position) bool {
-	for _, p := range strings.Split(positions, ",") {
-		if Position(strings.TrimSpace(p)) == pos {
-			return true
-		}
-	}
-	return false
-}
-
 type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
 	UpdateScore(ctx context.Context, id int, score int) error
 	UpdateDataStatus(ctx context.Context, id int, status ClubMatchDataStatus) error
+	CountFinalByMatchID(ctx context.Context, matchID int) (int, error)
 }

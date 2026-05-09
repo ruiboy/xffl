@@ -116,10 +116,11 @@ ADR: ADR-018 (Twirp for cross-service communication)
 
 See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/domain.md` (Calculation flow section) for architecture.
 
-- [ ] Phase 1 — Contracts: add 5 new event types + payloads
-- [ ] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
-- [ ] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
-- [ ] Phase 4 — Data ops frontend: Calculate tab with provisional + official ladder triggers
+- [x] Phase 1 — Contracts: add 5 new event types + payloads
+- [x] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
+- [x] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
+- [x] Phase 4 — Data ops frontend: Calculate tab (AFL+FFL ladder recalc), Mark Final button in FFL Teams tab
+- [x] Phase 5 — Recalculate single club match score: new Twirp RPC (LookupPlayerMatchStats), FFL use case (RecalculateClubMatchScore), mutation, and Recalculate button on FFL Teams tab row
   
 ## Step 6 — Score reconciliation *(every round)*
 

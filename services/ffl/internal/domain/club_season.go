@@ -3,15 +3,17 @@ package domain
 import "context"
 
 type ClubSeason struct {
-	ID       int
-	ClubID   int
-	SeasonID int
-	Played   int
-	Won      int
-	Lost     int
-	Drawn    int
-	For      int
-	Against  int
+	ID                int
+	ClubID            int
+	SeasonID          int
+	Played            int
+	Won               int
+	Lost              int
+	Drawn             int
+	For               int
+	Against           int
+	ExtraPoints       int
+	PremiershipPoints int
 }
 
 // Percentage returns the club's season percentage (For / Against * 100).
@@ -27,4 +29,5 @@ type ClubSeasonRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]ClubSeason, error)
 	FindByID(ctx context.Context, id int) (ClubSeason, error)
 	FindByClubAndSeason(ctx context.Context, clubID int, seasonID int) (ClubSeason, error)
+	Update(ctx context.Context, cs ClubSeason) error
 }

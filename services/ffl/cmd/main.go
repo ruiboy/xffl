@@ -80,11 +80,25 @@ func main() {
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
 		},
 		PlayerLookup: playerLookup,
 	})
 
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		dispatcher,
+	)
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
+	dispatcher.Subscribe(contractevents.AflMatchFinalized, scoreCommands.HandleAflMatchFinalized)
+	dispatcher.Subscribe(contractevents.FflTeamSubmitted, scoreCommands.HandleFflTeamSubmitted)
+	dispatcher.Subscribe(contractevents.FflTeamFinalized, scoreCommands.HandleFflTeamFinalized)
+	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, scoreCommands.HandleFflClubMatchScoreFinalized)
+	dispatcher.Subscribe(contractevents.FflMatchFinalized, scoreCommands.HandleFflMatchFinalized)
+
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
 			slog.ErrorContext(ctx, "FFL event listener stopped", slog.Any("error", err))
@@ -96,9 +110,11 @@ func main() {
 		playerLookup,
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
+		dispatcher,
+		commands,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

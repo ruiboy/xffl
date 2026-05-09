@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	footywireSource       = "footywire"
-	confidenceThreshold   = 0.85
+	footywireSource     = "footywire"
+	confidenceThreshold = 0.85
 )
 
 // UnmatchedAFLPlayer holds the parsed stats for a player who could not be matched during import.
@@ -301,7 +301,10 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 }
 
 // MarkMatchStatsFinal sets data_status to "final" (or back to "partial").
+// On transition to final, publishes AflMatchFinalized so that score/ladder
+// calculation can react via ScoreCommands.HandleAflMatchFinalized.
 func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, final bool) (domain.Match, error) {
+	// set status
 	status := domain.MatchDataPartial
 	if final {
 		status = domain.MatchDataFinal
@@ -311,7 +314,32 @@ func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, 
 		return domain.Match{}, fmt.Errorf("update data status: %w", err)
 	}
 
-	return c.matches.FindByID(ctx, matchID)
+	// load Match
+	match, err := c.matches.FindByID(ctx, matchID)
+	if err != nil {
+		return domain.Match{}, err
+	}
+
+	if !final {
+		return match, nil
+	}
+
+	// dispatch integration event
+	round, err := c.rounds.FindByID(ctx, match.RoundID)
+	if err != nil {
+		return domain.Match{}, fmt.Errorf("load round: %w", err)
+	}
+
+	payload, _ := json.Marshal(events.AflMatchFinalizedPayload{
+		MatchID:  matchID,
+		SeasonID: round.SeasonID,
+		RoundID:  match.RoundID,
+	})
+	if err := c.dispatcher.Publish(ctx, events.AflMatchFinalized, payload); err != nil {
+		slog.WarnContext(ctx, "publish AflMatchFinalized failed", slog.Any("error", err))
+	}
+
+	return match, nil
 }
 
 // resolveMid returns the FootyWire mid for a match, scraping the fixture list if needed.
@@ -463,7 +491,7 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 
 // AddAFLPlayerParams holds the input for creating a new AFL player and their season record.
 type AddAFLPlayerParams struct {
-	Name        string
+	Name         string
 	ClubSeasonID int
 }
 

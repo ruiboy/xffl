@@ -78,66 +78,65 @@ FFL.MatchFinalized
 
 ### Phase 1 — Contracts
 
-- [ ] Add `AflMatchFinalized` constant + `AflMatchFinalizedPayload` struct
-- [ ] Add `FflTeamSubmitted` constant + `FflTeamSubmittedPayload` struct
-- [ ] Add `FflTeamFinalized` constant + `FflTeamFinalizedPayload` struct
-- [ ] Add `FflClubMatchScoreFinalized` constant + `FflClubMatchScoreFinalizedPayload` struct
-- [ ] Add `FflMatchFinalized` constant + `FflMatchFinalizedPayload` struct
+- [x] Add `AflMatchFinalized` constant + `AflMatchFinalizedPayload` struct
+- [x] Add `FflTeamSubmitted` constant + `FflTeamSubmittedPayload` struct
+- [x] Add `FflTeamFinalized` constant + `FflTeamFinalizedPayload` struct
+- [x] Add `FflClubMatchScoreFinalized` constant + `FflClubMatchScoreFinalizedPayload` struct
+- [x] Add `FflMatchFinalized` constant + `FflMatchFinalizedPayload` struct
 
 ### Phase 2 — AFL service
 
 #### Domain
-- [ ] `Match.Result() MatchResult` — pure function deriving `home_win/away_win/draw/no_result` from club match scores
-- [ ] `CalculateClubSeasonStats(matches []Match) ClubSeasonStats` — pure function; folds all final matches into played/won/lost/drawn/for/against/premiership_points
+- [x] `Match.DeriveResult() MatchResult` — derives result from StoredScore
+- [x] `ClubSeasonStats` type + `CalculateLadder(matches []Match) map[int]ClubSeasonStats` — pure function
 
 #### Repository
-- [ ] `UpdateMatchResult(ctx, matchID int, result string) error`
-- [ ] `UpdateClubSeason(ctx, clubSeasonID int, stats ClubSeasonStats) error`
-- [ ] `GetFinalMatchesForSeason(ctx, seasonID int) ([]Match, error)` — returns matches where data_status = final
+- [x] `UpdateMatchResult` + `FindFinalBySeasonID` on MatchRepository
+- [x] `UpdateClubSeason` SQL + `Update` on ClubSeasonRepository
 
 #### Application
-- [ ] `SetMatchDataStatus(ctx, matchID, status)` — already exists; extend to publish `AFL.MatchFinalized` on `partial → final` transition
-- [ ] `HandleAflMatchFinalized(ctx, payload)` — sets drv_result, recalcs AFL ladder for season
+- [x] `MarkMatchStatsFinal` extended — derives result, recalcs ladder, publishes `AFL.MatchFinalized` on `partial → final`
 
 #### Data ops
-- [ ] `RecalculateAFLLadder(ctx, seasonID int) error` — walks all final matches, rebuilds club_season drv_ (manual trigger)
+- [x] `RecalculateAFLLadder(ctx, seasonID int) error`
 
 ### Phase 3 — FFL service
 
 #### Domain
-- [ ] `Match.Result() MatchResult` — pure function; same logic as AFL Match.Result()
-- [ ] `CalculateClubSeasonStats(matches []Match) ClubSeasonStats` — same shape as AFL; includes extra_points field
+- [x] `Match.DeriveResult() MatchResult` — pure function using StoredScore
+- [x] `ClubSeasonStats` + `CalculateLadder(matches []Match) map[int]ClubSeasonStats` — in `ladder.go`; includes `ExtraPoints` field
+- [x] `ClubSeason` struct — added `PremiershipPoints` + `ExtraPoints` fields
 
 #### Repository
-- [ ] `UpdateMatchResult(ctx, matchID int, result string) error`
-- [ ] `UpdateClubSeason(ctx, clubSeasonID int, stats ClubSeasonStats) error`
-- [ ] `CountFinalizedClubMatches(ctx, matchID int) (int, error)` — count where data_status = final
-- [ ] `GetFinalMatchesForSeason(ctx, seasonID int) ([]Match, error)`
-- [ ] `GetClubMatchesForAFLRound(ctx, roundID int) ([]ClubMatch, error)` — for provisional recalc
+- [x] `MatchRepository.UpdateResult(ctx, matchID int, result MatchResult) error`
+- [x] `MatchRepository.FindFinalBySeasonID(ctx, seasonID int) ([]Match, error)`
+- [x] `ClubSeasonRepository.Update(ctx, clubSeasonID int, stats ClubSeasonStats) error`
+- [x] `ClubMatchRepository.CountFinalByMatchID(ctx, matchID int) (int, error)`
 
 #### Application — publishing
-- [ ] `SubmitTeam(...)` — publish `FFL.TeamSubmitted` when data_status transitions to `submitted`
-- [ ] `FinalizeTeam(...)` — publish `FFL.TeamFinalized` when data_status transitions to `final`
+- [x] `ImportRoundTeams` — publishes `FFL.TeamSubmitted` when data_status transitions to `submitted`
+- [x] `MarkTeamFinal` — publishes `FFL.TeamFinalized` when data_status transitions to `final`
 
 #### Application — handlers
-- [ ] `HandleAflMatchFinalized` — recalcs provisional FFL scores for round; for each finalized ffl.club_match emits `FFL.ClubMatchScoreFinalized`
-- [ ] `HandleFflTeamSubmitted` — recalcs provisional score for this club_match
-- [ ] `HandleFflTeamFinalized` — recalcs score; if afl.match = final, emits `FFL.ClubMatchScoreFinalized`
-- [ ] `HandleFflClubMatchScoreFinalized` — checks count; if both clubs final, emits `FFL.MatchFinalized`
-- [ ] `HandleFflMatchFinalized` — sets ffl.match.drv_result; recalcs FFL ladder for season
+- [x] `HandleAflMatchFinalized` — for each finalized ffl.club_match in round, emits `FFL.ClubMatchScoreFinalized`
+- [x] `HandleFflTeamSubmitted` — no-op (scores already updated via PlayerMatchUpdated chain)
+- [x] `HandleFflTeamFinalized` — emits `FFL.ClubMatchScoreFinalized`
+- [x] `HandleFflClubMatchScoreFinalized` — checks count; if both clubs final, emits `FFL.MatchFinalized`
+- [x] `HandleFflMatchFinalized` — sets ffl.match.drv_result; recalcs FFL ladder for season
+- [x] `RecalculateFflLadder(ctx, seasonID int) error` — walks all final FFL matches, rebuilds club_season drv_
 
 #### Data ops
 - [ ] `RecalculateFflScores(ctx, roundID int) error` — recalcs all FFL club_matches for AFL round (provisional and final)
-- [ ] `RecalculateFflLadder(ctx, seasonID int) error` — walks all final FFL matches, rebuilds club_season drv_
 - [ ] `ProvisionalLadder(ctx, seasonID int) ([]ClubSeasonStats, error)` — on-demand query; includes submitted+partial matches
 
 ### Phase 4 — Data ops frontend
 
-- [ ] Add "Calculate" tab to data ops
-- [ ] Recalculate AFL ladder (per season) — calls `RecalculateAFLLadder`
-- [ ] Recalculate FFL scores for round — calls `RecalculateFflScores`
-- [ ] Recalculate FFL ladder (per season) — calls `RecalculateFflLadder`
-- [ ] Provisional ladder view — calls `ProvisionalLadder`
+- [x] Add "Calculate" tab to data ops
+- [x] Recalculate AFL ladder (per season) — `recalculateAFLLadder` mutation → `ScoreCommands.RecalculateAFLLadder`
+- [x] Recalculate FFL ladder (per season) — `recalculateFFLLadder` mutation → `ScoreCommands.RecalculateFflLadder`
+- [x] Mark FFL team final button — `markFFLTeamFinal` mutation → `DataOpsCommands.MarkTeamFinal` (in FFL Teams tab)
+- [ ] Recalculate FFL scores for round — `RecalculateFflScores` (backend not yet implemented)
+- [ ] Provisional ladder view — `ProvisionalLadder` (backend not yet implemented)
 
 ---
 

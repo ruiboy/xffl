@@ -47,3 +47,28 @@ func (a *AFLPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeaso
 	}
 	return int(resp.PlayerId), nil
 }
+
+func (a *AFLPlayerLookup) LookupPlayerMatch(ctx context.Context, aflPlayerMatchIDs []int) ([]application.PlayerMatchStats, error) {
+	ids := make([]int32, len(aflPlayerMatchIDs))
+	for i, id := range aflPlayerMatchIDs {
+		ids[i] = int32(id)
+	}
+	resp, err := a.client.LookupPlayerMatch(ctx, &aflv1.LookupPlayerMatchRequest{PlayerMatchIds: ids})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]application.PlayerMatchStats, len(resp.Stats))
+	for i, s := range resp.Stats {
+		out[i] = application.PlayerMatchStats{
+			ID:        int(s.Id),
+			Status:    s.Status,
+			Goals:     int(s.Goals),
+			Kicks:     int(s.Kicks),
+			Handballs: int(s.Handballs),
+			Marks:     int(s.Marks),
+			Tackles:   int(s.Tackles),
+			Hitouts:   int(s.Hitouts),
+		}
+	}
+	return out, nil
+}

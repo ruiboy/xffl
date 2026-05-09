@@ -122,6 +122,7 @@ type AddAFLPlayerSeasonInput struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 }
 
+// ---- Import flow ----
 type ImportAFLMatchStatsResult struct {
 	MatchID          string                `json:"matchId"`
 	HomeClubName     string                `json:"homeClubName"`

@@ -92,3 +92,27 @@ export const CONFIRM_TEAM_SUBMISSION = gql`
     }
   }
 `
+
+export const MARK_FFL_TEAM_FINAL = gql`
+  mutation MarkFFLTeamFinal($input: MarkFFLTeamFinalInput!) {
+    markFFLTeamFinal(input: $input)
+  }
+`
+
+export const RECALCULATE_AFL_LADDER = gql`
+  mutation RecalculateAFLLadder($seasonId: ID!) {
+    recalculateAFLLadder(seasonId: $seasonId)
+  }
+`
+
+export const RECALCULATE_FFL_LADDER = gql`
+  mutation RecalculateFFLLadder($seasonId: ID!) {
+    recalculateFFLLadder(seasonId: $seasonId)
+  }
+`
+
+export const RECALCULATE_FFL_CLUB_MATCH_SCORE = gql`
+  mutation RecalculateFFLClubMatchScore($clubMatchId: ID!) {
+    recalculateFFLClubMatchScore(clubMatchId: $clubMatchId)
+  }
+`

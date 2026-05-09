@@ -2,9 +2,13 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 
+	"xffl/contracts/events"
 	"xffl/services/ffl/internal/domain"
+	sharedevents "xffl/shared/events"
 )
 
 const confidenceThreshold = 0.85
@@ -38,20 +42,31 @@ type ImportRoundTeamsParams struct {
 	ResolvedPlayers []ResolvedPlayer
 }
 
-// DataOpsCommands handles data import operations.
-type DataOpsCommands struct {
-	tx            TxManager
-	playerLookup  PlayerLookup
-	playerResolver PlayerResolver
-	teamParser    TeamParser
+// MarkTeamFinalParams are the inputs to MarkTeamFinal.
+type MarkTeamFinalParams struct {
+	ClubMatchID int
+	MatchID     int
+	RoundID     int
 }
 
-func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolver, parser TeamParser) *DataOpsCommands {
+// DataOpsCommands handles data import operations.
+type DataOpsCommands struct {
+	tx             TxManager
+	playerLookup   PlayerLookup
+	playerResolver PlayerResolver
+	teamParser     TeamParser
+	dispatcher     sharedevents.Dispatcher
+	teamSubmitter  TeamSubmitter
+}
+
+func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolver, parser TeamParser, dispatcher sharedevents.Dispatcher, teamSubmitter TeamSubmitter) *DataOpsCommands {
 	return &DataOpsCommands{
 		tx:             tx,
 		playerLookup:   lookup,
 		playerResolver: resolver,
 		teamParser:     parser,
+		dispatcher:     dispatcher,
+		teamSubmitter:  teamSubmitter,
 	}
 }
 
@@ -124,66 +139,53 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 	}, nil
 }
 
-// ImportRoundTeams writes the confirmed team submission to the database.
-// Each ResolvedPlayer must have a valid PlayerSeasonID set before calling.
+// ImportRoundTeams converts resolved players to team entries and delegates to teamSubmitter.SetTeam,
+// which handles validation, diff-based persistence, scoring, and event publishing.
 func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRoundTeamsParams) ([]domain.PlayerMatch, error) {
-	var result []domain.PlayerMatch
-
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
-		// Remove any existing player_match records for this club_match.
-		if err := repos.PlayerMatches.DeleteByClubMatchID(ctx, params.ClubMatchID); err != nil {
-			return fmt.Errorf("clear existing player matches: %w", err)
+	entries := make([]SetTeamEntry, 0, len(params.ResolvedPlayers))
+	for _, rp := range params.ResolvedPlayers {
+		if rp.PlayerSeasonID == 0 {
+			continue
 		}
-
-		result = make([]domain.PlayerMatch, 0, len(params.ResolvedPlayers))
-		for _, rp := range params.ResolvedPlayers {
-			if rp.PlayerSeasonID == 0 {
-				continue // skip unresolved players
-			}
-
-			upsertParams := buildUpsertParams(params.ClubMatchID, rp)
-			pm, err := repos.PlayerMatches.Upsert(ctx, upsertParams)
-			if err != nil {
-				return fmt.Errorf("upsert player_match for player_season %d: %w", rp.PlayerSeasonID, err)
-			}
-			result = append(result, pm)
+		e := SetTeamEntry{
+			PlayerSeasonID: rp.PlayerSeasonID,
+			Position:       rp.Parsed.Position,
+			Score:          rp.Parsed.Score,
 		}
-
-		if err := repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataSubmitted); err != nil {
-			return fmt.Errorf("update club match data status: %w", err)
+		if rp.Parsed.BackupPositions != "" {
+			e.BackupPositions = &rp.Parsed.BackupPositions
 		}
-		return nil
+		if rp.Parsed.InterchangePosition != "" {
+			e.InterchangePosition = &rp.Parsed.InterchangePosition
+		}
+		entries = append(entries, e)
+	}
+	return c.teamSubmitter.SetTeam(ctx, SetTeamParams{
+		ClubMatchID: params.ClubMatchID,
+		Entries:     entries,
 	})
-
-	return result, err
 }
 
-func buildUpsertParams(clubMatchID int, rp ResolvedPlayer) domain.UpsertPlayerMatchParams {
-	p := rp.Parsed
-	status := domain.PlayerMatchStatusNamed
-
-	params := domain.UpsertPlayerMatchParams{
-		ClubMatchID:    clubMatchID,
-		PlayerSeasonID: rp.PlayerSeasonID,
-		Status:         &status,
+// MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.TeamFinalized.
+// Call this after AFL stats are final and the team selection is confirmed.
+func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFinalParams) error {
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataFinal)
+	})
+	if err != nil {
+		return err
 	}
 
-	if p.BackupPositions != "" || p.InterchangePosition != "" {
-		// bench player
-		if p.BackupPositions != "" {
-			params.BackupPositions = &p.BackupPositions
+	b, err := json.Marshal(events.FflTeamFinalizedPayload{
+		ClubMatchID: params.ClubMatchID,
+		MatchID:     params.MatchID,
+		RoundID:     params.RoundID,
+	})
+	if err == nil {
+		if err := c.dispatcher.Publish(ctx, events.FflTeamFinalized, b); err != nil {
+			slog.WarnContext(ctx, "publish FflTeamFinalized failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 		}
-		if p.InterchangePosition != "" {
-			params.InterchangePosition = &p.InterchangePosition
-		}
-	} else {
-		pos := domain.Position(p.Position)
-		params.Position = &pos
 	}
-
-	if p.Score != nil {
-		params.Score = p.Score
-	}
-
-	return params
+	return nil
 }
+

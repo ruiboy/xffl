@@ -168,6 +168,12 @@ type FFLTeamPlayerInput struct {
 	InterchangePosition *string `json:"interchangePosition,omitempty"`
 }
 
+type MarkFFLTeamFinalInput struct {
+	ClubMatchID string `json:"clubMatchId"`
+	MatchID     string `json:"matchId"`
+	RoundID     string `json:"roundId"`
+}
+
 type Mutation struct {
 }
 

@@ -261,6 +261,40 @@ func (r *MatchRepository) UpdateDataStatus(ctx context.Context, matchID int, sta
 	})
 }
 
+func (r *MatchRepository) UpdateResult(ctx context.Context, matchID int, result domain.MatchResult) error {
+	s := string(result)
+	return r.q.UpdateMatchResult(ctx, sqlcgen.UpdateMatchResultParams{
+		ID:        int32(matchID),
+		DrvResult: &s,
+	})
+}
+
+func (r *MatchRepository) FindFinalBySeasonID(ctx context.Context, seasonID int) ([]domain.Match, error) {
+	rows, err := r.q.FindFinalMatchesBySeasonID(ctx, int32(seasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Match, len(rows))
+	for i, row := range rows {
+		out[i] = domain.Match{
+			ID:      int(row.ID),
+			RoundID: int(row.RoundID),
+			Home: domain.ClubMatch{
+				ID:           int(row.HomeClubMatchID),
+				ClubSeasonID: int(row.HomeClubSeasonID),
+				StoredScore:  int(row.HomeScore),
+			},
+			Away: domain.ClubMatch{
+				ID:           int(row.AwayClubMatchID),
+				ClubSeasonID: int(row.AwayClubSeasonID),
+				StoredScore:  int(row.AwayScore),
+			},
+			DataStatus: domain.MatchDataFinal,
+		}
+	}
+	return out, nil
+}
+
 func (r *MatchRepository) FindByIDWithDetails(ctx context.Context, id int) (domain.Match, error) {
 	match, err := r.FindByID(ctx, id)
 	if err != nil {
@@ -359,6 +393,26 @@ func (r *ClubSeasonRepository) FindByID(ctx context.Context, id int) (domain.Clu
 		Against:           derefOr(row.DrvAgainst),
 		PremiershipPoints: derefOr(row.DrvPremiershipPoints),
 	}, nil
+}
+
+func (r *ClubSeasonRepository) Update(ctx context.Context, cs domain.ClubSeason) error {
+	played := int32(cs.Played)
+	won := int32(cs.Won)
+	lost := int32(cs.Lost)
+	drawn := int32(cs.Drawn)
+	forPts := int32(cs.For)
+	against := int32(cs.Against)
+	pp := int32(cs.PremiershipPoints)
+	return r.q.UpdateClubSeason(ctx, sqlcgen.UpdateClubSeasonParams{
+		ID:                   int32(cs.ID),
+		DrvPlayed:            &played,
+		DrvWon:               &won,
+		DrvLost:              &lost,
+		DrvDrawn:             &drawn,
+		DrvFor:               &forPts,
+		DrvAgainst:           &against,
+		DrvPremiershipPoints: &pp,
+	})
 }
 
 // --- ClubMatch ---
@@ -543,6 +597,34 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		Goals:          derefOr(row.Goals),
 		Behinds:        derefOr(row.Behinds),
 	}, nil
+}
+
+func (r *PlayerMatchRepository) FindByIDs(ctx context.Context, ids []int) ([]domain.PlayerMatch, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindPlayerMatchesByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerMatch, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerMatch{
+			ID:             int(row.ID),
+			ClubMatchID:    int(row.ClubMatchID),
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			Status:         derefOrStr(row.Status),
+			Kicks:          derefOr(row.Kicks),
+			Handballs:      derefOr(row.Handballs),
+			Marks:          derefOr(row.Marks),
+			Hitouts:        derefOr(row.Hitouts),
+			Tackles:        derefOr(row.Tackles),
+			Goals:          derefOr(row.Goals),
+			Behinds:        derefOr(row.Behinds),
+		}
+	}
+	return out, nil
 }
 
 func (r *PlayerMatchRepository) FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]domain.PlayerMatch, error) {

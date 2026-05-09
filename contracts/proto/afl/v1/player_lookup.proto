@@ -7,6 +7,7 @@ option go_package = "xffl/contracts/gen/afl/v1;aflv1";
 service PlayerLookup {
   rpc LookupPlayers(LookupPlayersRequest) returns (LookupPlayersResponse);
   rpc LookupPlayerSeason(LookupPlayerSeasonRequest) returns (LookupPlayerSeasonResponse);
+  rpc LookupPlayerMatch(LookupPlayerMatchRequest) returns (LookupPlayerMatchResponse);
 }
 
 message LookupPlayersRequest {
@@ -29,4 +30,23 @@ message LookupPlayerSeasonRequest {
 
 message LookupPlayerSeasonResponse {
   int32 player_id = 1;
+}
+
+message LookupPlayerMatchRequest {
+  repeated int32 player_match_ids = 1;
+}
+
+message LookupPlayerMatchResponse {
+  repeated PlayerMatchStats stats = 1;
+}
+
+message PlayerMatchStats {
+  int32  id        = 1;
+  string status    = 2;
+  int32  goals     = 3;
+  int32  kicks     = 4;
+  int32  handballs = 5;
+  int32  marks     = 6;
+  int32  tackles   = 7;
+  int32  hitouts   = 8;
 }

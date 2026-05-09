@@ -17,6 +17,12 @@ FROM afl.player_match
 WHERE player_season_id = $1 AND deleted_at IS NULL
 ORDER BY id;
 
+-- name: FindPlayerMatchesByIDs :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
+FROM afl.player_match
+WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
+
 -- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

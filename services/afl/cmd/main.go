@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	aflv1 "xffl/contracts/gen/afl/v1"
+	"xffl/contracts/events"
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
@@ -73,6 +74,15 @@ func main() {
 	db := pg.NewDB(pool)
 	commands := application.NewCommands(db, dispatcher)
 
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		dispatcher,
+	)
+	dispatcher.Subscribe(events.AflMatchFinalized, scoreCommands.HandleAflMatchFinalized)
+
 	footywireClient := footywire.NewFootywireClient()
 	dataOps := application.NewDataOpsCommands(
 		db,
@@ -90,7 +100,7 @@ func main() {
 		dispatcher,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)
@@ -104,7 +114,7 @@ func main() {
 		}
 	})
 
-	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q), pg.NewPlayerSeasonRepository(q))
+	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q), pg.NewPlayerSeasonRepository(q), pg.NewPlayerMatchRepository(q))
 	twirpHandler := aflv1.NewPlayerLookupServer(playerLookup)
 
 	mux := http.NewServeMux()

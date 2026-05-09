@@ -50,6 +50,10 @@ func (s *stubPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeas
 	return aflPlayerID, nil
 }
 
+func (s *stubPlayerLookup) LookupPlayerMatch(_ context.Context, _ []int) ([]application.PlayerMatchStats, error) {
+	return nil, nil
+}
+
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {
 	t.Helper()
 
@@ -72,6 +76,7 @@ func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.D
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
@@ -112,11 +117,24 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 			{AFLPlayerID: jeremyAFLID, Name: "Jeremy Cameron", Club: "Geel"},
 		},
 	}
+	testDB := pg.NewDB(pool)
+	testQ := sqlcgen.New(pool)
+	testCommands := application.NewCommands(testDB, memevents.New(), application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(testQ),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(testQ),
+			PlayerMatches: pg.NewPlayerMatchRepository(testQ),
+			Matches:       pg.NewMatchRepository(testQ),
+		},
+		PlayerLookup: stub,
+	})
 	dataOps := application.NewDataOpsCommands(
-		pg.NewDB(pool),
+		testDB,
 		stub,
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
+		memevents.New(),
+		testCommands,
 	)
 
 	server := setupDataOpsServer(t, pool, dataOps)
@@ -262,4 +280,71 @@ func toIDStr(id int) string {
 func jsonString(s string) string {
 	b, _ := json.Marshal(s)
 	return string(b)
+}
+
+// ════════════════════════════════════════════════════════════════
+// MarkFFLTeamFinal integration test
+// ════════════════════════════════════════════════════════════════
+
+func TestMarkFFLTeamFinal(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+
+	db := pg.NewDB(pool)
+	q := sqlcgen.New(pool)
+	cmds := application.NewCommands(db, memevents.New(), application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
+		},
+		PlayerLookup: &stubPlayerLookup{pool: pool},
+	})
+	dataOps := application.NewDataOpsCommands(
+		db,
+		&stubPlayerLookup{pool: pool},
+		forum.NewLevenshteinResolver(),
+		forum.NewParser(),
+		memevents.New(),
+		cmds,
+	)
+	server := setupDataOpsServer(t, pool, dataOps)
+	defer server.Close()
+
+	mutation := fmt.Sprintf(`mutation {
+		markFFLTeamFinal(input: {
+			clubMatchId: "%d"
+			matchId: "%d"
+			roundId: "%d"
+		})
+	}`, ids.homeClubMatchID, ids.matchID, ids.roundID)
+
+	result := execQuery(t, server, mutation)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		MarkFFLTeamFinal bool `json:"markFFLTeamFinal"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("mutation returns true", func(t *testing.T) {
+		assert.True(t, data.MarkFFLTeamFinal)
+	})
+
+	t.Run("target club_match data_status is set to final", func(t *testing.T) {
+		var status string
+		require.NoError(t, pool.QueryRow(context.Background(),
+			"SELECT data_status FROM ffl.club_match WHERE id = $1",
+			ids.homeClubMatchID).Scan(&status))
+		assert.Equal(t, "final", status)
+	})
+
+	t.Run("other club_match data_status is unchanged", func(t *testing.T) {
+		var status string
+		require.NoError(t, pool.QueryRow(context.Background(),
+			"SELECT data_status FROM ffl.club_match WHERE id = $1",
+			ids.awayClubMatchID).Scan(&status))
+		assert.Equal(t, "no_data", status)
+	})
 }
