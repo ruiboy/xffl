@@ -60,7 +60,21 @@ Real-world Australian Football League data.
 | **For / Against** | Total points scored / conceded across the season. |
 | **Percentage** | `For ÷ Against × 100`. Tiebreaker on the ladder. |
 
-### Player match status
+### Match data status
+
+Tracks completeness of player stats for a match. Key input for scoring calculations.
+
+| Status | Meaning |
+|--------|---------|
+| `no_data` | No stats imported yet. |
+| `partial` | Stats imported but not yet confirmed complete. |
+| `final` | All player stats locked — no further changes expected. |
+
+### Match result
+
+One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match scores; stored in `drv_result` once `data_status = final`.
+
+### PlayerMatch status
 
 | Status | Meaning |
 |--------|---------|
@@ -72,13 +86,10 @@ Real-world Australian Football League data.
 
 `PlayerSeason` includes `from_round_id` and `to_round_id` to track when a player joined or left a club during the season (trades, delistings). Null means start/end of season respectively.
 
-### Match result
-
-One of: `home_win`, `away_win`, `draw`, `no_result`.
-
 ### Events published
 
 - **`AFL.PlayerMatchUpdated`** — fired when a player's match stats change. Payload carries full stats (kicks, handballs, marks, hitouts, tackles, goals, behinds).
+- **`AFL.MatchFinalized`** — fired when `afl.match.data_status` transitions to `final`. Triggers AFL match result derivation and AFL ladder recalculation. (Also signals the FFL service to recalculate affected club match scores.)
 
 ---
 
@@ -138,7 +149,26 @@ Hard rules enforced by `domain.ValidateTeam()`:
 
 Every FFL player links to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and `PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys (no cross-schema joins).
 
-### Status
+### ClubMatch data status
+
+Tracks FFL teams. Key input for scoring calculations.
+
+| Status | Meaning                                                                      |
+|--------|------------------------------------------------------------------------------|
+| `no_data` | Team not yet submitted for this round.                                       |
+| `submitted` | Team imported. Player substitutions may still be pending resolution.         |
+| `final` | Team confirmed after all subs resolved. Locked — no further changes expected. |
+
+### Data status -> Score tiers
+
+Combining AFL Match data status and FFL ClubMatch data status determines what can be calculated:
+
+| AFL status | FFL status | Score tier |
+|-----------|-----------|-----------|
+| `partial` or `final` | `submitted` or `final` | **Provisional** — may change as stats arrive or manager resolves subs (which can alter team structure, including the interchange slot) |
+| `final` | `final` | **Final** — locked; updates the official ladder |
+
+### PlayerMatch status
 
 FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL status but takes its own values.
 
@@ -179,5 +209,46 @@ Same structure as AFL (played, won, lost, drawn, for, against, premiership point
 
 ### Events
 
-- **Subscribes:** `AFL.PlayerMatchUpdated` → triggers fantasy score calculation.
-- **Publishes:** `FFL.FantasyScoreCalculated` — carries the calculated score and the AFL PlayerMatch ID it was derived from.
+**Subscribes:**
+- `AFL.PlayerMatchUpdated` → incremental provisional score update for the affected player and club match.
+- `AFL.MatchFinalized` → recalculate provisional/final FFL scores for all club matches in the round.
+
+**Publishes:**
+- `FFL.FantasyScoreCalculated` — carries the calculated score and the AFL PlayerMatch ID it was derived from.
+- `FFL.TeamSubmitted` — fired when `ffl.club_match.data_status → submitted`. Triggers provisional score calculation.
+- `FFL.TeamFinalized` — fired when `ffl.club_match.data_status → final`. Triggers final score calculation if AFL is also final.
+- `FFL.ClubMatchScoreFinalized` — fired when a single club's score is locked (AFL final + FFL team final). Triggers check for full match finalization.
+- `FFL.MatchFinalized` — fired when both clubs in an FFL match have finalized. Triggers `ffl.match.drv_result` derivation and ladder recalculation. Symmetric with `AFL.MatchFinalized`.
+
+---
+
+## Calculation flow
+
+The following events chain AFL and FFL score and ladder derivation. Both services react to each other's finalization events.
+
+```
+AFL.PlayerMatchUpdated
+  └─ FFL: update provisional player and club match scores
+
+AFL.MatchFinalized
+  ├─ AFL: derive match result; recalculate AFL ladder
+  └─ FFL: recalculate scores for all FFL club matches in the round
+          └─ if ffl.club_match.data_status = final → FFL.ClubMatchScoreFinalized
+
+FFL.TeamSubmitted
+  └─ FFL: recalculate provisional score for this club match
+
+FFL.TeamFinalized
+  └─ FFL: recalculate score for this club match
+          └─ if afl.match.data_status = final → FFL.ClubMatchScoreFinalized
+
+FFL.ClubMatchScoreFinalized               (fires per club, independently)
+  └─ FFL: if both clubs in the FFL match are now final → FFL.MatchFinalized
+
+FFL.MatchFinalized
+  └─ FFL: derive match result; recalculate FFL ladder
+```
+
+Ladder recalculation (both AFL and FFL): the entire season is recalculated from scratch on each trigger — simpler and drift-free given bounded season length (~22 rounds).
+
+Provisional ladder is computed on-demand from current scores — no dedicated event or separate columns.

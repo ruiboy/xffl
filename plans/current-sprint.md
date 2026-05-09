@@ -91,7 +91,6 @@ ADR: ADR-018 (Twirp for cross-service communication)
       - [x] Link round to FFL Round page.
       - [x] Link each team to FFL Team Builder page
       - [x] Improve UI: Form is a bit ugly right now. Team format should default selected club.
-    - [ ] Function to recalculate FFL stats for a team. Call on team import. Maybe have button in data ops.
   - Holistic player search (replaces inline unmatched-player review in AFL stats import)
     **Decisions:**
     - Player search is a shared UX pattern but two separate components: `features/data-ops/` and `features/ffl/` each own theirs so they can diverge naturally
@@ -112,6 +111,15 @@ ADR: ADR-018 (Twirp for cross-service communication)
     - [x] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`
     - [x] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
     - [x] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
+
+### Score/ladder calculation side quest
+
+See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/domain.md` (Calculation flow section) for architecture.
+
+- [ ] Phase 1 — Contracts: add 5 new event types + payloads
+- [ ] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
+- [ ] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
+- [ ] Phase 4 — Data ops frontend: Calculate tab with provisional + official ladder triggers
   
 ## Step 6 — Score reconciliation *(every round)*
 
