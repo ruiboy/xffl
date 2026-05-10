@@ -2,11 +2,9 @@ package application
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
-	"xffl/contracts/events"
 	"xffl/services/afl/internal/domain"
 	sharedevents "xffl/shared/events"
 )
@@ -36,17 +34,12 @@ func NewScoreCommands(
 	}
 }
 
-// HandleAflMatchFinalized reacts to AFL.MatchFinalized: derives and persists the
-// match result, then recalculates the AFL ladder for the season.
-func (c *ScoreCommands) HandleAflMatchFinalized(ctx context.Context, payload []byte) error {
-	var p events.AflMatchFinalizedPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal AflMatchFinalized: %w", err)
-	}
-
-	match, err := c.matches.FindByID(ctx, p.MatchID)
+// ProcessAFLMatchFinalized derives and persists the match result, then recalculates
+// the AFL ladder for the season.
+func (c *ScoreCommands) ProcessAFLMatchFinalized(ctx context.Context, matchID, seasonID int) error {
+	match, err := c.matches.FindByID(ctx, matchID)
 	if err != nil {
-		return fmt.Errorf("load match %d: %w", p.MatchID, err)
+		return fmt.Errorf("load match %d: %w", matchID, err)
 	}
 
 	home, err := c.clubMatches.FindByID(ctx, match.Home.ID)
@@ -60,12 +53,12 @@ func (c *ScoreCommands) HandleAflMatchFinalized(ctx context.Context, payload []b
 	match.Home = home
 	match.Away = away
 
-	if err := c.matches.UpdateResult(ctx, p.MatchID, match.DeriveResult()); err != nil {
-		slog.WarnContext(ctx, "update match result failed", slog.Int("match_id", p.MatchID), slog.Any("error", err))
+	if err := c.matches.UpdateResult(ctx, matchID, match.DeriveResult()); err != nil {
+		slog.WarnContext(ctx, "update match result failed", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
-	if err := c.RecalculateAFLLadder(ctx, p.SeasonID); err != nil {
-		slog.WarnContext(ctx, "recalculate AFL ladder failed", slog.Int("season_id", p.SeasonID), slog.Any("error", err))
+	if err := c.RecalculateAFLLadder(ctx, seasonID); err != nil {
+		slog.WarnContext(ctx, "recalculate AFL ladder failed", slog.Int("season_id", seasonID), slog.Any("error", err))
 	}
 
 	return nil

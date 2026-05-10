@@ -452,44 +452,52 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 	return result, err
 }
 
-// HandlePlayerMatchUpdated processes an AFL.PlayerMatchUpdated event.
-// It finds all FFL player matches for the given AFL player in the matching round
-// and recalculates their fantasy scores.
-func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte) error {
-	var event events.PlayerMatchUpdatedPayload
-	if err := json.Unmarshal(payload, &event); err != nil {
-		return fmt.Errorf("unmarshal PlayerMatchUpdated: %w", err)
-	}
+// PlayerMatchUpdate carries AFL player performance data for a single player in a round.
+type PlayerMatchUpdate struct {
+	AFLPlayerMatchID  int
+	AFLPlayerSeasonID int
+	ClubMatchID       int
+	RoundID           int
+	Status            string
+	Goals             int
+	Kicks             int
+	Handballs         int
+	Marks             int
+	Tackles           int
+	Hitouts           int
+}
 
-	slog.DebugContext(ctx, "event received",
-		slog.String("event_type", events.PlayerMatchUpdated),
-		slog.Int("player_match_id", event.PlayerMatchID),
-		slog.Int("player_season_id", event.PlayerSeasonID),
-		slog.Int("round_id", event.RoundID),
+// ProcessPlayerMatchUpdated finds all FFL player matches for the given AFL player in the
+// matching round, links them to the AFL player match, syncs status, and recalculates scores.
+func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerMatchUpdate) error {
+	slog.DebugContext(ctx, "ProcessPlayerMatchUpdated",
+		slog.Int("afl_player_match_id", update.AFLPlayerMatchID),
+		slog.Int("afl_player_season_id", update.AFLPlayerSeasonID),
+		slog.Int("round_id", update.RoundID),
 	)
 
 	// Find the FFL round that corresponds to this AFL round.
-	fflRound, err := c.eventRepos.Rounds.FindByAFLRoundID(ctx, event.RoundID)
+	fflRound, err := c.eventRepos.Rounds.FindByAFLRoundID(ctx, update.RoundID)
 	if err != nil {
 		return nil
 	}
 
 	// Find all FFL player seasons linked to this AFL player season.
-	fflPlayerSeasons, err := c.eventRepos.PlayerSeasons.FindByAFLPlayerSeasonID(ctx, event.PlayerSeasonID)
+	fflPlayerSeasons, err := c.eventRepos.PlayerSeasons.FindByAFLPlayerSeasonID(ctx, update.AFLPlayerSeasonID)
 	if err != nil {
-		return fmt.Errorf("find FFL player seasons for AFL player_season %d: %w", event.PlayerSeasonID, err)
+		return fmt.Errorf("find FFL player seasons for AFL player_season %d: %w", update.AFLPlayerSeasonID, err)
 	}
 	if len(fflPlayerSeasons) == 0 {
 		return nil // player not in any FFL squad
 	}
 
 	stats := domain.AFLStats{
-		Goals:     event.Goals,
-		Kicks:     event.Kicks,
-		Handballs: event.Handballs,
-		Marks:     event.Marks,
-		Tackles:   event.Tackles,
-		Hitouts:   event.Hitouts,
+		Goals:     update.Goals,
+		Kicks:     update.Kicks,
+		Handballs: update.Handballs,
+		Marks:     update.Marks,
+		Tackles:   update.Tackles,
+		Hitouts:   update.Hitouts,
 	}
 
 	for _, ps := range fflPlayerSeasons {
@@ -502,14 +510,14 @@ func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 
 		// Link to the AFL player match if not already set.
 		if pm.AFLPlayerMatchID == nil {
-			if err := c.eventRepos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, event.PlayerMatchID); err != nil {
+			if err := c.eventRepos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, update.AFLPlayerMatchID); err != nil {
 				slog.ErrorContext(ctx, "failed to set afl_player_match_id on player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}
 
 		// Sync the AFL player match status onto the FFL record (named during partial import).
-		if event.Status != "" {
-			if err := c.eventRepos.PlayerMatches.UpdateStatus(ctx, pm.ID, domain.PlayerMatchStatus(event.Status)); err != nil {
+		if update.Status != "" {
+			if err := c.eventRepos.PlayerMatches.UpdateStatus(ctx, pm.ID, domain.PlayerMatchStatus(update.Status)); err != nil {
 				slog.WarnContext(ctx, "failed to update player_match status", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}

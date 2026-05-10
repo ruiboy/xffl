@@ -39,16 +39,11 @@ func NewScoreCommands(
 	}
 }
 
-// HandleAflMatchFinalized reacts to AFL.MatchFinalized: for each FFL club_match in the
+// ProcessAFLRoundFinalized reacts to AFL.MatchFinalized: for each FFL club_match in the
 // corresponding round, recalculates provisional scores. For those already at data_status
 // 'final', emits FFL.ClubMatchScoreFinalized.
-func (c *ScoreCommands) HandleAflMatchFinalized(ctx context.Context, payload []byte) error {
-	var p events.AflMatchFinalizedPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal AflMatchFinalized: %w", err)
-	}
-
-	fflRound, err := c.rounds.FindByAFLRoundID(ctx, p.RoundID)
+func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID int) error {
+	fflRound, err := c.rounds.FindByAFLRoundID(ctx, aflRoundID)
 	if err != nil {
 		// No FFL round linked to this AFL round — nothing to do.
 		return nil
@@ -104,72 +99,57 @@ func (c *ScoreCommands) inferPlayerMatchStatuses(ctx context.Context, clubMatchI
 	}
 }
 
-// HandleFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and
+// ProcessFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and
 // emits FFL.ClubMatchScoreFinalized. Assumes AFL stats are final by the time this fires (the
 // data ops workflow enforces this order; RecalculateFflLadder is the safety net).
-func (c *ScoreCommands) HandleFflTeamFinalized(ctx context.Context, payload []byte) error {
-	var p events.FflTeamFinalizedPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal FflTeamFinalized: %w", err)
-	}
-
-	if err := c.emitClubMatchScoreFinalized(ctx, p.ClubMatchID, p.MatchID); err != nil {
-		slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", p.ClubMatchID), slog.Any("error", err))
+func (c *ScoreCommands) ProcessFflTeamFinalized(ctx context.Context, clubMatchID, matchID int) error {
+	if err := c.emitClubMatchScoreFinalized(ctx, clubMatchID, matchID); err != nil {
+		slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 	return nil
 }
 
-// HandleFflClubMatchScoreFinalized reacts to FFL.ClubMatchScoreFinalized: if both club_matches
+// ProcessFflClubMatchScoreFinalized reacts to FFL.ClubMatchScoreFinalized: if both club_matches
 // for the match are now final, emits FFL.MatchFinalized.
-func (c *ScoreCommands) HandleFflClubMatchScoreFinalized(ctx context.Context, payload []byte) error {
-	var p events.FflClubMatchScoreFinalizedPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal FflClubMatchScoreFinalized: %w", err)
-	}
-
-	count, err := c.clubMatches.CountFinalByMatchID(ctx, p.MatchID)
+func (c *ScoreCommands) ProcessFflClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
+	count, err := c.clubMatches.CountFinalByMatchID(ctx, matchID)
 	if err != nil {
-		return fmt.Errorf("count final club_matches for match %d: %w", p.MatchID, err)
+		return fmt.Errorf("count final club_matches for match %d: %w", matchID, err)
 	}
 	if count < 2 {
 		return nil
 	}
 
-	m, err := c.matches.FindByID(ctx, p.MatchID)
+	m, err := c.matches.FindByID(ctx, matchID)
 	if err != nil {
-		return fmt.Errorf("load match %d: %w", p.MatchID, err)
+		return fmt.Errorf("load match %d: %w", matchID, err)
 	}
 
 	fflPayload, err := json.Marshal(events.FflMatchFinalizedPayload{
-		MatchID: p.MatchID,
+		MatchID: matchID,
 		RoundID: m.RoundID,
 	})
 	if err != nil {
 		return fmt.Errorf("marshal FflMatchFinalized: %w", err)
 	}
 	if err := c.dispatcher.Publish(ctx, events.FflMatchFinalized, fflPayload); err != nil {
-		slog.WarnContext(ctx, "publish FflMatchFinalized failed", slog.Int("match_id", p.MatchID), slog.Any("error", err))
+		slog.WarnContext(ctx, "publish FflMatchFinalized failed", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 	return nil
 }
 
-// HandleFflMatchFinalized reacts to FFL.MatchFinalized: derives and persists the match result,
+// ProcessFflMatchFinalized reacts to FFL.MatchFinalized: derives and persists the match result,
 // then recalculates the FFL ladder for the season.
-func (c *ScoreCommands) HandleFflMatchFinalized(ctx context.Context, payload []byte) error {
-	var p events.FflMatchFinalizedPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal FflMatchFinalized: %w", err)
-	}
-
+func (c *ScoreCommands) ProcessFflMatchFinalized(ctx context.Context, matchID, roundID int) error {
 	// Load the match with its stored club_match scores to derive the result.
-	clubMatches, err := c.clubMatches.FindByMatchID(ctx, p.MatchID)
+	clubMatches, err := c.clubMatches.FindByMatchID(ctx, matchID)
 	if err != nil {
-		return fmt.Errorf("load club_matches for match %d: %w", p.MatchID, err)
+		return fmt.Errorf("load club_matches for match %d: %w", matchID, err)
 	}
 
-	m, err := c.matches.FindByID(ctx, p.MatchID)
+	m, err := c.matches.FindByID(ctx, matchID)
 	if err != nil {
-		return fmt.Errorf("load match %d: %w", p.MatchID, err)
+		return fmt.Errorf("load match %d: %w", matchID, err)
 	}
 	for _, cm := range clubMatches {
 		if cm.ID == m.Home.ID {
@@ -179,13 +159,13 @@ func (c *ScoreCommands) HandleFflMatchFinalized(ctx context.Context, payload []b
 		}
 	}
 
-	if err := c.matches.UpdateResult(ctx, p.MatchID, m.DeriveResult()); err != nil {
-		slog.WarnContext(ctx, "update match result failed", slog.Int("match_id", p.MatchID), slog.Any("error", err))
+	if err := c.matches.UpdateResult(ctx, matchID, m.DeriveResult()); err != nil {
+		slog.WarnContext(ctx, "update match result failed", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
-	round, err := c.rounds.FindByID(ctx, m.RoundID)
+	round, err := c.rounds.FindByID(ctx, roundID)
 	if err != nil {
-		return fmt.Errorf("load round %d: %w", m.RoundID, err)
+		return fmt.Errorf("load round %d: %w", roundID, err)
 	}
 	if err := c.RecalculateFflLadder(ctx, round.SeasonID); err != nil {
 		slog.WarnContext(ctx, "recalculate FFL ladder failed", slog.Int("season_id", round.SeasonID), slog.Any("error", err))

@@ -4,14 +4,12 @@ package graphql_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
@@ -171,24 +169,17 @@ func TestHandlePlayerMatchUpdated_scores_ffl_player_match(t *testing.T) {
 	commands, _ := setupCommandsWithDispatcher(t, pool)
 	ctx := context.Background()
 
-	// Simulate AFL publishing a PlayerMatchUpdated event.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  999, // AFL player_match ID (arbitrary, used for linking)
-		PlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:    ids.aflClubMatchID,
-		RoundID:        ids.aflRoundID,
-		Kicks:          20,
-		Handballs:      10,
-		Marks:          5,
-		Hitouts:        0,
-		Tackles:        3,
-		Goals:          2,
-		Behinds:        1,
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  999,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Kicks:             20,
+		Handballs:         10,
+		Marks:             5,
+		Tackles:           3,
+		Goals:             2,
 	})
-	require.NoError(t, err)
-
-	// Handle the event.
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	require.NoError(t, err)
 
 	// Verify the FFL player match was scored.
@@ -216,17 +207,13 @@ func TestHandlePlayerMatchUpdated_ignores_unknown_player(t *testing.T) {
 	commands, _ := setupCommandsWithDispatcher(t, pool)
 	ctx := context.Background()
 
-	// Event for an AFL player_season not in any FFL squad.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  1000,
-		PlayerSeasonID: 99999, // does not exist in FFL
-		ClubMatchID:    1,
-		RoundID:        1,
-		Kicks:          10,
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  1000,
+		AFLPlayerSeasonID: 99999, // does not exist in FFL
+		ClubMatchID:       1,
+		RoundID:           1,
+		Kicks:             10,
 	})
-	require.NoError(t, err)
-
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	assert.NoError(t, err) // should not error, just skip
 }
 
@@ -251,17 +238,14 @@ func TestHandlePlayerMatchUpdated_syncs_afl_status(t *testing.T) {
 	commands, _ := setupCommandsWithDispatcher(t, pool)
 	ctx := context.Background()
 
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  999,
-		PlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:    ids.aflClubMatchID,
-		RoundID:        ids.aflRoundID,
-		Status:         "named",
-		Kicks:          5,
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  999,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Status:            "named",
+		Kicks:             5,
 	})
-	require.NoError(t, err)
-
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	require.NoError(t, err)
 
 	var status *string
@@ -310,12 +294,7 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 
 	scoreCommands, _ := setupScoreCommandsWithDispatcher(t, pool)
 
-	payload, err := json.Marshal(contractevents.AflMatchFinalizedPayload{
-		RoundID: ids.aflRoundID,
-	})
-	require.NoError(t, err)
-
-	err = scoreCommands.HandleAflMatchFinalized(ctx, payload)
+	err = scoreCommands.ProcessAFLRoundFinalized(ctx, ids.aflRoundID)
 	require.NoError(t, err)
 
 	t.Run("linked player becomes played", func(t *testing.T) {
@@ -374,23 +353,17 @@ func TestHandlePlayerMatchUpdated_multiple_ffl_clubs(t *testing.T) {
 		secondClubMatchID, secondPlayerSeasonID)
 	require.NoError(t, err)
 
-	// Fire event.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  888,
-		PlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:    ids.aflClubMatchID,
-		RoundID:        ids.aflRoundID,
-		Kicks:          15,
-		Handballs:      8,
-		Marks:          4,
-		Hitouts:        0,
-		Tackles:        6,
-		Goals:          3,
-		Behinds:        2,
+	err = commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  888,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Kicks:             15,
+		Handballs:         8,
+		Marks:             4,
+		Tackles:           6,
+		Goals:             3,
 	})
-	require.NoError(t, err)
-
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	require.NoError(t, err)
 
 	// First club: kicks position → score = kicks * 1 = 15.

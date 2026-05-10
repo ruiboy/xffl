@@ -18,6 +18,7 @@ import (
 	"xffl/services/ffl/internal/infrastructure/forum"
 	"xffl/services/ffl/internal/infrastructure/rpc"
 	gql "xffl/services/ffl/internal/interface/graphql"
+	fflevents "xffl/services/ffl/internal/interface/events"
 	pgevents "xffl/shared/events/pg"
 )
 
@@ -94,11 +95,12 @@ func main() {
 		pg.NewPlayerMatchRepository(q),
 		dispatcher,
 	)
-	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
-	dispatcher.Subscribe(contractevents.AflMatchFinalized, scoreCommands.HandleAflMatchFinalized)
-	dispatcher.Subscribe(contractevents.FflTeamFinalized, scoreCommands.HandleFflTeamFinalized)
-	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, scoreCommands.HandleFflClubMatchScoreFinalized)
-	dispatcher.Subscribe(contractevents.FflMatchFinalized, scoreCommands.HandleFflMatchFinalized)
+	eventHandlers := fflevents.NewHandlers(commands, scoreCommands)
+	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, eventHandlers.HandlePlayerMatchUpdated)
+	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
+	dispatcher.Subscribe(contractevents.FflTeamFinalized, eventHandlers.HandleFflTeamFinalized)
+	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, eventHandlers.HandleFflClubMatchScoreFinalized)
+	dispatcher.Subscribe(contractevents.FflMatchFinalized, eventHandlers.HandleFflMatchFinalized)
 
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
