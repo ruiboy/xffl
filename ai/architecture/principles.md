@@ -79,15 +79,3 @@ When instructions conflict, resolve in this order:
 
 If code conflicts with architecture or ADRs, propose a fix rather than silently drifting.
 
-## Service Layout
-
-```
-services/<name>/
-├── cmd/
-├── internal/
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   └── interface/
-└── go.mod
-```

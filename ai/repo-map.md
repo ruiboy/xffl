@@ -19,10 +19,10 @@ xffl/
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)
 │   │   ├── cmd/           → Entrypoint
-│   │   └── internal/      → domain/ → application/ → infrastructure/ → interface/
+│   │   └── internal/      → domain/ application/ infrastructure/ interface/
 │   ├── ffl/               → FFL service (Go, GraphQL, :8081)
 │   │   ├── cmd/           → Entrypoint
-│   │   └── internal/      → domain/ → application/ → infrastructure/ → interface/
+│   │   └── internal/      → domain/ application/ infrastructure/ interface/
 │   └── gateway/           → Reverse proxy (:8090)
 │
 ├── frontend/web/          → Vue 3 SPA (TypeScript, Vite, :3000)

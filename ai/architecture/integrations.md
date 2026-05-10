@@ -71,15 +71,3 @@ Integrations must be good citizens of the external sources they depend on.
 - **No hammering on startup** — if a cache is warm, use it regardless of how the process started.
 - Cache state can be stored as a timestamp in the DB or as a simple file — keep it cheap.
 
-## Event flow
-
-After writing to the DB, adapters trigger domain events through the normal service event path:
-
-```
-AFLTablesAdapter → afl DB writes → AFL.PlayerMatchUpdated event
-                                 → FFL consumes → fantasy score calculated
-                                 → Search consumes → index updated
-```
-
-The adapter does not publish events directly. It calls the application use case, which writes to the DB and dispatches events as it would for any other command.
-

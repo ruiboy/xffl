@@ -29,6 +29,21 @@ services/{afl,ffl}/
       models_gen.go                        → gqlgen generated models (DO NOT EDIT)
 ```
 
+## Service topology
+
+| Service | Bounded Context | Port | API | Purpose |
+|---------|----------------|------|-----|---------|
+| AFL | AFL | 8080 | GraphQL | AFL clubs, players, match statistics |
+| FFL | FFL | 8081 | GraphQL | Fantasy clubs, players, scoring, ladder |
+| Search | — | 8082 | REST | Full-text search via Typesense |
+| Gateway | — | 8090 | GraphQL | Single entry point for frontend; routes to AFL/FFL, proxies search |
+
+**Infrastructure:** PostgreSQL with separate schemas (`afl.*`, `ffl.*`); PG LISTEN/NOTIFY for events; Typesense (port 8108) for search; Vue 3 + Apollo Client frontend (port 3000).
+
+**Shared packages** (`shared/`): `database/` — connection utilities; `events/` — dispatcher interface + PostgreSQL and in-memory implementations.
+
+For the cross-service event chain see [event-flow.md](event-flow.md).
+
 ## Recipe: Add a column to an existing table
 
 Files to touch, in order:
@@ -73,18 +88,7 @@ Always run `sqlc generate` before `gqlgen generate` if both schema SQL and Graph
 
 ## Cross-service queries (frontend)
 
-The Apollo client (`frontend/web/src/app/apollo.ts`) routes by **operation name** using an explicit set `FFL_OPERATIONS`. Operations in the set go to FFL (`/ffl/query`); everything else goes to AFL (`/afl/query`).
-
-**When adding a new FFL operation**, add its name to `FFL_OPERATIONS` in `apollo.ts`. Do not rely on naming conventions — the set is the source of truth (see ADR-008).
-
-**A single GraphQL operation cannot span both services.** For cross-service data (e.g. FFL squad + AFL stats), issue two separate queries and join in the component. Pattern:
-
-```ts
-const { result: fflResult } = useQuery(FFL_QUERY, ...)
-const ids = computed(() => /* extract AFL IDs from fflResult */)
-const { result: aflResult } = useQuery(AFL_QUERY, () => ({ ids: ids.value }), () => ({ enabled: ids.value.length > 0 }))
-// join in a computed
-```
+The frontend uses a single Apollo client endpoint (the Apollo Router gateway). Federation handles routing. Cross-service entity traversals (e.g. `FFLPlayer → aflPlayer`) are composed at the gateway and resolved in a single query.
 
 ## Recipe: Add a paginated list field (Connection pattern)
 

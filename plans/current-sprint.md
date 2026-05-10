@@ -1,127 +1,51 @@
 # Current Sprint — Phase 20: Data Management — Import Infrastructure
 
-**Sprint goal:** Build recurring data flows for team submissions, AFL stats, score reconciliation, historical backfill, and season setup. All Go; ports-and-adapters throughout; Twirp for cross-service calls.
-
-ADR: ADR-018 (Twirp for cross-service communication)
-
----
-
-## Cross-cutting decisions
-
-- All Go — no Python in production; single binary deployment
-- `TeamParser`, `StatsParser`, `PlayerResolver` are application-layer interfaces; adapters live in infrastructure — input source never touches use case logic
-- FFL service calls AFL service via Twirp to resolve `afl_player_id` and look up players; proto definitions in `contracts/`
-- `PlayerResolver` uses club code to narrow candidates before fuzzy name matching; confidence threshold gates auto-commit vs. review queue
-- Frontend import feature lives in `features/data-ops/`
-
-## Data model decisions
-
-- `ffl.player.drv_name` is retired in principle — all Phase 20 code must not read or write it; audit usages and remove (schema + domain + resolvers + frontend) when we reach close-out
-- Player names are owned by the AFL service; the FFL service fetches them via a batch Twirp call when building a candidate pool for matching — no denormalisation
-- `drv_` columns elsewhere in the schema (scores, ladder) are legitimate derived/computed values and are not affected by this decision
-- `ffl.player_match.afl_player_match_id` may be null at submission time (AFL stats not yet available); linked later when stats are imported
-- `ffl.match` is pre-created (fixture); team submission creates/updates `ffl.club_match` and `ffl.player_match` records against it
-- `ffl.club_match` and `ffl.player_match` need a free-text `notes` column for reconciliation commentary (score deltas, manual overrides)
+**Sprint goal:** Close out Phase 20 — schema health side quests, score reconciliation, and clean-up.
+Season setup and historical import have moved to Phase 23.
 
 ---
 
-## Step 4 — Round team submission *(every round)*
+## Side quest — Replace circular match↔club_match FKs with a role column
 
-- [x] ADR-018 — Twirp for cross-service communication
-- [x] Twirp: proto + buf toolchain; batch `PlayerLookup` handler on AFL service; FFL `infrastructure/rpc/` adapter
-- [x] `TeamParser` port interface (application layer)
-- [x] `PlayerResolver` port interface (application layer)
-- [x] `ParseTeamSubmission` use case
-- [x] `ImportRoundTeams` use case
-- [x] `ForumPostParser` adapter (infrastructure)
-- [x] FFL GraphQL: `parseTeamSubmission` + `confirmTeamSubmission` mutations
-- [x] Frontend: `features/data-ops/` — club + round dropdowns, paste form, review table, confirm button
-- [x] Tests: parser unit tests + GraphQL integration test + e2e golden path
+**Problem**: `afl.match.home_club_match_id` and `afl.match.away_club_match_id` create a circular FK
+with `afl.club_match.match_id` — the parent row must be inserted before its children can exist, but
+the children must exist before the FKs can be set. This forces an awkward insert-then-UPDATE pattern
+and couples the match table to a specific two-team shape. Identical issue in `ffl.match` /
+`ffl.club_match`, where the shape is even less fixed (e.g. superbye: multiple clubs, one match).
 
-## Step 5 — AFL stats import *(automated)*
+**Proposed approach**: Drop `home_club_match_id` / `away_club_match_id` from both `afl.match` and
+`ffl.match`. Add a `role` column to `afl.club_match` and `ffl.club_match` (e.g. `home`, `away`; FFL
+may later add `superbye` or other variants). All queries that currently navigate via the FK pair
+instead filter/join on `role`.
 
-- [x] `StatsParser` port interface
-- [x] `ImportAFLStats` use case
-- [x] FootyWire scraper adapter
-- [x] `MatchSourceMapRepository` ACL table (ADR-016)
-- [x] `MarkMatchStatsComplete` use case + mutation
-- [x] AFL GraphQL mutations: `importAFLMatchStats`, `markAFLMatchStatsComplete`
+- [ ] Migration: drop FK columns from `afl.match`, add `role` to `afl.club_match`
+- [ ] Migration: drop FK columns from `ffl.match`, add `role` to `ffl.club_match`
+- [ ] Update AFL domain model, repository, and any queries that use home/away FK navigation
+- [ ] Update FFL domain model, repository, and any queries that use home/away FK navigation
+- [ ] Update seed data and integration tests
 
-## Step 5a — Data ops management UI
+---
 
-- [x] Data ops UI: FFL rounds list with team/stats status indicators
-- [x] AFL Stats Import tab with per-match scrape + mark complete
+## Side quest — Enforce AFL FK integrity in FFL *(NOT NULL constraints + domain guards)*
 
-## Step 3 — In-season player trades *(frequent)*
+**Problem**: FFL entities that reference AFL counterparts have no enforcement — a `ffl.round` with a
+null `afl_round_id`, for example, is silently valid at the DB and domain layers. The one legitimate
+exception is `ffl.player_match.afl_player_match_id`, which is intentionally nullable (a player can
+be named without having played).
 
-**Decisions:**
-- `ffl.season.afl_season_id` FK required — foundational for scoping player season lookup; schema migration and seed already complete
-- **Remove:** sets `to_round_id` on `ffl.player_season` (preserves history); UI shows a round dropdown (returns explicit `round_id`); defaults to current round but allows past/future
-- **Add:** graph-traversal backed; FFL season links to AFL season via `afl_season_id`; gateway queries AFL service for player seasons scoped to that AFL season; no Typesense involvement
-- `ADD_FFL_SQUAD_PLAYER` mutation needs extending to accept `aflPlayerSeasonId` and `fromRoundId`; backing use case extended accordingly
-- Entry point remains the existing Manage mode on SquadView
+**Required NOT NULL columns** (all others in this group):
+- `ffl.season.afl_season_id`
+- `ffl.round.afl_round_id`
+- `ffl.player.afl_player_id`
+- `ffl.player_season.afl_player_season_id`
 
-**Tasks:**
-- [x] Schema migration: `ffl.season.afl_season_id INTEGER REFERENCES afl.season(id)`
-- [x] Seed `dev/postgres/seed/02_ffl_seed.sql` with `afl_season_id` for FFL 2026 → AFL 2026
-- [x] AFL service: `AFLSeason.playerSeasons(filter, first, after)` connection; `FFLSeason.aflSeason` traversal via federation
-- [x] Extend `ADD_FFL_SQUAD_PLAYER` mutation + use case: accept `aflPlayerSeasonId`, `fromRoundId`
-- [x] Extend remove mutation + use case: accept `toRoundId` instead of hard-delete
-- [x] SquadView: remove button → round dropdown + confirm; add panel → graph-backed player season search
-- [x] Make sure to/from round id is recorded for all player trades; tighten UI
-- Side quest:
-  - [x] Add ffl.player_season.notes and cost columns.
-  - [x] Add a little player season dialog showing to/from round, cost, and allowing to edit notes in Manage and normal modes
-- [x] Tighten graph endpoints for player trades: `addFFLPlayerToSeason`, `removeFFLPlayerFromSeason`, `addFFLSquadPlayer`
-- [x] Update e2e tests for player trade flows (after above is done)
-- [x] Retire `ffl.player.drv_name`: add `FFLPlayer.aflPlayer: AFLPlayer` federation traversal; audit all `player { name }` reads in frontend and switch to `player { aflPlayer { name } }`; deprecate `FFLPlayer.name`; drop `drv_name` column. Until done, new `ffl.player` rows have `drv_name=""` so squad/match views show empty names for newly-added players.
-- Side quest:
-  - [x] Streamline supergraph: file-based composition (no running services needed) + Apollo Router `--hot-reload`
-- Side quest - Data Ops:
-  - AFL stats import and FFL Team import pages to align more closely in intent and UX:
-    - AFL Stats import
-      - [x] ~~On import of stats, if AFL PLayer can not be found, do a name matching thing like FFL Team import.~~ → replaced by holistic player search (see below)
-      - [x] Link round to AFL Round page.
-      - [x] Link match to AFL Match page.
-      - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).
-      - [x] Set status of all matches where stats are imported in data seed. 
-    - FFL Team import
-      - [x] Round page should list all FFL teams and show current status (similar to AFL Stats import page). Then each row facilitates import somehow.
-      - [x] FFL team (= club match) should have status tracking, not tied to import, but set by import. Status = team submitted, portial score (?), final score.
-      - [x] Link round to FFL Round page.
-      - [x] Link each team to FFL Team Builder page
-      - [x] Improve UI: Form is a bit ugly right now. Team format should default selected club.
-  - Holistic player search (replaces inline unmatched-player review in AFL stats import)
-    **Decisions:**
-    - Player search is a shared UX pattern but two separate components: `features/data-ops/` and `features/ffl/` each own theirs so they can diverge naturally
-    - Both components display latest AFL club name + season name alongside player name to aid disambiguation
-    - Selecting a player from the list is the mapping action; "Add new player" button is used for when the player isn't found
-    - `afl.dataops_player_source` table (mirrors `afl.dataops_match_source`): PK `(source, external_season, external_club, external_player)` → `player_season_id`; club included because footywire identity is per-club; row only written when a name mismatch was manually resolved — not for natural name matches; looked up on import before fuzzy matching so future imports auto-resolve
-    - AFL Stats Import player flow: search → select existing OR add new → `resolveAFLPlayerMatch` mutation (creates `dataops_player_source` row if name differed + upserts `afl.player_match`)
-    - FFL Add Player flow: same search → select existing (`addFFLPlayerToSeason`, existing) OR add new (two sequential frontend calls: `addAFLPlayer` on AFL service → `addFFLPlayerToSeason` on FFL service with returned `aflPlayerSeasonId`); FFL clubs have no correlation with AFL clubs so FFL service cannot derive AFL context
-    - "Add new player" modal in FFL includes name input + AFL club season dropdown (user specifies AFL club explicitly)
-    - `addAFLPlayer(input: AddAFLPlayerInput!)` takes `name` + `clubSeasonId` only — season is implied by club season; lives on AFL service
-    - Remove from commit 5f8fcaf: `AFLPlayerCandidate` type, `candidates` field on `UnmatchedAFLPlayer`, confidence-ranked dropdown, inline expandable table in DataOpsView, `CONFIRM_AFL_PLAYER_MATCH` frontend mutation
-    **Tasks:**
-    - [x] `afl.dataops_player_source` schema + migration (AFL init + test-e2e init)
-    - [x] AFL service: `PlayerSourceMapRepository` port + postgres adapter; lookup wired into import before fuzzy match
-    - [x] AFL service: `AFLPlayer.latestPlayerSeason` field (resolver: highest season year for that player)
-    - [x] AFL service: simplify `ImportAFLMatchStats` result — strip `candidates` from `UnmatchedAFLPlayer`, keep name + stats + clubMatchId
-    - [x] AFL service: `addAFLPlayer(name, clubSeasonId)` use case + mutation → creates `afl.player` + `afl.player_season`
-    - [x] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`
-    - [x] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
-    - [x] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
+**Nullable by design**: `ffl.player_match.afl_player_match_id`
 
-### Score/ladder calculation side quest
+- [ ] Migration: add NOT NULL constraint to the four columns above
+- [ ] Domain: enforce at construction time (return error / panic on nil afl ID for the four entities)
+- [ ] Verify existing seed data satisfies the constraints before migrating
 
-See `ai/architecture/domain.md` (Calculation flow section) for architecture.
-
-- [x] Phase 1 — Contracts: add 5 new event types + payloads
-- [x] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
-- [x] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
-- [x] Phase 4 — Data ops frontend: Calculate tab (AFL+FFL ladder recalc), Mark Final button in FFL Teams tab
-- [x] Phase 5 — Recalculate single club match score: new Twirp RPC (LookupPlayerMatchStats), FFL use case (RecalculateClubMatchScore), mutation, and Recalculate button on FFL Teams tab row
-- [x] Phase 6 — Infer player match status: AFL named→played on mark-final; FFL named→played/dnp on MatchFinalized event
+---
 
 ## Side quest — Derived player match status *(fix state-transition bugs)*
 
@@ -174,7 +98,7 @@ ffl.player_match:
 
 ---
 
-## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
+## Side quest — Pluggable FFL scoring formula *(prerequisite for Phase 23 historical backfill)*
 
 - Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
 - Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
@@ -187,46 +111,13 @@ ffl.player_match:
 ## Step 6 — Score reconciliation *(every round)*
 
 **Rules:**
+- UI: Team Manager gets to choose how to apply any player subsitutions from the bench, within the league rules.
 - Submitted score = what the forum post recorded; `drv_score` = calculated from AFL stats
 - Current season: `drv_score` is authoritative; generate a copy-pasteable forum summary of differences
 - Previous seasons: submitted score is authoritative; record delta in `notes` column
 - [ ] Add `notes TEXT` column to `ffl.club_match` and `ffl.player_match`
 - [ ] `ReconcileScores` use case — compare submitted vs `drv_score`; produce structured diff
 - [ ] FFL frontend — submitted vs calculated scores side by side; copy-pasteable forum summary output
-
-## Step 2 — FFL squad import *(once/season)*
-
-- Prerequisite: AFL season player records already exist (Step 1, or seeded from stats imports)
-- [ ] `ImportFFLSquad` use case (FFL service) — match AFL player IDs from existing `afl.player` records; create `ffl.player` + `ffl.player_season` records
-- [ ] `just import-ffl-squad` CLI trigger
-- [ ] FFL frontend admin page — proposed player mappings for accept/reject
-
-## Step 1 — AFL season player import *(once/season)*
-
-- Source data TBD; UX must handle: matching to existing players (allowing for club changes), retired players, and brand new players
-- [ ] Design import UX (accept/reject/skip flow for each proposed match)
-- [ ] `ImportAFLSeasonPlayers` use case (AFL service) — fuzzy-match names+club; flag low-confidence; create new records for unmatched
-- [ ] `just import-afl-season` CLI trigger
-- [ ] AFL frontend admin page — proposed matches + new players for accept/reject
-
-## Step 7 — AFL historical data import *(one-time CLI)*
-
-- Source: afltables CSV (good coverage back to 1998)
-- May be deferred to a future phase
-- [ ] Evaluate afltables CSV schema; write ADR if new dependency needed
-- [ ] `ImportAFLHistoricalStats` use case + CLI command
-- [ ] Verify player match records, club season stats post-import
-
-## Step 7a — FFL historical team backfill *(one-time CLI)*
-
-- Prerequisite: side quest (pluggable scoring formula)
-- Reuses `ForumPostParser` and `ImportRoundTeams` from Step 4 unchanged
-- FFL scoring rules have changed over time; historical scores are imported as-recorded, not recalculated
-- No `FFL.FantasyScoreCalculated` events fired on import
-- May be deferred to a future phase
-- [ ] Validate old forum formats work with `ForumPostParser`
-- [ ] CLI command: `ParseTeamSubmission` + `ImportRoundTeams` over historical data (one round at a time)
-- [ ] Verify ladder standings, scores, and player history post-import
 
 ## Close out
 

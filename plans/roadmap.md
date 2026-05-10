@@ -208,16 +208,15 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] Frontend — single Apollo client endpoint; remove operation-name routing link
 - [x] Tests + e2e verification
 
-## Phase 20: Data Management — Import Infrastructure, Part II
+## Phase 20: Data Management — Import Infrastructure, Part II *(in progress)*
 
-- [ ] FFL In-season player trades
-- [ ] FFL Score reconciliation
-- [ ] AFL season player import
-- [ ] FFL squad import
-- [ ] FFL Historical backfill
-- [ ] Close out
-
-See detailed breakdown (carried over from Phase 18) in [phase-20-sprint.md](phase-20-sprint.md)
+- [x] FFL in-season player trades — squad management with AFL-backed player search
+- [x] AFL stats import — FootyWire scraper, player source mapping, match status tracking
+- [x] Score and ladder calculation — AFL→FFL event chain, finalization flow, provisional/final tiers
+- [ ] Schema health: replace circular match↔club_match FKs with role column; enforce AFL FK integrity
+- [ ] Score reconciliation — submitted vs. calculated diff with copy-pasteable forum summary output
+- [ ] Pluggable FFL scoring formula — strategy pattern keyed per season (prerequisite for Phase 23 backfill)
+- [ ] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table
 
 ## Phase 21: Search Frontend + Index Enrichment
 
@@ -236,7 +235,17 @@ See detailed breakdown (carried over from Phase 18) in [phase-20-sprint.md](phas
 - [ ] Other season pages (TBD based on usage)
 - [ ] Richer stat data surfaced in existing views
 
-## Phase 23: CQRS Player Stats Read Model
+## Phase 23: Data Setup & Historical Import
+
+**Goal:** Season setup tooling and one-time historical backfill — the operations needed once per
+season (or once ever) rather than every round.
+
+- [ ] AFL season player import — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players
+- [ ] FFL squad import — once/season CLI; resolve FFL rosters to AFL player IDs
+- [ ] AFL historical data import — one-time CLI from afltables CSV (2024-present already seeded; earlier years TBD)
+- [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires Phase 20 pluggable scoring formula)
+
+## Phase 24: CQRS Player Stats Read Model
 
 **Goal:** Move player stats reads to the search index (ADR-013)
 
@@ -244,7 +253,7 @@ See detailed breakdown (carried over from Phase 18) in [phase-20-sprint.md](phas
 - [ ] SquadView: replace AFL GraphQL stats query with search index query
 - [ ] Apply pattern to other stat-heavy views as they are built
 
-## Phase 24: Deployment
+## Phase 25: Deployment
 
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
