@@ -84,14 +84,13 @@ ADR: ADR-018 (Twirp for cross-service communication)
       - [x] Link round to AFL Round page.
       - [x] Link match to AFL Match page.
       - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).
-      - [ ] Set status of all matches where stats are imported in data seed. 
+      - [x] Set status of all matches where stats are imported in data seed. 
     - FFL Team import
       - [x] Round page should list all FFL teams and show current status (similar to AFL Stats import page). Then each row facilitates import somehow.
       - [x] FFL team (= club match) should have status tracking, not tied to import, but set by import. Status = team submitted, portial score (?), final score.
       - [x] Link round to FFL Round page.
       - [x] Link each team to FFL Team Builder page
       - [x] Improve UI: Form is a bit ugly right now. Team format should default selected club.
-    - [ ] Function to recalculate FFL stats for a team. Call on team import. Maybe have button in data ops.
   - Holistic player search (replaces inline unmatched-player review in AFL stats import)
     **Decisions:**
     - Player search is a shared UX pattern but two separate components: `features/data-ops/` and `features/ffl/` each own theirs so they can diverge naturally
@@ -112,7 +111,79 @@ ADR: ADR-018 (Twirp for cross-service communication)
     - [x] AFL service: `resolveAFLPlayerMatch(clubMatchId, playerSeasonId, stats, sourceMapping?)` use case + mutation → writes `dataops_player_source` if mapping provided + upserts `afl.player_match`
     - [x] Frontend data-ops: remove inline candidate table; new `PlayerSearchModal.vue`; rework unmatched-player section (Resolve button per row)
     - [x] Frontend FFL: new `PlayerSearchModal.vue`; extract search logic from SquadView; "Add new player" calls `addAFLPlayer` then `addFFLPlayerToSeason` sequentially
-  
+
+### Score/ladder calculation side quest
+
+See `ai/architecture/domain.md` (Calculation flow section) for architecture.
+
+- [x] Phase 1 — Contracts: add 5 new event types + payloads
+- [x] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
+- [x] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
+- [x] Phase 4 — Data ops frontend: Calculate tab (AFL+FFL ladder recalc), Mark Final button in FFL Teams tab
+- [x] Phase 5 — Recalculate single club match score: new Twirp RPC (LookupPlayerMatchStats), FFL use case (RecalculateClubMatchScore), mutation, and Recalculate button on FFL Teams tab row
+- [x] Phase 6 — Infer player match status: AFL named→played on mark-final; FFL named→played/dnp on MatchFinalized event
+
+## Side quest — Derived player match status *(fix state-transition bugs)*
+
+**Problem**: `status` on both `afl.player_match` and `ffl.player_match` is set imperatively from
+multiple scattered call sites (event handlers, recalc commands, import flows), each with slightly
+different guards. Correctness depends on call order and which data has been populated. Current
+symptoms: FFL DNP not being set when `ffl.match.home_club_match_id` is null (fixed); FFL DNP
+incorrectly set when AFL match is not yet finalized; AFL `named→played` transition done
+separately from FFL status inference.
+
+**Key insight**: status is *fully determined* by two ground-truth values that are already in the DB:
+
+```
+afl.player_match:
+  status = (did AFL player match row exist?) → played / dnp (inferred from absence within a finalized match)
+
+ffl.player_match:
+  afl_player_match_id IS NOT NULL              → played
+  afl_player_match_id IS NULL
+    AND AFL match data_status = 'final'        → dnp
+    AND AFL match data_status ≠ 'final'        → named
+```
+
+**Proposed approach**:
+
+1. **Single domain function** `ComputePlayerMatchStatus(aflPlayerMatchID *int, aflMatchDataStatus string) PlayerMatchStatus`
+   encodes the derivation once. All imperative `UpdateStatus` call sites are replaced with a call
+   to this function followed by a single persist.
+
+2. **Thread AFL match data_status into every status-setting path** — the missing input that currently
+   causes `inferPlayerMatchStatuses` to set DNP before a match has been played (it sees
+   `afl_player_match_id = null` without knowing whether the AFL match is even in progress).
+
+3. **One recalculation entry point** — `RecalculateClubMatchScore` re-derives status from scratch as
+   part of its normal work. `inferPlayerMatchStatuses` as a separate pass is removed; status falls
+   out naturally from the recalc.
+
+4. **Same principle for AFL** — AFL `afl.player_match.status` (`named`→`played`) follows the same
+   pattern: derive from whether a player match row exists within a finalized match, rather than
+   setting it as a side effect of the import flow.
+
+5. **Unit-test the derivation function** with a table of (aflPlayerMatchID, aflMatchDataStatus) →
+   expected status cases. Integration tests verify data flows in correctly, not the status logic.
+
+**Files to look at when starting**:
+- `services/ffl/internal/application/score_commands.go` — `inferPlayerMatchStatuses` (to be replaced)
+- `services/ffl/internal/application/commands.go` — `ProcessPlayerMatchUpdated`, `RecalculateClubMatchScore`
+- `services/afl/internal/application/data_ops.go` — AFL status set during import
+- `services/ffl/internal/domain/player_match.go` — `PlayerMatchStatus` type (home for the new function)
+
+---
+
+## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
+
+- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
+- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
+- Each strategy should carry a human-readable description (for frontend display)
+- [ ] Design known formula variants and year ranges
+- [ ] `ScoringStrategy` interface + concrete implementations
+- [ ] `ffl.season.scoring_strategy` column (string key)
+- [ ] Wire into score calculation use case
+
 ## Step 6 — Score reconciliation *(every round)*
 
 **Rules:**
@@ -137,16 +208,6 @@ ADR: ADR-018 (Twirp for cross-service communication)
 - [ ] `ImportAFLSeasonPlayers` use case (AFL service) — fuzzy-match names+club; flag low-confidence; create new records for unmatched
 - [ ] `just import-afl-season` CLI trigger
 - [ ] AFL frontend admin page — proposed matches + new players for accept/reject
-
-## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
-
-- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
-- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
-- Each strategy should carry a human-readable description (for frontend display)
-- [ ] Design known formula variants and year ranges
-- [ ] `ScoringStrategy` interface + concrete implementations
-- [ ] `ffl.season.scoring_strategy` column (string key)
-- [ ] Wire into score calculation use case
 
 ## Step 7 — AFL historical data import *(one-time CLI)*
 

@@ -18,4 +18,5 @@ type ClubSeason struct {
 type ClubSeasonRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]ClubSeason, error)
 	FindByID(ctx context.Context, id int) (ClubSeason, error)
+	Update(ctx context.Context, cs ClubSeason) error
 }

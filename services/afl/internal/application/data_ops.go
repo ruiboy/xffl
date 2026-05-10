@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	footywireSource       = "footywire"
-	confidenceThreshold   = 0.85
+	footywireSource     = "footywire"
+	confidenceThreshold = 0.85
 )
 
 // UnmatchedAFLPlayer holds the parsed stats for a player who could not be matched during import.
@@ -49,6 +49,7 @@ type DataOpsCommands struct {
 	clubs           domain.ClubRepository
 	rounds          domain.RoundRepository
 	playerSeasons   domain.PlayerSeasonRepository
+	playerMatches   domain.PlayerMatchRepository
 	sourceMap       DataopsMatchSourceRepository
 	playerSourceMap DataopsPlayerSourceRepository
 	statsParser     StatsParser
@@ -65,6 +66,7 @@ func NewDataOpsCommands(
 	clubs domain.ClubRepository,
 	rounds domain.RoundRepository,
 	playerSeasons domain.PlayerSeasonRepository,
+	playerMatches domain.PlayerMatchRepository,
 	sourceMap DataopsMatchSourceRepository,
 	playerSourceMap DataopsPlayerSourceRepository,
 	statsParser StatsParser,
@@ -80,6 +82,7 @@ func NewDataOpsCommands(
 		clubs:           clubs,
 		rounds:          rounds,
 		playerSeasons:   playerSeasons,
+		playerMatches:   playerMatches,
 		sourceMap:       sourceMap,
 		playerSourceMap: playerSourceMap,
 		statsParser:     statsParser,
@@ -212,7 +215,7 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 					psID = matches[0].Candidate.PlayerSeasonID
 				}
 
-				status := "played"
+				status := "named"
 				kicks, handballs, marks, hitouts, tackles, goals, behinds :=
 					ps.Kicks, ps.Handballs, ps.Marks, ps.Hitouts, ps.Tackles, ps.Goals, ps.Behinds
 
@@ -280,6 +283,7 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			PlayerSeasonID: pm.PlayerSeasonID,
 			ClubMatchID:    pm.ClubMatchID,
 			RoundID:        roundID,
+			Status:         pm.Status,
 			Kicks:          pm.Kicks,
 			Handballs:      pm.Handballs,
 			Marks:          pm.Marks,
@@ -301,7 +305,10 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 }
 
 // MarkMatchStatsFinal sets data_status to "final" (or back to "partial").
+// On transition to final, publishes AflMatchFinalized so that score/ladder
+// calculation can react via ScoreCommands.HandleAflMatchFinalized.
 func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, final bool) (domain.Match, error) {
+	// set status
 	status := domain.MatchDataPartial
 	if final {
 		status = domain.MatchDataFinal
@@ -311,7 +318,37 @@ func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, 
 		return domain.Match{}, fmt.Errorf("update data status: %w", err)
 	}
 
-	return c.matches.FindByID(ctx, matchID)
+	// load Match
+	match, err := c.matches.FindByID(ctx, matchID)
+	if err != nil {
+		return domain.Match{}, err
+	}
+
+	if !final {
+		return match, nil
+	}
+
+	// Transition all player_match records for this match from "named" to "played".
+	if err := c.playerMatches.SetStatusForMatchID(ctx, matchID, "played"); err != nil {
+		slog.WarnContext(ctx, "bulk update player_match status failed", slog.Int("match_id", matchID), slog.Any("error", err))
+	}
+
+	// dispatch integration event
+	round, err := c.rounds.FindByID(ctx, match.RoundID)
+	if err != nil {
+		return domain.Match{}, fmt.Errorf("load round: %w", err)
+	}
+
+	payload, _ := json.Marshal(events.AflMatchFinalizedPayload{
+		MatchID:  matchID,
+		SeasonID: round.SeasonID,
+		RoundID:  match.RoundID,
+	})
+	if err := c.dispatcher.Publish(ctx, events.AflMatchFinalized, payload); err != nil {
+		slog.WarnContext(ctx, "publish AflMatchFinalized failed", slog.Any("error", err))
+	}
+
+	return match, nil
 }
 
 // resolveMid returns the FootyWire mid for a match, scraping the fixture list if needed.
@@ -402,10 +439,12 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 
 	var result domain.PlayerMatch
 	var roundID int
+	namedStatus := "named"
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 			ClubMatchID:    params.ClubMatchID,
 			PlayerSeasonID: params.PlayerSeasonID,
+			Status:         &namedStatus,
 			Kicks:          &params.Kicks,
 			Handballs:      &params.Handballs,
 			Marks:          &params.Marks,
@@ -443,6 +482,7 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
+		Status:         result.Status,
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,
@@ -463,7 +503,7 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 
 // AddAFLPlayerParams holds the input for creating a new AFL player and their season record.
 type AddAFLPlayerParams struct {
-	Name        string
+	Name         string
 	ClubSeasonID int
 }
 

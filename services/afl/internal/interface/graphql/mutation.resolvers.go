@@ -44,41 +44,6 @@ func (r *mutationResolver) AddAFLPlayerSeason(ctx context.Context, input AddAFLP
 	return &AFLPlayerSeason{ID: toID(ps.ID)}, nil
 }
 
-// ResolveAFLPlayerMatch is the resolver for the resolveAFLPlayerMatch field.
-func (r *mutationResolver) ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
-	clubMatchID, err := fromID(input.ClubMatchID)
-	if err != nil {
-		return nil, err
-	}
-	playerSeasonID, err := fromID(input.PlayerSeasonID)
-	if err != nil {
-		return nil, err
-	}
-
-	params := application.ResolveAFLPlayerMatchParams{
-		ClubMatchID:    clubMatchID,
-		PlayerSeasonID: playerSeasonID,
-		Kicks:          input.Kicks,
-		Handballs:      input.Handballs,
-		Marks:          input.Marks,
-		Hitouts:        input.Hitouts,
-		Tackles:        input.Tackles,
-		Goals:          input.Goals,
-		Behinds:        input.Behinds,
-		ParsedName:     input.ParsedName,
-	}
-
-	pm, err := r.DataOps.ResolveAFLPlayerMatch(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
-	if err != nil {
-		return nil, err
-	}
-	return convertPlayerMatch(pm, player), nil
-}
-
 // UpdateAFLPlayerMatch is the resolver for the updateAFLPlayerMatch field.
 func (r *mutationResolver) UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
 	playerSeasonID, err := fromID(input.PlayerSeasonID)
@@ -148,6 +113,41 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 	}, nil
 }
 
+// ResolveAFLPlayerMatch is the resolver for the resolveAFLPlayerMatch field.
+func (r *mutationResolver) ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	playerSeasonID, err := fromID(input.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+
+	params := application.ResolveAFLPlayerMatchParams{
+		ClubMatchID:    clubMatchID,
+		PlayerSeasonID: playerSeasonID,
+		Kicks:          input.Kicks,
+		Handballs:      input.Handballs,
+		Marks:          input.Marks,
+		Hitouts:        input.Hitouts,
+		Tackles:        input.Tackles,
+		Goals:          input.Goals,
+		Behinds:        input.Behinds,
+		ParsedName:     input.ParsedName,
+	}
+
+	pm, err := r.DataOps.ResolveAFLPlayerMatch(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	return convertPlayerMatch(pm, player), nil
+}
+
 // MarkAFLMatchStatsComplete is the resolver for the markAFLMatchStatsComplete field.
 func (r *mutationResolver) MarkAFLMatchStatsComplete(ctx context.Context, matchID string, complete bool) (*AFLMatch, error) {
 	id, err := fromID(matchID)
@@ -159,6 +159,18 @@ func (r *mutationResolver) MarkAFLMatchStatsComplete(ctx context.Context, matchI
 		return nil, err
 	}
 	return convertMatch(match), nil
+}
+
+// RecalculateAFLLadder is the resolver for the recalculateAFLLadder field.
+func (r *mutationResolver) RecalculateAFLLadder(ctx context.Context, seasonID string) (bool, error) {
+	id, err := fromID(seasonID)
+	if err != nil {
+		return false, err
+	}
+	if err := r.ScoreCommands.RecalculateAFLLadder(ctx, id); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Mutation returns MutationResolver implementation.

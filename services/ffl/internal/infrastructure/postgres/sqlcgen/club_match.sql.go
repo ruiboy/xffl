@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const countFinalClubMatchesByMatchID = `-- name: CountFinalClubMatchesByMatchID :one
+SELECT COUNT(*) FROM ffl.club_match
+WHERE match_id = $1 AND data_status = 'final' AND deleted_at IS NULL
+`
+
+func (q *Queries) CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error) {
+	row := q.db.QueryRow(ctx, countFinalClubMatchesByMatchID, matchID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const findClubMatchByID = `-- name: FindClubMatchByID :one
 SELECT id, match_id, club_season_id, data_status, drv_score
 FROM ffl.club_match

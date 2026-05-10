@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func pos(p Position) *Position                    { return &p }
@@ -200,3 +201,176 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+func bpPtr(s string) *string  { return &s }
+
+// validFullTeam builds a complete 18-starter team with no bench.
+func validFullTeam() []PlayerMatch {
+	entries := []PlayerMatch{}
+	for position, count := range PositionSlots {
+		p := position
+		for range count {
+			entries = append(entries, PlayerMatch{Position: &p})
+		}
+	}
+	return entries
+}
+
+func TestValidateTeam_ValidCases(t *testing.T) {
+	t.Run("empty team is valid", func(t *testing.T) {
+		require.NoError(t, validateTeam(nil))
+	})
+
+	t.Run("full 18-starter team is valid", func(t *testing.T) {
+		require.NoError(t, validateTeam(validFullTeam()))
+	})
+
+	t.Run("starters with backup star and 3 dual-position bench", func(t *testing.T) {
+		entries := validFullTeam()
+		star := PositionStar
+		entries = append(entries, PlayerMatch{Position: &star, BackupPositions: bpPtr("star")})
+		goals := PositionGoals
+		entries = append(entries, PlayerMatch{Position: &goals, BackupPositions: bpPtr("goals,kicks")})
+		handballs := PositionHandballs
+		entries = append(entries, PlayerMatch{Position: &handballs, BackupPositions: bpPtr("handballs,marks")})
+		tackles := PositionTackles
+		entries = append(entries, PlayerMatch{Position: &tackles, BackupPositions: bpPtr("tackles,hitouts")})
+		require.NoError(t, validateTeam(entries))
+	})
+
+	t.Run("interchange on bench star is valid", func(t *testing.T) {
+		entries := validFullTeam()
+		star := PositionStar
+		ic := "star"
+		entries = append(entries, PlayerMatch{Position: &star, BackupPositions: bpPtr("star"), InterchangePosition: &ic})
+		require.NoError(t, validateTeam(entries))
+	})
+
+	t.Run("partial team is valid", func(t *testing.T) {
+		goals := PositionGoals
+		entries := []PlayerMatch{
+			{Position: &goals},
+			{Position: &goals},
+		}
+		require.NoError(t, validateTeam(entries))
+	})
+}
+
+func TestValidateTeam_InvalidCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		entries     []PlayerMatch
+		errContains string
+	}{
+		{
+			name: "too many goal kickers",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				return []PlayerMatch{{Position: &p}, {Position: &p}, {Position: &p}, {Position: &p}}
+			}(),
+			errContains: "goals",
+		},
+		{
+			name: "too many star starters",
+			entries: func() []PlayerMatch {
+				p := PositionStar
+				return []PlayerMatch{{Position: &p}, {Position: &p}}
+			}(),
+			errContains: "star",
+		},
+		{
+			name: "5 bench players",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				entries := []PlayerMatch{}
+				for range 5 {
+					entries = append(entries, PlayerMatch{Position: &p, BackupPositions: bpPtr("goals,kicks")})
+				}
+				return entries
+			}(),
+			errContains: "bench has 5",
+		},
+		{
+			name: "two backup stars",
+			entries: func() []PlayerMatch {
+				p := PositionStar
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("star")},
+					{Position: &p, BackupPositions: bpPtr("star")},
+				}
+			}(),
+			errContains: "backup star",
+		},
+		{
+			name: "non-star bench with only 1 backup position",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals")},
+				}
+			}(),
+			errContains: "exactly 2",
+		},
+		{
+			name: "non-star bench with 3 backup positions",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks,handballs")},
+				}
+			}(),
+			errContains: "exactly 2",
+		},
+		{
+			name: "non-star bench with star in backup positions",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals,star")},
+				}
+			}(),
+			errContains: "star",
+		},
+		{
+			name: "same position covered by two bench players",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks")},
+					{Position: &p, BackupPositions: bpPtr("goals,marks")},
+				}
+			}(),
+			errContains: "goals",
+		},
+		{
+			name: "two interchange positions",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				ic := "goals"
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks"), InterchangePosition: &ic},
+					{Position: &p, BackupPositions: bpPtr("marks,tackles"), InterchangePosition: &ic},
+				}
+			}(),
+			errContains: "interchange",
+		},
+		{
+			name: "unknown interchange position",
+			entries: func() []PlayerMatch {
+				p := PositionGoals
+				ic := "unknown"
+				return []PlayerMatch{
+					{Position: &p, BackupPositions: bpPtr("goals,kicks"), InterchangePosition: &ic},
+				}
+			}(),
+			errContains: "interchange position",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateTeam(tt.entries)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.errContains)
+		})
+	}
+}

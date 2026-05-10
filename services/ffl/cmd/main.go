@@ -18,6 +18,7 @@ import (
 	"xffl/services/ffl/internal/infrastructure/forum"
 	"xffl/services/ffl/internal/infrastructure/rpc"
 	gql "xffl/services/ffl/internal/interface/graphql"
+	fflevents "xffl/services/ffl/internal/interface/events"
 	pgevents "xffl/shared/events/pg"
 )
 
@@ -80,11 +81,27 @@ func main() {
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: playerLookup,
 	})
 
-	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		dispatcher,
+	)
+	eventHandlers := fflevents.NewHandlers(commands, scoreCommands)
+	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, eventHandlers.HandlePlayerMatchUpdated)
+	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
+	dispatcher.Subscribe(contractevents.FflTeamFinalized, eventHandlers.HandleFflTeamFinalized)
+	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, eventHandlers.HandleFflClubMatchScoreFinalized)
+	dispatcher.Subscribe(contractevents.FflMatchFinalized, eventHandlers.HandleFflMatchFinalized)
+
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
 			slog.ErrorContext(ctx, "FFL event listener stopped", slog.Any("error", err))
@@ -96,9 +113,11 @@ func main() {
 		playerLookup,
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
+		dispatcher,
+		commands,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

@@ -4,14 +4,12 @@ package graphql_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
@@ -158,6 +156,7 @@ func setupCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
@@ -170,24 +169,17 @@ func TestHandlePlayerMatchUpdated_scores_ffl_player_match(t *testing.T) {
 	commands, _ := setupCommandsWithDispatcher(t, pool)
 	ctx := context.Background()
 
-	// Simulate AFL publishing a PlayerMatchUpdated event.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  999, // AFL player_match ID (arbitrary, used for linking)
-		PlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:    ids.aflClubMatchID,
-		RoundID:        ids.aflRoundID,
-		Kicks:          20,
-		Handballs:      10,
-		Marks:          5,
-		Hitouts:        0,
-		Tackles:        3,
-		Goals:          2,
-		Behinds:        1,
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  999,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Kicks:             20,
+		Handballs:         10,
+		Marks:             5,
+		Tackles:           3,
+		Goals:             2,
 	})
-	require.NoError(t, err)
-
-	// Handle the event.
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	require.NoError(t, err)
 
 	// Verify the FFL player match was scored.
@@ -215,18 +207,107 @@ func TestHandlePlayerMatchUpdated_ignores_unknown_player(t *testing.T) {
 	commands, _ := setupCommandsWithDispatcher(t, pool)
 	ctx := context.Background()
 
-	// Event for an AFL player_season not in any FFL squad.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  1000,
-		PlayerSeasonID: 99999, // does not exist in FFL
-		ClubMatchID:    1,
-		RoundID:        1,
-		Kicks:          10,
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  1000,
+		AFLPlayerSeasonID: 99999, // does not exist in FFL
+		ClubMatchID:       1,
+		RoundID:           1,
+		Kicks:             10,
+	})
+	assert.NoError(t, err) // should not error, just skip
+}
+
+func setupScoreCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application.ScoreCommands, *memevents.Dispatcher) {
+	t.Helper()
+	q := sqlcgen.New(pool)
+	dispatcher := memevents.New()
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		dispatcher,
+	)
+	return scoreCommands, dispatcher
+}
+
+func TestHandlePlayerMatchUpdated_syncs_afl_status(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedEventTestData(t, pool)
+	commands, _ := setupCommandsWithDispatcher(t, pool)
+	ctx := context.Background()
+
+	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  999,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Status:            "named",
+		Kicks:             5,
 	})
 	require.NoError(t, err)
 
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
-	assert.NoError(t, err) // should not error, just skip
+	var status *string
+	err = pool.QueryRow(ctx,
+		"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+		ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&status)
+	require.NoError(t, err)
+	require.NotNil(t, status)
+	assert.Equal(t, "named", *status)
+}
+
+func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedEventTestData(t, pool)
+	ctx := context.Background()
+
+	// Add a second AFL player + FFL player (linked at player level but no afl_player_match_id in player_match → dnp).
+	var afl2PlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Unlinked Test Player') RETURNING id").Scan(&afl2PlayerID))
+	var unlinkedPlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id", afl2PlayerID).Scan(&unlinkedPlayerID))
+	var unlinkedPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		unlinkedPlayerID, ids.fflClubSeasonID).Scan(&unlinkedPlayerSeasonID))
+
+	_, err := pool.Exec(ctx,
+		"INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status) VALUES ($1, $2, 'handballs', 'named')",
+		ids.fflClubMatchID, unlinkedPlayerSeasonID)
+	require.NoError(t, err)
+
+	// The seeded player_match (from seedEventTestData) starts with status='named' and no afl_player_match_id.
+	// Set afl_player_match_id = 777 to simulate it being linked (AFL stats already resolved).
+	_, err = pool.Exec(ctx,
+		"UPDATE ffl.player_match SET afl_player_match_id = 777 WHERE player_season_id = $1 AND club_match_id = $2",
+		ids.fflPlayerSeasonID, ids.fflClubMatchID)
+	require.NoError(t, err)
+
+	scoreCommands, _ := setupScoreCommandsWithDispatcher(t, pool)
+
+	err = scoreCommands.ProcessAFLRoundFinalized(ctx, ids.aflRoundID)
+	require.NoError(t, err)
+
+	t.Run("linked player becomes played", func(t *testing.T) {
+		var status *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+			ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&status))
+		require.NotNil(t, status)
+		assert.Equal(t, "played", *status)
+	})
+
+	t.Run("unlinked named player becomes dnp", func(t *testing.T) {
+		var status *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+			unlinkedPlayerSeasonID, ids.fflClubMatchID).Scan(&status))
+		require.NotNil(t, status)
+		assert.Equal(t, "dnp", *status)
+	})
 }
 
 func TestHandlePlayerMatchUpdated_multiple_ffl_clubs(t *testing.T) {
@@ -266,23 +347,17 @@ func TestHandlePlayerMatchUpdated_multiple_ffl_clubs(t *testing.T) {
 		secondClubMatchID, secondPlayerSeasonID)
 	require.NoError(t, err)
 
-	// Fire event.
-	payload, err := json.Marshal(contractevents.PlayerMatchUpdatedPayload{
-		PlayerMatchID:  888,
-		PlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:    ids.aflClubMatchID,
-		RoundID:        ids.aflRoundID,
-		Kicks:          15,
-		Handballs:      8,
-		Marks:          4,
-		Hitouts:        0,
-		Tackles:        6,
-		Goals:          3,
-		Behinds:        2,
+	err = commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+		AFLPlayerMatchID:  888,
+		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+		ClubMatchID:       ids.aflClubMatchID,
+		RoundID:           ids.aflRoundID,
+		Kicks:             15,
+		Handballs:         8,
+		Marks:             4,
+		Tackles:           6,
+		Goals:             3,
 	})
-	require.NoError(t, err)
-
-	err = commands.HandlePlayerMatchUpdated(ctx, payload)
 	require.NoError(t, err)
 
 	// First club: kicks position → score = kicks * 1 = 15.

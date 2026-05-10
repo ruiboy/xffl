@@ -9,6 +9,16 @@ import (
 	"context"
 )
 
+const deletePlayerMatchByID = `-- name: DeletePlayerMatchByID :exec
+DELETE FROM ffl.player_match
+WHERE id = $1
+`
+
+func (q *Queries) DeletePlayerMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deletePlayerMatchByID, id)
+	return err
+}
+
 const deletePlayerMatchesByClubMatchID = `-- name: DeletePlayerMatchesByClubMatchID :exec
 DELETE FROM ffl.player_match
 WHERE club_match_id = $1
@@ -160,6 +170,22 @@ type UpdateAFLPlayerMatchIDParams struct {
 
 func (q *Queries) UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error {
 	_, err := q.db.Exec(ctx, updateAFLPlayerMatchID, arg.ID, arg.AflPlayerMatchID)
+	return err
+}
+
+const updatePlayerMatchStatus = `-- name: UpdatePlayerMatchStatus :exec
+UPDATE ffl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdatePlayerMatchStatusParams struct {
+	ID     int32
+	Status *string
+}
+
+func (q *Queries) UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error {
+	_, err := q.db.Exec(ctx, updatePlayerMatchStatus, arg.ID, arg.Status)
 	return err
 }
 

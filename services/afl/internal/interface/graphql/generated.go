@@ -161,6 +161,7 @@ type ComplexityRoot struct {
 		AddAFLPlayerSeason        func(childComplexity int, input AddAFLPlayerSeasonInput) int
 		ImportAFLMatchStats       func(childComplexity int, matchID string) int
 		MarkAFLMatchStatsComplete func(childComplexity int, matchID string, complete bool) int
+		RecalculateAFLLadder      func(childComplexity int, seasonID string) int
 		ResolveAFLPlayerMatch     func(childComplexity int, input ResolveAFLPlayerMatchInput) int
 		UpdateAFLPlayerMatch      func(childComplexity int, input UpdateAFLPlayerMatchInput) int
 	}
@@ -242,10 +243,11 @@ type EntityResolver interface {
 type MutationResolver interface {
 	AddAFLPlayer(ctx context.Context, input AddAFLPlayerInput) (*AFLPlayerSeason, error)
 	AddAFLPlayerSeason(ctx context.Context, input AddAFLPlayerSeasonInput) (*AFLPlayerSeason, error)
-	ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error)
 	UpdateAFLPlayerMatch(ctx context.Context, input UpdateAFLPlayerMatchInput) (*AFLPlayerMatch, error)
 	ImportAFLMatchStats(ctx context.Context, matchID string) (*ImportAFLMatchStatsResult, error)
+	ResolveAFLPlayerMatch(ctx context.Context, input ResolveAFLPlayerMatchInput) (*AFLPlayerMatch, error)
 	MarkAFLMatchStatsComplete(ctx context.Context, matchID string, complete bool) (*AFLMatch, error)
+	RecalculateAFLLadder(ctx context.Context, seasonID string) (bool, error)
 }
 type QueryResolver interface {
 	AflSeasons(ctx context.Context) ([]*AFLSeason, error)
@@ -804,6 +806,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.MarkAFLMatchStatsComplete(childComplexity, args["matchId"].(string), args["complete"].(bool)), true
+	case "Mutation.recalculateAFLLadder":
+		if e.ComplexityRoot.Mutation.RecalculateAFLLadder == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recalculateAFLLadder_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RecalculateAFLLadder(childComplexity, args["seasonId"].(string)), true
 	case "Mutation.resolveAFLPlayerMatch":
 		if e.ComplexityRoot.Mutation.ResolveAFLPlayerMatch == nil {
 			break
@@ -1108,10 +1121,14 @@ var sources = []*ast.Source{
 	{Name: "../../../api/graphql/mutation.graphqls", Input: `type Mutation {
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason!
   addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason!
-  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
+
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
+  resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
+
+  "Rebuild AFL ladder standings for the given season from all final matches."
+  recalculateAFLLadder(seasonId: ID!): Boolean!
 }
 
 input AddAFLPlayerInput {
@@ -1124,18 +1141,20 @@ input AddAFLPlayerSeasonInput {
   clubSeasonId: ID!
 }
 
-input ResolveAFLPlayerMatchInput {
-  clubMatchId: ID!
+input UpdateAFLPlayerMatchInput {
   playerSeasonId: ID!
-  kicks: Int!
-  handballs: Int!
-  marks: Int!
-  hitouts: Int!
-  tackles: Int!
-  goals: Int!
-  behinds: Int!
-  parsedName: String
+  clubMatchId: ID!
+  status: String
+  kicks: Int
+  handballs: Int
+  marks: Int
+  hitouts: Int
+  tackles: Int
+  goals: Int
+  behinds: Int
 }
+
+"---- Import flow ----"
 
 type ImportAFLMatchStatsResult {
   matchId: ID!
@@ -1158,17 +1177,17 @@ type UnmatchedAFLPlayer {
   behinds: Int!
 }
 
-input UpdateAFLPlayerMatchInput {
-  playerSeasonId: ID!
+input ResolveAFLPlayerMatchInput {
   clubMatchId: ID!
-  status: String
-  kicks: Int
-  handballs: Int
-  marks: Int
-  hitouts: Int
-  tackles: Int
-  goals: Int
-  behinds: Int
+  playerSeasonId: ID!
+  kicks: Int!
+  handballs: Int!
+  marks: Int!
+  hitouts: Int!
+  tackles: Int!
+  goals: Int!
+  behinds: Int!
+  parsedName: String
 }
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
@@ -1489,6 +1508,17 @@ func (ec *executionContext) field_Mutation_markAFLMatchStatsComplete_args(ctx co
 		return nil, err
 	}
 	args["complete"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recalculateAFLLadder_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "seasonId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["seasonId"] = arg0
 	return args, nil
 }
 
@@ -4380,79 +4410,6 @@ func (ec *executionContext) fieldContext_Mutation_addAFLPlayerSeason(ctx context
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_resolveAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_resolveAFLPlayerMatch,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ResolveAFLPlayerMatch(ctx, fc.Args["input"].(ResolveAFLPlayerMatchInput))
-		},
-		nil,
-		ec.marshalNAFLPlayerMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerMatch,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_resolveAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
-			case "playerSeasonId":
-				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
-			case "clubMatchId":
-				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
-			case "clubMatch":
-				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
-			case "player":
-				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
-			case "status":
-				return ec.fieldContext_AFLPlayerMatch_status(ctx, field)
-			case "kicks":
-				return ec.fieldContext_AFLPlayerMatch_kicks(ctx, field)
-			case "handballs":
-				return ec.fieldContext_AFLPlayerMatch_handballs(ctx, field)
-			case "marks":
-				return ec.fieldContext_AFLPlayerMatch_marks(ctx, field)
-			case "hitouts":
-				return ec.fieldContext_AFLPlayerMatch_hitouts(ctx, field)
-			case "tackles":
-				return ec.fieldContext_AFLPlayerMatch_tackles(ctx, field)
-			case "goals":
-				return ec.fieldContext_AFLPlayerMatch_goals(ctx, field)
-			case "behinds":
-				return ec.fieldContext_AFLPlayerMatch_behinds(ctx, field)
-			case "disposals":
-				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
-			case "score":
-				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_resolveAFLPlayerMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_updateAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4581,6 +4538,79 @@ func (ec *executionContext) fieldContext_Mutation_importAFLMatchStats(ctx contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_resolveAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_resolveAFLPlayerMatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ResolveAFLPlayerMatch(ctx, fc.Args["input"].(ResolveAFLPlayerMatchInput))
+		},
+		nil,
+		ec.marshalNAFLPlayerMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLPlayerMatch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolveAFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_AFLPlayerMatch_playerSeasonId(ctx, field)
+			case "clubMatchId":
+				return ec.fieldContext_AFLPlayerMatch_clubMatchId(ctx, field)
+			case "clubMatch":
+				return ec.fieldContext_AFLPlayerMatch_clubMatch(ctx, field)
+			case "player":
+				return ec.fieldContext_AFLPlayerMatch_player(ctx, field)
+			case "status":
+				return ec.fieldContext_AFLPlayerMatch_status(ctx, field)
+			case "kicks":
+				return ec.fieldContext_AFLPlayerMatch_kicks(ctx, field)
+			case "handballs":
+				return ec.fieldContext_AFLPlayerMatch_handballs(ctx, field)
+			case "marks":
+				return ec.fieldContext_AFLPlayerMatch_marks(ctx, field)
+			case "hitouts":
+				return ec.fieldContext_AFLPlayerMatch_hitouts(ctx, field)
+			case "tackles":
+				return ec.fieldContext_AFLPlayerMatch_tackles(ctx, field)
+			case "goals":
+				return ec.fieldContext_AFLPlayerMatch_goals(ctx, field)
+			case "behinds":
+				return ec.fieldContext_AFLPlayerMatch_behinds(ctx, field)
+			case "disposals":
+				return ec.fieldContext_AFLPlayerMatch_disposals(ctx, field)
+			case "score":
+				return ec.fieldContext_AFLPlayerMatch_score(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLPlayerMatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveAFLPlayerMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_markAFLMatchStatsComplete(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4634,6 +4664,47 @@ func (ec *executionContext) fieldContext_Mutation_markAFLMatchStatsComplete(ctx 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_markAFLMatchStatsComplete_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recalculateAFLLadder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recalculateAFLLadder,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RecalculateAFLLadder(ctx, fc.Args["seasonId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recalculateAFLLadder(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recalculateAFLLadder_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8791,13 +8862,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "resolveAFLPlayerMatch":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_resolveAFLPlayerMatch(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "updateAFLPlayerMatch":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateAFLPlayerMatch(ctx, field)
@@ -8812,9 +8876,23 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "resolveAFLPlayerMatch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveAFLPlayerMatch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "markAFLMatchStatsComplete":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markAFLMatchStatsComplete(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recalculateAFLLadder":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recalculateAFLLadder(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -7,6 +7,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMatch_DeriveResult(t *testing.T) {
+	tests := []struct {
+		name string
+		home int
+		away int
+		want MatchResult
+	}{
+		{"home win", 80, 60, MatchResultHomeWin},
+		{"away win", 60, 80, MatchResultAwayWin},
+		{"draw", 70, 70, MatchResultDraw},
+		{"both zero", 0, 0, MatchResultDraw},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := Match{
+				Home: ClubMatch{StoredScore: tt.home},
+				Away: ClubMatch{StoredScore: tt.away},
+			}
+			assert.Equal(t, tt.want, m.DeriveResult())
+		})
+	}
+}
+
 func TestMatch_Winner(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -47,3 +47,56 @@ func (a *AFLPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeaso
 	}
 	return int(resp.PlayerId), nil
 }
+
+func (a *AFLPlayerLookup) LookupPlayerMatch(ctx context.Context, aflPlayerMatchIDs []int) ([]application.PlayerMatchStats, error) {
+	ids := make([]int32, len(aflPlayerMatchIDs))
+	for i, id := range aflPlayerMatchIDs {
+		ids[i] = int32(id)
+	}
+	resp, err := a.client.LookupPlayerMatch(ctx, &aflv1.LookupPlayerMatchRequest{
+		Key: &aflv1.LookupPlayerMatchRequest_ByIds{
+			ByIds: &aflv1.LookupByIDs{Ids: ids},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toPlayerMatchStats(resp.Stats), nil
+}
+
+func (a *AFLPlayerLookup) LookupPlayerMatchBySeasonRound(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]application.PlayerMatchStats, error) {
+	psIDs := make([]int32, len(aflPlayerSeasonIDs))
+	for i, id := range aflPlayerSeasonIDs {
+		psIDs[i] = int32(id)
+	}
+	resp, err := a.client.LookupPlayerMatch(ctx, &aflv1.LookupPlayerMatchRequest{
+		Key: &aflv1.LookupPlayerMatchRequest_BySeasonRound{
+			BySeasonRound: &aflv1.LookupBySeasonRound{
+				PlayerSeasonIds: psIDs,
+				RoundId:         int32(aflRoundID),
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toPlayerMatchStats(resp.Stats), nil
+}
+
+func toPlayerMatchStats(stats []*aflv1.PlayerMatchStats) []application.PlayerMatchStats {
+	out := make([]application.PlayerMatchStats, len(stats))
+	for i, s := range stats {
+		out[i] = application.PlayerMatchStats{
+			ID:             int(s.Id),
+			Status:         s.Status,
+			Goals:          int(s.Goals),
+			Kicks:          int(s.Kicks),
+			Handballs:      int(s.Handballs),
+			Marks:          int(s.Marks),
+			Tackles:        int(s.Tackles),
+			Hitouts:        int(s.Hitouts),
+			PlayerSeasonID: int(s.PlayerSeasonId),
+		}
+	}
+	return out
+}

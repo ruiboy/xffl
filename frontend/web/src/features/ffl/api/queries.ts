@@ -132,16 +132,6 @@ export const GET_FFL_ROUND = gql`
       id
       name
       aflRoundId
-      aflRound {
-        id
-        season { id }
-        matches {
-          id
-          dataStatus
-          homeClubMatch { club { id } }
-          awayClubMatch { club { id } }
-        }
-      }
       season {
         id
         name
@@ -175,8 +165,11 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
-                clubSeason { club { id name } }
+                clubSeason { club { name } }
               }
+            }
+            aflPlayerMatch {
+              clubMatch { match { id } }
             }
           }
         }
@@ -195,8 +188,11 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
-                clubSeason { club { id name } }
+                clubSeason { club { name } }
               }
+            }
+            aflPlayerMatch {
+              clubMatch { match { id } }
             }
           }
         }
@@ -215,15 +211,6 @@ export const GET_FFL_MATCH = gql`
         id
         name
         aflRoundId
-        aflRound {
-          id
-          matches {
-            id
-            dataStatus
-            homeClubMatch { club { id } }
-            awayClubMatch { club { id } }
-          }
-        }
         season { id name rounds { id name } }
       }
       homeClubMatch {
@@ -242,7 +229,7 @@ export const GET_FFL_MATCH = gql`
           score
           playerSeason {
             aflPlayerSeason {
-              clubSeason { club { id name } }
+              clubSeason { club { name } }
             }
           }
         }
@@ -263,7 +250,7 @@ export const GET_FFL_MATCH = gql`
           score
           playerSeason {
             aflPlayerSeason {
-              clubSeason { club { id name } }
+              clubSeason { club { name } }
             }
           }
         }

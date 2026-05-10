@@ -100,3 +100,41 @@ func (q *Queries) FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32)
 	}
 	return items, nil
 }
+
+const updateClubSeason = `-- name: UpdateClubSeason :exec
+UPDATE afl.club_season
+SET drv_played             = $2,
+    drv_won                = $3,
+    drv_lost               = $4,
+    drv_drawn              = $5,
+    drv_for                = $6,
+    drv_against            = $7,
+    drv_premiership_points = $8,
+    updated_at             = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubSeasonParams struct {
+	ID                   int32
+	DrvPlayed            *int32
+	DrvWon               *int32
+	DrvLost              *int32
+	DrvDrawn             *int32
+	DrvFor               *int32
+	DrvAgainst           *int32
+	DrvPremiershipPoints *int32
+}
+
+func (q *Queries) UpdateClubSeason(ctx context.Context, arg UpdateClubSeasonParams) error {
+	_, err := q.db.Exec(ctx, updateClubSeason,
+		arg.ID,
+		arg.DrvPlayed,
+		arg.DrvWon,
+		arg.DrvLost,
+		arg.DrvDrawn,
+		arg.DrvFor,
+		arg.DrvAgainst,
+		arg.DrvPremiershipPoints,
+	)
+	return err
+}

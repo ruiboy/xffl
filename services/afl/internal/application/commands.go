@@ -71,6 +71,7 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
+		Status:         result.Status,
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,

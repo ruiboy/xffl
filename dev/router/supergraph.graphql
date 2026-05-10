@@ -364,6 +364,14 @@ enum link__Purpose {
   EXECUTION
 }
 
+input MarkFFLTeamFinalInput
+  @join__type(graph: FFL)
+{
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
+}
+
 type Mutation
   @join__type(graph: AFL)
   @join__type(graph: FFL)
@@ -374,6 +382,11 @@ type Mutation
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
   resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
+
+  """
+  Rebuild AFL ladder standings for the given season from all final matches.
+  """
+  recalculateAFLLadder(seasonId: ID!): Boolean! @join__field(graph: AFL)
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
@@ -381,6 +394,19 @@ type Mutation
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+
+  """Lock a FFL club_match as final — triggers the FFL scoring chain."""
+  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
+
+  """
+  Rebuild FFL ladder standings for the given season from all final matches.
+  """
+  recalculateFFLLadder(seasonId: ID!): Boolean! @join__field(graph: FFL)
+
+  """
+  Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total.
+  """
+  recalculateFFLClubMatchScore(clubMatchId: ID!): Boolean! @join__field(graph: FFL)
 }
 
 type PageInfo

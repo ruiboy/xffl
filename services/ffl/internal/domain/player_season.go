@@ -16,6 +16,7 @@ type PlayerSeason struct {
 type PlayerSeasonRepository interface {
 	FindByClubSeasonID(ctx context.Context, clubSeasonID int) ([]PlayerSeason, error)
 	FindByID(ctx context.Context, id int) (PlayerSeason, error)
+	FindByIDs(ctx context.Context, ids []int) ([]PlayerSeason, error)
 	FindByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int) ([]PlayerSeason, error)
 	FindPlayersForPlayerSeasonIDs(ctx context.Context, ids []int) (map[int]Player, error)
 	Create(ctx context.Context, playerID int, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int, costCents *int) (PlayerSeason, error)

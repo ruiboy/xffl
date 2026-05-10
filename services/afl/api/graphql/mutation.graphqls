@@ -6,6 +6,9 @@ type Mutation {
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
   resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
+
+  "Rebuild AFL ladder standings for the given season from all final matches."
+  recalculateAFLLadder(seasonId: ID!): Boolean!
 }
 
 input AddAFLPlayerInput {

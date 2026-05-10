@@ -15,6 +15,11 @@ SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_ro
 FROM ffl.player_season
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: FindPlayerSeasonsByIDs :many
+SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
+FROM ffl.player_season
+WHERE id = ANY(@ids::int[]) AND deleted_at IS NULL;
+
 -- name: FindPlayerSeasonsByAFLPlayerSeasonID :many
 SELECT id, player_id, club_season_id, afl_player_season_id, from_round_id, to_round_id, notes, cost_cents
 FROM ffl.player_season

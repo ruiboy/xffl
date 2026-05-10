@@ -11,6 +11,8 @@ The X makes it sound cool.
 
 ## Architecture
 
+### Logical View
+
 ![Logical View](doc/logical-view.png)
 
 ### Data Models
@@ -34,9 +36,13 @@ Frontend features follow user workflows, not backend services. The initial struc
     ├── app/             → Router, Apollo config, global CSS
     └── main.ts          → Entry point
 
+### Services
+
+Each service attempts to follow Clean Architecture + DDD principles ([see below](#service-architecture)).
+
 ### Architecture Decisions
 
-This project uses a **service-oriented modular monolith** architecture. Services are logically separated and independently evolvable, but currently run in a single environment with a shared database. This is a deliberate choice — the boundaries are real, but the infrastructure complexity of true microservices is deferred until needed.
+This project uses a **service-oriented modular monolith** architecture. Services are logically separated and independently evolvable, but currently run in a single environment with a shared database, for deployment simplicity.
 
 The architecture supports multiple evolution paths:
 
@@ -121,3 +127,26 @@ The agentic workflow evolves incrementally based on real needs:
 3. **More autonomy** (if needed) — only when human-in-the-loop becomes the bottleneck
 
 No frameworks are adopted speculatively. Each layer is added when the previous one proves useful.
+
+
+## Service Architecture
+
+Each service follows Clean Architecture + DDD. Dependencies point inward: Interface → Application → Domain ← Infrastructure.
+
+### `domain/`
+- **Entities** own their invariants. e.g. `ClubMatch.SubmitTeam()` validates team composition and transitions `DataStatus`; the entity refuses invalid state and returns a `TeamSubmitted` **domain event**.
+- **Domain services** express logic that spans entities or belongs to none. `CalculateLadder` is a pure stateless function — no persistence concern touches it.
+- **Repository interfaces** are defined here — the domain declares what it needs; it never imports infrastructure.
+
+### `application/`
+Application services (use cases) — each public method is one use case. Orchestrates: load entities via ports → call domain methods → persist → dispatch integration events. No business logic; if it looks like a decision, it belongs in the domain.
+
+`ports.go` holds driven ports the application needs but the domain doesn't own: `PlayerLookup`, `TeamParser`, `TxManager`.
+
+**Integration events:** `SubmitTeam()` returns a `TeamSubmitted` domain event (internal to this service). The application service translates it into a `FFL.TeamSubmitted` integration event on the bus. The domain never knows the bus exists.
+
+### `infrastructure/`
+Implements the driven ports. Postgres repos satisfy domain repository interfaces; `rpc/player_lookup.go` satisfies `PlayerLookup` via Twirp. Not imported by application or domain.
+
+### `interface/graphql/`
+Adapts the incoming protocol to application service calls. Maps domain types to the wire format but never calls entity methods directly or contains business logic.

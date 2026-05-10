@@ -13,10 +13,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	aflv1 "xffl/contracts/gen/afl/v1"
+	contractevents "xffl/contracts/events"
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	"xffl/services/afl/internal/infrastructure/footywire"
+	aflevents "xffl/services/afl/internal/interface/events"
 	gql "xffl/services/afl/internal/interface/graphql"
 	rpcsrv "xffl/services/afl/internal/interface/twirp"
 	"xffl/shared/clock"
@@ -73,6 +75,16 @@ func main() {
 	db := pg.NewDB(pool)
 	commands := application.NewCommands(db, dispatcher)
 
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		dispatcher,
+	)
+	eventHandlers := aflevents.NewHandlers(scoreCommands)
+	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
+
 	footywireClient := footywire.NewFootywireClient()
 	dataOps := application.NewDataOpsCommands(
 		db,
@@ -82,6 +94,7 @@ func main() {
 		pg.NewClubRepository(q),
 		pg.NewRoundRepository(q, pool),
 		pg.NewPlayerSeasonRepository(q),
+		pg.NewPlayerMatchRepository(q),
 		pg.NewDataopsMatchSourceRepository(q),
 		pg.NewDataopsPlayerSourceRepository(q),
 		footywireClient,
@@ -90,7 +103,7 @@ func main() {
 		dispatcher,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)
@@ -104,7 +117,7 @@ func main() {
 		}
 	})
 
-	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q), pg.NewPlayerSeasonRepository(q))
+	playerLookup := rpcsrv.NewPlayerLookupServer(pg.NewPlayerRepository(q), pg.NewPlayerSeasonRepository(q), pg.NewPlayerMatchRepository(q))
 	twirpHandler := aflv1.NewPlayerLookupServer(playerLookup)
 
 	mux := http.NewServeMux()

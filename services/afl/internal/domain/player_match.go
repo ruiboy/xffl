@@ -47,6 +47,9 @@ type UpsertPlayerMatchParams struct {
 type PlayerMatchRepository interface {
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
+	FindByIDs(ctx context.Context, ids []int) ([]PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
+	FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerMatch, error)
+	SetStatusForMatchID(ctx context.Context, matchID int, status string) error
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }

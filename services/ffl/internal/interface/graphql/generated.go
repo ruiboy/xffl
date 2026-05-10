@@ -167,13 +167,16 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddFFLPlayerToSeason      func(childComplexity int, input AddFFLPlayerToSeasonInput) int
-		CalculateFFLFantasyScore  func(childComplexity int, input CalculateFFLFantasyScoreInput) int
-		ConfirmFFLTeamSubmission  func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
-		ParseFFLTeamSubmission    func(childComplexity int, input ParseFFLTeamSubmissionInput) int
-		RemoveFFLPlayerFromSeason func(childComplexity int, input RemoveFFLPlayerFromSeasonInput) int
-		SetFFLTeam                func(childComplexity int, input SetFFLTeamInput) int
-		UpdateFFLPlayerSeason     func(childComplexity int, input UpdateFFLPlayerSeasonInput) int
+		AddFFLPlayerToSeason         func(childComplexity int, input AddFFLPlayerToSeasonInput) int
+		CalculateFFLFantasyScore     func(childComplexity int, input CalculateFFLFantasyScoreInput) int
+		ConfirmFFLTeamSubmission     func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
+		MarkFFLTeamFinal             func(childComplexity int, input MarkFFLTeamFinalInput) int
+		ParseFFLTeamSubmission       func(childComplexity int, input ParseFFLTeamSubmissionInput) int
+		RecalculateFFLClubMatchScore func(childComplexity int, clubMatchID string) int
+		RecalculateFFLLadder         func(childComplexity int, seasonID string) int
+		RemoveFFLPlayerFromSeason    func(childComplexity int, input RemoveFFLPlayerFromSeasonInput) int
+		SetFFLTeam                   func(childComplexity int, input SetFFLTeamInput) int
+		UpdateFFLPlayerSeason        func(childComplexity int, input UpdateFFLPlayerSeasonInput) int
 	}
 
 	PageInfo struct {
@@ -269,6 +272,9 @@ type MutationResolver interface {
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
 	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
 	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
+	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
+	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
+	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (bool, error)
 }
 type QueryResolver interface {
 	FflSeasons(ctx context.Context) ([]*FFLSeason, error)
@@ -821,6 +827,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ConfirmFFLTeamSubmission(childComplexity, args["input"].(ConfirmFFLTeamSubmissionInput)), true
+	case "Mutation.markFFLTeamFinal":
+		if e.ComplexityRoot.Mutation.MarkFFLTeamFinal == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markFFLTeamFinal_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.MarkFFLTeamFinal(childComplexity, args["input"].(MarkFFLTeamFinalInput)), true
 	case "Mutation.parseFFLTeamSubmission":
 		if e.ComplexityRoot.Mutation.ParseFFLTeamSubmission == nil {
 			break
@@ -832,6 +849,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ParseFFLTeamSubmission(childComplexity, args["input"].(ParseFFLTeamSubmissionInput)), true
+	case "Mutation.recalculateFFLClubMatchScore":
+		if e.ComplexityRoot.Mutation.RecalculateFFLClubMatchScore == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recalculateFFLClubMatchScore_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RecalculateFFLClubMatchScore(childComplexity, args["clubMatchId"].(string)), true
+	case "Mutation.recalculateFFLLadder":
+		if e.ComplexityRoot.Mutation.RecalculateFFLLadder == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_recalculateFFLLadder_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RecalculateFFLLadder(childComplexity, args["seasonId"].(string)), true
 	case "Mutation.removeFFLPlayerFromSeason":
 		if e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason == nil {
 			break
@@ -1111,6 +1150,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputConfirmedFFLPlayerInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLTeamPlayerInput,
+		ec.unmarshalInputMarkFFLTeamFinalInput,
 		ec.unmarshalInputParseFFLTeamSubmissionInput,
 		ec.unmarshalInputRemoveFFLPlayerFromSeasonInput,
 		ec.unmarshalInputSetFFLTeamInput,
@@ -1209,6 +1249,21 @@ var sources = []*ast.Source{
 
   # Data ops: confirm a reviewed parse result and write to the database.
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
+
+  "Lock a FFL club_match as final — triggers the FFL scoring chain."
+  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
+
+  "Rebuild FFL ladder standings for the given season from all final matches."
+  recalculateFFLLadder(seasonId: ID!): Boolean!
+
+  "Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total."
+  recalculateFFLClubMatchScore(clubMatchId: ID!): Boolean!
+}
+
+input MarkFFLTeamFinalInput {
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
 }
 
 input UpdateFFLPlayerSeasonInput {
@@ -1618,6 +1673,17 @@ func (ec *executionContext) field_Mutation_confirmFFLTeamSubmission_args(ctx con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_markFFLTeamFinal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMarkFFLTeamFinalInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐMarkFFLTeamFinalInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_parseFFLTeamSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1626,6 +1692,28 @@ func (ec *executionContext) field_Mutation_parseFFLTeamSubmission_args(ctx conte
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recalculateFFLClubMatchScore_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "clubMatchId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["clubMatchId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_recalculateFFLLadder_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "seasonId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["seasonId"] = arg0
 	return args, nil
 }
 
@@ -4721,6 +4809,129 @@ func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx c
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markFFLTeamFinal,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MarkFFLTeamFinal(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markFFLTeamFinal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recalculateFFLLadder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recalculateFFLLadder,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RecalculateFFLLadder(ctx, fc.Args["seasonId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recalculateFFLLadder(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recalculateFFLLadder_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_recalculateFFLClubMatchScore(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_recalculateFFLClubMatchScore,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RecalculateFFLClubMatchScore(ctx, fc.Args["clubMatchId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_recalculateFFLClubMatchScore(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_recalculateFFLClubMatchScore_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *PageInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7718,6 +7929,50 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMarkFFLTeamFinalInput(ctx context.Context, obj any) (MarkFFLTeamFinalInput, error) {
+	var it MarkFFLTeamFinalInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clubMatchId", "matchId", "roundId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clubMatchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clubMatchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClubMatchID = data
+		case "matchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MatchID = data
+		case "roundId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roundId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoundID = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputParseFFLTeamSubmissionInput(ctx context.Context, obj any) (ParseFFLTeamSubmissionInput, error) {
 	var it ParseFFLTeamSubmissionInput
 	if obj == nil {
@@ -9410,6 +9665,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "markFFLTeamFinal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markFFLTeamFinal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recalculateFFLLadder":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recalculateFFLLadder(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recalculateFFLClubMatchScore":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_recalculateFFLClubMatchScore(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10764,6 +11040,11 @@ func (ec *executionContext) marshalNInt2ᚕintᚄ(ctx context.Context, sel ast.S
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNMarkFFLTeamFinalInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐMarkFFLTeamFinalInput(ctx context.Context, v any) (MarkFFLTeamFinalInput, error) {
+	res, err := ec.unmarshalInputMarkFFLTeamFinalInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNPageInfo2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *PageInfo) graphql.Marshaler {

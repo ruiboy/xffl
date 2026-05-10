@@ -9,9 +9,11 @@ import (
 )
 
 type Querier interface {
+	CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error)
 	CreatePlayer(ctx context.Context, aflPlayerID int32) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
 	DeletePlayer(ctx context.Context, id int32) error
+	DeletePlayerMatchByID(ctx context.Context, id int32) error
 	DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error
 	DeletePlayerSeason(ctx context.Context, id int32) error
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
@@ -24,6 +26,7 @@ type Querier interface {
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
+	FindFinalFflMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflMatchesBySeasonIDRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
@@ -35,6 +38,7 @@ type Querier interface {
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
 	FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error)
 	FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error)
+	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
 	FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
@@ -44,6 +48,9 @@ type Querier interface {
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
+	UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error
+	UpdateFflMatchResult(ctx context.Context, arg UpdateFflMatchResultParams) error
+	UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error
 	UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error)
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }

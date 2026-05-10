@@ -53,6 +53,8 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 			Rounds:        pg.NewRoundRepository(q),
 			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
 			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
 		},
 		PlayerLookup: &stubPlayerLookup{pool: pool},
 	})
@@ -1474,6 +1476,139 @@ func TestFFLSeason_AflSeasonTraversal(t *testing.T) {
 		require.NoError(t, json.Unmarshal(result.Data, &data))
 		require.NotNil(t, data.FflSeason.AflSeason)
 		assert.Equal(t, fmt.Sprintf("%d", aflSeasonID), data.FflSeason.AflSeason.ID)
+	})
+}
+
+// ════════════════════════════════════════════════════════════════
+// RecalculateFFLLadder integration test
+// ════════════════════════════════════════════════════════════════
+
+func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
+	t.Helper()
+
+	q := sqlcgen.New(pool)
+	queries := application.NewQueries(
+		pg.NewClubRepository(q),
+		pg.NewSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewPlayerRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
+
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
+		EventRepos: application.EventRepos{
+			Rounds:        pg.NewRoundRepository(q),
+			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
+			PlayerMatches: pg.NewPlayerMatchRepository(q),
+			Matches:       pg.NewMatchRepository(q),
+			ClubMatches:   pg.NewClubMatchRepository(q),
+		},
+		PlayerLookup: &stubPlayerLookup{pool: pool},
+	})
+	scoreCommands := application.NewScoreCommands(
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		memevents.New(),
+	)
+
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, ScoreCommands: scoreCommands}
+	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := gql.InjectLoaders(r.Context(), gql.NewLoaders(queries))
+		srv.ServeHTTP(w, r.WithContext(ctx))
+	})
+	return httptest.NewServer(h)
+}
+
+func TestRecalculateFFLLadder(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServerWithScoreCommands(t, pool)
+	defer server.Close()
+
+	// FindFinalFflMatchesBySeasonID requires BOTH club_matches to be 'final'.
+	// seedTestData leaves them at 'no_data'; mark both final here.
+	// (Eagles 85 beat Lions 72.)
+	_, err := pool.Exec(context.Background(),
+		"UPDATE ffl.club_match SET data_status = 'final' WHERE match_id = $1", ids.matchID)
+	require.NoError(t, err)
+
+	mutation := fmt.Sprintf(`mutation {
+		recalculateFFLLadder(seasonId: "%d")
+	}`, ids.seasonID)
+
+	result := execQuery(t, server, mutation)
+	require.Empty(t, result.Errors)
+
+	var mutData struct {
+		RecalculateFFLLadder bool `json:"recalculateFFLLadder"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &mutData))
+
+	t.Run("mutation returns true", func(t *testing.T) {
+		assert.True(t, mutData.RecalculateFFLLadder)
+	})
+
+	// Verify the ladder was rebuilt from scratch using the one final match.
+	// Stale seeded values (played=5, pp=16/12) should be overwritten.
+	ladderResult := execQuery(t, server, fmt.Sprintf(`{
+		fflSeason(id: "%d") {
+			ladder { club { name } played won lost drawn for against }
+		}
+	}`, ids.seasonID))
+	require.Empty(t, ladderResult.Errors)
+
+	var ladderData struct {
+		FflSeason struct {
+			Ladder []struct {
+				Club struct {
+					Name string `json:"name"`
+				} `json:"club"`
+				Played  int `json:"played"`
+				Won     int `json:"won"`
+				Lost    int `json:"lost"`
+				Drawn   int `json:"drawn"`
+				For     int `json:"for"`
+				Against int `json:"against"`
+			} `json:"ladder"`
+		} `json:"fflSeason"`
+	}
+	require.NoError(t, json.Unmarshal(ladderResult.Data, &ladderData))
+	require.Len(t, ladderData.FflSeason.Ladder, 2)
+
+	t.Run("ladder is rebuilt from the single final match result", func(t *testing.T) {
+		// Ladder ordered by premiership_points DESC: Eagles (winner) first.
+		eagles := ladderData.FflSeason.Ladder[0]
+		assert.Equal(t, "Test Eagles", eagles.Club.Name)
+		assert.Equal(t, 1, eagles.Played)
+		assert.Equal(t, 1, eagles.Won)
+		assert.Equal(t, 0, eagles.Lost)
+		assert.Equal(t, 0, eagles.Drawn)
+		assert.Equal(t, 85, eagles.For)
+		assert.Equal(t, 72, eagles.Against)
+
+		lions := ladderData.FflSeason.Ladder[1]
+		assert.Equal(t, "Test Lions", lions.Club.Name)
+		assert.Equal(t, 1, lions.Played)
+		assert.Equal(t, 0, lions.Won)
+		assert.Equal(t, 1, lions.Lost)
+		assert.Equal(t, 0, lions.Drawn)
+		assert.Equal(t, 72, lions.For)
+		assert.Equal(t, 85, lions.Against)
+	})
+
+	t.Run("stale pre-seeded ladder values are overwritten", func(t *testing.T) {
+		// Seeds had played=5, pp=16 for Eagles — recalculation replaces with played=1.
+		assert.NotEqual(t, 5, ladderData.FflSeason.Ladder[0].Played)
 	})
 }
 

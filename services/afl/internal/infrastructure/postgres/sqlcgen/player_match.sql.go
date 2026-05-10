@@ -102,6 +102,59 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
+const findPlayerMatchesByIDs = `-- name: FindPlayerMatchesByIDs :many
+SELECT id, club_match_id, player_season_id, status,
+       kicks, handballs, marks, hitouts, tackles, goals, behinds
+FROM afl.player_match
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+`
+
+type FindPlayerMatchesByIDsRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Status         *string
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) FindPlayerMatchesByIDs(ctx context.Context, ids []int32) ([]FindPlayerMatchesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesByIDsRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Status,
+			&i.Kicks,
+			&i.Handballs,
+			&i.Marks,
+			&i.Hitouts,
+			&i.Tackles,
+			&i.Goals,
+			&i.Behinds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPlayerMatchesByPlayerSeasonID = `-- name: FindPlayerMatchesByPlayerSeasonID :many
 SELECT id, club_match_id, player_season_id, status,
        kicks, handballs, marks, hitouts, tackles, goals, behinds
@@ -154,6 +207,87 @@ func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerS
 		return nil, err
 	}
 	return items, nil
+}
+
+const findPlayerMatchesBySeasonIDsAndRoundID = `-- name: FindPlayerMatchesBySeasonIDsAndRoundID :many
+SELECT pm.id, pm.club_match_id, pm.player_season_id, pm.status,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON (m.home_club_match_id = cm.id OR m.away_club_match_id = cm.id) AND m.deleted_at IS NULL
+WHERE pm.player_season_id = ANY($1::int[])
+  AND m.round_id = $2
+  AND pm.deleted_at IS NULL
+`
+
+type FindPlayerMatchesBySeasonIDsAndRoundIDParams struct {
+	PlayerSeasonIds []int32
+	RoundID         int32
+}
+
+type FindPlayerMatchesBySeasonIDsAndRoundIDRow struct {
+	ID             int32
+	ClubMatchID    int32
+	PlayerSeasonID int32
+	Status         *string
+	Kicks          *int32
+	Handballs      *int32
+	Marks          *int32
+	Hitouts        *int32
+	Tackles        *int32
+	Goals          *int32
+	Behinds        *int32
+}
+
+func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, arg FindPlayerMatchesBySeasonIDsAndRoundIDParams) ([]FindPlayerMatchesBySeasonIDsAndRoundIDRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesBySeasonIDsAndRoundID, arg.PlayerSeasonIds, arg.RoundID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesBySeasonIDsAndRoundIDRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesBySeasonIDsAndRoundIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Status,
+			&i.Kicks,
+			&i.Handballs,
+			&i.Marks,
+			&i.Hitouts,
+			&i.Tackles,
+			&i.Goals,
+			&i.Behinds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setPlayerMatchStatusForMatch = `-- name: SetPlayerMatchStatusForMatch :exec
+UPDATE afl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+FROM afl.club_match cm
+WHERE afl.player_match.club_match_id = cm.id
+  AND cm.match_id = $1
+  AND afl.player_match.deleted_at IS NULL
+`
+
+type SetPlayerMatchStatusForMatchParams struct {
+	MatchID int32
+	Status  *string
+}
+
+func (q *Queries) SetPlayerMatchStatusForMatch(ctx context.Context, arg SetPlayerMatchStatusForMatchParams) error {
+	_, err := q.db.Exec(ctx, setPlayerMatchStatusForMatch, arg.MatchID, arg.Status)
+	return err
 }
 
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
