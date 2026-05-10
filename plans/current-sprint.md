@@ -114,7 +114,7 @@ ADR: ADR-018 (Twirp for cross-service communication)
 
 ### Score/ladder calculation side quest
 
-See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/domain.md` (Calculation flow section) for architecture.
+See `ai/architecture/domain.md` (Calculation flow section) for architecture.
 
 - [x] Phase 1 — Contracts: add 5 new event types + payloads
 - [x] Phase 2 — AFL service: Match.Result(), ladder recalc, AflMatchFinalized handler + publisher
@@ -122,6 +122,57 @@ See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/d
 - [x] Phase 4 — Data ops frontend: Calculate tab (AFL+FFL ladder recalc), Mark Final button in FFL Teams tab
 - [x] Phase 5 — Recalculate single club match score: new Twirp RPC (LookupPlayerMatchStats), FFL use case (RecalculateClubMatchScore), mutation, and Recalculate button on FFL Teams tab row
 - [x] Phase 6 — Infer player match status: AFL named→played on mark-final; FFL named→played/dnp on MatchFinalized event
+
+## Side quest — Derived player match status *(fix state-transition bugs)*
+
+**Problem**: `status` on both `afl.player_match` and `ffl.player_match` is set imperatively from
+multiple scattered call sites (event handlers, recalc commands, import flows), each with slightly
+different guards. Correctness depends on call order and which data has been populated. Current
+symptoms: FFL DNP not being set when `ffl.match.home_club_match_id` is null (fixed); FFL DNP
+incorrectly set when AFL match is not yet finalized; AFL `named→played` transition done
+separately from FFL status inference.
+
+**Key insight**: status is *fully determined* by two ground-truth values that are already in the DB:
+
+```
+afl.player_match:
+  status = (did AFL player match row exist?) → played / dnp (inferred from absence within a finalized match)
+
+ffl.player_match:
+  afl_player_match_id IS NOT NULL              → played
+  afl_player_match_id IS NULL
+    AND AFL match data_status = 'final'        → dnp
+    AND AFL match data_status ≠ 'final'        → named
+```
+
+**Proposed approach**:
+
+1. **Single domain function** `ComputePlayerMatchStatus(aflPlayerMatchID *int, aflMatchDataStatus string) PlayerMatchStatus`
+   encodes the derivation once. All imperative `UpdateStatus` call sites are replaced with a call
+   to this function followed by a single persist.
+
+2. **Thread AFL match data_status into every status-setting path** — the missing input that currently
+   causes `inferPlayerMatchStatuses` to set DNP before a match has been played (it sees
+   `afl_player_match_id = null` without knowing whether the AFL match is even in progress).
+
+3. **One recalculation entry point** — `RecalculateClubMatchScore` re-derives status from scratch as
+   part of its normal work. `inferPlayerMatchStatuses` as a separate pass is removed; status falls
+   out naturally from the recalc.
+
+4. **Same principle for AFL** — AFL `afl.player_match.status` (`named`→`played`) follows the same
+   pattern: derive from whether a player match row exists within a finalized match, rather than
+   setting it as a side effect of the import flow.
+
+5. **Unit-test the derivation function** with a table of (aflPlayerMatchID, aflMatchDataStatus) →
+   expected status cases. Integration tests verify data flows in correctly, not the status logic.
+
+**Files to look at when starting**:
+- `services/ffl/internal/application/score_commands.go` — `inferPlayerMatchStatuses` (to be replaced)
+- `services/ffl/internal/application/commands.go` — `ProcessPlayerMatchUpdated`, `RecalculateClubMatchScore`
+- `services/afl/internal/application/data_ops.go` — AFL status set during import
+- `services/ffl/internal/domain/player_match.go` — `PlayerMatchStatus` type (home for the new function)
+
+---
 
 ## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
 

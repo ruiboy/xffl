@@ -262,12 +262,6 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 	ids := seedEventTestData(t, pool)
 	ctx := context.Background()
 
-	// Wire home_club_match_id so FindByRoundID can resolve club_matches for the FFL match.
-	_, err := pool.Exec(ctx,
-		"UPDATE ffl.match SET home_club_match_id = $1 WHERE round_id = $2",
-		ids.fflClubMatchID, ids.fflRoundID)
-	require.NoError(t, err)
-
 	// Add a second AFL player + FFL player (linked at player level but no afl_player_match_id in player_match → dnp).
 	var afl2PlayerID int
 	require.NoError(t, pool.QueryRow(ctx,
@@ -280,7 +274,7 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
 		unlinkedPlayerID, ids.fflClubSeasonID).Scan(&unlinkedPlayerSeasonID))
 
-	_, err = pool.Exec(ctx,
+	_, err := pool.Exec(ctx,
 		"INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status) VALUES ($1, $2, 'handballs', 'named')",
 		ids.fflClubMatchID, unlinkedPlayerSeasonID)
 	require.NoError(t, err)

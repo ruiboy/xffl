@@ -55,21 +55,18 @@ func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID
 	}
 
 	for _, m := range fflMatches {
-		for _, cmID := range []int{m.Home.ID, m.Away.ID} {
-			if cmID == 0 {
-				continue
-			}
-			cm, err := c.clubMatches.FindByID(ctx, cmID)
-			if err != nil {
-				slog.WarnContext(ctx, "load club_match failed", slog.Int("id", cmID), slog.Any("error", err))
-				continue
-			}
+		clubMatches, err := c.clubMatches.FindByMatchID(ctx, m.ID)
+		if err != nil {
+			slog.WarnContext(ctx, "load club_matches for match failed", slog.Int("match_id", m.ID), slog.Any("error", err))
+			continue
+		}
+		for _, cm := range clubMatches {
 			if cm.DataStatus == domain.ClubMatchDataFinal {
 				if err := c.emitClubMatchScoreFinalized(ctx, cm.ID, m.ID); err != nil {
 					slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 				}
 			}
-			c.inferPlayerMatchStatuses(ctx, cmID)
+			c.inferPlayerMatchStatuses(ctx, cm.ID)
 		}
 	}
 	return nil

@@ -373,7 +373,6 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
-import { derivePlayerStatus, showScore as computeShowScore, aflMatchRoute, buildAflClubMatchMap } from '../utils/aflPlayerMatch'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconBin from '../components/icons/IconBin.vue'
@@ -401,8 +400,9 @@ interface SquadPlayer {
   id: string
   name: string
   club: string | null
-  aflClubId: string | null
+  status: string | null
   score: number | null
+  aflMatchId: string | null
   toRoundId: string | null
 }
 
@@ -462,8 +462,6 @@ const { result: clubSeasonResult } = useQuery(
 )
 
 const clubSeasonData = computed(() => clubSeasonResult.value?.fflClubSeason ?? null)
-
-const aflClubMatchMap = computed(() => buildAflClubMatchMap(round.value?.aflRound))
 
 const allRounds = computed(() => round.value?.season.rounds ?? [])
 
@@ -526,12 +524,13 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { score: number | null; club: string | null; aflClubId: string | null }>()
+  const map = new Map<string, { score: number | null; club: string | null; status: string | null; aflMatchId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       score: pm.score ?? null,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null,
-      aflClubId: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? null,
+      status: pm.status ?? null,
+      aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
     })
   }
   return map
@@ -542,7 +541,7 @@ const squad = computed<SquadPlayer[]>(() => {
   return clubSeasonData.value.players.nodes.map((r: {
     id: string
     player: { aflPlayer: { name: string } }
-    aflPlayerSeason?: { clubSeason?: { club?: { id: string; name: string } | null } | null } | null
+    aflPlayerSeason?: { clubSeason?: { club?: { name: string } | null } | null } | null
     toRoundId?: string | null
   }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
@@ -550,28 +549,27 @@ const squad = computed<SquadPlayer[]>(() => {
       id: r.id,
       name: r.player.aflPlayer.name,
       club: pm?.club ?? r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
-      aflClubId: pm?.aflClubId ?? r.aflPlayerSeason?.clubSeason?.club?.id ?? null,
+      status: pm?.status ?? null,
       score: pm?.score ?? null,
+      aflMatchId: pm?.aflMatchId ?? null,
       toRoundId: r.toRoundId ?? null,
     }
   })
 })
 
-// On-the-fly helpers using the map — no stale values on players
-function playerMatchInfo(player: SquadPlayer) {
-  return player.aflClubId ? (aflClubMatchMap.value[player.aflClubId] ?? null) : null
+function playerStatus(player: SquadPlayer): 'played' | 'dnp' | 'named' {
+  const s = player.status
+  if (s === 'played' || s === 'dnp' || s === 'named') return s
+  return 'named'
 }
 
-function playerStatus(player: SquadPlayer) {
-  return derivePlayerStatus(playerMatchInfo(player)?.dataStatus, player.score)
+function playerShowScore(player: SquadPlayer): boolean {
+  return player.status === 'played'
 }
 
-function playerShowScore(player: SquadPlayer) {
-  return computeShowScore(playerMatchInfo(player)?.dataStatus, player.score)
-}
-
-function playerAflMatchRoute(player: SquadPlayer) {
-  return aflMatchRoute(playerMatchInfo(player))
+function playerAflMatchRoute(player: SquadPlayer): { name: string; params: { matchId: string } } | null {
+  if (!player.aflMatchId) return null
+  return { name: 'afl-match', params: { matchId: player.aflMatchId } }
 }
 
 // ── Team state ──────────────────────────────────────────────────────────────
@@ -635,8 +633,9 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       id: pm.playerSeasonId,
       name: pm.player.aflPlayer.name,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? squadEntry?.club ?? null,
-      aflClubId: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.id ?? squadEntry?.aflClubId ?? null,
+      status: pm.status ?? null,
       score: pm.score ?? null,
+      aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
       toRoundId: squadEntry?.toRoundId ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null

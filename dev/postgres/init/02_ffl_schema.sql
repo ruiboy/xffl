@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS ffl.season (
     deleted_at TIMESTAMP WITH TIME ZONE,
     league_id INTEGER NOT NULL REFERENCES ffl.league(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    afl_season_id INTEGER REFERENCES afl.season(id)
+    afl_season_id INTEGER
 );
 
 -- Create round table
