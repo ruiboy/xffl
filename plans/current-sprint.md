@@ -84,7 +84,7 @@ ADR: ADR-018 (Twirp for cross-service communication)
       - [x] Link round to AFL Round page.
       - [x] Link match to AFL Match page.
       - [x] AFL match has stats_import_status / ts tracking columns; these could be genericised to Status = no data, partial stats, final stats. No timestamp. Not tied to "import" as such, but set by import (and maybe other things later).
-      - [ ] Set status of all matches where stats are imported in data seed. 
+      - [x] Set status of all matches where stats are imported in data seed. 
     - FFL Team import
       - [x] Round page should list all FFL teams and show current status (similar to AFL Stats import page). Then each row facilitates import somehow.
       - [x] FFL team (= club match) should have status tracking, not tied to import, but set by import. Status = team submitted, portial score (?), final score.
@@ -146,16 +146,6 @@ See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/d
 - [ ] `ImportAFLSeasonPlayers` use case (AFL service) — fuzzy-match names+club; flag low-confidence; create new records for unmatched
 - [ ] `just import-afl-season` CLI trigger
 - [ ] AFL frontend admin page — proposed matches + new players for accept/reject
-
-## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
-
-- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
-- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
-- Each strategy should carry a human-readable description (for frontend display)
-- [ ] Design known formula variants and year ranges
-- [ ] `ScoringStrategy` interface + concrete implementations
-- [ ] `ffl.season.scoring_strategy` column (string key)
-- [ ] Wire into score calculation use case
 
 ## Step 7 — AFL historical data import *(one-time CLI)*
 

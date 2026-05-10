@@ -125,8 +125,8 @@ FFL.MatchFinalized
 - [x] `RecalculateFflLadder(ctx, seasonID int) error` — walks all final FFL matches, rebuilds club_season drv_
 
 #### Data ops
-- [ ] `RecalculateFflScores(ctx, roundID int) error` — recalcs all FFL club_matches for AFL round (provisional and final)
-- [ ] `ProvisionalLadder(ctx, seasonID int) ([]ClubSeasonStats, error)` — on-demand query; includes submitted+partial matches
+- [x] `RecalculateFflScores(ctx, roundID int) error` — recalcs all FFL club_matches for AFL round (provisional and final)
+- [x] `ProvisionalLadder(ctx, seasonID int) ([]ClubSeasonStats, error)` — on-demand query; includes submitted+partial matches
 
 ### Phase 5 — Recalculate single club match score
 
@@ -153,8 +153,8 @@ FFL.MatchFinalized
 - [x] Recalculate AFL ladder (per season) — `recalculateAFLLadder` mutation → `ScoreCommands.RecalculateAFLLadder`
 - [x] Recalculate FFL ladder (per season) — `recalculateFFLLadder` mutation → `ScoreCommands.RecalculateFflLadder`
 - [x] Mark FFL team final button — `markFFLTeamFinal` mutation → `DataOpsCommands.MarkTeamFinal` (in FFL Teams tab)
-- [ ] Recalculate FFL scores for round — `RecalculateFflScores` (backend not yet implemented)
-- [ ] Provisional ladder view — `ProvisionalLadder` (backend not yet implemented)
+- [x] Recalculate FFL scores for round — `RecalculateFflScores` (backend not yet implemented)
+- [x] Provisional ladder view — `ProvisionalLadder` (backend not yet implemented)
 
 ---
 
