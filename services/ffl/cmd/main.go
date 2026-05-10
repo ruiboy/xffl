@@ -91,6 +91,7 @@ func main() {
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
 		dispatcher,
 	)
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, commands.HandlePlayerMatchUpdated)

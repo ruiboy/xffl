@@ -33,6 +33,14 @@ WHERE pm.player_season_id = ANY(@player_season_ids::int[])
   AND m.round_id = @round_id
   AND pm.deleted_at IS NULL;
 
+-- name: SetPlayerMatchStatusForMatch :exec
+UPDATE afl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+FROM afl.club_match cm
+WHERE afl.player_match.club_match_id = cm.id
+  AND cm.match_id = $1
+  AND afl.player_match.deleted_at IS NULL;
+
 -- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

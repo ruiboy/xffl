@@ -682,6 +682,13 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 	return out, nil
 }
 
+func (r *PlayerMatchRepository) SetStatusForMatchID(ctx context.Context, matchID int, status string) error {
+	return r.q.SetPlayerMatchStatusForMatch(ctx, sqlcgen.SetPlayerMatchStatusForMatchParams{
+		MatchID: int32(matchID),
+		Status:  &status,
+	})
+}
+
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),

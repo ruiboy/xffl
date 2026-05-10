@@ -507,6 +507,13 @@ func (c *Commands) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 			}
 		}
 
+		// Sync the AFL player match status onto the FFL record (named during partial import).
+		if event.Status != "" {
+			if err := c.eventRepos.PlayerMatches.UpdateStatus(ctx, pm.ID, domain.PlayerMatchStatus(event.Status)); err != nil {
+				slog.WarnContext(ctx, "failed to update player_match status", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+			}
+		}
+
 		// Calculate and store the fantasy score.
 		scored, err := c.CalculateFantasyScore(ctx, pm.ID, stats)
 		if err != nil {

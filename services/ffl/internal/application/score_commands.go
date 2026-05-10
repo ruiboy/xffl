@@ -13,11 +13,12 @@ import (
 
 // ScoreCommands handles FFL score and ladder calculation use cases.
 type ScoreCommands struct {
-	matches     domain.MatchRepository
-	clubMatches domain.ClubMatchRepository
-	clubSeasons domain.ClubSeasonRepository
-	rounds      domain.RoundRepository
-	dispatcher  sharedevents.Dispatcher
+	matches       domain.MatchRepository
+	clubMatches   domain.ClubMatchRepository
+	clubSeasons   domain.ClubSeasonRepository
+	rounds        domain.RoundRepository
+	playerMatches domain.PlayerMatchRepository
+	dispatcher    sharedevents.Dispatcher
 }
 
 func NewScoreCommands(
@@ -25,14 +26,16 @@ func NewScoreCommands(
 	clubMatches domain.ClubMatchRepository,
 	clubSeasons domain.ClubSeasonRepository,
 	rounds domain.RoundRepository,
+	playerMatches domain.PlayerMatchRepository,
 	dispatcher sharedevents.Dispatcher,
 ) *ScoreCommands {
 	return &ScoreCommands{
-		matches:     matches,
-		clubMatches: clubMatches,
-		clubSeasons: clubSeasons,
-		rounds:      rounds,
-		dispatcher:  dispatcher,
+		matches:       matches,
+		clubMatches:   clubMatches,
+		clubSeasons:   clubSeasons,
+		rounds:        rounds,
+		playerMatches: playerMatches,
+		dispatcher:    dispatcher,
 	}
 }
 
@@ -71,9 +74,34 @@ func (c *ScoreCommands) HandleAflMatchFinalized(ctx context.Context, payload []b
 					slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 				}
 			}
+			c.inferPlayerMatchStatuses(ctx, cmID)
 		}
 	}
 	return nil
+}
+
+// inferPlayerMatchStatuses sets ffl.player_match.status based on AFL link presence:
+// - linked (afl_player_match_id set) → played
+// - unlinked and named (no AFL stats found for this player) → dnp
+func (c *ScoreCommands) inferPlayerMatchStatuses(ctx context.Context, clubMatchID int) {
+	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "load player_matches for status inference failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
+		return
+	}
+	for _, pm := range pms {
+		var newStatus domain.PlayerMatchStatus
+		if pm.AFLPlayerMatchID != nil {
+			newStatus = domain.PlayerMatchStatusPlayed
+		} else if pm.Status != nil && *pm.Status == domain.PlayerMatchStatusNamed {
+			newStatus = domain.PlayerMatchStatusDNP
+		} else {
+			continue
+		}
+		if err := c.playerMatches.UpdateStatus(ctx, pm.ID, newStatus); err != nil {
+			slog.WarnContext(ctx, "update player_match status failed", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+		}
+	}
 }
 
 // HandleFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and

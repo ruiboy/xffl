@@ -76,11 +76,11 @@ One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match sco
 
 ### PlayerMatch status
 
-| Status | Meaning |
-|--------|---------|
-| `named` | Selected in the AFL team sheet. Match has not been played yet. |
-| `played` | Played in the AFL match. |
-| `dnp` | Did not play — was in the squad but did not take the field. |
+| Status | Meaning                                                                                                                                                       |
+|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `named` | Selected in the AFL team sheet. Match has not been played yet.                                                                                                |
+| `played` | Played in the AFL match.                                                                                                                                      |
+| `dnp` | Did not play — was in the squad but did not take the field. This can be a logical status, inferred from the fact that no Player Match exists for given Match. |
 
 ### Player tenure
 

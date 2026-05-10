@@ -50,6 +50,7 @@ type Querier interface {
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
 	UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error
 	UpdateFflMatchResult(ctx context.Context, arg UpdateFflMatchResultParams) error
+	UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error
 	UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error)
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }

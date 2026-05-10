@@ -121,7 +121,18 @@ See `plans/scoring-calculation-plan.md` for the full plan and `ai/architecture/d
 - [x] Phase 3 — FFL service: team events, ClubMatchScoreFinalized chain, FflMatchFinalized handler, ladder recalc
 - [x] Phase 4 — Data ops frontend: Calculate tab (AFL+FFL ladder recalc), Mark Final button in FFL Teams tab
 - [x] Phase 5 — Recalculate single club match score: new Twirp RPC (LookupPlayerMatchStats), FFL use case (RecalculateClubMatchScore), mutation, and Recalculate button on FFL Teams tab row
-  
+- [x] Phase 6 — Infer player match status: AFL named→played on mark-final; FFL named→played/dnp on MatchFinalized event
+
+## Side quest — Pluggable FFL scoring formula *(prerequisite for Step 7a)*
+
+- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
+- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
+- Each strategy should carry a human-readable description (for frontend display)
+- [ ] Design known formula variants and year ranges
+- [ ] `ScoringStrategy` interface + concrete implementations
+- [ ] `ffl.season.scoring_strategy` column (string key)
+- [ ] Wire into score calculation use case
+
 ## Step 6 — Score reconciliation *(every round)*
 
 **Rules:**

@@ -571,6 +571,14 @@ func (r *PlayerMatchRepository) UpdateAFLPlayerMatchID(ctx context.Context, id i
 	})
 }
 
+func (r *PlayerMatchRepository) UpdateStatus(ctx context.Context, id int, status domain.PlayerMatchStatus) error {
+	s := string(status)
+	return r.q.UpdatePlayerMatchStatus(ctx, sqlcgen.UpdatePlayerMatchStatusParams{
+		ID:     int32(id),
+		Status: &s,
+	})
+}
+
 func posToStringPtr(p *domain.Position) *string {
 	if p == nil {
 		return nil

@@ -31,6 +31,11 @@ UPDATE ffl.player_match
 SET afl_player_match_id = $2, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdatePlayerMatchStatus :exec
+UPDATE ffl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: UpsertPlayerMatch :one
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

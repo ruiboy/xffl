@@ -173,6 +173,22 @@ func (q *Queries) UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlaye
 	return err
 }
 
+const updatePlayerMatchStatus = `-- name: UpdatePlayerMatchStatus :exec
+UPDATE ffl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdatePlayerMatchStatusParams struct {
+	ID     int32
+	Status *string
+}
+
+func (q *Queries) UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error {
+	_, err := q.db.Exec(ctx, updatePlayerMatchStatus, arg.ID, arg.Status)
+	return err
+}
+
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

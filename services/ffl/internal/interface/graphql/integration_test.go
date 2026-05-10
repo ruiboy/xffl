@@ -1515,6 +1515,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
 		memevents.New(),
 	)
 

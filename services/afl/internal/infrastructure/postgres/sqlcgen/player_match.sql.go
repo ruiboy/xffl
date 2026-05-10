@@ -271,6 +271,25 @@ func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, ar
 	return items, nil
 }
 
+const setPlayerMatchStatusForMatch = `-- name: SetPlayerMatchStatusForMatch :exec
+UPDATE afl.player_match
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+FROM afl.club_match cm
+WHERE afl.player_match.club_match_id = cm.id
+  AND cm.match_id = $1
+  AND afl.player_match.deleted_at IS NULL
+`
+
+type SetPlayerMatchStatusForMatchParams struct {
+	MatchID int32
+	Status  *string
+}
+
+func (q *Queries) SetPlayerMatchStatusForMatch(ctx context.Context, arg SetPlayerMatchStatusForMatchParams) error {
+	_, err := q.db.Exec(ctx, setPlayerMatchStatusForMatch, arg.MatchID, arg.Status)
+	return err
+}
+
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
 INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
