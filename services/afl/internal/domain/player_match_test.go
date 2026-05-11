@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestComputeAFLPlayerMatchStatus(t *testing.T) {
+func TestAFLPlayerMatchStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		dataStatus MatchDataStatus
@@ -19,7 +19,8 @@ func TestComputeAFLPlayerMatchStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, ComputeAFLPlayerMatchStatus(tt.dataStatus))
+			pm := PlayerMatch{MatchDataStatus: string(tt.dataStatus)}
+			assert.Equal(t, tt.want, pm.AFLPlayerMatchStatus())
 		})
 	}
 }

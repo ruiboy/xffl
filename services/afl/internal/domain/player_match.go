@@ -31,11 +31,11 @@ func (pm PlayerMatch) Score() int {
 	return pm.Goals*PointsPerGoal + pm.Behinds
 }
 
-// ComputeAFLPlayerMatchStatus derives the AFL player match status from the match's data_status.
+// AFLPlayerMatchStatus derives the AFL player match status from the match's data_status.
 // A player_match row existing means the player has stats; the only question is whether the
 // match is finalised.
-func ComputeAFLPlayerMatchStatus(matchDataStatus MatchDataStatus) string {
-	if matchDataStatus == MatchDataFinal {
+func (pm PlayerMatch) AFLPlayerMatchStatus() string {
+	if MatchDataStatus(pm.MatchDataStatus) == MatchDataFinal {
 		return "played"
 	}
 	return "playing"

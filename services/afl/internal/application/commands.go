@@ -69,9 +69,9 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		return result, err
 	}
 
-	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
+	result.MatchDataStatus = string(domain.MatchDataPartial)
 	if match, err := c.matches.FindByID(ctx, matchID); err == nil {
-		aflStatus = domain.ComputeAFLPlayerMatchStatus(match.DataStatus)
+		result.MatchDataStatus = string(match.DataStatus)
 	}
 
 	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
@@ -79,7 +79,7 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         aflStatus,
+		Status:         result.AFLPlayerMatchStatus(),
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,

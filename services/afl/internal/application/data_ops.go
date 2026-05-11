@@ -275,14 +275,14 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 	}
 
 	// Fire PlayerMatchUpdated events. Import always sets partial, so status is always "playing".
-	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
 	for _, pm := range allWritten {
+		pm.MatchDataStatus = string(domain.MatchDataPartial)
 		payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
 			PlayerMatchID:  pm.ID,
 			PlayerSeasonID: pm.PlayerSeasonID,
 			ClubMatchID:    pm.ClubMatchID,
 			RoundID:        roundID,
-			Status:         aflStatus,
+			Status:         pm.AFLPlayerMatchStatus(),
 			Kicks:          pm.Kicks,
 			Handballs:      pm.Handballs,
 			Marks:          pm.Marks,
@@ -472,9 +472,9 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 	}
 
 	// Compute AFL status from current match data_status (outside tx — read-only).
-	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
+	result.MatchDataStatus = string(domain.MatchDataPartial)
 	if match, err := c.matches.FindByID(ctx, matchID); err == nil {
-		aflStatus = domain.ComputeAFLPlayerMatchStatus(match.DataStatus)
+		result.MatchDataStatus = string(match.DataStatus)
 	}
 
 	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
@@ -482,7 +482,7 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         aflStatus,
+		Status:         result.AFLPlayerMatchStatus(),
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,
