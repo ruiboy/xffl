@@ -212,6 +212,7 @@ input DeclareFFLSubstitutionsInput
 enum FFLAFLPlayerMatchStatus
   @join__type(graph: FFL)
 {
+  named @join__enumValue(graph: FFL)
   playing @join__enumValue(graph: FFL)
   played @join__enumValue(graph: FFL)
   dnp @join__enumValue(graph: FFL)

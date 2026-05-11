@@ -1444,6 +1444,7 @@ enum FFLPlayerMatchStatus {
 }
 
 enum FFLAFLPlayerMatchStatus {
+  named
   playing
   played
   dnp

@@ -244,12 +244,14 @@ type UpdateFFLPlayerSeasonInput struct {
 type FFLAFLPlayerMatchStatus string
 
 const (
+	FFLAFLPlayerMatchStatusNamed   FFLAFLPlayerMatchStatus = "named"
 	FFLAFLPlayerMatchStatusPlaying FFLAFLPlayerMatchStatus = "playing"
 	FFLAFLPlayerMatchStatusPlayed  FFLAFLPlayerMatchStatus = "played"
 	FFLAFLPlayerMatchStatusDnp     FFLAFLPlayerMatchStatus = "dnp"
 )
 
 var AllFFLAFLPlayerMatchStatus = []FFLAFLPlayerMatchStatus{
+	FFLAFLPlayerMatchStatusNamed,
 	FFLAFLPlayerMatchStatusPlaying,
 	FFLAFLPlayerMatchStatusPlayed,
 	FFLAFLPlayerMatchStatusDnp,
@@ -257,7 +259,7 @@ var AllFFLAFLPlayerMatchStatus = []FFLAFLPlayerMatchStatus{
 
 func (e FFLAFLPlayerMatchStatus) IsValid() bool {
 	switch e {
-	case FFLAFLPlayerMatchStatusPlaying, FFLAFLPlayerMatchStatusPlayed, FFLAFLPlayerMatchStatusDnp:
+	case FFLAFLPlayerMatchStatusNamed, FFLAFLPlayerMatchStatusPlaying, FFLAFLPlayerMatchStatusPlayed, FFLAFLPlayerMatchStatusDnp:
 		return true
 	}
 	return false

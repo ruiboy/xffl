@@ -636,10 +636,10 @@ const squad = computed<SquadPlayer[]>(() => {
   })
 })
 
-function playerStatus(player: SquadPlayer): 'playing' | 'played' | 'dnp' | 'named' {
-  const s = player.aflStatus
-  if (s === 'playing' || s === 'played' || s === 'dnp') return s
-  return 'named'
+function playerStatus(player: SquadPlayer): string | null {
+  if (player.status === 'subbed') return 'subbed'
+  if (player.status === 'interchanged') return 'interchanged'
+  return player.aflStatus
 }
 
 function playerShowScore(player: SquadPlayer): boolean {
@@ -894,10 +894,12 @@ function setInterchange(value: string) {
 
 // ── Subs mode ────────────────────────────────────────────────────────────────
 
-// True when the AFL match has started (at least one player has an AFL status).
+// True when the AFL match is underway or complete (excludes 'named' — pre-match only).
 const aflMatchStarted = computed(() => {
   const pms = clubMatch.value?.playerMatches ?? []
-  return pms.some((pm: { aflStatus: string | null }) => pm.aflStatus != null)
+  return pms.some((pm: { aflStatus: string | null }) =>
+    pm.aflStatus === 'playing' || pm.aflStatus === 'played' || pm.aflStatus === 'dnp'
+  )
 })
 
 // DNP starters that could potentially be subbed out.

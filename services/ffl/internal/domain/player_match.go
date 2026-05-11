@@ -53,6 +53,7 @@ const (
 type AFLStatus string
 
 const (
+	AFLStatusNamed   AFLStatus = "named"   // named in AFL team, match not yet started
 	AFLStatusPlaying AFLStatus = "playing" // AFL match in progress, player has stats
 	AFLStatusPlayed  AFLStatus = "played"  // AFL match final, player participated
 	AFLStatusDNP     AFLStatus = "dnp"     // did not play in AFL match

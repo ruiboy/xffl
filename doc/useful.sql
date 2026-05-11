@@ -41,7 +41,7 @@ from ffl.round fr
          left join afl.player_match apm
                    on apm.club_match_id = acm.id
                        and apm.player_season_id = aps.id
-where fr.name = 'Round 4'
+where fr.name = 'Round 9'
   and fc.name = 'Ruiboys'
 order by fc.name, fpm.position, ap.name;
 

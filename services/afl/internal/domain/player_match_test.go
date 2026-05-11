@@ -14,8 +14,9 @@ func TestAFLPlayerMatchStatus(t *testing.T) {
 	}{
 		{"final data status yields played", MatchDataFinal, "played"},
 		{"partial data status yields playing", MatchDataPartial, "playing"},
-		{"no_data status yields playing", MatchDataNoData, "playing"},
-		{"unknown status yields playing", MatchDataStatus("unknown"), "playing"},
+		{"no_data status yields named", MatchDataNoData, "named"},
+		{"null status yields named", MatchDataStatus(""), "named"},
+		{"unknown status yields named", MatchDataStatus("unknown"), "named"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

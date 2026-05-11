@@ -32,13 +32,17 @@ func (pm PlayerMatch) Score() int {
 }
 
 // AFLPlayerMatchStatus derives the AFL player match status from the match's data_status.
-// A player_match row existing means the player has stats; the only question is whether the
-// match is finalised.
+// A player_match row existing means the player has stats; match finality determines whether
+// they are playing, played, or merely named (pre-match / no data yet).
 func (pm PlayerMatch) AFLPlayerMatchStatus() string {
-	if MatchDataStatus(pm.MatchDataStatus) == MatchDataFinal {
+	switch MatchDataStatus(pm.MatchDataStatus) {
+	case MatchDataFinal:
 		return "played"
+	case MatchDataPartial:
+		return "playing"
+	default:
+		return "named"
 	}
-	return "playing"
 }
 
 // UpsertPlayerMatchParams holds optional fields for creating or updating a PlayerMatch.

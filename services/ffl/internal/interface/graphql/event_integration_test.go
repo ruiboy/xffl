@@ -233,28 +233,39 @@ func setupScoreCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*applic
 }
 
 func TestHandlePlayerMatchUpdated_syncs_afl_status(t *testing.T) {
-	pool := connectDB(t)
-	ids := seedEventTestData(t, pool)
-	commands, _ := setupCommandsWithDispatcher(t, pool)
-	ctx := context.Background()
+	for _, tc := range []struct {
+		status string
+		want   string
+	}{
+		{"playing", "playing"},
+		{"played", "played"},
+		{"named", "named"},
+	} {
+		t.Run("status_"+tc.status, func(t *testing.T) {
+			pool := connectDB(t)
+			ids := seedEventTestData(t, pool)
+			commands, _ := setupCommandsWithDispatcher(t, pool)
+			ctx := context.Background()
 
-	err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
-		AFLPlayerMatchID:  999,
-		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
-		ClubMatchID:       ids.aflClubMatchID,
-		RoundID:           ids.aflRoundID,
-		Status:            "playing",
-		Kicks:             5,
-	})
-	require.NoError(t, err)
+			err := commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
+				AFLPlayerMatchID:  999,
+				AFLPlayerSeasonID: ids.aflPlayerSeasonID,
+				ClubMatchID:       ids.aflClubMatchID,
+				RoundID:           ids.aflRoundID,
+				Status:            tc.status,
+				Kicks:             5,
+			})
+			require.NoError(t, err)
 
-	var drvAFLStatus *string
-	err = pool.QueryRow(ctx,
-		"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
-		ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus)
-	require.NoError(t, err)
-	require.NotNil(t, drvAFLStatus)
-	assert.Equal(t, "playing", *drvAFLStatus)
+			var drvAFLStatus *string
+			err = pool.QueryRow(ctx,
+				"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+				ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus)
+			require.NoError(t, err)
+			require.NotNil(t, drvAFLStatus)
+			assert.Equal(t, tc.want, *drvAFLStatus)
+		})
+	}
 }
 
 func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
@@ -277,6 +288,22 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 	_, err := pool.Exec(ctx,
 		"INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status) VALUES ($1, $2, 'handballs', 'named')",
 		ids.fflClubMatchID, unlinkedPlayerSeasonID)
+	require.NoError(t, err)
+
+	// Third player: drv_afl_status='named' (linked pre-match, no stats by finalisation → should become dnp).
+	var namedPlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Named Test Player') RETURNING id").Scan(&namedPlayerID))
+	var namedFflPlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id", namedPlayerID).Scan(&namedFflPlayerID))
+	var namedPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
+		namedFflPlayerID, ids.fflClubSeasonID).Scan(&namedPlayerSeasonID))
+	_, err = pool.Exec(ctx,
+		"INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status) VALUES ($1, $2, 'tackles', 'named', 'named')",
+		ids.fflClubMatchID, namedPlayerSeasonID)
 	require.NoError(t, err)
 
 	// The seeded player_match already has drv_afl_status='played' (set by ProcessPlayerMatchUpdated earlier).
@@ -305,6 +332,15 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 		require.NoError(t, pool.QueryRow(ctx,
 			"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
 			unlinkedPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus))
+		require.NotNil(t, drvAFLStatus)
+		assert.Equal(t, "dnp", *drvAFLStatus)
+	})
+
+	t.Run("named player (linked pre-match, no stats) gets drv_afl_status=dnp", func(t *testing.T) {
+		var drvAFLStatus *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+			namedPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus))
 		require.NotNil(t, drvAFLStatus)
 		assert.Equal(t, "dnp", *drvAFLStatus)
 	})

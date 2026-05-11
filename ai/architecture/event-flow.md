@@ -3,7 +3,7 @@
 ## AFL Events
 
 **Published:**
-- `AFL.PlayerMatchUpdated` — fired when a player's match stats change. Payload carries full stats (kicks, handballs, marks, hitouts, tackles, goals, behinds) and a computed AFL status (`playing` when `data_status ≠ final`, `played` when `data_status = final`).
+- `AFL.PlayerMatchUpdated` — fired when a player's match stats change. Payload carries full stats (kicks, handballs, marks, hitouts, tackles, goals, behinds) and a computed AFL status (`named` when `data_status` is null/`no_data`, `playing` when `partial`, `played` when `final`).
 - `AFL.MatchFinalized` — fired when `afl.match.data_status` transitions to `final`. Triggers AFL match result derivation and AFL ladder recalculation. Also signals the FFL service to recalculate affected club match scores.
 
 ---
@@ -11,7 +11,7 @@
 ## FFL Events
 
 **Subscribes to:**
-- `AFL.PlayerMatchUpdated` → recalculates provisional score for the affected player and club match; writes computed AFL status (`playing`/`played`) to `ffl.player_match.drv_afl_status`.
+- `AFL.PlayerMatchUpdated` → recalculates provisional score for the affected player and club match; writes computed AFL status (`named`/`playing`/`played`) to `ffl.player_match.drv_afl_status`.
 - `AFL.MatchFinalized` → recalculate provisional/final FFL scores for all club matches in the round.
 
 **Publishes:**
@@ -56,7 +56,7 @@ The following events chain AFL and FFL score and ladder derivation. Both service
 
 ```
 AFL.PlayerMatchUpdated
-  └─ FFL: update provisional player and club match scores; write drv_afl_status (playing/played)
+  └─ FFL: update provisional player and club match scores; write drv_afl_status (named/playing/played)
 
 AFL.MatchFinalized
   ├─ AFL: derive match result; recalculate AFL ladder
