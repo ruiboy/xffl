@@ -42,7 +42,7 @@ be named without having played).
 **Nullable by design**: `ffl.player_match.afl_player_match_id`
 
 - [ ] Migration: add NOT NULL constraint to the four columns above
-- [ ] Domain: enforce at construction time (return error / panic on nil afl ID for the four entities)
+- [ ] Domain: enforce at construction time via domain invariants (return error / panic on nil afl ID for the four entities)
 - [ ] Verify existing seed data satisfies the constraints before migrating
 
 ---
@@ -95,6 +95,19 @@ ffl.player_match:
 - `services/ffl/internal/application/commands.go` — `ProcessPlayerMatchUpdated`, `RecalculateClubMatchScore`
 - `services/afl/internal/application/data_ops.go` — AFL status set during import
 - `services/ffl/internal/domain/player_match.go` — `PlayerMatchStatus` type (home for the new function)
+
+---
+
+## Side quest — Team Manager substitution and interchange decisions
+
+**Depends on**: Derived player match status (DNP must be reliable before choices are meaningful)
+
+Once player DNP status is confidently derived, a Team Manager must be able to declare which bench
+players cover which DNP starters (substitution) and whether any interchange swaps apply, within the
+rules in `ai/architecture/domain.md`. This is a combined domain + UX concern — the order of
+application is at the TM's discretion within the constraints. Detailed design deferred.
+
+- [ ] Design and implement substitution/interchange decision model (domain + UI)
 
 ---
 

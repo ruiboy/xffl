@@ -181,14 +181,12 @@ FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL s
 
 `ClubMatch.Score()` aggregates fantasy scores with two replacement rules, applied per starter slot:
 
-1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one substitution.
-2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score strictly exceeds the starter's, they swap. Applies per individual starter slot within the position group.
+1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one **substitution**.
+2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score exceeds the starter's, they can swap. Applies only for the position labelled as **interchange**.
 
 Constraints:
 - A bench player can only be used **once** (sub or interchange, not both).
-- Substitution is evaluated before interchange.
-- Interchange requires the bench player to **strictly outscore** the starter (ties keep the starter).
-- Where multiple players are eligible for substitution into a DNP slot, the team owner chooses which bench player fills which position.
+- The order of applying substitution and interchange is at the Team Managers discretion within the bounds of the above rules.
 
 ### Match style
 
