@@ -154,22 +154,34 @@ func containsPosition(positions string, pos Position) bool {
 
 // Score computes the total fantasy score for this club match.
 //
-// A player is a starter if they occupy a position slot (BackupPositions == nil). Multiple players can occupy the same position (e.g. 3
-// goal kickers). Each starter slot is scored independently.
-//
-// Rules applied in order:
-//  1. Substitution: if a starter's status is DNP, the first eligible bench player
-//     whose BackupPositions includes that position fills the slot. A player who
-//     played but scored 0 is NOT eligible for substitution.
-//  2. Interchange: if a bench player's InterchangePosition targets a starter slot
-//     and the bench player's score strictly exceeds that starter's, they swap.
-//     For multi-slot positions, the bench player replaces the lowest-scoring
-//     starter they can beat.
-//
-// A bench player can only be used once (sub or interchange, not both).
-// Substitution is evaluated before interchange.
+// Two modes:
+//   - Auto mode (all starters named): substitutes all DNP starters with first eligible bench
+//     player; applies interchange if bench player score exceeds the starter's.
+//   - TM mode (any starter has status subbed or interchanged): uses explicit TM decisions —
+//     subbed starters are covered via BackupPositions; interchanged starters are swapped with
+//     the interchange bench player. Bench players stay named in both modes.
 func (cm ClubMatch) Score() int {
-	// starters holds all starter slots per position (multiple per position allowed).
+	if cm.isTMMode() {
+		return cm.scoreTM()
+	}
+	return cm.scoreAuto()
+}
+
+// isTMMode returns true if any starter has an explicit TM decision recorded.
+func (cm ClubMatch) isTMMode() bool {
+	for _, pm := range cm.PlayerMatches {
+		if pm.isBench() {
+			continue
+		}
+		if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbed || *pm.Status == PlayerMatchStatusInterchange) {
+			return true
+		}
+	}
+	return false
+}
+
+// scoreAuto substitutes all DNP starters and applies interchange where beneficial.
+func (cm ClubMatch) scoreAuto() int {
 	starters := make(map[Position][]*PlayerMatch)
 	var bench []*PlayerMatch
 
@@ -182,9 +194,9 @@ func (cm ClubMatch) Score() int {
 		}
 	}
 
-	used := make(map[int]bool) // bench indices already consumed
+	used := make(map[int]bool)
 
-	// Substitution: replace each DNP starter slot with the first eligible bench player.
+	// Substitution: replace each DNP starter with the first eligible bench player.
 	for pos, slots := range starters {
 		for si, starter := range slots {
 			if starter.AFLStatus == nil || *starter.AFLStatus != AFLStatusDNP {
@@ -213,7 +225,6 @@ func (cm ClubMatch) Score() int {
 		if !ok {
 			continue
 		}
-		// Replace the slot where the bench player produces the greatest gain.
 		bestSlot := -1
 		bestGain := 0
 		for si, starter := range slots {
@@ -225,6 +236,66 @@ func (cm ClubMatch) Score() int {
 		if bestSlot >= 0 {
 			starters[targetPos][bestSlot] = bp
 			used[i] = true
+		}
+	}
+
+	total := 0
+	for _, slots := range starters {
+		for _, pm := range slots {
+			total += pm.Score
+		}
+	}
+	return total
+}
+
+// scoreTM applies explicit TM decisions: interchanged starters swap with the interchange
+// bench player; subbed starters are covered via BackupPositions.
+func (cm ClubMatch) scoreTM() int {
+	starters := make(map[Position][]*PlayerMatch)
+	var bench []*PlayerMatch
+
+	for i := range cm.PlayerMatches {
+		pm := &cm.PlayerMatches[i]
+		if pm.isBench() {
+			bench = append(bench, pm)
+		} else if pm.Position != nil {
+			starters[*pm.Position] = append(starters[*pm.Position], pm)
+		}
+	}
+
+	used := make(map[int]bool)
+
+	// Interchange: swap the starter marked interchanged with the interchange bench player.
+	for i, bp := range bench {
+		if used[i] || bp.InterchangePosition == nil {
+			continue
+		}
+		targetPos := Position(*bp.InterchangePosition)
+		for si, starter := range starters[targetPos] {
+			if starter.Status != nil && *starter.Status == PlayerMatchStatusInterchange {
+				starters[targetPos][si] = bp
+				used[i] = true
+				break
+			}
+		}
+	}
+
+	// Substitution: replace each subbed starter via BackupPositions.
+	for pos, slots := range starters {
+		for si, starter := range slots {
+			if starter.Status == nil || *starter.Status != PlayerMatchStatusSubbed {
+				continue
+			}
+			for i, bp := range bench {
+				if used[i] || bp.BackupPositions == nil {
+					continue
+				}
+				if containsPosition(*bp.BackupPositions, pos) {
+					starters[pos][si] = bp
+					used[i] = true
+					break
+				}
+			}
 		}
 	}
 

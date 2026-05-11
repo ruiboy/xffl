@@ -201,6 +201,14 @@ input ConfirmFFLTeamSubmissionInput
   players: [ConfirmedFFLPlayerInput!]!
 }
 
+input DeclareFFLSubstitutionsInput
+  @join__type(graph: FFL)
+{
+  clubMatchId: ID!
+  subbedOutPlayerMatchIds: [ID!]!
+  interchangeApplied: Boolean!
+}
+
 enum FFLAFLPlayerMatchStatus
   @join__type(graph: FFL)
 {
@@ -424,6 +432,11 @@ type Mutation
   Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total.
   """
   recalculateFFLClubMatchScore(clubMatchId: ID!): Boolean! @join__field(graph: FFL)
+
+  """
+  Record Team Manager substitution and interchange decisions for a club match.
+  """
+  declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 }
 
 type PageInfo

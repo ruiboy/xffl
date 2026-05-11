@@ -412,6 +412,107 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 	return params
 }
 
+// DeclareSubs records substitution and interchange decisions for a club match.
+//
+// subbedOutIDs lists the starter player_match IDs the TM is subbing out (must each have aflStatus=dnp).
+// If interchangeApplied is true, the starter with the lowest score at the interchange bench player's
+// position is marked interchanged. All other starters are reset to named. Bench players are never touched.
+// Triggers a score recalculation after writing.
+func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutIDs []int, interchangeApplied bool) ([]domain.PlayerMatch, error) {
+	subbedSet := make(map[int]bool, len(subbedOutIDs))
+	for _, id := range subbedOutIDs {
+		subbedSet[id] = true
+	}
+
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		cm, err := repos.ClubMatches.FindByID(ctx, clubMatchID)
+		if err != nil {
+			return fmt.Errorf("find club match: %w", err)
+		}
+		if cm.DataStatus == domain.ClubMatchDataFinal {
+			return fmt.Errorf("club match %d is already final", clubMatchID)
+		}
+
+		pms, err := repos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+		if err != nil {
+			return fmt.Errorf("find player matches: %w", err)
+		}
+
+		// Validate subbedOutIDs are starters with AFL status DNP.
+		for _, pm := range pms {
+			if !subbedSet[pm.ID] {
+				continue
+			}
+			if pm.BackupPositions != nil {
+				return fmt.Errorf("player_match %d is a bench player, cannot be subbed out", pm.ID)
+			}
+			if pm.AFLStatus == nil || *pm.AFLStatus != domain.AFLStatusDNP {
+				return fmt.Errorf("player_match %d is not DNP, cannot be subbed out", pm.ID)
+			}
+		}
+
+		// Find the interchange bench player and determine which starter gets marked interchanged.
+		interchangedStarterID := 0
+		if interchangeApplied {
+			var interchangePos domain.Position
+			for _, pm := range pms {
+				if pm.InterchangePosition != nil {
+					interchangePos = domain.Position(*pm.InterchangePosition)
+					break
+				}
+			}
+			if interchangePos != "" {
+				lowestScore := int(^uint(0) >> 1)
+				for _, pm := range pms {
+					if pm.BackupPositions != nil || pm.Position == nil {
+						continue
+					}
+					if *pm.Position == interchangePos && !subbedSet[pm.ID] && pm.Score < lowestScore {
+						lowestScore = pm.Score
+						interchangedStarterID = pm.ID
+					}
+				}
+			}
+		}
+
+		// Write status updates for starters; bench players are never touched.
+		for _, pm := range pms {
+			if pm.BackupPositions != nil {
+				continue // bench always stays named
+			}
+			var newStatus domain.PlayerMatchStatus
+			switch {
+			case subbedSet[pm.ID]:
+				newStatus = domain.PlayerMatchStatusSubbed
+			case pm.ID == interchangedStarterID:
+				newStatus = domain.PlayerMatchStatusInterchange
+			default:
+				newStatus = domain.PlayerMatchStatusNamed
+			}
+			current := domain.PlayerMatchStatusNamed
+			if pm.Status != nil {
+				current = *pm.Status
+			}
+			if current == newStatus {
+				continue
+			}
+			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, newStatus); err != nil {
+				return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.RecalculateClubMatchScore(ctx, clubMatchID); err != nil {
+		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
+	}
+
+	return c.eventRepos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+}
+
 // CalculateFantasyScore calculates and stores the fantasy score for a player match
 // based on AFL stats, then recalculates the club match total.
 func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int, stats domain.AFLStats) (domain.PlayerMatch, error) {

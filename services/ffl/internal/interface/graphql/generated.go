@@ -121,6 +121,7 @@ type ComplexityRoot struct {
 	FFLPlayerMatch struct {
 		AflPlayerMatch      func(childComplexity int) int
 		AflPlayerMatchID    func(childComplexity int) int
+		AflStatus           func(childComplexity int) int
 		BackupPositions     func(childComplexity int) int
 		ID                  func(childComplexity int) int
 		InterchangePosition func(childComplexity int) int
@@ -170,6 +171,7 @@ type ComplexityRoot struct {
 		AddFFLPlayerToSeason         func(childComplexity int, input AddFFLPlayerToSeasonInput) int
 		CalculateFFLFantasyScore     func(childComplexity int, input CalculateFFLFantasyScoreInput) int
 		ConfirmFFLTeamSubmission     func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
+		DeclareFFLSubstitutions      func(childComplexity int, input DeclareFFLSubstitutionsInput) int
 		MarkFFLTeamFinal             func(childComplexity int, input MarkFFLTeamFinalInput) int
 		ParseFFLTeamSubmission       func(childComplexity int, input ParseFFLTeamSubmissionInput) int
 		RecalculateFFLClubMatchScore func(childComplexity int, clubMatchID string) int
@@ -275,6 +277,7 @@ type MutationResolver interface {
 	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
 	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
 	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (bool, error)
+	DeclareFFLSubstitutions(ctx context.Context, input DeclareFFLSubstitutionsInput) ([]*FFLPlayerMatch, error)
 }
 type QueryResolver interface {
 	FflSeasons(ctx context.Context) ([]*FFLSeason, error)
@@ -603,6 +606,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLPlayerMatch.AflPlayerMatchID(childComplexity), true
+	case "FFLPlayerMatch.aflStatus":
+		if e.ComplexityRoot.FFLPlayerMatch.AflStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPlayerMatch.AflStatus(childComplexity), true
 	case "FFLPlayerMatch.backupPositions":
 		if e.ComplexityRoot.FFLPlayerMatch.BackupPositions == nil {
 			break
@@ -827,6 +836,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ConfirmFFLTeamSubmission(childComplexity, args["input"].(ConfirmFFLTeamSubmissionInput)), true
+	case "Mutation.declareFFLSubstitutions":
+		if e.ComplexityRoot.Mutation.DeclareFFLSubstitutions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declareFFLSubstitutions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeclareFFLSubstitutions(childComplexity, args["input"].(DeclareFFLSubstitutionsInput)), true
 	case "Mutation.markFFLTeamFinal":
 		if e.ComplexityRoot.Mutation.MarkFFLTeamFinal == nil {
 			break
@@ -1148,6 +1168,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCalculateFFLFantasyScoreInput,
 		ec.unmarshalInputConfirmFFLTeamSubmissionInput,
 		ec.unmarshalInputConfirmedFFLPlayerInput,
+		ec.unmarshalInputDeclareFFLSubstitutionsInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLTeamPlayerInput,
 		ec.unmarshalInputMarkFFLTeamFinalInput,
@@ -1258,6 +1279,15 @@ var sources = []*ast.Source{
 
   "Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total."
   recalculateFFLClubMatchScore(clubMatchId: ID!): Boolean!
+
+  "Record Team Manager substitution and interchange decisions for a club match."
+  declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
+}
+
+input DeclareFFLSubstitutionsInput {
+  clubMatchId: ID!
+  subbedOutPlayerMatchIds: [ID!]!
+  interchangeApplied: Boolean!
 }
 
 input MarkFFLTeamFinalInput {
@@ -1679,6 +1709,17 @@ func (ec *executionContext) field_Mutation_confirmFFLTeamSubmission_args(ctx con
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNConfirmFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmFFLTeamSubmissionInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_declareFFLSubstitutions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeclareFFLSubstitutionsInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐDeclareFFLSubstitutionsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3499,7 +3540,7 @@ func (ec *executionContext) _FFLPlayerMatch_status(ctx context.Context, field gr
 			return obj.Status, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalOFFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchStatus,
 		true,
 		false,
 	)
@@ -3512,7 +3553,7 @@ func (ec *executionContext) fieldContext_FFLPlayerMatch_status(_ context.Context
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type FFLPlayerMatchStatus does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3528,7 +3569,7 @@ func (ec *executionContext) _FFLPlayerMatch_aflStatus(ctx context.Context, field
 			return obj.AflStatus, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalOFFLAFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLAFLPlayerMatchStatus,
 		true,
 		false,
 	)
@@ -4976,6 +5017,73 @@ func (ec *executionContext) fieldContext_Mutation_recalculateFFLClubMatchScore(c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_recalculateFFLClubMatchScore_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_declareFFLSubstitutions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_declareFFLSubstitutions,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeclareFFLSubstitutions(ctx, fc.Args["input"].(DeclareFFLSubstitutionsInput))
+		},
+		nil,
+		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_declareFFLSubstitutions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_FFLPlayerMatch_playerSeasonId(ctx, field)
+			case "playerSeason":
+				return ec.fieldContext_FFLPlayerMatch_playerSeason(ctx, field)
+			case "player":
+				return ec.fieldContext_FFLPlayerMatch_player(ctx, field)
+			case "position":
+				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
+			case "status":
+				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
+			case "backupPositions":
+				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
+			case "interchangePosition":
+				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "score":
+				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
+			case "aflPlayerMatchId":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatchId(ctx, field)
+			case "aflPlayerMatch":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPlayerMatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_declareFFLSubstitutions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7898,6 +8006,50 @@ func (ec *executionContext) unmarshalInputConfirmedFFLPlayerInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeclareFFLSubstitutionsInput(ctx context.Context, obj any) (DeclareFFLSubstitutionsInput, error) {
+	var it DeclareFFLSubstitutionsInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clubMatchId", "subbedOutPlayerMatchIds", "interchangeApplied"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clubMatchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clubMatchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClubMatchID = data
+		case "subbedOutPlayerMatchIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subbedOutPlayerMatchIds"))
+			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubbedOutPlayerMatchIds = data
+		case "interchangeApplied":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("interchangeApplied"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InterchangeApplied = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputFFLPlayerSeasonFilter(ctx context.Context, obj any) (FFLPlayerSeasonFilter, error) {
 	var it FFLPlayerSeasonFilter
 	if obj == nil {
@@ -9738,6 +9890,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "declareFFLSubstitutions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declareFFLSubstitutions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10738,6 +10897,11 @@ func (ec *executionContext) unmarshalNConfirmedFFLPlayerInput2ᚖxfflᚋservices
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDeclareFFLSubstitutionsInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐDeclareFFLSubstitutionsInput(ctx context.Context, v any) (DeclareFFLSubstitutionsInput, error) {
+	res, err := ec.unmarshalInputDeclareFFLSubstitutionsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNFFLClub2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLClub(ctx context.Context, sel ast.SelectionSet, v FFLClub) graphql.Marshaler {
 	return ec._FFLClub(ctx, sel, &v)
 }
@@ -11046,6 +11210,36 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
@@ -11602,6 +11796,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOFFLAFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLAFLPlayerMatchStatus(ctx context.Context, v any) (*FFLAFLPlayerMatchStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(FFLAFLPlayerMatchStatus)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFFLAFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLAFLPlayerMatchStatus(ctx context.Context, sel ast.SelectionSet, v *FFLAFLPlayerMatchStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) marshalOFFLClubMatch2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLClubMatch(ctx context.Context, sel ast.SelectionSet, v *FFLClubMatch) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11621,6 +11831,22 @@ func (ec *executionContext) marshalOFFLMatch2ᚖxfflᚋservicesᚋfflᚋinternal
 		return graphql.Null
 	}
 	return ec._FFLMatch(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchStatus(ctx context.Context, v any) (*FFLPlayerMatchStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(FFLPlayerMatchStatus)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFFLPlayerMatchStatus2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchStatus(ctx context.Context, sel ast.SelectionSet, v *FFLPlayerMatchStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOFFLPlayerSeasonFilter2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerSeasonFilter(ctx context.Context, v any) (*FFLPlayerSeasonFilter, error) {

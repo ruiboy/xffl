@@ -42,7 +42,23 @@
 
       <template v-if="selectedClubSeason && clubMatch">
         <div class="mb-6 flex items-center gap-4">
-          <template v-if="managing">
+          <!-- Subs mode -->
+          <template v-if="subsMode">
+            <button
+              @click="exitSubsMode"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+              :disabled="subsSaving"
+            >Cancel</button>
+            <button
+              @click="onSaveSubs"
+              class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="subsSaving"
+            >{{ subsSaving ? 'Saving...' : 'Save Subs' }}</button>
+            <span v-if="subsMessage" class="text-sm" :class="subsMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-500'">{{ subsMessage }}</span>
+          </template>
+
+          <!-- Manage mode -->
+          <template v-else-if="managing">
             <button
               @click="cancelManage"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -57,19 +73,27 @@
             >
               {{ submitting ? 'Saving...' : 'Save Team' }}
             </button>
+            <span v-if="benchValidationError" class="text-sm text-red-400">{{ benchValidationError }}</span>
+            <span v-else-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
           </template>
-          <button
-            v-else
-            @click="managing = true"
-            class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-          >
-            <span class="flex items-center gap-1.5">
-              <IconManage class="w-3.5 h-3.5" />
-              Manage
-            </span>
-          </button>
-          <span v-if="benchValidationError" class="text-sm text-red-400">{{ benchValidationError }}</span>
-          <span v-else-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+
+          <!-- Default mode buttons -->
+          <template v-else>
+            <button
+              v-if="aflMatchStarted"
+              @click="enterSubsMode"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >Subs</button>
+            <button
+              @click="managing = true"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconManage class="w-3.5 h-3.5" />
+                Manage
+              </span>
+            </button>
+          </template>
         </div>
 
         <!-- Summary bar -->
@@ -83,7 +107,58 @@
           </div>
         </div>
 
-        <div class="grid gap-8" :class="managing ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'">
+        <!-- Subs mode panel -->
+        <div v-if="subsMode" class="mb-6">
+          <div v-if="dnpStarters.length === 0 && !interchangeBenchPlayer" class="text-sm text-text-faint">
+            No DNP players and no interchange player — nothing to declare.
+          </div>
+          <template v-else>
+            <!-- Substitutions -->
+            <div v-if="dnpStarters.length > 0" class="mb-6">
+              <h3 class="text-sm font-semibold text-text-faint mb-3">Substitutions</h3>
+              <div class="space-y-2">
+                <label
+                  v-for="pm in dnpStarters"
+                  :key="pm.id"
+                  class="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-pointer hover:bg-surface-hover transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="subbedOutIds.has(pm.id)"
+                    @change="toggleSub(pm.id)"
+                    class="w-4 h-4 accent-active"
+                  />
+                  <span class="font-medium text-sm">{{ pm.player.aflPlayer.name }}</span>
+                  <span class="text-xs text-text-muted ml-auto">{{ pm.position }} · DNP</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Interchange -->
+            <div v-if="interchangeBenchPlayer">
+              <h3 class="text-sm font-semibold text-text-faint mb-3">Interchange</h3>
+              <label class="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-pointer hover:bg-surface-hover transition-colors">
+                <input
+                  type="checkbox"
+                  v-model="interchangeApplied"
+                  class="w-4 h-4 accent-active"
+                />
+                <span class="font-medium text-sm">{{ interchangeBenchPlayer.player.aflPlayer.name }}</span>
+                <span class="text-xs font-medium tabular-nums">{{ interchangeBenchPlayer.score }} pts</span>
+                <span class="text-xs text-text-muted">→ {{ interchangeBenchPlayer.interchangePosition }}</span>
+                <span
+                  v-if="interchangeTargetStarter"
+                  class="text-xs ml-auto"
+                  :class="interchangeBeneficial ? 'text-green-500' : 'text-text-faint'"
+                >
+                  {{ interchangeBeneficial ? '+' : '' }}{{ interchangeBenchPlayer.score - interchangeTargetStarter.score }} vs {{ interchangeTargetStarter.player?.aflPlayer?.name }}
+                </span>
+              </label>
+            </div>
+          </template>
+        </div>
+
+        <div v-else class="grid gap-8" :class="managing ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'">
           <!-- Team (left col) -->
           <div>
 
@@ -368,7 +443,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH } from '../api/queries'
-import { SET_FFL_TEAM } from '../api/mutations'
+import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
@@ -418,6 +493,7 @@ interface BenchDualSlot {
 
 const { selectedClubId, setClub } = useFflState()
 const managing = ref(false)
+const subsMode = ref(false)
 
 const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
   GET_FFL_CLUB_MATCH,
@@ -814,6 +890,114 @@ function flashClearedSlot(index: number) {
 function setInterchange(value: string) {
   interchangePosition.value = value || null
   markDirty()
+}
+
+// ── Subs mode ────────────────────────────────────────────────────────────────
+
+// True when the AFL match has started (at least one player has an AFL status).
+const aflMatchStarted = computed(() => {
+  const pms = clubMatch.value?.playerMatches ?? []
+  return pms.some((pm: { aflStatus: string | null }) => pm.aflStatus != null)
+})
+
+// DNP starters that could potentially be subbed out.
+const dnpStarters = computed(() => {
+  const pms = clubMatch.value?.playerMatches ?? []
+  return pms.filter((pm: { backupPositions: string | null; interchangePosition: string | null; aflStatus: string | null }) =>
+    pm.backupPositions == null && pm.interchangePosition == null && pm.aflStatus === 'dnp'
+  )
+})
+
+// Bench player with InterchangePosition set (at most one per team).
+const interchangeBenchPlayer = computed(() => {
+  const pms = clubMatch.value?.playerMatches ?? []
+  return pms.find((pm: { interchangePosition: string | null }) => pm.interchangePosition != null) ?? null
+})
+
+// Starter at the interchange position with the lowest score (the one that would be displaced).
+const interchangeTargetStarter = computed(() => {
+  const bench = interchangeBenchPlayer.value
+  if (!bench) return null
+  const pms = clubMatch.value?.playerMatches ?? []
+  const starters = pms.filter((pm: { backupPositions: string | null; interchangePosition: string | null; position: string | null }) =>
+    pm.backupPositions == null && pm.interchangePosition == null && pm.position === bench.interchangePosition
+  )
+  if (!starters.length) return null
+  return starters.reduce((lowest: typeof starters[0], pm: typeof starters[0]) => pm.score < lowest.score ? pm : lowest)
+})
+
+// Whether the interchange bench player currently outscores the target starter.
+const interchangeBeneficial = computed(() => {
+  const bench = interchangeBenchPlayer.value
+  const starter = interchangeTargetStarter.value
+  if (!bench || !starter) return false
+  return bench.score > starter.score
+})
+
+// Subs UI state.
+const subbedOutIds = ref<Set<string>>(new Set())
+const interchangeApplied = ref(false)
+const subsSaving = ref(false)
+const subsMessage = ref('')
+
+function initSubsState() {
+  const pms = clubMatch.value?.playerMatches ?? []
+  // Pre-populate from stored TM decisions.
+  subbedOutIds.value = new Set(
+    pms
+      .filter((pm: { status: string | null }) => pm.status === 'subbed')
+      .map((pm: { id: string }) => pm.id)
+  )
+  // Check if interchange is currently applied.
+  interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged')
+  // Default interchange to checked if beneficial and no decision stored yet.
+  if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed' || pm.status === 'interchanged')) {
+    interchangeApplied.value = interchangeBeneficial.value
+  }
+}
+
+function enterSubsMode() {
+  initSubsState()
+  subsMode.value = true
+}
+
+function exitSubsMode() {
+  subsMode.value = false
+  subsMessage.value = ''
+}
+
+function toggleSub(pmId: string) {
+  if (subbedOutIds.value.has(pmId)) {
+    subbedOutIds.value.delete(pmId)
+  } else {
+    subbedOutIds.value.add(pmId)
+  }
+}
+
+const { mutate: declareSubs } = useMutation(DECLARE_FFL_SUBSTITUTIONS, () => ({
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
+  awaitRefetchQueries: true,
+}))
+
+async function onSaveSubs() {
+  if (!clubMatch.value) return
+  subsSaving.value = true
+  subsMessage.value = ''
+  try {
+    await declareSubs({
+      input: {
+        clubMatchId: clubMatch.value.id,
+        subbedOutPlayerMatchIds: Array.from(subbedOutIds.value),
+        interchangeApplied: interchangeApplied.value,
+      },
+    })
+    subsMessage.value = 'Saved'
+    setTimeout(() => { subsMessage.value = '' }, 3000)
+  } catch {
+    subsMessage.value = 'Failed to save substitutions'
+  } finally {
+    subsSaving.value = false
+  }
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────────

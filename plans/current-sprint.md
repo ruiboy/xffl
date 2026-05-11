@@ -112,12 +112,83 @@ Everything else is derived via a single domain function per concern.
 
 **Depends on**: Derived player match status (DNP must be reliable before choices are meaningful)
 
-Once player DNP status is confidently derived, a Team Manager must be able to declare which bench
-players cover which DNP starters (substitution) and whether any interchange swaps apply, within the
-rules in `ai/architecture/domain.md`. This is a combined domain + UX concern — the order of
-application is at the TM's discretion within the constraints. Detailed design deferred.
+### Status model (agreed design)
 
-- [ ] Design and implement substitution/interchange decision model (domain + UI)
+`ffl.player_match.status` describes what happened to a player's **original named role**:
+
+| Value | Applies to | Meaning |
+|-------|-----------|---------|
+| `named` | starters + bench | Role unchanged — starter played normally, or bench player (whether called upon or not) |
+| `subbed` | starters only | Starter subbed out due to DNP; slot filled by bench player via `BackupPositions` |
+| `interchanged` | starters only | Starter displaced by the interchange bench player via `InterchangePosition` |
+
+Bench players are always `named`. Rule 5 guarantees at most one eligible bench player per
+non-star position, so the sub/interchange pairing is always unambiguous from the starter's status
+alone — no FK or extra field needed on the bench player.
+
+### Scoring modes
+
+`ClubMatch.Score()` detects two modes:
+
+- **Auto mode** (all starters `named`): current behaviour — substitutes all DNP starters with
+  first eligible bench player; applies interchange if bench player score exceeds starter's.
+- **TM mode** (any starter has `subbed` or `interchanged`): status-driven —
+  - `subbed` starter → replaced by the bench player whose `BackupPositions` covers their position
+  - `interchanged` starter → replaced by the bench player whose `InterchangePosition` matches their position
+  - `named` starter → scores normally
+
+### DeclareSubs use case
+
+Input: `clubMatchID`, `subbedOutIDs []int` (starter player_match IDs), `interchangeApplied bool`
+
+Behaviour:
+1. For each starter: set `status = subbed` if in `subbedOutIDs`, else reset to `named`
+2. If `interchangeApplied`: find the bench player with `InterchangePosition` set; auto-determine
+   which starter at that position to mark `interchanged` (lowest scorer, same logic as auto mode);
+   set that starter to `interchanged`; reset any previously-interchanged starters
+3. Trigger `RecalculateClubMatchScore`
+
+Validation: each `subbedOutID` must be a starter with `aflStatus = dnp`.
+
+### New mutation
+
+```graphql
+declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
+
+input DeclareFFLSubstitutionsInput {
+  clubMatchId: ID!
+  subbedOutPlayerMatchIds: [ID!]!
+  interchangeApplied: Boolean!
+}
+```
+
+### UI — "Subs" mode in Team Builder
+
+A third mode in the Team Builder (alongside read-only and Manage), active when the AFL match has
+started (any player has `aflStatus` set). Shows:
+
+- Starters grouped by position; DNP starters highlighted
+- Each DNP starter with an eligible bench player gets a checkbox, pre-ticked by default
+- Interchange toggle: shown if a bench player has `InterchangePosition` set; defaults to checked
+  if that bench player's current score exceeds the relevant starter's score
+- "Save Subs" button → calls `declareFFLSubstitutions`; decisions can be revised any time while
+  club match status is `submitted`
+
+### Tasks
+
+*Domain*
+- [x] Update `ClubMatch.Score()` for TM mode
+- [x] Unit-test `Score()` TM mode (subbed, interchanged, mixed, edge cases)
+
+*Application*
+- [x] `DeclareSubs` use case in `Commands`
+- [x] Integration-test `DeclareSubs`
+
+*GraphQL*
+- [x] `declareFFLSubstitutions` mutation + resolver
+
+*Frontend*
+- [x] "Subs" mode in Team Builder — DNP starter checkboxes, interchange toggle, Save Subs button
 
 ---
 
