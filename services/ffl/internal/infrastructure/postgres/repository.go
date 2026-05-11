@@ -506,11 +506,11 @@ func statusPtr(s *string) *domain.PlayerMatchStatus {
 	return &st
 }
 
-func drvAFLStatusPtr(s *string) *domain.DrvAFLStatus {
+func aflStatusPtr(s *string) *domain.AFLStatus {
 	if s == nil {
 		return nil
 	}
-	st := domain.DrvAFLStatus(*s)
+	st := domain.AFLStatus(*s)
 	return &st
 }
 
@@ -521,7 +521,7 @@ func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status, drvA
 		PlayerSeasonID:      int(playerSeasonID),
 		Position:            positionPtr(position),
 		Status:              statusPtr(status),
-		DrvAFLStatus:        drvAFLStatusPtr(drvAflStatus),
+		AFLStatus:           aflStatusPtr(drvAflStatus),
 		BackupPositions:     backupPositions,
 		InterchangePosition: interchangePosition,
 		Score:               derefOr(score),
@@ -587,7 +587,7 @@ func (r *PlayerMatchRepository) UpdateStatus(ctx context.Context, id int, status
 	})
 }
 
-func (r *PlayerMatchRepository) UpdateDrvAFLStatus(ctx context.Context, id int, status domain.DrvAFLStatus) error {
+func (r *PlayerMatchRepository) UpdateAFLStatus(ctx context.Context, id int, status domain.AFLStatus) error {
 	s := string(status)
 	return r.q.UpdateDrvAFLStatus(ctx, sqlcgen.UpdateDrvAFLStatusParams{
 		ID:           int32(id),
@@ -595,7 +595,7 @@ func (r *PlayerMatchRepository) UpdateDrvAFLStatus(ctx context.Context, id int, 
 	})
 }
 
-func (r *PlayerMatchRepository) SetDrvAFLStatusDNP(ctx context.Context, clubMatchID int) error {
+func (r *PlayerMatchRepository) SetAFLStatusDNP(ctx context.Context, clubMatchID int) error {
 	return r.q.SetDrvAFLStatusDNPForClubMatch(ctx, int32(clubMatchID))
 }
 
@@ -615,7 +615,7 @@ func statusToStringPtr(s *domain.PlayerMatchStatus) *string {
 	return &str
 }
 
-func drvAFLStatusToStringPtr(s *domain.DrvAFLStatus) *string {
+func drvAFLStatusToStringPtr(s *domain.AFLStatus) *string {
 	if s == nil {
 		return nil
 	}
@@ -629,7 +629,7 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		PlayerSeasonID:      int32(params.PlayerSeasonID),
 		Position:            posToStringPtr(params.Position),
 		Status:              statusToStringPtr(params.Status),
-		DrvAflStatus:        drvAFLStatusToStringPtr(params.DrvAFLStatus),
+		DrvAflStatus:        drvAFLStatusToStringPtr(params.AFLStatus),
 		BackupPositions:     params.BackupPositions,
 		InterchangePosition: params.InterchangePosition,
 		DrvScore:            intToInt32Ptr(params.Score),

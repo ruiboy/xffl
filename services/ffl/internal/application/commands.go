@@ -340,12 +340,12 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 				Tackles:   s.Tackles,
 				Hitouts:   s.Hitouts,
 			})
-			drvAFLStatus := domain.DrvAFLStatus(s.Status)
+			aflStatus := domain.AFLStatus(s.Status)
 			if _, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,
 				Position:            pm.Position,
-				DrvAFLStatus:        &drvAFLStatus,
+				AFLStatus:           &aflStatus,
 				BackupPositions:     pm.BackupPositions,
 				InterchangePosition: pm.InterchangePosition,
 				Score:               &score,
@@ -517,7 +517,7 @@ func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerM
 
 		// Sync the AFL participation status onto the FFL record.
 		if update.Status != "" {
-			if err := c.eventRepos.PlayerMatches.UpdateDrvAFLStatus(ctx, pm.ID, domain.DrvAFLStatus(update.Status)); err != nil {
+			if err := c.eventRepos.PlayerMatches.UpdateAFLStatus(ctx, pm.ID, domain.AFLStatus(update.Status)); err != nil {
 				slog.WarnContext(ctx, "failed to update drv_afl_status", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}

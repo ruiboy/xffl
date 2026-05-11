@@ -2,6 +2,22 @@
 
 package graphql
 
+type FFLPlayerMatchStatus string
+
+const (
+	FFLPlayerMatchStatusNamed        FFLPlayerMatchStatus = "named"
+	FFLPlayerMatchStatusSubbed       FFLPlayerMatchStatus = "subbed"
+	FFLPlayerMatchStatusInterchanged FFLPlayerMatchStatus = "interchanged"
+)
+
+type FFLAFLPlayerMatchStatus string
+
+const (
+	FFLAFLPlayerMatchStatusPlaying FFLAFLPlayerMatchStatus = "playing"
+	FFLAFLPlayerMatchStatusPlayed  FFLAFLPlayerMatchStatus = "played"
+	FFLAFLPlayerMatchStatusDNP     FFLAFLPlayerMatchStatus = "dnp"
+)
+
 type AFLPlayer struct {
 	ID string `json:"id"`
 }
@@ -113,9 +129,9 @@ type FFLPlayerMatch struct {
 	PlayerSeasonID      string           `json:"playerSeasonId"`
 	PlayerSeason        *FFLPlayerSeason `json:"playerSeason"`
 	Player              *FFLPlayer       `json:"player"`
-	Position            *string          `json:"position,omitempty"`
-	Status              *string          `json:"status,omitempty"`
-	DrvAflStatus        *string          `json:"drvAflStatus,omitempty"`
+	Position  *string `json:"position,omitempty"`
+	Status    *string `json:"status,omitempty"`
+	AflStatus *string `json:"aflStatus,omitempty"`
 	BackupPositions     *string          `json:"backupPositions,omitempty"`
 	InterchangePosition *string          `json:"interchangePosition,omitempty"`
 	Score               int              `json:"score"`

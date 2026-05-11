@@ -48,14 +48,14 @@ const (
 	PlayerMatchStatusInterchange PlayerMatchStatus = "interchanged" // came on from the bench
 )
 
-// DrvAFLStatus is the denormalised AFL participation status for this player in this match.
+// AFLStatus is the AFL participation status for this player in this match.
 // Computed from AFL data and propagated via events; dnp is inferred after match finalisation.
-type DrvAFLStatus string
+type AFLStatus string
 
 const (
-	DrvAFLStatusPlaying DrvAFLStatus = "playing" // AFL match in progress, player has stats
-	DrvAFLStatusPlayed  DrvAFLStatus = "played"  // AFL match final, player participated
-	DrvAFLStatusDNP     DrvAFLStatus = "dnp"     // did not play in AFL match
+	AFLStatusPlaying AFLStatus = "playing" // AFL match in progress, player has stats
+	AFLStatusPlayed  AFLStatus = "played"  // AFL match final, player participated
+	AFLStatusDNP     AFLStatus = "dnp"     // did not play in AFL match
 )
 
 // AFLStats holds the AFL performance statistics used to calculate fantasy scores.
@@ -74,7 +74,7 @@ type PlayerMatch struct {
 	PlayerSeasonID      int
 	Position            *Position
 	Status              *PlayerMatchStatus
-	DrvAFLStatus        *DrvAFLStatus
+	AFLStatus        *AFLStatus
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               int
@@ -133,7 +133,7 @@ func parsePositions(s string) []Position {
 // Ptr helpers for use in struct literals.
 func PositionPtr(p Position) *Position                            { return &p }
 func PlayerMatchStatusPtr(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
-func DrvAFLStatusPtr(s DrvAFLStatus) *DrvAFLStatus                { return &s }
+func AFLStatusPtr(s AFLStatus) *AFLStatus                { return &s }
 
 type PlayerMatchRepository interface {
 	DeleteByClubMatchID(ctx context.Context, clubMatchID int) error
@@ -143,8 +143,8 @@ type PlayerMatchRepository interface {
 	FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (PlayerMatch, error)
 	UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error
 	UpdateStatus(ctx context.Context, id int, status PlayerMatchStatus) error
-	UpdateDrvAFLStatus(ctx context.Context, id int, status DrvAFLStatus) error
-	SetDrvAFLStatusDNP(ctx context.Context, clubMatchID int) error
+	UpdateAFLStatus(ctx context.Context, id int, status AFLStatus) error
+	SetAFLStatusDNP(ctx context.Context, clubMatchID int) error
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }
 
@@ -154,7 +154,7 @@ type UpsertPlayerMatchParams struct {
 	PlayerSeasonID      int
 	Position            *Position
 	Status              *PlayerMatchStatus
-	DrvAFLStatus        *DrvAFLStatus
+	AFLStatus        *AFLStatus
 	BackupPositions     *string
 	InterchangePosition *string
 	Score               *int

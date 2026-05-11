@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func pos(p Position) *Position        { return &p }
-func drvAFL(s DrvAFLStatus) *DrvAFLStatus { return &s }
+func pos(p Position) *Position      { return &p }
+func aflSts(s AFLStatus) *AFLStatus { return &s }
 
 func TestClubMatch_Score(t *testing.T) {
 	tests := []struct {
@@ -57,20 +57,20 @@ func TestClubMatch_Score_BenchSubstitution(t *testing.T) {
 	}{
 		{"bench subs for DNP starter", ClubMatch{
 			PlayerMatches: []PlayerMatch{
-				{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
+				{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
 				{Position: pos(PositionKicks), Score: 10},
 				{Score: 12, BackupPositions: strPtr("goals")},
 			},
 		}, 22}, // bench (12) replaces DNP goals starter (0), kicks starter (10) stays
 		{"no sub available for DNP starter", ClubMatch{
 			PlayerMatches: []PlayerMatch{
-				{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
+				{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
 				{Position: pos(PositionKicks), Score: 10},
 			},
 		}, 10}, // no bench player, DNP starter contributes 0
 		{"bench does not sub for played starter", ClubMatch{
 			PlayerMatches: []PlayerMatch{
-				{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusPlayed), Score: 5},
+				{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusPlayed), Score: 5},
 				{Score: 20, BackupPositions: strPtr("goals")},
 			},
 		}, 5}, // starter played, bench stays out
@@ -123,7 +123,7 @@ func TestClubMatch_Score_InterchangeSwap(t *testing.T) {
 func TestClubMatch_Score_SubTakesPriorityOverInterchange(t *testing.T) {
 	cm := ClubMatch{
 		PlayerMatches: []PlayerMatch{
-			{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
+			{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
 			{Score: 18, BackupPositions: strPtr("goals"), InterchangePosition: strPtr("goals")},
 		},
 	}
@@ -152,7 +152,7 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 			cm: ClubMatch{
 				PlayerMatches: []PlayerMatch{
 					{Position: pos(PositionGoals), Score: 20},
-					{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
+					{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
 					{Score: 12, BackupPositions: strPtr("goals")},
 				},
 			},
@@ -162,8 +162,8 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 			name: "bench only subs for one slot even if multiple DNP",
 			cm: ClubMatch{
 				PlayerMatches: []PlayerMatch{
-					{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
-					{Position: pos(PositionGoals), DrvAFLStatus: drvAFL(DrvAFLStatusDNP), Score: 0},
+					{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+					{Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
 					{Score: 12, BackupPositions: strPtr("goals")},
 				},
 			},

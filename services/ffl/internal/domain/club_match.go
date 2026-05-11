@@ -187,7 +187,7 @@ func (cm ClubMatch) Score() int {
 	// Substitution: replace each DNP starter slot with the first eligible bench player.
 	for pos, slots := range starters {
 		for si, starter := range slots {
-			if starter.DrvAFLStatus == nil || *starter.DrvAFLStatus != DrvAFLStatusDNP {
+			if starter.AFLStatus == nil || *starter.AFLStatus != AFLStatusDNP {
 				continue
 			}
 			for i, bp := range bench {

@@ -68,7 +68,7 @@ func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID
 			}
 			// Set drv_afl_status=dnp for any player_match whose drv_afl_status is still NULL
 			// (no AFL stats row exists for them → they did not play).
-			if err := c.playerMatches.SetDrvAFLStatusDNP(ctx, cm.ID); err != nil {
+			if err := c.playerMatches.SetAFLStatusDNP(ctx, cm.ID); err != nil {
 				slog.WarnContext(ctx, "set drv_afl_status dnp failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 			}
 		}

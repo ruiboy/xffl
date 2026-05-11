@@ -100,14 +100,26 @@ input FFLPlayerSeasonFilter {
   active: Boolean
 }
 
+enum FFLPlayerMatchStatus {
+  named
+  subbed
+  interchanged
+}
+
+enum FFLAFLPlayerMatchStatus {
+  playing
+  played
+  dnp
+}
+
 type FFLPlayerMatch {
   id: ID!
   playerSeasonId: ID!
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
-  status: String
-  drvAflStatus: String
+  status: FFLPlayerMatchStatus
+  aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
   score: Int!
