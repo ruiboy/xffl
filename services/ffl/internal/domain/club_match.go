@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -150,6 +151,77 @@ func containsPosition(positions string, pos Position) bool {
 		}
 	}
 	return false
+}
+
+// DeclareSubs records TM substitution and interchange decisions for this club match.
+// subbedOutIDs lists starter player_match IDs being subbed out — each must be a starter
+// with AFL status DNP. If interchangeApplied is true, the lowest-scoring non-subbed starter
+// at the interchange bench player's position is marked interchanged.
+// Returns the full player match slice with updated starter statuses; bench players unchanged.
+func (cm ClubMatch) DeclareSubs(subbedOutIDs []int, interchangeApplied bool) ([]PlayerMatch, error) {
+	if cm.DataStatus == ClubMatchDataFinal {
+		return nil, fmt.Errorf("club match %d is already final", cm.ID)
+	}
+
+	subbedSet := make(map[int]bool, len(subbedOutIDs))
+	for _, id := range subbedOutIDs {
+		subbedSet[id] = true
+	}
+
+	for _, pm := range cm.PlayerMatches {
+		if !subbedSet[pm.ID] {
+			continue
+		}
+		if pm.BackupPositions != nil {
+			return nil, fmt.Errorf("player_match %d is a bench player, cannot be subbed out", pm.ID)
+		}
+		if pm.AFLStatus == nil || *pm.AFLStatus != AFLStatusDNP {
+			return nil, fmt.Errorf("player_match %d is not DNP, cannot be subbed out", pm.ID)
+		}
+	}
+
+	interchangedStarterID := 0
+	if interchangeApplied {
+		var interchangePos Position
+		for _, pm := range cm.PlayerMatches {
+			if pm.InterchangePosition != nil {
+				interchangePos = Position(*pm.InterchangePosition)
+				break
+			}
+		}
+		if interchangePos != "" {
+			lowestScore := math.MaxInt
+			for _, pm := range cm.PlayerMatches {
+				if pm.BackupPositions != nil || pm.Position == nil {
+					continue
+				}
+				if *pm.Position == interchangePos && !subbedSet[pm.ID] && pm.Score < lowestScore {
+					lowestScore = pm.Score
+					interchangedStarterID = pm.ID
+				}
+			}
+		}
+	}
+
+	updated := make([]PlayerMatch, len(cm.PlayerMatches))
+	for i, pm := range cm.PlayerMatches {
+		if pm.BackupPositions != nil {
+			updated[i] = pm
+			continue
+		}
+		var newStatus PlayerMatchStatus
+		switch {
+		case subbedSet[pm.ID]:
+			newStatus = PlayerMatchStatusSubbed
+		case pm.ID == interchangedStarterID:
+			newStatus = PlayerMatchStatusInterchange
+		default:
+			newStatus = PlayerMatchStatusNamed
+		}
+		pm.Status = &newStatus
+		updated[i] = pm
+	}
+	return updated, nil
 }
 
 // Score computes the total fantasy score for this club match.
