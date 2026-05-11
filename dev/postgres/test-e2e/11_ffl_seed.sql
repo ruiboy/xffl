@@ -52,38 +52,33 @@ JOIN afl.season as2 ON ar.season_id = as2.id
 JOIN afl.league al ON as2.league_id = al.id
 WHERE s.name = 'FFL 2026' AND al.name = 'AFL' AND as2.name = 'AFL 2026' AND ar.name = 'Round 1';
 
--- Player seasons — Ruiboys
-INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
-SELECT p.id, cs.id, r.id
-FROM ffl.player p
-JOIN afl.player ap ON p.afl_player_id = ap.id
+-- Player seasons — Ruiboys (linked to AFL player_season in a single INSERT)
+INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
+SELECT fp.id, cs.id, r.id, aps.id
+FROM ffl.player fp
+JOIN afl.player ap ON fp.afl_player_id = ap.id
+JOIN afl.player_season aps ON aps.player_id = ap.id
+JOIN afl.club_season acs ON aps.club_season_id = acs.id
+JOIN afl.season as2 ON acs.season_id = as2.id
 JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'Ruiboys')
-JOIN ffl.round r ON r.season_id = cs.season_id
-WHERE r.name = 'Round 1' AND ap.name IN ('Jordan Dawson', 'Wayne Milera');
+JOIN ffl.round r ON r.season_id = cs.season_id AND r.name = 'Round 1'
+WHERE ap.name IN ('Jordan Dawson', 'Wayne Milera') AND as2.name = 'AFL 2026';
 
 -- Player seasons — The Howling Cows (Henry Smith + Hugh McCluggage assigned to positions;
 -- remaining 6 are squad-only with no player_match, available in the team builder)
-INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id)
-SELECT p.id, cs.id, r.id
-FROM ffl.player p
-JOIN afl.player ap ON p.afl_player_id = ap.id
-JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
-JOIN ffl.round r ON r.season_id = cs.season_id
-WHERE r.name = 'Round 1' AND ap.name IN (
-    'Henry Smith', 'Hugh McCluggage',
-    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
-);
-
--- Link FFL player seasons to their AFL player seasons (same player, AFL 2026 season)
-UPDATE ffl.player_season fps
-SET afl_player_season_id = aps.id
-FROM afl.player_season aps
-JOIN afl.player ap ON aps.player_id = ap.id
+INSERT INTO ffl.player_season (player_id, club_season_id, from_round_id, afl_player_season_id)
+SELECT fp.id, cs.id, r.id, aps.id
+FROM ffl.player fp
+JOIN afl.player ap ON fp.afl_player_id = ap.id
+JOIN afl.player_season aps ON aps.player_id = ap.id
 JOIN afl.club_season acs ON aps.club_season_id = acs.id
 JOIN afl.season as2 ON acs.season_id = as2.id
-JOIN ffl.player fp ON fp.afl_player_id = ap.id
-WHERE fps.player_id = fp.id
-  AND as2.name = 'AFL 2026';
+JOIN ffl.club_season cs ON cs.club_id = (SELECT id FROM ffl.club WHERE name = 'The Howling Cows')
+JOIN ffl.round r ON r.season_id = cs.season_id AND r.name = 'Round 1'
+WHERE ap.name IN (
+    'Henry Smith', 'Hugh McCluggage',
+    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+) AND as2.name = 'AFL 2026';
 
 -- Round 1 match
 INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES

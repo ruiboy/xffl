@@ -85,7 +85,10 @@ FROM afl.player p, afl.club_season cs
 JOIN afl.club c ON cs.club_id = c.id
 JOIN afl.season s ON cs.season_id = s.id
 JOIN afl.league l ON s.league_id = l.id
-WHERE p.name IN ('Henry Smith', 'Hugh McCluggage')
+WHERE p.name IN (
+    'Henry Smith', 'Hugh McCluggage',
+    'Brock Thunder', 'Kai Fernsby', 'Lenny Voss', 'Dax Morrow', 'Theo Quillan', 'Reid Calloway'
+  )
   AND c.name = 'Brisbane Lions' AND l.name = 'AFL' AND s.name = 'AFL 2026'
 ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
