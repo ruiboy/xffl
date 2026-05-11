@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     player_season_id INTEGER NOT NULL REFERENCES ffl.player_season(id) ON DELETE CASCADE,
     afl_player_match_id INTEGER,
     status VARCHAR(50),
+    drv_afl_status VARCHAR(50),
     position VARCHAR(255),
     backup_positions VARCHAR(255),
     interchange_position VARCHAR(255),

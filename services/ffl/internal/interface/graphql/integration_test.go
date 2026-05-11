@@ -155,10 +155,10 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
 		ids.playerID, ids.homeClubSeaID).Scan(&ids.playerSeasonID))
 
-	// Player match: goals position, played status, score 15
+	// Player match: goals position, named status, drv_afl_status=played, score 15
 	require.NoError(t, pool.QueryRow(ctx,
-		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_score)
-		 VALUES ($1, $2, 'goals', 'played', 15) RETURNING id`,
+		`INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+		 VALUES ($1, $2, 'goals', 'named', 'played', 15) RETURNING id`,
 		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID))
 
 	t.Cleanup(func() { cleanupTestData(context.Background(), t, pool) })

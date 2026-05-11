@@ -20,14 +20,6 @@ func derefOr(p *int32) int {
 	return int(*p)
 }
 
-// derefOrStr returns the value pointed to by p, or empty string if p is nil.
-func derefOrStr(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
 // intToInt32Ptr converts *int to *int32 for sqlc params.
 func intToInt32Ptr(p *int) *int32 {
 	if p == nil {
@@ -330,16 +322,17 @@ func (r *MatchRepository) hydrateClubMatch(ctx context.Context, cm *domain.ClubM
 	cm.PlayerMatches = make([]domain.PlayerMatch, len(pmRows))
 	for i, pmRow := range pmRows {
 		cm.PlayerMatches[i] = domain.PlayerMatch{
-			ID:             int(pmRow.ID),
-			ClubMatchID:    int(pmRow.ClubMatchID),
-			PlayerSeasonID: int(pmRow.PlayerSeasonID),
-			Kicks:          derefOr(pmRow.Kicks),
-			Handballs:      derefOr(pmRow.Handballs),
-			Marks:          derefOr(pmRow.Marks),
-			Hitouts:        derefOr(pmRow.Hitouts),
-			Tackles:        derefOr(pmRow.Tackles),
-			Goals:          derefOr(pmRow.Goals),
-			Behinds:        derefOr(pmRow.Behinds),
+			ID:              int(pmRow.ID),
+			ClubMatchID:     int(pmRow.ClubMatchID),
+			PlayerSeasonID:  int(pmRow.PlayerSeasonID),
+			MatchDataStatus: pmRow.DataStatus,
+			Kicks:           derefOr(pmRow.Kicks),
+			Handballs:       derefOr(pmRow.Handballs),
+			Marks:           derefOr(pmRow.Marks),
+			Hitouts:         derefOr(pmRow.Hitouts),
+			Tackles:         derefOr(pmRow.Tackles),
+			Goals:           derefOr(pmRow.Goals),
+			Behinds:         derefOr(pmRow.Behinds),
 		}
 	}
 	return nil
@@ -563,17 +556,17 @@ func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatch
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = domain.PlayerMatch{
-			ID:             int(row.ID),
-			ClubMatchID:    int(row.ClubMatchID),
-			PlayerSeasonID: int(row.PlayerSeasonID),
-			Status:         derefOrStr(row.Status),
-			Kicks:          derefOr(row.Kicks),
-			Handballs:      derefOr(row.Handballs),
-			Marks:          derefOr(row.Marks),
-			Hitouts:        derefOr(row.Hitouts),
-			Tackles:        derefOr(row.Tackles),
-			Goals:          derefOr(row.Goals),
-			Behinds:        derefOr(row.Behinds),
+			ID:              int(row.ID),
+			ClubMatchID:     int(row.ClubMatchID),
+			PlayerSeasonID:  int(row.PlayerSeasonID),
+			MatchDataStatus: row.DataStatus,
+			Kicks:           derefOr(row.Kicks),
+			Handballs:       derefOr(row.Handballs),
+			Marks:           derefOr(row.Marks),
+			Hitouts:         derefOr(row.Hitouts),
+			Tackles:         derefOr(row.Tackles),
+			Goals:           derefOr(row.Goals),
+			Behinds:         derefOr(row.Behinds),
 		}
 	}
 	return out, nil
@@ -585,17 +578,17 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		return domain.PlayerMatch{}, err
 	}
 	return domain.PlayerMatch{
-		ID:             int(row.ID),
-		ClubMatchID:    int(row.ClubMatchID),
-		PlayerSeasonID: int(row.PlayerSeasonID),
-		Status:         derefOrStr(row.Status),
-		Kicks:          derefOr(row.Kicks),
-		Handballs:      derefOr(row.Handballs),
-		Marks:          derefOr(row.Marks),
-		Hitouts:        derefOr(row.Hitouts),
-		Tackles:        derefOr(row.Tackles),
-		Goals:          derefOr(row.Goals),
-		Behinds:        derefOr(row.Behinds),
+		ID:              int(row.ID),
+		ClubMatchID:     int(row.ClubMatchID),
+		PlayerSeasonID:  int(row.PlayerSeasonID),
+		MatchDataStatus: row.DataStatus,
+		Kicks:           derefOr(row.Kicks),
+		Handballs:       derefOr(row.Handballs),
+		Marks:           derefOr(row.Marks),
+		Hitouts:         derefOr(row.Hitouts),
+		Tackles:         derefOr(row.Tackles),
+		Goals:           derefOr(row.Goals),
+		Behinds:         derefOr(row.Behinds),
 	}, nil
 }
 
@@ -611,17 +604,17 @@ func (r *PlayerMatchRepository) FindByIDs(ctx context.Context, ids []int) ([]dom
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = domain.PlayerMatch{
-			ID:             int(row.ID),
-			ClubMatchID:    int(row.ClubMatchID),
-			PlayerSeasonID: int(row.PlayerSeasonID),
-			Status:         derefOrStr(row.Status),
-			Kicks:          derefOr(row.Kicks),
-			Handballs:      derefOr(row.Handballs),
-			Marks:          derefOr(row.Marks),
-			Hitouts:        derefOr(row.Hitouts),
-			Tackles:        derefOr(row.Tackles),
-			Goals:          derefOr(row.Goals),
-			Behinds:        derefOr(row.Behinds),
+			ID:              int(row.ID),
+			ClubMatchID:     int(row.ClubMatchID),
+			PlayerSeasonID:  int(row.PlayerSeasonID),
+			MatchDataStatus: row.DataStatus,
+			Kicks:           derefOr(row.Kicks),
+			Handballs:       derefOr(row.Handballs),
+			Marks:           derefOr(row.Marks),
+			Hitouts:         derefOr(row.Hitouts),
+			Tackles:         derefOr(row.Tackles),
+			Goals:           derefOr(row.Goals),
+			Behinds:         derefOr(row.Behinds),
 		}
 	}
 	return out, nil
@@ -635,17 +628,17 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonID(ctx context.Context, player
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = domain.PlayerMatch{
-			ID:             int(row.ID),
-			ClubMatchID:    int(row.ClubMatchID),
-			PlayerSeasonID: int(row.PlayerSeasonID),
-			Status:         derefOrStr(row.Status),
-			Kicks:          derefOr(row.Kicks),
-			Handballs:      derefOr(row.Handballs),
-			Marks:          derefOr(row.Marks),
-			Hitouts:        derefOr(row.Hitouts),
-			Tackles:        derefOr(row.Tackles),
-			Goals:          derefOr(row.Goals),
-			Behinds:        derefOr(row.Behinds),
+			ID:              int(row.ID),
+			ClubMatchID:     int(row.ClubMatchID),
+			PlayerSeasonID:  int(row.PlayerSeasonID),
+			MatchDataStatus: row.DataStatus,
+			Kicks:           derefOr(row.Kicks),
+			Handballs:       derefOr(row.Handballs),
+			Marks:           derefOr(row.Marks),
+			Hitouts:         derefOr(row.Hitouts),
+			Tackles:         derefOr(row.Tackles),
+			Goals:           derefOr(row.Goals),
+			Behinds:         derefOr(row.Behinds),
 		}
 	}
 	return out, nil
@@ -666,34 +659,26 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = domain.PlayerMatch{
-			ID:             int(row.ID),
-			ClubMatchID:    int(row.ClubMatchID),
-			PlayerSeasonID: int(row.PlayerSeasonID),
-			Status:         derefOrStr(row.Status),
-			Kicks:          derefOr(row.Kicks),
-			Handballs:      derefOr(row.Handballs),
-			Marks:          derefOr(row.Marks),
-			Hitouts:        derefOr(row.Hitouts),
-			Tackles:        derefOr(row.Tackles),
-			Goals:          derefOr(row.Goals),
-			Behinds:        derefOr(row.Behinds),
+			ID:              int(row.ID),
+			ClubMatchID:     int(row.ClubMatchID),
+			PlayerSeasonID:  int(row.PlayerSeasonID),
+			MatchDataStatus: row.DataStatus,
+			Kicks:           derefOr(row.Kicks),
+			Handballs:       derefOr(row.Handballs),
+			Marks:           derefOr(row.Marks),
+			Hitouts:         derefOr(row.Hitouts),
+			Tackles:         derefOr(row.Tackles),
+			Goals:           derefOr(row.Goals),
+			Behinds:         derefOr(row.Behinds),
 		}
 	}
 	return out, nil
-}
-
-func (r *PlayerMatchRepository) SetStatusForMatchID(ctx context.Context, matchID int, status string) error {
-	return r.q.SetPlayerMatchStatusForMatch(ctx, sqlcgen.SetPlayerMatchStatusForMatchParams{
-		MatchID: int32(matchID),
-		Status:  &status,
-	})
 }
 
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),
 		PlayerSeasonID: int32(params.PlayerSeasonID),
-		Status:         params.Status,
 		Kicks:          intToInt32Ptr(params.Kicks),
 		Handballs:      intToInt32Ptr(params.Handballs),
 		Marks:          intToInt32Ptr(params.Marks),
@@ -709,7 +694,6 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		ID:             int(row.ID),
 		ClubMatchID:    int(row.ClubMatchID),
 		PlayerSeasonID: int(row.PlayerSeasonID),
-		Status:         derefOrStr(row.Status),
 		Kicks:          derefOr(row.Kicks),
 		Handballs:      derefOr(row.Handballs),
 		Marks:          derefOr(row.Marks),

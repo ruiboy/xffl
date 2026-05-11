@@ -73,7 +73,7 @@ func main() {
 	}()
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, dispatcher)
+	commands := application.NewCommands(db, pg.NewMatchRepository(q), dispatcher)
 
 	scoreCommands := application.NewScoreCommands(
 		pg.NewMatchRepository(q),

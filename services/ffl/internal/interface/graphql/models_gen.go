@@ -115,6 +115,7 @@ type FFLPlayerMatch struct {
 	Player              *FFLPlayer       `json:"player"`
 	Position            *string          `json:"position,omitempty"`
 	Status              *string          `json:"status,omitempty"`
+	DrvAflStatus        *string          `json:"drvAflStatus,omitempty"`
 	BackupPositions     *string          `json:"backupPositions,omitempty"`
 	InterchangePosition *string          `json:"interchangePosition,omitempty"`
 	Score               int              `json:"score"`

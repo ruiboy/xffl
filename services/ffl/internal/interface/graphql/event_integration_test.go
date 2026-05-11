@@ -243,18 +243,18 @@ func TestHandlePlayerMatchUpdated_syncs_afl_status(t *testing.T) {
 		AFLPlayerSeasonID: ids.aflPlayerSeasonID,
 		ClubMatchID:       ids.aflClubMatchID,
 		RoundID:           ids.aflRoundID,
-		Status:            "named",
+		Status:            "playing",
 		Kicks:             5,
 	})
 	require.NoError(t, err)
 
-	var status *string
+	var drvAFLStatus *string
 	err = pool.QueryRow(ctx,
-		"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
-		ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&status)
+		"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+		ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus)
 	require.NoError(t, err)
-	require.NotNil(t, status)
-	assert.Equal(t, "named", *status)
+	require.NotNil(t, drvAFLStatus)
+	assert.Equal(t, "playing", *drvAFLStatus)
 }
 
 func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
@@ -262,7 +262,7 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 	ids := seedEventTestData(t, pool)
 	ctx := context.Background()
 
-	// Add a second AFL player + FFL player (linked at player level but no afl_player_match_id in player_match → dnp).
+	// Add a second AFL player + FFL player (no AFL stats → dnp after round finalised).
 	var afl2PlayerID int
 	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO afl.player (name) VALUES ('Unlinked Test Player') RETURNING id").Scan(&afl2PlayerID))
@@ -279,10 +279,10 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 		ids.fflClubMatchID, unlinkedPlayerSeasonID)
 	require.NoError(t, err)
 
-	// The seeded player_match (from seedEventTestData) starts with status='named' and no afl_player_match_id.
-	// Set afl_player_match_id = 777 to simulate it being linked (AFL stats already resolved).
+	// The seeded player_match already has drv_afl_status='played' (set by ProcessPlayerMatchUpdated earlier).
+	// Simulate this by pre-setting it directly.
 	_, err = pool.Exec(ctx,
-		"UPDATE ffl.player_match SET afl_player_match_id = 777 WHERE player_season_id = $1 AND club_match_id = $2",
+		"UPDATE ffl.player_match SET drv_afl_status = 'played' WHERE player_season_id = $1 AND club_match_id = $2",
 		ids.fflPlayerSeasonID, ids.fflClubMatchID)
 	require.NoError(t, err)
 
@@ -291,22 +291,22 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 	err = scoreCommands.ProcessAFLRoundFinalized(ctx, ids.aflRoundID)
 	require.NoError(t, err)
 
-	t.Run("linked player becomes played", func(t *testing.T) {
-		var status *string
+	t.Run("linked player drv_afl_status stays played", func(t *testing.T) {
+		var drvAFLStatus *string
 		require.NoError(t, pool.QueryRow(ctx,
-			"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
-			ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&status))
-		require.NotNil(t, status)
-		assert.Equal(t, "played", *status)
+			"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+			ids.fflPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus))
+		require.NotNil(t, drvAFLStatus)
+		assert.Equal(t, "played", *drvAFLStatus)
 	})
 
-	t.Run("unlinked named player becomes dnp", func(t *testing.T) {
-		var status *string
+	t.Run("unlinked player gets drv_afl_status=dnp", func(t *testing.T) {
+		var drvAFLStatus *string
 		require.NoError(t, pool.QueryRow(ctx,
-			"SELECT status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
-			unlinkedPlayerSeasonID, ids.fflClubMatchID).Scan(&status))
-		require.NotNil(t, status)
-		assert.Equal(t, "dnp", *status)
+			"SELECT drv_afl_status FROM ffl.player_match WHERE player_season_id = $1 AND club_match_id = $2",
+			unlinkedPlayerSeasonID, ids.fflClubMatchID).Scan(&drvAFLStatus))
+		require.NotNil(t, drvAFLStatus)
+		assert.Equal(t, "dnp", *drvAFLStatus)
 	})
 }
 

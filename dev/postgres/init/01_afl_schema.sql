@@ -117,7 +117,6 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     club_match_id INTEGER NOT NULL REFERENCES afl.club_match(id) ON DELETE CASCADE,
     player_season_id INTEGER NOT NULL REFERENCES afl.player_season(id) ON DELETE CASCADE,
-    status VARCHAR(50),
     kicks INTEGER DEFAULT 0,
     handballs INTEGER DEFAULT 0,
     marks INTEGER DEFAULT 0,

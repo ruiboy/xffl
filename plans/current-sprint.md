@@ -76,24 +76,24 @@ Everything else is derived via a single domain function per concern.
 **Tasks**:
 
 *AFL service*
-- [ ] Drop `afl.player_match.status` column — row existence is the played assertion; no status needed
-- [ ] Add `ComputeAFLPlayerMatchStatus(matchDataStatus MatchDataStatus) string` to AFL domain (`playing`/`played`)
-- [ ] Populate `PlayerMatchStats.Status` in Twirp response using that function
-- [ ] Remove `SetStatusForMatchID` call from `MarkMatchStatsFinal` (bulk `named→played` update disappears)
-- [ ] Unit-test `ComputeAFLPlayerMatchStatus` with a status table
+- [x] Drop `afl.player_match.status` column — row existence is the played assertion; no status needed
+- [x] Add `ComputeAFLPlayerMatchStatus(matchDataStatus MatchDataStatus) string` to AFL domain (`playing`/`played`)
+- [x] Populate `PlayerMatchStats.Status` in Twirp response using that function
+- [x] Remove `SetStatusForMatchID` call from `MarkMatchStatsFinal` (bulk `named→played` update disappears)
+- [x] Unit-test `ComputeAFLPlayerMatchStatus` with a status table
 
 *FFL service — schema*
-- [ ] Add `ffl.player_match.drv_afl_status` column (nullable; `playing`/`played`/`dnp`)
-- [ ] Migrate existing `ffl.player_match.status` values: `played`→`drv_afl_status=played`, `dnp`→`drv_afl_status=dnp`, `named`→`null`
-- [ ] Change `ffl.player_match.status` enum to `named`/`subbed`/`interchanged`; set all rows to `named`
+- [x] Add `ffl.player_match.drv_afl_status` column (nullable; `playing`/`played`/`dnp`)
+- [x] Migrate existing `ffl.player_match.status` values: `played`→`drv_afl_status=played`, `dnp`→`drv_afl_status=dnp`, `named`→`null`
+- [x] Change `ffl.player_match.status` enum to `named`/`subbed`/`interchanged`; set all rows to `named`
 
 *FFL service — domain and application*
-- [ ] Redefine `PlayerMatchStatus` type as `named`/`subbed`/`interchanged`; add `DrvAFLStatus` type
-- [ ] Update scoring logic — `ClubMatch.Score()` substitution eligibility checks `drv_afl_status = dnp`, not `status`
-- [ ] `ProcessPlayerMatchUpdated`: store AFL-computed status in `drv_afl_status` (drop direct `status` write)
-- [ ] `ProcessAFLRoundFinalized`: set `drv_afl_status = dnp` for all FFL players with `drv_afl_status IS NULL` in the round — replaces `inferPlayerMatchStatuses`
-- [ ] `RecalculateClubMatchScore`: update `drv_afl_status` for linked players only (playing/played from AFL stats); never touch unlinked players' status
-- [ ] Remove `inferPlayerMatchStatuses` entirely
+- [x] Redefine `PlayerMatchStatus` type as `named`/`subbed`/`interchanged`; add `DrvAFLStatus` type
+- [x] Update scoring logic — `ClubMatch.Score()` substitution eligibility checks `drv_afl_status = dnp`, not `status`
+- [x] `ProcessPlayerMatchUpdated`: store AFL-computed status in `drv_afl_status` (drop direct `status` write)
+- [x] `ProcessAFLRoundFinalized`: set `drv_afl_status = dnp` for all FFL players with `drv_afl_status IS NULL` in the round — replaces `inferPlayerMatchStatuses`
+- [x] `RecalculateClubMatchScore`: update `drv_afl_status` for linked players only (playing/played from AFL stats); never touch unlinked players' status
+- [x] Remove `inferPlayerMatchStatuses` entirely
 
 **Architecture docs to update after this sprint** *(do not update now — ai/ is read-only during impl)*:
 - `domain.md`: AFL PlayerMatch status section (remove `named`, document `playing`/`played`); FFL PlayerMatch status section (replace named/played/dnp table with new `status` + `drv_afl_status` tables); Substitution section (change DNP check to reference `drv_afl_status`)

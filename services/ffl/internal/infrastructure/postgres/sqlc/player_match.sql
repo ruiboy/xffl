@@ -1,12 +1,12 @@
 -- name: FindPlayerMatchesByClubMatchID :many
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
+       position, status, drv_afl_status, backup_positions, interchange_position, drv_score, afl_player_match_id
 FROM ffl.player_match
 WHERE club_match_id = $1 AND deleted_at IS NULL;
 
 -- name: FindPlayerMatchByID :one
 SELECT id, club_match_id, player_season_id,
-       position, status, backup_positions, interchange_position, drv_score, afl_player_match_id
+       position, status, drv_afl_status, backup_positions, interchange_position, drv_score, afl_player_match_id
 FROM ffl.player_match
 WHERE id = $1 AND deleted_at IS NULL;
 
@@ -20,7 +20,7 @@ WHERE id = $1;
 
 -- name: FindPlayerMatchByPlayerSeasonAndRound :one
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
-       pm.position, pm.status, pm.backup_positions, pm.interchange_position, pm.drv_score, pm.afl_player_match_id
+       pm.position, pm.status, pm.drv_afl_status, pm.backup_positions, pm.interchange_position, pm.drv_score, pm.afl_player_match_id
 FROM ffl.player_match pm
 JOIN ffl.club_match cm ON pm.club_match_id = cm.id
 JOIN ffl.match m ON cm.match_id = m.id
@@ -36,16 +36,27 @@ UPDATE ffl.player_match
 SET status = $2, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdateDrvAFLStatus :exec
+UPDATE ffl.player_match
+SET drv_afl_status = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: SetDrvAFLStatusDNPForClubMatch :exec
+UPDATE ffl.player_match
+SET drv_afl_status = 'dnp', updated_at = CURRENT_TIMESTAMP
+WHERE club_match_id = $1 AND drv_afl_status IS NULL AND deleted_at IS NULL;
+
 -- name: UpsertPlayerMatch :one
-INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, drv_score)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (player_season_id, club_match_id)
 DO UPDATE SET
     position = COALESCE($3, ffl.player_match.position),
     status = COALESCE($4, ffl.player_match.status),
-    backup_positions = $5,
-    interchange_position = $6,
-    drv_score = COALESCE($7, ffl.player_match.drv_score),
+    drv_afl_status = COALESCE($5, ffl.player_match.drv_afl_status),
+    backup_positions = $6,
+    interchange_position = $7,
+    drv_score = COALESCE($8, ffl.player_match.drv_score),
     updated_at = CURRENT_TIMESTAMP
 WHERE ffl.player_match.deleted_at IS NULL
-RETURNING id, club_match_id, player_season_id, position, status, backup_positions, interchange_position, drv_score, afl_player_match_id;
+RETURNING id, club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, drv_score, afl_player_match_id;

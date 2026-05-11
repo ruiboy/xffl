@@ -7366,13 +7366,6 @@ func (ec *executionContext) unmarshalInputUpdateAFLPlayerMatchInput(ctx context.
 				return it, err
 			}
 			it.ClubMatchID = data
-		case "status":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Status = data
 		case "kicks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kicks"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)

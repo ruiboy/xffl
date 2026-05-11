@@ -57,7 +57,7 @@ func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock)
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New())
+	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
@@ -116,7 +116,7 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		 VALUES ($1, $2, 5, 3, 2, 0, 450, 420, 12) RETURNING id`,
 		ids.awayClubID, ids.seasonID).Scan(&ids.awayClubSeaID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'Test Ground', '2025-06-15 14:00:00') RETURNING id",
+		"INSERT INTO afl.match (round_id, venue, start_dt, data_status) VALUES ($1, 'Test Ground', '2025-06-15 14:00:00', 'final') RETURNING id",
 		ids.roundID).Scan(&ids.matchID))
 	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 85, 2, 'home') RETURNING id",
@@ -131,8 +131,8 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		ids.playerID, ids.homeClubSeaID).Scan(&ids.playerSeasonID))
 	// 10 kicks, 5 handballs, 3 marks, 0 hitouts, 2 tackles, 2 goals, 1 behind
 	require.NoError(t, pool.QueryRow(ctx,
-		`INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-		 VALUES ($1, $2, 'played', 10, 5, 3, 0, 2, 2, 1) RETURNING id`,
+		`INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+		 VALUES ($1, $2, 10, 5, 3, 0, 2, 2, 1) RETURNING id`,
 		ids.homeClubMatchID, ids.playerSeasonID).Scan(&ids.playerMatchID))
 
 	t.Cleanup(func() {
@@ -847,7 +847,7 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New())
+	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
 	dataOps := application.NewDataOpsCommands(
 		db,
 		pg.NewMatchRepository(q),
@@ -1355,7 +1355,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New())
+	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
 	scoreCommands := application.NewScoreCommands(
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),

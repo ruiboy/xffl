@@ -107,6 +107,7 @@ type FFLPlayerMatch {
   player: FFLPlayer!
   position: String
   status: String
+  drvAflStatus: String
   backupPositions: String
   interchangePosition: String
   score: Int!

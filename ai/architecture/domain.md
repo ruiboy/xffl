@@ -76,11 +76,12 @@ One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match sco
 
 ### PlayerMatch status
 
-| Status | Meaning                                                                                                                                                      |
-|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `named` | Selected in the AFL team sheet. Match has not been played yet.                                                                                               |
-| `played` | Played in the AFL match.                                                                                                                                     |
-| `dnp` | Did not play — was in the squad but did not take the field. This can be a logical status, inferred from the fact that no Player Match exists for given Match. |
+| Status | Meaning                                                         |
+|--------|-----------------------------------------------------------------|
+| `playing` | Player played / is playing in a match; match not yet finalised. |
+| `played` | Player played in a match; match is finalised.                   |
+
+Note: A PlayerMatch record exists if and only if the player participated in the match. The status is inferred from the presence of the record and the completeness of the match.
 
 ### Player tenure
 
@@ -169,19 +170,32 @@ Combining AFL Match data status and FFL ClubMatch data status determines what ca
 
 ### PlayerMatch status
 
-FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL status but takes its own values.
+Two separate status concepts apply to an FFL PlayerMatch:
 
-| Status | Meaning |
-|--------|---------|
-| `named` | Selected in the AFL team sheet. Match has not been played yet. |
-| `played` | Played in the AFL match. |
-| `dnp` | Did not play — was in the squad but did not take the field. |
+**Status => Team position** — the Team Manager's (TM) choice for this player's role. Unrelated to AFL participation status.
+
+| Value | Meaning                                        |
+|-------|------------------------------------------------|
+| `named` | Named In the team.                     |
+| `subbed` | Substituted out by the Team Manager. |
+| `interchanged` | Interchanged by the Team Manager. |
+
+**AFL Status => AFL participation** — whether the underlying AFL player took the field. Derived from AFL data; never set by TM decisions.
+
+| Value | Meaning |
+|-------|---------|
+| `playing` | Has AFL stats; AFL match not yet final. |
+| `played` | Has AFL stats; AFL match is final. |
+| `dnp` | No AFL stats once the AFL match is final — did not play. |
+| unknown | AFL match not yet imported. |
+
+Note: `dnp` cannot come from the AFL service (it has no team-selection data). The FFL infers it: once an AFL match finalises, any player with no AFL stats is marked `dnp`.
 
 ### Substitution and interchange
 
 `ClubMatch.Score()` aggregates fantasy scores with two replacement rules, applied per starter slot:
 
-1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one **substitution**.
+1. **Substitution** — if a starter's AFL participation status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one **substitution**.
 2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score exceeds the starter's, they can swap. Applies only for the position labelled as **interchange**.
 
 Constraints:
