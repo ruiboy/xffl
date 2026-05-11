@@ -18,11 +18,11 @@ and couples the match table to a specific two-team shape. Identical issue in `ff
 may later add `superbye` or other variants). All queries that currently navigate via the FK pair
 instead filter/join on `role`.
 
-- [ ] Migration: drop FK columns from `afl.match`, add `role` to `afl.club_match`
-- [ ] Migration: drop FK columns from `ffl.match`, add `role` to `ffl.club_match`
-- [ ] Update AFL domain model, repository, and any queries that use home/away FK navigation
-- [ ] Update FFL domain model, repository, and any queries that use home/away FK navigation
-- [ ] Update seed data and integration tests
+- [x] Migration: drop FK columns from `afl.match`, add `role` to `afl.club_match`
+- [x] Migration: drop FK columns from `ffl.match`, add `role` to `ffl.club_match`
+- [x] Update AFL domain model, repository, and any queries that use home/away FK navigation
+- [x] Update FFL domain model, repository, and any queries that use home/away FK navigation
+- [x] Update seed data and integration tests
 
 ---
 

@@ -119,15 +119,11 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'Test Ground', '2025-06-15 14:00:00') RETURNING id",
 		ids.roundID).Scan(&ids.matchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 85, 2) RETURNING id",
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 85, 2, 'home') RETURNING id",
 		ids.matchID, ids.homeClubSeaID).Scan(&ids.homeClubMatchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 72, 1) RETURNING id",
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 72, 1, 'away') RETURNING id",
 		ids.matchID, ids.awayClubSeaID).Scan(&ids.awayClubMatchID))
-	_, err := pool.Exec(ctx,
-		"UPDATE afl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
-		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
-	require.NoError(t, err, "link match to club matches")
 	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO afl.player (name) VALUES ('Test Player') RETURNING id").Scan(&ids.playerID))
 	require.NoError(t, pool.QueryRow(ctx,
@@ -922,15 +918,11 @@ func seedDataOpsTestData(t *testing.T, pool *pgxpool.Pool) dataOpsTestIDs {
 		"INSERT INTO afl.match (round_id, venue, start_dt) VALUES ($1, 'MCG', '2025-05-01 19:30:00') RETURNING id",
 		roundID).Scan(&ids.matchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 0, 0) RETURNING id",
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 0, 0, 'home') RETURNING id",
 		ids.matchID, carltonSeasonID).Scan(&ids.homeClubMatchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds) VALUES ($1, $2, 0, 0) RETURNING id",
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 0, 0, 'away') RETURNING id",
 		ids.matchID, richmondSeasonID).Scan(&ids.awayClubMatchID))
-	_, err := pool.Exec(ctx,
-		"UPDATE afl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
-		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
-	require.NoError(t, err)
 
 	for _, name := range []string{"Patrick Cripps", "Sam Walsh"} {
 		var playerID int

@@ -134,17 +134,11 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Club matches
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 85) RETURNING id",
+		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, side) VALUES ($1, $2, 85, 'home') RETURNING id",
 		ids.matchID, ids.homeClubSeaID).Scan(&ids.homeClubMatchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score) VALUES ($1, $2, 72) RETURNING id",
+		"INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, side) VALUES ($1, $2, 72, 'away') RETURNING id",
 		ids.matchID, ids.awayClubSeaID).Scan(&ids.awayClubMatchID))
-
-	// Link match to club matches
-	_, err := pool.Exec(ctx,
-		"UPDATE ffl.match SET home_club_match_id = $1, away_club_match_id = $2 WHERE id = $3",
-		ids.homeClubMatchID, ids.awayClubMatchID, ids.matchID)
-	require.NoError(t, err)
 
 	// AFL player reference (needed for FFL player FK)
 	// Name deliberately does not contain "Test" to avoid polluting AFL player search tests

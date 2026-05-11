@@ -2,7 +2,7 @@
 BEGIN;
 
 -- Clear existing data and reset identity sequences so re-runs produce stable IDs.
--- CASCADE handles circular FKs between match and club_match.
+-- CASCADE handles referential dependencies.
 TRUNCATE TABLE
     afl.player_match,
     afl.player_season,
@@ -100,17 +100,19 @@ SELECT r.id, 'Adelaide Oval', '2025-03-15 14:10:00+09:30', 'no_result'
 FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 1';
 
-INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
-SELECT m.id, cs.id, 0, 0, 0
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'home'
 FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
-WHERE l.name = 'AFL' AND r.name = 'Round 1' AND c.name IN ('Adelaide Crows', 'Brisbane Lions')
+WHERE l.name = 'AFL' AND r.name = 'Round 1' AND c.name = 'Adelaide Crows'
 ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
-UPDATE afl.match SET
-  home_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Adelaide Crows'),
-  away_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Brisbane Lions')
-WHERE venue = 'Adelaide Oval';
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'away'
+FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND r.name = 'Round 1' AND c.name = 'Brisbane Lions'
+ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
 INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 SELECT ps.id, cm.id, 'played', 18, 12, 6, 0, 4, 2, 1
@@ -147,17 +149,19 @@ SELECT r.id, 'The Gabba', '2025-03-22 15:20:00+10:00', 'no_result'
 FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 2';
 
-INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
-SELECT m.id, cs.id, 0, 0, 0
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'home'
 FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
-WHERE l.name = 'AFL' AND r.name = 'Round 2' AND c.name IN ('Adelaide Crows', 'Brisbane Lions')
+WHERE l.name = 'AFL' AND r.name = 'Round 2' AND c.name = 'Brisbane Lions'
 ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
-UPDATE afl.match SET
-  home_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Brisbane Lions'),
-  away_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Adelaide Crows')
-WHERE venue = 'The Gabba';
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'away'
+FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND r.name = 'Round 2' AND c.name = 'Adelaide Crows'
+ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
 INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
 SELECT ps.id, cm.id, 'played', 15, 10, 8, 0, 3, 1, 2
@@ -196,16 +200,18 @@ SELECT r.id, 'Adelaide Oval', '2026-01-15 14:10:00+10:30', 'no_result'
 FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 3';
 
-INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
-SELECT m.id, cs.id, 0, 0, 0
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'home'
 FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
 JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
-WHERE l.name = 'AFL' AND r.name = 'Round 3' AND c.name IN ('Adelaide Crows', 'Brisbane Lions')
+WHERE l.name = 'AFL' AND r.name = 'Round 3' AND c.name = 'Adelaide Crows'
 ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
-UPDATE afl.match SET
-  home_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Adelaide Crows'),
-  away_club_match_id = (SELECT cm.id FROM afl.club_match cm JOIN afl.club_season cs ON cm.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id WHERE cm.match_id = afl.match.id AND c.name = 'Brisbane Lions')
-WHERE round_id = (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 3');
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 0, 0, 0, 'away'
+FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND r.name = 'Round 3' AND c.name = 'Brisbane Lions'
+ON CONFLICT (club_season_id, match_id) DO NOTHING;
 
 COMMIT;

@@ -22,8 +22,8 @@ SELECT m.id,
        COALESCE(away.drv_score, 0)       AS away_score
 FROM afl.match m
 JOIN afl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
-LEFT JOIN afl.club_match home ON home.id = m.home_club_match_id AND home.deleted_at IS NULL
-LEFT JOIN afl.club_match away ON away.id = m.away_club_match_id AND away.deleted_at IS NULL
+LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
+LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
 WHERE r.season_id = $1
   AND m.data_status = 'final'
   AND m.deleted_at IS NULL
@@ -70,15 +70,17 @@ func (q *Queries) FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32
 }
 
 const findMatchByID = `-- name: FindMatchByID :one
-SELECT id, round_id,
-       COALESCE(home_club_match_id, 0) AS home_club_match_id,
-       COALESCE(away_club_match_id, 0) AS away_club_match_id,
-       COALESCE(venue, '') AS venue,
-       COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result,
-       data_status
-FROM afl.match
-WHERE id = $1 AND deleted_at IS NULL
+SELECT m.id, m.round_id,
+       COALESCE(home.id, 0) AS home_club_match_id,
+       COALESCE(away.id, 0) AS away_club_match_id,
+       COALESCE(m.venue, '') AS venue,
+       COALESCE(m.start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
+       COALESCE(m.drv_result, '') AS drv_result,
+       m.data_status
+FROM afl.match m
+LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
+LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
+WHERE m.id = $1 AND m.deleted_at IS NULL
 `
 
 type FindMatchByIDRow struct {
@@ -109,15 +111,17 @@ func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow
 }
 
 const findMatchesByIDs = `-- name: FindMatchesByIDs :many
-SELECT id, round_id,
-       COALESCE(home_club_match_id, 0) AS home_club_match_id,
-       COALESCE(away_club_match_id, 0) AS away_club_match_id,
-       COALESCE(venue, '') AS venue,
-       COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result,
-       data_status
-FROM afl.match
-WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+SELECT m.id, m.round_id,
+       COALESCE(home.id, 0) AS home_club_match_id,
+       COALESCE(away.id, 0) AS away_club_match_id,
+       COALESCE(m.venue, '') AS venue,
+       COALESCE(m.start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
+       COALESCE(m.drv_result, '') AS drv_result,
+       m.data_status
+FROM afl.match m
+LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
+LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
+WHERE m.id = ANY($1::int[]) AND m.deleted_at IS NULL
 `
 
 type FindMatchesByIDsRow struct {
@@ -161,15 +165,17 @@ func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatc
 }
 
 const findMatchesByRoundID = `-- name: FindMatchesByRoundID :many
-SELECT id, round_id,
-       COALESCE(home_club_match_id, 0) AS home_club_match_id,
-       COALESCE(away_club_match_id, 0) AS away_club_match_id,
-       COALESCE(venue, '') AS venue,
-       COALESCE(start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
-       COALESCE(drv_result, '') AS drv_result,
-       data_status
-FROM afl.match
-WHERE round_id = $1 AND deleted_at IS NULL
+SELECT m.id, m.round_id,
+       COALESCE(home.id, 0) AS home_club_match_id,
+       COALESCE(away.id, 0) AS away_club_match_id,
+       COALESCE(m.venue, '') AS venue,
+       COALESCE(m.start_dt, '0001-01-01T00:00:00Z'::timestamptz) AS start_dt,
+       COALESCE(m.drv_result, '') AS drv_result,
+       m.data_status
+FROM afl.match m
+LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
+LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
+WHERE m.round_id = $1 AND m.deleted_at IS NULL
 `
 
 type FindMatchesByRoundIDRow struct {

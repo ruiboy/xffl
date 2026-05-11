@@ -62,7 +62,7 @@ func seedEventTestData(t *testing.T, pool *pgxpool.Pool) eventTestIDs {
 		ids.aflRoundID).Scan(&aflMatchID))
 
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO afl.club_match (match_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO afl.club_match (match_id, club_season_id, side) VALUES ($1, $2, 'home') RETURNING id",
 		aflMatchID, aflClubSeasonID).Scan(&ids.aflClubMatchID))
 
 	var aflPlayerID int
@@ -100,7 +100,7 @@ func seedEventTestData(t *testing.T, pool *pgxpool.Pool) eventTestIDs {
 		ids.fflRoundID).Scan(&fflMatchID))
 
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO ffl.club_match (match_id, club_season_id, side) VALUES ($1, $2, 'home') RETURNING id",
 		fflMatchID, ids.fflClubSeasonID).Scan(&ids.fflClubMatchID))
 
 	// FFL player linked to AFL player
@@ -329,7 +329,7 @@ func TestHandlePlayerMatchUpdated_multiple_ffl_clubs(t *testing.T) {
 		"INSERT INTO ffl.match (round_id, match_style, venue) VALUES ($1, 'versus', 'Other Ground') RETURNING id",
 		ids.fflRoundID).Scan(&secondMatchID))
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.club_match (match_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO ffl.club_match (match_id, club_season_id, side) VALUES ($1, $2, 'home') RETURNING id",
 		secondMatchID, secondClubSeasonID).Scan(&secondClubMatchID))
 
 	// Reuse the FFL player created by seedEventTestData (linked to the same AFL player).

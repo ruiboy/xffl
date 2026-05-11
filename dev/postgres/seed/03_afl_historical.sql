@@ -1097,20 +1097,17 @@ BEGIN
             'played'
         ) RETURNING id INTO v_match_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.home_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_home_cm_id;
+            0, 0, 0, 'home') RETURNING id INTO v_home_cm_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.away_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_away_cm_id;
-
-        UPDATE afl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id
-        WHERE id = v_match_id;
+            0, 0, 0, 'away') RETURNING id INTO v_away_cm_id;
     END LOOP;
 END $$;
 
@@ -12276,20 +12273,17 @@ BEGIN
             'played'
         ) RETURNING id INTO v_match_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.home_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_home_cm_id;
+            0, 0, 0, 'home') RETURNING id INTO v_home_cm_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.away_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_away_cm_id;
-
-        UPDATE afl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id
-        WHERE id = v_match_id;
+            0, 0, 0, 'away') RETURNING id INTO v_away_cm_id;
     END LOOP;
 END $$;
 
