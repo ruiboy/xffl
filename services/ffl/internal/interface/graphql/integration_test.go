@@ -103,12 +103,12 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Season
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.season (name, league_id) VALUES ('Test 2025', $1) RETURNING id",
+		"INSERT INTO ffl.season (name, league_id, afl_season_id) VALUES ('Test 2025', $1, 1) RETURNING id",
 		ids.leagueID).Scan(&ids.seasonID))
 
 	// Round
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		"INSERT INTO ffl.round (name, season_id, afl_round_id) VALUES ('Round 1', $1, 1) RETURNING id",
 		ids.seasonID).Scan(&ids.roundID))
 
 	// Two clubs
@@ -152,7 +152,7 @@ func seedTestData(t *testing.T, pool *pgxpool.Pool) testIDs {
 
 	// Player season
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
 		ids.playerID, ids.homeClubSeaID).Scan(&ids.playerSeasonID))
 
 	// Player match: goals position, played status, score 15
@@ -744,7 +744,7 @@ func seedExtraPlayers(t *testing.T, pool *pgxpool.Pool, ids testIDs, count int) 
 			"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id",
 			aflID).Scan(&playerID))
 		require.NoError(t, pool.QueryRow(ctx,
-			"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+			"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
 			playerID, ids.homeClubSeaID).Scan(&psID))
 		psIDs[i] = fmt.Sprintf("%d", psID)
 	}
@@ -1427,23 +1427,6 @@ func TestFFLSeason_AflSeasonTraversal(t *testing.T) {
 	defer server.Close()
 	seasonIDStr := fmt.Sprintf("%d", ids.seasonID)
 
-	t.Run("returns null when ffl.season.afl_season_id is unset", func(t *testing.T) {
-		result := execQuery(t, server, `{
-			fflSeason(id: "`+seasonIDStr+`") { aflSeason { id } }
-		}`)
-		require.Empty(t, result.Errors)
-
-		var data struct {
-			FflSeason struct {
-				AflSeason *struct {
-					ID string `json:"id"`
-				} `json:"aflSeason"`
-			} `json:"fflSeason"`
-		}
-		require.NoError(t, json.Unmarshal(result.Data, &data))
-		assert.Nil(t, data.FflSeason.AflSeason)
-	})
-
 	t.Run("returns AFL season id when linked", func(t *testing.T) {
 		aflSeasonID := insertAFLSeason(t, pool)
 		_, err := pool.Exec(context.Background(),
@@ -1612,25 +1595,6 @@ func TestFFLRound_AflRoundTraversal(t *testing.T) {
 	server := setupTestServer(t, pool)
 	defer server.Close()
 	roundIDStr := fmt.Sprintf("%d", ids.roundID)
-
-	t.Run("returns null when ffl.round.afl_round_id is unset", func(t *testing.T) {
-		result := execQuery(t, server, `{
-			fflRound(id: "`+roundIDStr+`") { aflRoundId aflRound { id } }
-		}`)
-		require.Empty(t, result.Errors)
-
-		var data struct {
-			FflRound struct {
-				AflRoundID *string `json:"aflRoundId"`
-				AflRound   *struct {
-					ID string `json:"id"`
-				} `json:"aflRound"`
-			} `json:"fflRound"`
-		}
-		require.NoError(t, json.Unmarshal(result.Data, &data))
-		assert.Nil(t, data.FflRound.AflRoundID)
-		assert.Nil(t, data.FflRound.AflRound)
-	})
 
 	t.Run("returns AFL round id when linked", func(t *testing.T) {
 		aflSeasonID := insertAFLSeason(t, pool)

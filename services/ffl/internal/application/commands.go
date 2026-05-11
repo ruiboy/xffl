@@ -82,7 +82,7 @@ func (c *Commands) AddPlayerToSeason(ctx context.Context, clubSeasonID, aflPlaye
 				return err
 			}
 		}
-		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID, fromRoundID, &aflPlayerSeasonID, costCents)
+		ps, err := repos.PlayerSeasons.Create(ctx, player.ID, clubSeasonID, fromRoundID, aflPlayerSeasonID, costCents)
 		if err != nil {
 			return err
 		}
@@ -269,8 +269,8 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 		}
 		var aflPSIDs []int
 		for _, ps := range playerSeasons {
-			if ps.AFLPlayerSeasonID != nil {
-				aflPSIDs = append(aflPSIDs, *ps.AFLPlayerSeasonID)
+			if ps.AFLPlayerSeasonID != 0 {
+				aflPSIDs = append(aflPSIDs, ps.AFLPlayerSeasonID)
 			}
 		}
 
@@ -289,8 +289,8 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 				return fmt.Errorf("load round %d: %w", m.RoundID, err)
 			}
 
-			if r.AFLRoundID != nil {
-				unlinked, err := c.playerLookup.LookupPlayerMatchBySeasonRound(ctx, aflPSIDs, *r.AFLRoundID)
+			if r.AFLRoundID != 0 {
+				unlinked, err := c.playerLookup.LookupPlayerMatchBySeasonRound(ctx, aflPSIDs, r.AFLRoundID)
 				if err != nil {
 					return fmt.Errorf("lookup player match stats by season/round: %w", err)
 				}
@@ -317,8 +317,8 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 			} else {
 				// Look up by AFL player_season_id via the unlinked path.
 				ps, err := repos.PlayerSeasons.FindByID(ctx, pm.PlayerSeasonID)
-				if err == nil && ps.AFLPlayerSeasonID != nil {
-					s, found = statsByAFLSeasonID[*ps.AFLPlayerSeasonID]
+				if err == nil && ps.AFLPlayerSeasonID != 0 {
+					s, found = statsByAFLSeasonID[ps.AFLPlayerSeasonID]
 					if found && s.ID != 0 {
 						// Establish the AFL player_match link for future calls.
 						if linkErr := repos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, s.ID); linkErr != nil {

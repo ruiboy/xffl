@@ -20,7 +20,7 @@ type FindAllSeasonsRow struct {
 	ID          int32
 	Name        string
 	LeagueID    int32
-	AflSeasonID *int32
+	AflSeasonID int32
 }
 
 func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error) {
@@ -58,7 +58,7 @@ type FindSeasonByIDRow struct {
 	ID          int32
 	Name        string
 	LeagueID    int32
-	AflSeasonID *int32
+	AflSeasonID int32
 }
 
 func (q *Queries) FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error) {

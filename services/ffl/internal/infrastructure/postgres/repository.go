@@ -85,7 +85,7 @@ func (r *SeasonRepository) FindAll(ctx context.Context) ([]domain.Season, error)
 	}
 	out := make([]domain.Season, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int32PtrToIntPtr(row.AflSeasonID)}
+		out[i] = domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int(row.AflSeasonID)}
 	}
 	return out, nil
 }
@@ -95,7 +95,7 @@ func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season,
 	if err != nil {
 		return domain.Season{}, err
 	}
-	return domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int32PtrToIntPtr(row.AflSeasonID)}, nil
+	return domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int(row.AflSeasonID)}, nil
 }
 
 // --- Round ---
@@ -113,7 +113,7 @@ func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]d
 	}
 	out := make([]domain.Round, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}
+		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}
 	}
 	return out, nil
 }
@@ -123,19 +123,18 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	if err != nil {
 		return domain.Round{}, err
 	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}, nil
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}, nil
 }
 
 func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {
-	v := int32(aflRoundID)
-	row, err := r.q.FindRoundByAFLRoundID(ctx, &v)
+	row, err := r.q.FindRoundByAFLRoundID(ctx, int32(aflRoundID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Round{}, domain.ErrNotFound
 	}
 	if err != nil {
 		return domain.Round{}, err
 	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int32PtrToIntPtr(row.AflRoundID)}, nil
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}, nil
 }
 
 // --- Match ---
@@ -620,12 +619,12 @@ func NewPlayerSeasonRepository(q *sqlcgen.Queries) *PlayerSeasonRepository {
 	return &PlayerSeasonRepository{q: q}
 }
 
-func toPlayerSeason(id, playerID, clubSeasonID int32, aflPlayerSeasonID, fromRoundID, toRoundID *int32, notes *string, costCents *int32) domain.PlayerSeason {
+func toPlayerSeason(id, playerID, clubSeasonID, aflPlayerSeasonID int32, fromRoundID, toRoundID *int32, notes *string, costCents *int32) domain.PlayerSeason {
 	return domain.PlayerSeason{
 		ID:                int(id),
 		PlayerID:          int(playerID),
 		ClubSeasonID:      int(clubSeasonID),
-		AFLPlayerSeasonID: int32PtrToIntPtr(aflPlayerSeasonID),
+		AFLPlayerSeasonID: int(aflPlayerSeasonID),
 		FromRoundID:       int32PtrToIntPtr(fromRoundID),
 		ToRoundID:         int32PtrToIntPtr(toRoundID),
 		Notes:             notes,
@@ -646,8 +645,7 @@ func (r *PlayerSeasonRepository) FindByClubSeasonID(ctx context.Context, clubSea
 }
 
 func (r *PlayerSeasonRepository) FindByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int) ([]domain.PlayerSeason, error) {
-	v := int32(aflPlayerSeasonID)
-	rows, err := r.q.FindPlayerSeasonsByAFLPlayerSeasonID(ctx, &v)
+	rows, err := r.q.FindPlayerSeasonsByAFLPlayerSeasonID(ctx, int32(aflPlayerSeasonID))
 	if err != nil {
 		return nil, err
 	}
@@ -698,12 +696,12 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	return out, nil
 }
 
-func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID int, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID *int, costCents *int) (domain.PlayerSeason, error) {
+func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID int, clubSeasonID int, fromRoundID *int, aflPlayerSeasonID int, costCents *int) (domain.PlayerSeason, error) {
 	row, err := r.q.CreatePlayerSeason(ctx, sqlcgen.CreatePlayerSeasonParams{
 		PlayerID:          int32(playerID),
 		ClubSeasonID:      int32(clubSeasonID),
 		FromRoundID:       intPtrToInt32Ptr(fromRoundID),
-		AflPlayerSeasonID: intPtrToInt32Ptr(aflPlayerSeasonID),
+		AflPlayerSeasonID: int32(aflPlayerSeasonID),
 		CostCents:         intPtrToInt32Ptr(costCents),
 	})
 	if err != nil {

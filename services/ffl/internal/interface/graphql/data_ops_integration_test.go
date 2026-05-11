@@ -113,7 +113,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 
 	var jeremyPSID int
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
 		jeremyFflID, ids.homeClubSeaID).Scan(&jeremyPSID))
 
 	// Stub player lookup: returns Jeremy Cameron only.

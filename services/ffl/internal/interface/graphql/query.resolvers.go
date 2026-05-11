@@ -240,10 +240,10 @@ func (r *fFLSeasonResolver) AflSeason(ctx context.Context, obj *FFLSeason) (*AFL
 	if err != nil {
 		return nil, err
 	}
-	if season.AFLSeasonID == nil {
+	if season.AFLSeasonID == 0 {
 		return nil, nil
 	}
-	return &AFLSeason{ID: toID(*season.AFLSeasonID)}, nil
+	return &AFLSeason{ID: toID(season.AFLSeasonID)}, nil
 }
 
 // FflSeasons is the resolver for the fflSeasons field.

@@ -79,8 +79,8 @@ func seedEventTestData(t *testing.T, pool *pgxpool.Pool) eventTestIDs {
 
 	var fflSeasonID int
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.season (name, league_id) VALUES ('Event FFL 2026', (SELECT id FROM ffl.league WHERE name = 'Event Test FFL')) RETURNING id",
-	).Scan(&fflSeasonID))
+		"INSERT INTO ffl.season (name, league_id, afl_season_id) VALUES ('Event FFL 2026', (SELECT id FROM ffl.league WHERE name = 'Event Test FFL'), $1) RETURNING id",
+		aflSeasonID).Scan(&fflSeasonID))
 
 	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO ffl.round (name, season_id, afl_round_id) VALUES ('1', $1, $2) RETURNING id",
@@ -271,7 +271,7 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id", afl2PlayerID).Scan(&unlinkedPlayerID))
 	var unlinkedPlayerSeasonID int
 	require.NoError(t, pool.QueryRow(ctx,
-		"INSERT INTO ffl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, 1) RETURNING id",
 		unlinkedPlayerID, ids.fflClubSeasonID).Scan(&unlinkedPlayerSeasonID))
 
 	_, err := pool.Exec(ctx,

@@ -41,9 +41,9 @@ be named without having played).
 
 **Nullable by design**: `ffl.player_match.afl_player_match_id`
 
-- [ ] Migration: add NOT NULL constraint to the four columns above
-- [ ] Domain: enforce at construction time via domain invariants (return error / panic on nil afl ID for the four entities)
-- [ ] Verify existing seed data satisfies the constraints before migrating
+- [x] Migration: add NOT NULL constraint to the four columns above
+- [x] Domain: enforce at construction time via domain invariants (return error / panic on nil afl ID for the four entities)
+- [x] Verify existing seed data satisfies the constraints before migrating
 
 ---
 

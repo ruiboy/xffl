@@ -25,7 +25,7 @@ type CreatePlayerSeasonParams struct {
 	PlayerID          int32
 	ClubSeasonID      int32
 	FromRoundID       *int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	CostCents         *int32
 }
 
@@ -33,7 +33,7 @@ type CreatePlayerSeasonRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string
@@ -84,7 +84,7 @@ type FindPlayerSeasonByIDRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string
@@ -117,14 +117,14 @@ type FindPlayerSeasonsByAFLPlayerSeasonIDRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string
 	CostCents         *int32
 }
 
-func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error) {
+func (q *Queries) FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error) {
 	rows, err := q.db.Query(ctx, findPlayerSeasonsByAFLPlayerSeasonID, aflPlayerSeasonID)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ type FindPlayerSeasonsByClubSeasonIDRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string
@@ -210,7 +210,7 @@ type FindPlayerSeasonsByIDsRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string
@@ -313,7 +313,7 @@ type UpdatePlayerSeasonRow struct {
 	ID                int32
 	PlayerID          int32
 	ClubSeasonID      int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	FromRoundID       *int32
 	ToRoundID         *int32
 	Notes             *string

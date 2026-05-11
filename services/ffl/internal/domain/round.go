@@ -11,7 +11,7 @@ type Round struct {
 	ID         int
 	Name       string
 	SeasonID   int
-	AFLRoundID *int
+	AFLRoundID int
 }
 
 type RoundRepository interface {
