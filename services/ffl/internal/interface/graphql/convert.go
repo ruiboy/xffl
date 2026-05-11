@@ -62,10 +62,8 @@ func convertSeasons(seasons []domain.Season) []*FFLSeason {
 
 func convertRound(r domain.Round) *FFLRound {
 	round := &FFLRound{ID: toID(r.ID), Name: r.Name}
-	if r.AFLRoundID != nil {
-		id := toID(*r.AFLRoundID)
-		round.AflRoundID = &id
-	}
+	id := toID(r.AFLRoundID)
+	round.AflRoundID = &id
 	return round
 }
 
@@ -143,6 +141,10 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *FFLPlayerM
 		s := string(*pm.Status)
 		result.Status = &s
 	}
+	if pm.AFLStatus != nil {
+		s := string(*pm.AFLStatus)
+		result.AflStatus = &s
+	}
 	if pm.AFLPlayerMatchID != nil {
 		id := toID(*pm.AFLPlayerMatchID)
 		result.AflPlayerMatchID = &id
@@ -158,10 +160,8 @@ func convertPlayerSeason(ps domain.PlayerSeason, player domain.Player) *FFLPlaye
 		Notes:        ps.Notes,
 		CostCents:    ps.CostCents,
 	}
-	if ps.AFLPlayerSeasonID != nil {
-		id := toID(*ps.AFLPlayerSeasonID)
-		result.AflPlayerSeasonID = &id
-	}
+	psID := toID(ps.AFLPlayerSeasonID)
+	result.AflPlayerSeasonID = &psID
 	if ps.FromRoundID != nil {
 		id := toID(*ps.FromRoundID)
 		result.FromRoundID = &id

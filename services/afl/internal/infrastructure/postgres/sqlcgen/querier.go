@@ -44,7 +44,6 @@ type Querier interface {
 	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
 	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
-	SetPlayerMatchStatusForMatch(ctx context.Context, arg SetPlayerMatchStatusForMatchParams) error
 	UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
 	UpdateClubSeason(ctx context.Context, arg UpdateClubSeasonParams) error

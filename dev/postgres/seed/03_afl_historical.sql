@@ -1097,20 +1097,17 @@ BEGIN
             'played'
         ) RETURNING id INTO v_match_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.home_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_home_cm_id;
+            0, 0, 0, 'home') RETURNING id INTO v_home_cm_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.away_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_away_cm_id;
-
-        UPDATE afl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id
-        WHERE id = v_match_id;
+            0, 0, 0, 'away') RETURNING id INTO v_away_cm_id;
     END LOOP;
 END $$;
 
@@ -1781,8 +1778,8 @@ JOIN afl.club_season cs ON cs.season_id = s.id
 JOIN afl.club c ON cs.club_id = c.id AND c.name = v.club_name
 ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Jack Billings'::text, 'Melbourne Demons'::text, 'Opening Round'::text, 1::int, 1::int, 0::int, 0::int, 2::int, 0::int, 0::int),
     ('Jake Bowey'::text, 'Melbourne Demons'::text, 'Opening Round'::text, 13::int, 1::int, 3::int, 0::int, 1::int, 0::int, 0::int),
@@ -2295,8 +2292,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Adam Treloar'::text, 'Western Bulldogs'::text, 'Round 1'::text, 9::int, 22::int, 4::int, 0::int, 1::int, 0::int, 0::int),
     ('Jamarra Ugle-Hagan'::text, 'Western Bulldogs'::text, 'Round 1'::text, 12::int, 2::int, 6::int, 0::int, 1::int, 2::int, 3::int),
@@ -2809,8 +2806,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Patrick Lipinski'::text, 'Collingwood Magpies'::text, 'Round 3'::text, 7::int, 5::int, 3::int, 0::int, 6::int, 0::int, 1::int),
     ('Finlay Macrae'::text, 'Collingwood Magpies'::text, 'Round 3'::text, 4::int, 2::int, 1::int, 0::int, 3::int, 0::int, 0::int),
@@ -3323,8 +3320,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Liam Duggan'::text, 'West Coast Eagles'::text, 'Round 4'::text, 24::int, 6::int, 12::int, 0::int, 2::int, 0::int, 0::int),
     ('Luke Edwards'::text, 'West Coast Eagles'::text, 'Round 4'::text, 5::int, 2::int, 2::int, 0::int, 2::int, 0::int, 0::int),
@@ -3837,8 +3834,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('James Worpel'::text, 'Hawthorn Hawks'::text, 'Round 5'::text, 6::int, 8::int, 1::int, 0::int, 3::int, 0::int, 1::int),
     ('Ben Ainsworth'::text, 'Gold Coast Suns'::text, 'Round 5'::text, 14::int, 8::int, 9::int, 0::int, 0::int, 0::int, 0::int),
@@ -4351,8 +4348,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Trent Rivers'::text, 'Melbourne Demons'::text, 'Round 7'::text, 18::int, 6::int, 12::int, 0::int, 1::int, 0::int, 0::int),
     ('Tom Sparrow'::text, 'Melbourne Demons'::text, 'Round 7'::text, 6::int, 10::int, 3::int, 0::int, 3::int, 0::int, 0::int),
@@ -4865,8 +4862,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('James Jordon'::text, 'Sydney Swans'::text, 'Round 8'::text, 5::int, 9::int, 1::int, 0::int, 6::int, 1::int, 1::int),
     ('Jake Lloyd'::text, 'Sydney Swans'::text, 'Round 8'::text, 12::int, 7::int, 3::int, 0::int, 0::int, 0::int, 0::int),
@@ -5379,8 +5376,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Aaron Cadman'::text, 'Greater Western Sydney Giants'::text, 'Round 9'::text, 3::int, 2::int, 0::int, 3::int, 3::int, 0::int, 0::int),
     ('Finn Callaghan'::text, 'Greater Western Sydney Giants'::text, 'Round 9'::text, 5::int, 8::int, 0::int, 0::int, 6::int, 0::int, 0::int),
@@ -5893,8 +5890,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Darcy Wilmot'::text, 'Brisbane Lions'::text, 'Round 10'::text, 19::int, 5::int, 9::int, 0::int, 1::int, 0::int, 0::int),
     ('Dayne Zorko'::text, 'Brisbane Lions'::text, 'Round 10'::text, 25::int, 10::int, 15::int, 0::int, 0::int, 1::int, 0::int),
@@ -6407,8 +6404,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Jack Steele'::text, 'St Kilda Saints'::text, 'Round 11'::text, 15::int, 18::int, 10::int, 0::int, 2::int, 1::int, 0::int),
     ('Liam Stocker'::text, 'St Kilda Saints'::text, 'Round 11'::text, 6::int, 1::int, 2::int, 0::int, 2::int, 0::int, 0::int),
@@ -6921,8 +6918,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Toby Greene'::text, 'Greater Western Sydney Giants'::text, 'Round 13'::text, 9::int, 5::int, 3::int, 0::int, 2::int, 1::int, 1::int),
     ('Nick Haynes'::text, 'Greater Western Sydney Giants'::text, 'Round 13'::text, 11::int, 3::int, 5::int, 0::int, 1::int, 0::int, 0::int),
@@ -7435,8 +7432,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Kieren Briggs'::text, 'Greater Western Sydney Giants'::text, 'Round 14'::text, 7::int, 9::int, 2::int, 29::int, 4::int, 0::int, 1::int),
     ('Callum Brown'::text, 'Greater Western Sydney Giants'::text, 'Round 14'::text, 8::int, 1::int, 4::int, 0::int, 1::int, 2::int, 0::int),
@@ -7949,8 +7946,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Jake Soligo'::text, 'Adelaide Crows'::text, 'Round 16'::text, 8::int, 9::int, 2::int, 0::int, 6::int, 0::int, 0::int),
     ('Zac Taylor'::text, 'Adelaide Crows'::text, 'Round 16'::text, 3::int, 1::int, 1::int, 0::int, 0::int, 0::int, 0::int),
@@ -8463,8 +8460,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Trent Rivers'::text, 'Melbourne Demons'::text, 'Round 17'::text, 20::int, 9::int, 9::int, 0::int, 5::int, 0::int, 0::int),
     ('Christian Salem'::text, 'Melbourne Demons'::text, 'Round 17'::text, 14::int, 9::int, 8::int, 0::int, 2::int, 0::int, 0::int),
@@ -8977,8 +8974,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Jacob Hopper'::text, 'Richmond Tigers'::text, 'Round 18'::text, 13::int, 15::int, 3::int, 0::int, 2::int, 0::int, 1::int),
     ('Jacob Koschitzke'::text, 'Richmond Tigers'::text, 'Round 18'::text, 6::int, 3::int, 3::int, 0::int, 1::int, 2::int, 2::int),
@@ -9491,8 +9488,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Aidan Corr'::text, 'North Melbourne Kangaroos'::text, 'Round 20'::text, 5::int, 6::int, 5::int, 0::int, 1::int, 0::int, 0::int),
     ('Paul Curtis'::text, 'North Melbourne Kangaroos'::text, 'Round 20'::text, 3::int, 10::int, 1::int, 0::int, 6::int, 1::int, 1::int),
@@ -10005,8 +10002,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Jayden Short'::text, 'Richmond Tigers'::text, 'Round 21'::text, 16::int, 6::int, 3::int, 0::int, 0::int, 0::int, 0::int),
     ('Tim Taranto'::text, 'Richmond Tigers'::text, 'Round 21'::text, 11::int, 16::int, 5::int, 0::int, 8::int, 0::int, 1::int),
@@ -10519,8 +10516,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Nic Martin'::text, 'Essendon Bombers'::text, 'Round 22'::text, 22::int, 14::int, 7::int, 0::int, 3::int, 0::int, 0::int),
     ('Andrew McGrath'::text, 'Essendon Bombers'::text, 'Round 22'::text, 6::int, 15::int, 1::int, 0::int, 2::int, 0::int, 0::int),
@@ -11033,8 +11030,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Harvey Gallagher'::text, 'Western Bulldogs'::text, 'Round 23'::text, 10::int, 5::int, 2::int, 0::int, 2::int, 0::int, 1::int),
     ('Liam Jones'::text, 'Western Bulldogs'::text, 'Round 23'::text, 6::int, 4::int, 6::int, 0::int, 0::int, 0::int, 0::int),
@@ -11547,8 +11544,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Andrew Brayshaw'::text, 'Fremantle Dockers'::text, 'Round 24'::text, 10::int, 23::int, 7::int, 0::int, 7::int, 0::int, 0::int),
     ('Heath Chapman'::text, 'Fremantle Dockers'::text, 'Round 24'::text, 11::int, 9::int, 6::int, 0::int, 1::int, 0::int, 0::int),
@@ -12276,20 +12273,17 @@ BEGIN
             'played'
         ) RETURNING id INTO v_match_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.home_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_home_cm_id;
+            0, 0, 0, 'home') RETURNING id INTO v_home_cm_id;
 
-        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds)
+        INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
         VALUES (v_match_id,
             (SELECT cs.id FROM afl.club_season cs JOIN afl.club c ON cs.club_id = c.id
              WHERE c.name = rec.away_club AND cs.season_id = v_season_id),
-            0, 0, 0) RETURNING id INTO v_away_cm_id;
-
-        UPDATE afl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id
-        WHERE id = v_match_id;
+            0, 0, 0, 'away') RETURNING id INTO v_away_cm_id;
     END LOOP;
 END $$;
 
@@ -12970,8 +12964,8 @@ JOIN afl.club_season cs ON cs.season_id = s.id
 JOIN afl.club c ON cs.club_id = c.id AND c.name = v.club_name
 ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Karl Amon'::text, 'Hawthorn Hawks'::text, 'Opening Round'::text, 21::int, 6::int, 6::int, 0::int, 1::int, 1::int, 2::int),
     ('Tom Barrass'::text, 'Hawthorn Hawks'::text, 'Opening Round'::text, 6::int, 3::int, 6::int, 0::int, 1::int, 0::int, 0::int),
@@ -13484,8 +13478,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Xavier OHalloran'::text, 'Greater Western Sydney Giants'::text, 'Round 1'::text, 11::int, 5::int, 2::int, 0::int, 2::int, 0::int, 1::int),
     ('Conor Stone'::text, 'Greater Western Sydney Giants'::text, 'Round 1'::text, 4::int, 7::int, 2::int, 0::int, 2::int, 0::int, 0::int),
@@ -13998,8 +13992,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Ben Long'::text, 'Gold Coast Suns'::text, 'Round 3'::text, 10::int, 4::int, 5::int, 0::int, 2::int, 1::int, 1::int),
     ('Touk Miller'::text, 'Gold Coast Suns'::text, 'Round 3'::text, 14::int, 9::int, 9::int, 0::int, 3::int, 3::int, 1::int),
@@ -14512,8 +14506,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Aaron Cadman'::text, 'Greater Western Sydney Giants'::text, 'Round 4'::text, 6::int, 2::int, 5::int, 0::int, 0::int, 1::int, 3::int),
     ('Finn Callaghan'::text, 'Greater Western Sydney Giants'::text, 'Round 4'::text, 14::int, 11::int, 2::int, 0::int, 4::int, 0::int, 2::int),
@@ -15026,8 +15020,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('James Worpel'::text, 'Hawthorn Hawks'::text, 'Round 5'::text, 10::int, 13::int, 2::int, 0::int, 5::int, 1::int, 1::int),
     ('Aliir Aliir'::text, 'Port Adelaide Power'::text, 'Round 5'::text, 7::int, 6::int, 7::int, 0::int, 1::int, 0::int, 0::int),
@@ -15540,8 +15534,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Tim Membrey'::text, 'Collingwood Magpies'::text, 'Round 7'::text, 3::int, 3::int, 2::int, 0::int, 2::int, 2::int, 1::int),
     ('Brody Mihocek'::text, 'Collingwood Magpies'::text, 'Round 7'::text, 3::int, 4::int, 2::int, 1::int, 3::int, 1::int, 0::int),
@@ -16054,8 +16048,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Wayne Milera'::text, 'Adelaide Crows'::text, 'Round 8'::text, 17::int, 10::int, 5::int, 0::int, 2::int, 0::int, 0::int),
     ('Luke Nankervis'::text, 'Adelaide Crows'::text, 'Round 8'::text, 1::int, 7::int, 1::int, 0::int, 2::int, 0::int, 0::int),
@@ -16568,8 +16562,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Zak Butters'::text, 'Port Adelaide Power'::text, 'Round 9'::text, 10::int, 23::int, 2::int, 0::int, 3::int, 0::int, 0::int),
     ('Darcy Byrne-Jones'::text, 'Port Adelaide Power'::text, 'Round 9'::text, 9::int, 6::int, 4::int, 0::int, 1::int, 2::int, 1::int),
@@ -17082,8 +17076,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Luke Trainor'::text, 'Richmond Tigers'::text, 'Round 10'::text, 9::int, 3::int, 4::int, 0::int, 2::int, 0::int, 0::int),
     ('Nick Vlastuin'::text, 'Richmond Tigers'::text, 'Round 10'::text, 9::int, 5::int, 5::int, 0::int, 4::int, 0::int, 0::int),
@@ -17596,8 +17590,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Ethan Read'::text, 'Gold Coast Suns'::text, 'Round 11'::text, 4::int, 1::int, 2::int, 4::int, 2::int, 0::int, 0::int),
     ('Daniel Rioli'::text, 'Gold Coast Suns'::text, 'Round 11'::text, 8::int, 9::int, 5::int, 0::int, 2::int, 0::int, 0::int),
@@ -18110,8 +18104,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Zach Guthrie'::text, 'Geelong Cats'::text, 'Round 13'::text, 13::int, 3::int, 4::int, 0::int, 2::int, 0::int, 0::int),
     ('Jack Henry'::text, 'Geelong Cats'::text, 'Round 13'::text, 14::int, 4::int, 6::int, 0::int, 5::int, 0::int, 0::int),
@@ -18624,8 +18618,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Adam Cerra'::text, 'Carlton Blues'::text, 'Round 14'::text, 16::int, 14::int, 9::int, 0::int, 5::int, 0::int, 0::int),
     ('Alex Cincotta'::text, 'Carlton Blues'::text, 'Round 14'::text, 6::int, 8::int, 1::int, 0::int, 5::int, 1::int, 0::int),
@@ -19138,8 +19132,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Josh Ward'::text, 'Hawthorn Hawks'::text, 'Round 16'::text, 16::int, 4::int, 3::int, 0::int, 3::int, 0::int, 1::int),
     ('Nick Watson'::text, 'Hawthorn Hawks'::text, 'Round 16'::text, 9::int, 4::int, 3::int, 0::int, 0::int, 3::int, 1::int),
@@ -19652,8 +19646,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Hayden McLean'::text, 'Sydney Swans'::text, 'Round 17'::text, 9::int, 2::int, 6::int, 4::int, 2::int, 3::int, 0::int),
     ('Lewis Melican'::text, 'Sydney Swans'::text, 'Round 17'::text, 8::int, 4::int, 7::int, 0::int, 1::int, 0::int, 0::int),
@@ -20166,8 +20160,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Finn Callaghan'::text, 'Greater Western Sydney Giants'::text, 'Round 19'::text, 19::int, 14::int, 8::int, 0::int, 2::int, 0::int, 0::int),
     ('Stephen Coniglio'::text, 'Greater Western Sydney Giants'::text, 'Round 19'::text, 14::int, 4::int, 4::int, 0::int, 2::int, 0::int, 0::int),
@@ -20680,8 +20674,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Braeden Campbell'::text, 'Sydney Swans'::text, 'Round 20'::text, 2::int, 5::int, 1::int, 0::int, 0::int, 0::int, 0::int),
     ('Harry Cunningham'::text, 'Sydney Swans'::text, 'Round 20'::text, 5::int, 4::int, 4::int, 0::int, 3::int, 0::int, 0::int),
@@ -21194,8 +21188,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Matt Rowell'::text, 'Gold Coast Suns'::text, 'Round 21'::text, 10::int, 17::int, 3::int, 0::int, 9::int, 0::int, 1::int),
     ('Bodhi Uwland'::text, 'Gold Coast Suns'::text, 'Round 21'::text, 8::int, 7::int, 6::int, 0::int, 1::int, 0::int, 0::int),
@@ -21708,8 +21702,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Nathan ODriscoll'::text, 'Fremantle Dockers'::text, 'Round 22'::text, 6::int, 6::int, 3::int, 0::int, 2::int, 0::int, 0::int),
     ('Jaeger OMeara'::text, 'Fremantle Dockers'::text, 'Round 22'::text, 17::int, 9::int, 4::int, 0::int, 2::int, 0::int, 0::int),
@@ -22222,8 +22216,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Oliver Dempsey'::text, 'Geelong Cats'::text, 'Round 23'::text, 10::int, 11::int, 6::int, 0::int, 5::int, 1::int, 1::int),
     ('Zach Guthrie'::text, 'Geelong Cats'::text, 'Round 23'::text, 13::int, 4::int, 9::int, 0::int, 3::int, 0::int, 0::int),
@@ -22736,8 +22730,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Angus Clarke'::text, 'Essendon Bombers'::text, 'Opening Round'::text, 11::int, 10::int, 6::int, 0::int, 0::int, 0::int, 0::int),
     ('Sam Durham'::text, 'Essendon Bombers'::text, 'Opening Round'::text, 8::int, 5::int, 6::int, 0::int, 5::int, 1::int, 1::int),
@@ -23355,6 +23349,7 @@ SELECT p.id, cs.id FROM (VALUES
     ('Harvey Thomas', 'Greater Western Sydney Giants'),
     ('Hayden Young', 'Fremantle Dockers'),
     ('Heath Chapman', 'Fremantle Dockers'),
+    ('Henry Smith', 'Brisbane Lions'),
     ('Hudson OKeeffe', 'Carlton Blues'),
     ('Hugh Bond', 'Adelaide Crows'),
     ('Hugh Boxshall', 'St Kilda Saints'),
@@ -23704,6 +23699,7 @@ SELECT p.id, cs.id FROM (VALUES
     ('Will Hayes', 'Collingwood Magpies'),
     ('Will Hayward', 'Carlton Blues'),
     ('Will Lewis', 'Western Bulldogs'),
+    ('Will Setterfield', 'Essendon Bombers'),
     ('Willem Drew', 'Port Adelaide Power'),
     ('Willem Duursma', 'West Coast Eagles'),
     ('Xavier Duursma', 'Essendon Bombers'),
@@ -23728,8 +23724,8 @@ JOIN afl.club_season cs ON cs.season_id = s.id
 JOIN afl.club c ON cs.club_id = c.id AND c.name = v.club_name
 ON CONFLICT (player_id, club_season_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Joel Amartey'::text, 'Sydney Swans'::text, 'Opening Round'::text, 6::int, 1::int, 4::int, 2::int, 1::int, 3::int, 1::int),
     ('Riley Bice'::text, 'Sydney Swans'::text, 'Opening Round'::text, 11::int, 5::int, 5::int, 0::int, 3::int, 0::int, 0::int),
@@ -24242,8 +24238,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Scott Pendlebury'::text, 'Collingwood Magpies'::text, 'Round 1'::text, 8::int, 8::int, 5::int, 0::int, 2::int, 0::int, 0::int),
     ('Harry Perryman'::text, 'Collingwood Magpies'::text, 'Round 1'::text, 9::int, 8::int, 5::int, 0::int, 3::int, 0::int, 1::int),
@@ -24756,8 +24752,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Max Holmes'::text, 'Geelong Cats'::text, 'Round 3'::text, 20::int, 7::int, 5::int, 0::int, 5::int, 1::int, 1::int),
     ('Lawson Humphries'::text, 'Geelong Cats'::text, 'Round 3'::text, 11::int, 1::int, 5::int, 0::int, 1::int, 0::int, 0::int),
@@ -25270,8 +25266,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Hamish Davis'::text, 'West Coast Eagles'::text, 'Round 4'::text, 7::int, 6::int, 6::int, 0::int, 0::int, 0::int, 0::int),
     ('Cooper Duff-Tytler'::text, 'West Coast Eagles'::text, 'Round 4'::text, 2::int, 7::int, 1::int, 1::int, 3::int, 0::int, 0::int),
@@ -25784,8 +25780,8 @@ JOIN afl.match m ON cm.match_id = m.id
 JOIN afl.round r ON m.round_id = r.id AND r.name = v.round_name
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 'played', v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, v.kicks, v.handballs, v.marks, v.hitouts, v.tackles, v.goals, v.behinds
 FROM (VALUES
     ('Nick Vlastuin'::text, 'Richmond Tigers'::text, 'Round 5'::text, 8::int, 3::int, 5::int, 0::int, 2::int, 0::int, 0::int),
     ('Ryan Angwin'::text, 'Greater Western Sydney Giants'::text, 'Round 5'::text, 7::int, 7::int, 0::int, 0::int, 1::int, 2::int, 0::int),

@@ -19,10 +19,10 @@ type FindRoundByAFLRoundIDRow struct {
 	ID         int32
 	Name       string
 	SeasonID   int32
-	AflRoundID *int32
+	AflRoundID int32
 }
 
-func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error) {
+func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (FindRoundByAFLRoundIDRow, error) {
 	row := q.db.QueryRow(ctx, findRoundByAFLRoundID, aflRoundID)
 	var i FindRoundByAFLRoundIDRow
 	err := row.Scan(
@@ -44,7 +44,7 @@ type FindRoundByIDRow struct {
 	ID         int32
 	Name       string
 	SeasonID   int32
-	AflRoundID *int32
+	AflRoundID int32
 }
 
 func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error) {
@@ -72,7 +72,7 @@ type FindRoundsBySeasonIDRow struct {
 	ID         int32
 	Name       string
 	SeasonID   int32
-	AflRoundID *int32
+	AflRoundID int32
 }
 
 func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error) {

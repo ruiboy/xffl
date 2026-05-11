@@ -76,11 +76,12 @@ One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match sco
 
 ### PlayerMatch status
 
-| Status | Meaning                                                                                                                                                      |
-|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `named` | Selected in the AFL team sheet. Match has not been played yet.                                                                                               |
-| `played` | Played in the AFL match.                                                                                                                                     |
-| `dnp` | Did not play — was in the squad but did not take the field. This can be a logical status, inferred from the fact that no Player Match exists for given Match. |
+| Status | Meaning                                                         |
+|--------|-----------------------------------------------------------------|
+| `playing` | Player played / is playing in a match; match not yet finalised. |
+| `played` | Player played in a match; match is finalised.                   |
+
+Note: A PlayerMatch record exists if and only if the player participated in the match. The status is inferred from the presence of the record and the completeness of the match.
 
 ### Player tenure
 
@@ -88,8 +89,7 @@ One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match sco
 
 ### Events published
 
-- **`AFL.PlayerMatchUpdated`** — fired when a player's match stats change. Payload carries full stats (kicks, handballs, marks, hitouts, tackles, goals, behinds).
-- **`AFL.MatchFinalized`** — fired when `afl.match.data_status` transitions to `final`. Triggers AFL match result derivation and AFL ladder recalculation. (Also signals the FFL service to recalculate affected club match scores.)
+See [event-flow.md](event-flow.md).
 
 ---
 
@@ -170,26 +170,37 @@ Combining AFL Match data status and FFL ClubMatch data status determines what ca
 
 ### PlayerMatch status
 
-FFL `PlayerMatch.status` is **not derived** — it may be initialised from AFL status but takes its own values.
+Two separate status concepts apply to an FFL PlayerMatch:
 
-| Status | Meaning |
-|--------|---------|
-| `named` | Selected in the AFL team sheet. Match has not been played yet. |
-| `played` | Played in the AFL match. |
-| `dnp` | Did not play — was in the squad but did not take the field. |
+**Status => Team position** — the Team Manager's (TM) choice for this player's role. Unrelated to AFL participation status.
+
+| Value | Meaning                                        |
+|-------|------------------------------------------------|
+| `named` | Named In the team.                     |
+| `subbed` | Substituted out by the Team Manager. |
+| `interchanged` | Interchanged by the Team Manager. |
+
+**AFL Status => AFL participation** — whether the underlying AFL player took the field. Derived from AFL data; never set by TM decisions.
+
+| Value | Meaning |
+|-------|---------|
+| `playing` | Has AFL stats; AFL match not yet final. |
+| `played` | Has AFL stats; AFL match is final. |
+| `dnp` | No AFL stats once the AFL match is final — did not play. |
+| unknown | AFL match not yet imported. |
+
+Note: `dnp` cannot come from the AFL service (it has no team-selection data). The FFL infers it: once an AFL match finalises, any player with no AFL stats is marked `dnp`.
 
 ### Substitution and interchange
 
 `ClubMatch.Score()` aggregates fantasy scores with two replacement rules, applied per starter slot:
 
-1. **Substitution** — if a starter's status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one substitution.
-2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score strictly exceeds the starter's, they swap. Applies per individual starter slot within the position group.
+1. **Substitution** — if a starter's AFL participation status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one **substitution**.
+2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score exceeds the starter's, they can swap. Applies only for the position labelled as **interchange**.
 
 Constraints:
 - A bench player can only be used **once** (sub or interchange, not both).
-- Substitution is evaluated before interchange.
-- Interchange requires the bench player to **strictly outscore** the starter (ties keep the starter).
-- Where multiple players are eligible for substitution into a DNP slot, the team owner chooses which bench player fills which position.
+- The order of applying substitution and interchange is at the Team Managers discretion within the bounds of the above rules.
 
 ### Match style
 
@@ -209,63 +220,4 @@ Same structure as AFL (played, won, lost, drawn, for, against, premiership point
 
 ### Events
 
-**Subscribes:**
-- `AFL.PlayerMatchUpdated` → incremental provisional score update for the affected player and club match.
-- `AFL.MatchFinalized` → recalculate provisional/final FFL scores for all club matches in the round.
-
-**Publishes:**
-- `FFL.FantasyScoreCalculated` — carries the calculated score and the AFL PlayerMatch ID it was derived from.
-- `FFL.TeamSubmitted` — fired when `ffl.club_match.data_status → submitted`. Triggers provisional score calculation.
-- `FFL.TeamFinalized` — fired when `ffl.club_match.data_status → final`. Triggers final score calculation if AFL is also final.
-- `FFL.ClubMatchScoreFinalized` — fired when a single club's score is locked (AFL final + FFL team final). Triggers check for full match finalization.
-- `FFL.MatchFinalized` — fired when both clubs in an FFL match have finalized. Triggers `ffl.match.drv_result` derivation and ladder recalculation. Symmetric with `AFL.MatchFinalized`.
-
----
-
-## Data Calculation Flow
-
-### Mental Model
-
-Two **inputs** determine when scores and ladders can be computed:
-- **AFL Match** data status — tracks player stats completeness
-- **FFL ClubMatch** data status — tracks team submission and confirmation
-
-Everything else (PlayerMatch scores, ClubMatch scores, Match results, ClubSeason ladder standings) is **derived**. Derived fields always reflect the current best-known calculation; the data status combination tells you whether to treat the value as provisional or final.
-
-Two tiers of calculation:
-- **Provisional** — AFL Match ∈ {partial, final} AND FFL ClubMatch ∈ {submitted, final}
-- **Final** — AFL Match = final AND FFL ClubMatch = final
-
-Only final results update the official ladder (ClubSeason derived fields).
-Provisional ladder is computed on-demand from current derived scores — no dedicated event.
-
-### Event Flow
-
-The following events chain AFL and FFL score and ladder derivation. Both services react to each other's finalization events.
-
-```
-AFL.PlayerMatchUpdated
-  └─ FFL: update provisional player and club match scores
-
-AFL.MatchFinalized
-  ├─ AFL: derive match result; recalculate AFL ladder
-  └─ FFL: recalculate scores for all FFL club matches in the round
-          └─ if ffl.club_match.data_status = final → FFL.ClubMatchScoreFinalized
-
-FFL.TeamSubmitted
-  └─ FFL: recalculate provisional score for this club match
-
-FFL.TeamFinalized
-  └─ FFL: recalculate score for this club match
-          └─ if afl.match.data_status = final → FFL.ClubMatchScoreFinalized
-
-FFL.ClubMatchScoreFinalized               (fires per club, independently)
-  └─ FFL: if both clubs in the FFL match are now final → FFL.MatchFinalized
-
-FFL.MatchFinalized
-  └─ FFL: derive match result; recalculate FFL ladder
-```
-
-Ladder recalculation (both AFL and FFL): the entire season is recalculated from scratch on each trigger — simpler and drift-free given bounded season length (~22 rounds).
-
-Provisional ladder is computed on-demand from current scores — no dedicated event or separate columns.
+See [event-flow.md](event-flow.md).

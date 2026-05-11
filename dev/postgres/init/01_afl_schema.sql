@@ -38,8 +38,6 @@ CREATE TABLE IF NOT EXISTS afl.match (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     round_id INTEGER NOT NULL REFERENCES afl.round(id) ON DELETE CASCADE,
-    home_club_match_id INTEGER,
-    away_club_match_id INTEGER,
     venue VARCHAR(255),
     start_dt TIMESTAMP WITH TIME ZONE,
     data_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
@@ -82,20 +80,12 @@ CREATE TABLE IF NOT EXISTS afl.club_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     match_id INTEGER NOT NULL REFERENCES afl.match(id) ON DELETE CASCADE,
     club_season_id INTEGER NOT NULL REFERENCES afl.club_season(id) ON DELETE CASCADE,
+    side VARCHAR(50) NOT NULL,
     rushed_behinds INTEGER DEFAULT 0,
     drv_score INTEGER DEFAULT 0,
     drv_premiership_points INTEGER DEFAULT 0,
     CONSTRAINT uni_afl_club_match UNIQUE (club_season_id, match_id)
 );
-
--- Add foreign key constraints for match table references to club_match
-ALTER TABLE afl.match
-ADD CONSTRAINT fk_afl_match_home_club_match
-FOREIGN KEY (home_club_match_id) REFERENCES afl.club_match(id);
-
-ALTER TABLE afl.match
-ADD CONSTRAINT fk_afl_match_away_club_match
-FOREIGN KEY (away_club_match_id) REFERENCES afl.club_match(id);
 
 -- Create player table
 CREATE TABLE IF NOT EXISTS afl.player (
@@ -127,7 +117,6 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
     deleted_at TIMESTAMP WITH TIME ZONE,
     club_match_id INTEGER NOT NULL REFERENCES afl.club_match(id) ON DELETE CASCADE,
     player_season_id INTEGER NOT NULL REFERENCES afl.player_season(id) ON DELETE CASCADE,
-    status VARCHAR(50),
     kicks INTEGER DEFAULT 0,
     handballs INTEGER DEFAULT 0,
     marks INTEGER DEFAULT 0,
@@ -142,8 +131,7 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
 CREATE INDEX IF NOT EXISTS idx_afl_season_league_id ON afl.season(league_id);
 CREATE INDEX IF NOT EXISTS idx_afl_round_season_id ON afl.round(season_id);
 CREATE INDEX IF NOT EXISTS idx_afl_match_round_id ON afl.match(round_id);
-CREATE INDEX IF NOT EXISTS idx_afl_match_home_club_match_id ON afl.match(home_club_match_id);
-CREATE INDEX IF NOT EXISTS idx_afl_match_away_club_match_id ON afl.match(away_club_match_id);
+CREATE INDEX IF NOT EXISTS idx_afl_club_match_side ON afl.club_match(match_id, side);
 CREATE INDEX IF NOT EXISTS idx_afl_club_season_club_id ON afl.club_season(club_id);
 CREATE INDEX IF NOT EXISTS idx_afl_club_season_season_id ON afl.club_season(season_id);
 CREATE INDEX IF NOT EXISTS idx_afl_club_match_match_id ON afl.club_match(match_id);

@@ -1,8 +1,7 @@
 -- FFL test data (idempotent — safe to re-run)
 BEGIN;
 
--- Clear existing data (nullify match FKs first to break circular ref)
-UPDATE ffl.match SET home_club_match_id = NULL, away_club_match_id = NULL;
+-- Clear existing data
 DELETE FROM ffl.player_match;
 DELETE FROM ffl.player_season;
 DELETE FROM ffl.club_match;
@@ -120,17 +119,15 @@ BEGIN
         RETURNING id INTO v_match_id;
         v_match_count := v_match_count + 1;
 
-        INSERT INTO ffl.club_match (match_id, club_season_id)
-        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.home_club AND cs.season_id = v_season_id))
+        INSERT INTO ffl.club_match (match_id, club_season_id, side)
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.home_club AND cs.season_id = v_season_id), 'home')
         RETURNING id INTO v_home_cm_id;
         v_cm_count := v_cm_count + 1;
 
-        INSERT INTO ffl.club_match (match_id, club_season_id)
-        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.away_club AND cs.season_id = v_season_id))
+        INSERT INTO ffl.club_match (match_id, club_season_id, side)
+        VALUES (v_match_id, (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = rec.away_club AND cs.season_id = v_season_id), 'away')
         RETURNING id INTO v_away_cm_id;
         v_cm_count := v_cm_count + 1;
-
-        UPDATE ffl.match SET home_club_match_id = v_home_cm_id, away_club_match_id = v_away_cm_id WHERE id = v_match_id;
     END LOOP;
     RAISE NOTICE 'matches inserted: %', v_match_count;
     RAISE NOTICE 'club_matches inserted: %', v_cm_count;

@@ -66,34 +66,14 @@ func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID
 					slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 				}
 			}
-			c.inferPlayerMatchStatuses(ctx, cm.ID)
+			// Set drv_afl_status=dnp for any player_match whose drv_afl_status is still NULL
+			// (no AFL stats row exists for them → they did not play).
+			if err := c.playerMatches.SetAFLStatusDNP(ctx, cm.ID); err != nil {
+				slog.WarnContext(ctx, "set drv_afl_status dnp failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
+			}
 		}
 	}
 	return nil
-}
-
-// inferPlayerMatchStatuses sets ffl.player_match.status based on AFL link presence:
-// - linked (afl_player_match_id set) → played
-// - unlinked and named (no AFL stats found for this player) → dnp
-func (c *ScoreCommands) inferPlayerMatchStatuses(ctx context.Context, clubMatchID int) {
-	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
-	if err != nil {
-		slog.WarnContext(ctx, "load player_matches for status inference failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
-		return
-	}
-	for _, pm := range pms {
-		var newStatus domain.PlayerMatchStatus
-		if pm.AFLPlayerMatchID != nil {
-			newStatus = domain.PlayerMatchStatusPlayed
-		} else if pm.Status != nil && *pm.Status == domain.PlayerMatchStatusNamed {
-			newStatus = domain.PlayerMatchStatusDNP
-		} else {
-			continue
-		}
-		if err := c.playerMatches.UpdateStatus(ctx, pm.ID, newStatus); err != nil {
-			slog.WarnContext(ctx, "update player_match status failed", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
-		}
-	}
 }
 
 // ProcessFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and

@@ -122,7 +122,7 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *AFLPlayerM
 		PlayerSeasonID: toID(pm.PlayerSeasonID),
 		ClubMatchID:    toID(pm.ClubMatchID),
 		Player:         convertPlayer(player),
-		Status:    pm.Status,
+		Status:    domain.ComputeAFLPlayerMatchStatus(domain.MatchDataStatus(pm.MatchDataStatus)),
 		Kicks:     pm.Kicks,
 		Handballs: pm.Handballs,
 		Marks:     pm.Marks,

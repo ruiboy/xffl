@@ -10,17 +10,19 @@ import (
 )
 
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
-SELECT id, club_match_id, player_season_id, status,
-       kicks, handballs, marks, hitouts, tackles, goals, behinds
-FROM afl.player_match
-WHERE id = $1 AND deleted_at IS NULL
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
+       m.data_status
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE pm.id = $1 AND pm.deleted_at IS NULL
 `
 
 type FindPlayerMatchByIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -28,6 +30,7 @@ type FindPlayerMatchByIDRow struct {
 	Tackles        *int32
 	Goals          *int32
 	Behinds        *int32
+	DataStatus     string
 }
 
 func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayerMatchByIDRow, error) {
@@ -37,7 +40,6 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 		&i.ID,
 		&i.ClubMatchID,
 		&i.PlayerSeasonID,
-		&i.Status,
 		&i.Kicks,
 		&i.Handballs,
 		&i.Marks,
@@ -45,22 +47,25 @@ func (q *Queries) FindPlayerMatchByID(ctx context.Context, id int32) (FindPlayer
 		&i.Tackles,
 		&i.Goals,
 		&i.Behinds,
+		&i.DataStatus,
 	)
 	return i, err
 }
 
 const findPlayerMatchesByClubMatchID = `-- name: FindPlayerMatchesByClubMatchID :many
-SELECT id, club_match_id, player_season_id, status,
-       kicks, handballs, marks, hitouts, tackles, goals, behinds
-FROM afl.player_match
-WHERE club_match_id = $1 AND deleted_at IS NULL
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
+       m.data_status
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE pm.club_match_id = $1 AND pm.deleted_at IS NULL
 `
 
 type FindPlayerMatchesByClubMatchIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -68,6 +73,7 @@ type FindPlayerMatchesByClubMatchIDRow struct {
 	Tackles        *int32
 	Goals          *int32
 	Behinds        *int32
+	DataStatus     string
 }
 
 func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error) {
@@ -83,7 +89,6 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 			&i.ID,
 			&i.ClubMatchID,
 			&i.PlayerSeasonID,
-			&i.Status,
 			&i.Kicks,
 			&i.Handballs,
 			&i.Marks,
@@ -91,6 +96,7 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 			&i.Tackles,
 			&i.Goals,
 			&i.Behinds,
+			&i.DataStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -103,17 +109,19 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 }
 
 const findPlayerMatchesByIDs = `-- name: FindPlayerMatchesByIDs :many
-SELECT id, club_match_id, player_season_id, status,
-       kicks, handballs, marks, hitouts, tackles, goals, behinds
-FROM afl.player_match
-WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
+       m.data_status
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE pm.id = ANY($1::int[]) AND pm.deleted_at IS NULL
 `
 
 type FindPlayerMatchesByIDsRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -121,6 +129,7 @@ type FindPlayerMatchesByIDsRow struct {
 	Tackles        *int32
 	Goals          *int32
 	Behinds        *int32
+	DataStatus     string
 }
 
 func (q *Queries) FindPlayerMatchesByIDs(ctx context.Context, ids []int32) ([]FindPlayerMatchesByIDsRow, error) {
@@ -136,7 +145,6 @@ func (q *Queries) FindPlayerMatchesByIDs(ctx context.Context, ids []int32) ([]Fi
 			&i.ID,
 			&i.ClubMatchID,
 			&i.PlayerSeasonID,
-			&i.Status,
 			&i.Kicks,
 			&i.Handballs,
 			&i.Marks,
@@ -144,6 +152,7 @@ func (q *Queries) FindPlayerMatchesByIDs(ctx context.Context, ids []int32) ([]Fi
 			&i.Tackles,
 			&i.Goals,
 			&i.Behinds,
+			&i.DataStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -156,18 +165,20 @@ func (q *Queries) FindPlayerMatchesByIDs(ctx context.Context, ids []int32) ([]Fi
 }
 
 const findPlayerMatchesByPlayerSeasonID = `-- name: FindPlayerMatchesByPlayerSeasonID :many
-SELECT id, club_match_id, player_season_id, status,
-       kicks, handballs, marks, hitouts, tackles, goals, behinds
-FROM afl.player_match
-WHERE player_season_id = $1 AND deleted_at IS NULL
-ORDER BY id
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
+       m.data_status
+FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE pm.player_season_id = $1 AND pm.deleted_at IS NULL
+ORDER BY pm.id
 `
 
 type FindPlayerMatchesByPlayerSeasonIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -175,6 +186,7 @@ type FindPlayerMatchesByPlayerSeasonIDRow struct {
 	Tackles        *int32
 	Goals          *int32
 	Behinds        *int32
+	DataStatus     string
 }
 
 func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int32) ([]FindPlayerMatchesByPlayerSeasonIDRow, error) {
@@ -190,7 +202,6 @@ func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerS
 			&i.ID,
 			&i.ClubMatchID,
 			&i.PlayerSeasonID,
-			&i.Status,
 			&i.Kicks,
 			&i.Handballs,
 			&i.Marks,
@@ -198,6 +209,7 @@ func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerS
 			&i.Tackles,
 			&i.Goals,
 			&i.Behinds,
+			&i.DataStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -210,11 +222,12 @@ func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerS
 }
 
 const findPlayerMatchesBySeasonIDsAndRoundID = `-- name: FindPlayerMatchesBySeasonIDsAndRoundID :many
-SELECT pm.id, pm.club_match_id, pm.player_season_id, pm.status,
-       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds
+SELECT pm.id, pm.club_match_id, pm.player_season_id,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
+       m.data_status
 FROM afl.player_match pm
 JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
-JOIN afl.match m ON (m.home_club_match_id = cm.id OR m.away_club_match_id = cm.id) AND m.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.player_season_id = ANY($1::int[])
   AND m.round_id = $2
   AND pm.deleted_at IS NULL
@@ -229,7 +242,6 @@ type FindPlayerMatchesBySeasonIDsAndRoundIDRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -237,6 +249,7 @@ type FindPlayerMatchesBySeasonIDsAndRoundIDRow struct {
 	Tackles        *int32
 	Goals          *int32
 	Behinds        *int32
+	DataStatus     string
 }
 
 func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, arg FindPlayerMatchesBySeasonIDsAndRoundIDParams) ([]FindPlayerMatchesBySeasonIDsAndRoundIDRow, error) {
@@ -252,7 +265,6 @@ func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, ar
 			&i.ID,
 			&i.ClubMatchID,
 			&i.PlayerSeasonID,
-			&i.Status,
 			&i.Kicks,
 			&i.Handballs,
 			&i.Marks,
@@ -260,6 +272,7 @@ func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, ar
 			&i.Tackles,
 			&i.Goals,
 			&i.Behinds,
+			&i.DataStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -271,47 +284,26 @@ func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, ar
 	return items, nil
 }
 
-const setPlayerMatchStatusForMatch = `-- name: SetPlayerMatchStatusForMatch :exec
-UPDATE afl.player_match
-SET status = $2, updated_at = CURRENT_TIMESTAMP
-FROM afl.club_match cm
-WHERE afl.player_match.club_match_id = cm.id
-  AND cm.match_id = $1
-  AND afl.player_match.deleted_at IS NULL
-`
-
-type SetPlayerMatchStatusForMatchParams struct {
-	MatchID int32
-	Status  *string
-}
-
-func (q *Queries) SetPlayerMatchStatusForMatch(ctx context.Context, arg SetPlayerMatchStatusForMatchParams) error {
-	_, err := q.db.Exec(ctx, setPlayerMatchStatusForMatch, arg.MatchID, arg.Status)
-	return err
-}
-
 const upsertPlayerMatch = `-- name: UpsertPlayerMatch :one
-INSERT INTO afl.player_match (club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (player_season_id, club_match_id)
 DO UPDATE SET
-    status = COALESCE($3, afl.player_match.status),
-    kicks = COALESCE($4, afl.player_match.kicks),
-    handballs = COALESCE($5, afl.player_match.handballs),
-    marks = COALESCE($6, afl.player_match.marks),
-    hitouts = COALESCE($7, afl.player_match.hitouts),
-    tackles = COALESCE($8, afl.player_match.tackles),
-    goals = COALESCE($9, afl.player_match.goals),
-    behinds = COALESCE($10, afl.player_match.behinds),
+    kicks = COALESCE($3, afl.player_match.kicks),
+    handballs = COALESCE($4, afl.player_match.handballs),
+    marks = COALESCE($5, afl.player_match.marks),
+    hitouts = COALESCE($6, afl.player_match.hitouts),
+    tackles = COALESCE($7, afl.player_match.tackles),
+    goals = COALESCE($8, afl.player_match.goals),
+    behinds = COALESCE($9, afl.player_match.behinds),
     updated_at = CURRENT_TIMESTAMP
 WHERE afl.player_match.deleted_at IS NULL
-RETURNING id, club_match_id, player_season_id, status, kicks, handballs, marks, hitouts, tackles, goals, behinds
+RETURNING id, club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds
 `
 
 type UpsertPlayerMatchParams struct {
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -325,7 +317,6 @@ type UpsertPlayerMatchRow struct {
 	ID             int32
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32
@@ -339,7 +330,6 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 	row := q.db.QueryRow(ctx, upsertPlayerMatch,
 		arg.ClubMatchID,
 		arg.PlayerSeasonID,
-		arg.Status,
 		arg.Kicks,
 		arg.Handballs,
 		arg.Marks,
@@ -353,7 +343,6 @@ func (q *Queries) UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchPa
 		&i.ID,
 		&i.ClubMatchID,
 		&i.PlayerSeasonID,
-		&i.Status,
 		&i.Kicks,
 		&i.Handballs,
 		&i.Marks,

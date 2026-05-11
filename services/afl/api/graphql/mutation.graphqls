@@ -24,7 +24,6 @@ input AddAFLPlayerSeasonInput {
 input UpdateAFLPlayerMatchInput {
   playerSeasonId: ID!
   clubMatchId: ID!
-  status: String
   kicks: Int
   handballs: Int
   marks: Int

@@ -23,6 +23,7 @@ type FflClubMatch struct {
 	DeletedAt            pgtype.Timestamptz
 	MatchID              int32
 	ClubSeasonID         int32
+	Side                 string
 	DataStatus           string
 	DrvScore             *int32
 	DrvPremiershipPoints *int32
@@ -54,18 +55,15 @@ type FflLeague struct {
 }
 
 type FflMatch struct {
-	ID              int32
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-	DeletedAt       pgtype.Timestamptz
-	RoundID         int32
-	MatchStyle      *string
-	HomeClubMatchID *int32
-	AwayClubMatchID *int32
-	Clubs           []byte
-	Venue           *string
-	StartDt         pgtype.Timestamptz
-	DrvResult       *string
+	ID         int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	DeletedAt  pgtype.Timestamptz
+	RoundID    int32
+	MatchStyle *string
+	Venue      *string
+	StartDt    pgtype.Timestamptz
+	DrvResult  *string
 }
 
 type FflPlayer struct {
@@ -100,7 +98,7 @@ type FflPlayerSeason struct {
 	ClubSeasonID      int32
 	FromRoundID       *int32
 	ToRoundID         *int32
-	AflPlayerSeasonID *int32
+	AflPlayerSeasonID int32
 	Notes             *string
 	CostCents         *int32
 }
@@ -112,7 +110,7 @@ type FflRound struct {
 	DeletedAt  pgtype.Timestamptz
 	SeasonID   int32
 	Name       string
-	AflRoundID *int32
+	AflRoundID int32
 }
 
 type FflSeason struct {
@@ -122,5 +120,5 @@ type FflSeason struct {
 	DeletedAt   pgtype.Timestamptz
 	LeagueID    int32
 	Name        string
-	AflSeasonID *int32
+	AflSeasonID int32
 }

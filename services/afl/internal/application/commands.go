@@ -26,11 +26,12 @@ type TxManager interface {
 // Commands handles all write operations for the AFL service.
 type Commands struct {
 	tx         TxManager
+	matches    domain.MatchRepository
 	dispatcher sharedevents.Dispatcher
 }
 
-func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher) *Commands {
-	return &Commands{tx: tx, dispatcher: dispatcher}
+func NewCommands(tx TxManager, matches domain.MatchRepository, dispatcher sharedevents.Dispatcher) *Commands {
+	return &Commands{tx: tx, matches: matches, dispatcher: dispatcher}
 }
 
 // UpdatePlayerMatch upserts a player match and recalculates the club match score
@@ -38,6 +39,7 @@ func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher) *Commands {
 func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	var result domain.PlayerMatch
 	var roundID int
+	var matchID int
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		pm, err := repos.PlayerMatches.Upsert(ctx, params)
 		if err != nil {
@@ -54,6 +56,7 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 			return err
 		}
 
+		matchID = clubMatch.MatchID
 		roundID, err = repos.ClubMatches.FindRoundID(ctx, params.ClubMatchID)
 		if err != nil {
 			return err
@@ -66,12 +69,17 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		return result, err
 	}
 
+	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
+	if match, err := c.matches.FindByID(ctx, matchID); err == nil {
+		aflStatus = domain.ComputeAFLPlayerMatchStatus(match.DataStatus)
+	}
+
 	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
 		PlayerMatchID:  result.ID,
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         result.Status,
+		Status:         aflStatus,
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,

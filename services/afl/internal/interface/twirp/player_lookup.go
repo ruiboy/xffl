@@ -82,7 +82,7 @@ func toProtoStats(pms []domain.PlayerMatch) []*aflv1.PlayerMatchStats {
 	for i, pm := range pms {
 		stats[i] = &aflv1.PlayerMatchStats{
 			Id:             int32(pm.ID),
-			Status:         pm.Status,
+			Status:         domain.ComputeAFLPlayerMatchStatus(domain.MatchDataStatus(pm.MatchDataStatus)),
 			Goals:          int32(pm.Goals),
 			Kicks:          int32(pm.Kicks),
 			Handballs:      int32(pm.Handballs),

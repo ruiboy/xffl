@@ -53,7 +53,7 @@ just restore-db      # Restore latest backup into dev DB (pass file= to specify 
 
 **Before architecture changes:**
 - `ai/decisions/decisions.md` — ADR index with summary table
-- `ai/architecture/domain.md`, `ai/architecture/service-map.md`
+- `ai/architecture/domain.md`
 
 **Before adding an integration (external data source):**
 - `ai/architecture/integrations.md` — ACL pattern, outbound ports, secondary adapters, cache policy

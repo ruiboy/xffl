@@ -1407,13 +1407,26 @@ input FFLPlayerSeasonFilter {
   active: Boolean
 }
 
+enum FFLPlayerMatchStatus {
+  named
+  subbed
+  interchanged
+}
+
+enum FFLAFLPlayerMatchStatus {
+  playing
+  played
+  dnp
+}
+
 type FFLPlayerMatch {
   id: ID!
   playerSeasonId: ID!
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
-  status: String
+  status: FFLPlayerMatchStatus
+  aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
   score: Int!
@@ -2585,6 +2598,8 @@ func (ec *executionContext) fieldContext_FFLClubMatch_playerMatches(_ context.Co
 				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
 			case "status":
 				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
 			case "backupPositions":
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
@@ -3498,6 +3513,35 @@ func (ec *executionContext) fieldContext_FFLPlayerMatch_status(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPlayerMatch_aflStatus(ctx context.Context, field graphql.CollectedField, obj *FFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPlayerMatch_aflStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.AflStatus, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPlayerMatch_aflStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPlayerMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type FFLAFLPlayerMatchStatus does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4604,6 +4648,8 @@ func (ec *executionContext) fieldContext_Mutation_calculateFFLFantasyScore(ctx c
 				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
 			case "status":
 				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
 			case "backupPositions":
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
@@ -4669,6 +4715,8 @@ func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context
 				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
 			case "status":
 				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
 			case "backupPositions":
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
@@ -4781,6 +4829,8 @@ func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx c
 				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
 			case "status":
 				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
 			case "backupPositions":
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
@@ -9063,6 +9113,8 @@ func (ec *executionContext) _FFLPlayerMatch(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._FFLPlayerMatch_position(ctx, field, obj)
 		case "status":
 			out.Values[i] = ec._FFLPlayerMatch_status(ctx, field, obj)
+		case "aflStatus":
+			out.Values[i] = ec._FFLPlayerMatch_aflStatus(ctx, field, obj)
 		case "backupPositions":
 			out.Values[i] = ec._FFLPlayerMatch_backupPositions(ctx, field, obj)
 		case "interchangePosition":

@@ -36,18 +36,20 @@ type Querier interface {
 	FindPlayerMatchByPlayerSeasonAndRound(ctx context.Context, arg FindPlayerMatchByPlayerSeasonAndRoundParams) (FindPlayerMatchByPlayerSeasonAndRoundRow, error)
 	FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) ([]FindPlayerMatchesByClubMatchIDRow, error)
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
-	FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID *int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error)
+	FindPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int32) ([]FindPlayerSeasonsByAFLPlayerSeasonIDRow, error)
 	FindPlayerSeasonsByClubSeasonID(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDRow, error)
 	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
-	FindRoundByAFLRoundID(ctx context.Context, aflRoundID *int32) (FindRoundByAFLRoundIDRow, error)
+	FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
+	SetDrvAFLStatusDNPForClubMatch(ctx context.Context, clubMatchID int32) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
+	UpdateDrvAFLStatus(ctx context.Context, arg UpdateDrvAFLStatusParams) error
 	UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error
 	UpdateFflMatchResult(ctx context.Context, arg UpdateFflMatchResultParams) error
 	UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error

@@ -170,9 +170,8 @@ type UnmatchedAFLPlayer struct {
 }
 
 type UpdateAFLPlayerMatchInput struct {
-	PlayerSeasonID string  `json:"playerSeasonId"`
-	ClubMatchID    string  `json:"clubMatchId"`
-	Status         *string `json:"status,omitempty"`
+	PlayerSeasonID string `json:"playerSeasonId"`
+	ClubMatchID    string `json:"clubMatchId"`
 	Kicks          *int    `json:"kicks,omitempty"`
 	Handballs      *int    `json:"handballs,omitempty"`
 	Marks          *int    `json:"marks,omitempty"`

@@ -215,14 +215,12 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 					psID = matches[0].Candidate.PlayerSeasonID
 				}
 
-				status := "named"
 				kicks, handballs, marks, hitouts, tackles, goals, behinds :=
 					ps.Kicks, ps.Handballs, ps.Marks, ps.Hitouts, ps.Tackles, ps.Goals, ps.Behinds
 
 				pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 					ClubMatchID:    w.cm.ID,
 					PlayerSeasonID: psID,
-					Status:         &status,
 					Kicks:          &kicks,
 					Handballs:      &handballs,
 					Marks:          &marks,
@@ -276,14 +274,15 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		slog.WarnContext(ctx, "failed to update match data status", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
-	// Fire PlayerMatchUpdated events.
+	// Fire PlayerMatchUpdated events. Import always sets partial, so status is always "playing".
+	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
 	for _, pm := range allWritten {
 		payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
 			PlayerMatchID:  pm.ID,
 			PlayerSeasonID: pm.PlayerSeasonID,
 			ClubMatchID:    pm.ClubMatchID,
 			RoundID:        roundID,
-			Status:         pm.Status,
+			Status:         aflStatus,
 			Kicks:          pm.Kicks,
 			Handballs:      pm.Handballs,
 			Marks:          pm.Marks,
@@ -326,11 +325,6 @@ func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, 
 
 	if !final {
 		return match, nil
-	}
-
-	// Transition all player_match records for this match from "named" to "played".
-	if err := c.playerMatches.SetStatusForMatchID(ctx, matchID, "played"); err != nil {
-		slog.WarnContext(ctx, "bulk update player_match status failed", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
 	// dispatch integration event
@@ -439,12 +433,11 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 
 	var result domain.PlayerMatch
 	var roundID int
-	namedStatus := "named"
+	var matchID int
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		pm, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 			ClubMatchID:    params.ClubMatchID,
 			PlayerSeasonID: params.PlayerSeasonID,
-			Status:         &namedStatus,
 			Kicks:          &params.Kicks,
 			Handballs:      &params.Handballs,
 			Marks:          &params.Marks,
@@ -466,6 +459,7 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		if err != nil {
 			return err
 		}
+		matchID = clubMatch.MatchID
 		roundID, err = repos.ClubMatches.FindRoundID(ctx, params.ClubMatchID)
 		if err != nil {
 			return err
@@ -477,12 +471,18 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		return domain.PlayerMatch{}, err
 	}
 
+	// Compute AFL status from current match data_status (outside tx — read-only).
+	aflStatus := domain.ComputeAFLPlayerMatchStatus(domain.MatchDataPartial)
+	if match, err := c.matches.FindByID(ctx, matchID); err == nil {
+		aflStatus = domain.ComputeAFLPlayerMatchStatus(match.DataStatus)
+	}
+
 	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
 		PlayerMatchID:  result.ID,
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         result.Status,
+		Status:         aflStatus,
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,
