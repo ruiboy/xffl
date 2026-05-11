@@ -14,6 +14,7 @@ const props = defineProps<{ status: string | null }>()
 
 const label = computed(() => {
   switch (props.status) {
+    case 'playing': return 'Playing'
     case 'played': return 'Played'
     case 'dnp': return 'DNP'
     case 'named': return 'Named'
@@ -23,6 +24,7 @@ const label = computed(() => {
 
 const statusClass = computed(() => {
   switch (props.status) {
+    case 'playing': return 'bg-blue-500/15 text-blue-400'
     case 'played': return 'bg-green-500/15 text-green-500'
     case 'dnp': return 'bg-red-500/15 text-red-500'
     case 'named': return 'bg-yellow-500/15 text-yellow-500'

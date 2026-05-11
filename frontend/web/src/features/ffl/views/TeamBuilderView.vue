@@ -401,6 +401,7 @@ interface SquadPlayer {
   name: string
   club: string | null
   status: string | null
+  aflStatus: string | null
   score: number | null
   aflMatchId: string | null
   toRoundId: string | null
@@ -524,12 +525,13 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { score: number | null; club: string | null; status: string | null; aflMatchId: string | null }>()
+  const map = new Map<string, { score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       score: pm.score ?? null,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null,
       status: pm.status ?? null,
+      aflStatus: pm.aflStatus ?? null,
       aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
     })
   }
@@ -550,6 +552,7 @@ const squad = computed<SquadPlayer[]>(() => {
       name: r.player.aflPlayer.name,
       club: pm?.club ?? r.aflPlayerSeason?.clubSeason?.club?.name ?? null,
       status: pm?.status ?? null,
+      aflStatus: pm?.aflStatus ?? null,
       score: pm?.score ?? null,
       aflMatchId: pm?.aflMatchId ?? null,
       toRoundId: r.toRoundId ?? null,
@@ -557,14 +560,14 @@ const squad = computed<SquadPlayer[]>(() => {
   })
 })
 
-function playerStatus(player: SquadPlayer): 'played' | 'dnp' | 'named' {
-  const s = player.status
-  if (s === 'played' || s === 'dnp' || s === 'named') return s
+function playerStatus(player: SquadPlayer): 'playing' | 'played' | 'dnp' | 'named' {
+  const s = player.aflStatus
+  if (s === 'playing' || s === 'played' || s === 'dnp') return s
   return 'named'
 }
 
 function playerShowScore(player: SquadPlayer): boolean {
-  return player.status === 'played'
+  return player.aflStatus === 'played' || player.aflStatus === 'playing'
 }
 
 function playerAflMatchRoute(player: SquadPlayer): { name: string; params: { matchId: string } } | null {
@@ -634,6 +637,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       name: pm.player.aflPlayer.name,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? squadEntry?.club ?? null,
       status: pm.status ?? null,
+      aflStatus: pm.aflStatus ?? null,
       score: pm.score ?? null,
       aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
       toRoundId: squadEntry?.toRoundId ?? null,

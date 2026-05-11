@@ -201,6 +201,14 @@ input ConfirmFFLTeamSubmissionInput
   players: [ConfirmedFFLPlayerInput!]!
 }
 
+enum FFLAFLPlayerMatchStatus
+  @join__type(graph: FFL)
+{
+  playing @join__enumValue(graph: FFL)
+  played @join__enumValue(graph: FFL)
+  dnp @join__enumValue(graph: FFL)
+}
+
 type FFLClub
   @join__type(graph: FFL)
 {
@@ -265,12 +273,21 @@ type FFLPlayerMatch
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
   position: String
-  status: String
+  status: FFLPlayerMatchStatus
+  aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch
+}
+
+enum FFLPlayerMatchStatus
+  @join__type(graph: FFL)
+{
+  named @join__enumValue(graph: FFL)
+  subbed @join__enumValue(graph: FFL)
+  interchanged @join__enumValue(graph: FFL)
 }
 
 type FFLPlayerSeason
@@ -524,7 +541,6 @@ input UpdateAFLPlayerMatchInput
 {
   playerSeasonId: ID!
   clubMatchId: ID!
-  status: String
   kicks: Int
   handballs: Int
   marks: Int

@@ -25,7 +25,7 @@
               <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
-            <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
+            <td class="py-2 px-2"><StatusBadge :status="pmAFLStatus(pm)" /></td>
             <td class="py-2 px-2 text-right tabular-nums font-semibold">
               {{ pmShowScore(pm) ? pm.score : '' }}
             </td>
@@ -46,7 +46,7 @@
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2">
-              <StatusBadge :status="pmStatus(pm)" />
+              <StatusBadge :status="pmAFLStatus(pm)" />
               <span v-if="isSubActivated(pm)" class="text-xs text-green-500" title="Substitution activated">SUB</span>
               <span v-else-if="isInterchangeActivated(pm)" class="text-xs text-blue-500" title="Interchange activated">INT</span>
             </td>
@@ -76,6 +76,7 @@ interface PlayerMatch {
   player: { aflPlayer: { name: string } }
   position: string | null
   status: string | null
+  aflStatus: string | null
   backupPositions: string | null
   interchangePosition: string | null
   score: number
@@ -111,14 +112,14 @@ function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
 }
 
-function pmStatus(pm: PlayerMatch): 'played' | 'dnp' | 'named' {
-  const s = pm.status
-  if (s === 'played' || s === 'dnp' || s === 'named') return s
+function pmAFLStatus(pm: PlayerMatch): 'playing' | 'played' | 'dnp' | 'named' {
+  const s = pm.aflStatus
+  if (s === 'playing' || s === 'played' || s === 'dnp') return s
   return 'named'
 }
 
 function pmShowScore(pm: PlayerMatch): boolean {
-  return pm.status === 'played'
+  return pm.aflStatus === 'played' || pm.aflStatus === 'playing'
 }
 
 const starterGroups = computed(() => {
@@ -138,14 +139,14 @@ const starterGroups = computed(() => {
 })
 
 const isSubActivated = (pm: PlayerMatch) => {
-  if (!pm.backupPositions || pmStatus(pm) !== 'played') return false
+  if (!pm.backupPositions || !pmShowScore(pm)) return false
   const backupPos = pm.backupPositions.split(',').map(p => p.trim())
-  return starters.value.some(s => pmStatus(s) === 'dnp' && backupPos.includes(s.position ?? ''))
+  return starters.value.some(s => pmAFLStatus(s) === 'dnp' && backupPos.includes(s.position ?? ''))
 }
 
 const isInterchangeActivated = (pm: PlayerMatch) => {
-  if (!pm.interchangePosition || pmStatus(pm) !== 'played') return false
-  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmStatus(s) === 'played')
+  if (!pm.interchangePosition || !pmShowScore(pm)) return false
+  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmShowScore(s))
   return starter != null && pm.score > starter.score
 }
 
