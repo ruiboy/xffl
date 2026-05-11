@@ -107,58 +107,7 @@
           </div>
         </div>
 
-        <!-- Subs mode panel -->
-        <div v-if="subsMode" class="mb-6">
-          <div v-if="dnpStarters.length === 0 && !interchangeBenchPlayer" class="text-sm text-text-faint">
-            No DNP players and no interchange player — nothing to declare.
-          </div>
-          <template v-else>
-            <!-- Substitutions -->
-            <div v-if="dnpStarters.length > 0" class="mb-6">
-              <h3 class="text-sm font-semibold text-text-faint mb-3">Substitutions</h3>
-              <div class="space-y-2">
-                <label
-                  v-for="pm in dnpStarters"
-                  :key="pm.id"
-                  class="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-pointer hover:bg-surface-hover transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="subbedOutIds.has(pm.id)"
-                    @change="toggleSub(pm.id)"
-                    class="w-4 h-4 accent-active"
-                  />
-                  <span class="font-medium text-sm">{{ pm.player.aflPlayer.name }}</span>
-                  <span class="text-xs text-text-muted ml-auto">{{ pm.position }} · DNP</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Interchange -->
-            <div v-if="interchangeBenchPlayer">
-              <h3 class="text-sm font-semibold text-text-faint mb-3">Interchange</h3>
-              <label class="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-pointer hover:bg-surface-hover transition-colors">
-                <input
-                  type="checkbox"
-                  v-model="interchangeApplied"
-                  class="w-4 h-4 accent-active"
-                />
-                <span class="font-medium text-sm">{{ interchangeBenchPlayer.player.aflPlayer.name }}</span>
-                <span class="text-xs font-medium tabular-nums">{{ interchangeBenchPlayer.score }} pts</span>
-                <span class="text-xs text-text-muted">→ {{ interchangeBenchPlayer.interchangePosition }}</span>
-                <span
-                  v-if="interchangeTargetStarter"
-                  class="text-xs ml-auto"
-                  :class="interchangeBeneficial ? 'text-green-500' : 'text-text-faint'"
-                >
-                  {{ interchangeBeneficial ? '+' : '' }}{{ interchangeBenchPlayer.score - interchangeTargetStarter.score }} vs {{ interchangeTargetStarter.player?.aflPlayer?.name }}
-                </span>
-              </label>
-            </div>
-          </template>
-        </div>
-
-        <div v-else class="grid gap-8" :class="managing ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'">
+        <div class="grid gap-8" :class="managing ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'">
           <!-- Team (left col) -->
           <div>
 
@@ -175,7 +124,7 @@
                   :key="index"
                   class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
                   :class="slot.player
-                    ? 'border-border bg-surface-raised'
+                    ? (subsMode && slot.player.aflStatus === 'dnp' ? 'border-amber-600/30 bg-amber-500/5' : 'border-border bg-surface-raised')
                     : 'border-dashed border-border-subtle bg-surface'"
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
@@ -217,7 +166,14 @@
                       <IconBin class="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div v-else-if="slot.player" class="flex items-center shrink-0 w-44">
+                  <div v-else-if="slot.player" class="flex items-center gap-2 shrink-0">
+                    <input
+                      v-if="subsMode && slot.player.aflStatus === 'dnp'"
+                      type="checkbox"
+                      :checked="subbedOutIds.has(slot.player.pmId ?? '')"
+                      @change="toggleSub(slot.player.pmId ?? '')"
+                      class="w-4 h-4 accent-active cursor-pointer"
+                    />
                     <span class="w-16 shrink-0">
                       <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
@@ -291,11 +247,17 @@
                       </button>
                     </template>
                     <template v-else-if="slot.player">
-                      <div class="flex items-center w-44 shrink-0">
+                      <div class="flex items-center gap-2 shrink-0">
+                        <input
+                          v-if="subsMode && isInterchangeSlot(slot)"
+                          type="checkbox"
+                          v-model="interchangeApplied"
+                          class="w-4 h-4 accent-active cursor-pointer"
+                        />
                         <span class="w-16 shrink-0">
                           <StatusBadge :status="playerStatus(slot.player)" />
                         </span>
-                        <div class="flex items-center gap-1 flex-1 justify-end">
+                        <div class="flex items-center gap-1 justify-end">
                           <template v-if="slot.positions[0]">
                             <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
                               {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
@@ -480,6 +442,7 @@ interface SquadPlayer {
   score: number | null
   aflMatchId: string | null
   toRoundId: string | null
+  pmId: string | null
 }
 
 interface Slot {
@@ -601,9 +564,10 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null }>()
+  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
+      pmId: pm.id,
       score: pm.score ?? null,
       club: pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null,
       status: pm.status ?? null,
@@ -632,6 +596,7 @@ const squad = computed<SquadPlayer[]>(() => {
       score: pm?.score ?? null,
       aflMatchId: pm?.aflMatchId ?? null,
       toRoundId: r.toRoundId ?? null,
+      pmId: pm?.pmId ?? null,
     }
   })
 })
@@ -717,6 +682,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       score: pm.score ?? null,
       aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
       toRoundId: squadEntry?.toRoundId ?? null,
+      pmId: pm.id,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
@@ -902,14 +868,6 @@ const aflMatchStarted = computed(() => {
   )
 })
 
-// DNP starters that could potentially be subbed out.
-const dnpStarters = computed(() => {
-  const pms = clubMatch.value?.playerMatches ?? []
-  return pms.filter((pm: { backupPositions: string | null; interchangePosition: string | null; aflStatus: string | null }) =>
-    pm.backupPositions == null && pm.interchangePosition == null && pm.aflStatus === 'dnp'
-  )
-})
-
 // Bench player with InterchangePosition set (at most one per team).
 const interchangeBenchPlayer = computed(() => {
   const pms = clubMatch.value?.playerMatches ?? []
@@ -956,6 +914,11 @@ function initSubsState() {
   if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed' || pm.status === 'interchanged')) {
     interchangeApplied.value = interchangeBeneficial.value
   }
+}
+
+function isInterchangeSlot(slot: BenchDualSlot): boolean {
+  if (!interchangePosition.value) return false
+  return slot.positions[0] === interchangePosition.value || slot.positions[1] === interchangePosition.value
 }
 
 function enterSubsMode() {
