@@ -17,17 +17,11 @@ select fr.name as round,
        ap.name as afl_player,
        ac.name as afl_club,
        fpm.position,
-       am.data_status as afl_match_status,
-       apm.status as afl_pm_status,
-       fpm.status as ffl_pm_status,
-       fpm.drv_score,
-       apm.kicks,
-       apm.handballs,
-       apm.marks,
-       apm.goals,
-       apm.behinds,
-       apm.hitouts,
-       apm.tackles
+       am.data_status as afl_match_st,
+       (fpm.afl_player_match_id is not null) as pm_afl_linked,
+       fpm.status as pm_ffl_st,
+       fpm.drv_afl_status as pm_afl_st,
+       fpm.drv_score
 from ffl.round fr
          join ffl.match fm on fm.round_id = fr.id
          join ffl.club_match fcm on fcm.match_id = fm.id
@@ -47,11 +41,12 @@ from ffl.round fr
          left join afl.player_match apm
                    on apm.club_match_id = acm.id
                        and apm.player_season_id = aps.id
-where fr.name = 'Round 4'
+where fr.name = 'Round 9'
   and fc.name = 'Ruiboys'
 order by fc.name, fpm.position, ap.name;
 
 -- reset player match status
+BEGIN;
 UPDATE ffl.player_match
 SET status = 'named', drv_score = null
   WHERE id IN (
@@ -65,3 +60,4 @@ SET status = 'named', drv_score = null
       WHERE fr.name = 'Round 4'
         AND fc.name = 'Ruiboys'
   );
+ROLLBACK;

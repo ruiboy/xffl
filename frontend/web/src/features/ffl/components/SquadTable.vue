@@ -76,6 +76,7 @@ interface PlayerMatch {
   player: { aflPlayer: { name: string } }
   position: string | null
   status: string | null
+  aflStatus: string | null
   backupPositions: string | null
   interchangePosition: string | null
   score: number
@@ -111,14 +112,14 @@ function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
 }
 
-function pmStatus(pm: PlayerMatch): 'played' | 'dnp' | 'named' {
-  const s = pm.status
-  if (s === 'played' || s === 'dnp' || s === 'named') return s
-  return 'named'
+function pmStatus(pm: PlayerMatch): string | null {
+  if (pm.status === 'subbed') return 'subbed'
+  if (pm.status === 'interchanged') return 'interchanged'
+  return pm.aflStatus
 }
 
 function pmShowScore(pm: PlayerMatch): boolean {
-  return pm.status === 'played'
+  return pm.aflStatus === 'played' || pm.aflStatus === 'playing'
 }
 
 const starterGroups = computed(() => {
@@ -138,14 +139,14 @@ const starterGroups = computed(() => {
 })
 
 const isSubActivated = (pm: PlayerMatch) => {
-  if (!pm.backupPositions || pmStatus(pm) !== 'played') return false
+  if (!pm.backupPositions || !pmShowScore(pm)) return false
   const backupPos = pm.backupPositions.split(',').map(p => p.trim())
-  return starters.value.some(s => pmStatus(s) === 'dnp' && backupPos.includes(s.position ?? ''))
+  return starters.value.some(s => s.aflStatus === 'dnp' && backupPos.includes(s.position ?? ''))
 }
 
 const isInterchangeActivated = (pm: PlayerMatch) => {
-  if (!pm.interchangePosition || pmStatus(pm) !== 'played') return false
-  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmStatus(s) === 'played')
+  if (!pm.interchangePosition || !pmShowScore(pm)) return false
+  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmShowScore(s))
   return starter != null && pm.score > starter.score
 }
 

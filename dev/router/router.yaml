@@ -2,6 +2,9 @@ supergraph:
   listen: 0.0.0.0:4000
   path: /query
 
+include_subgraph_errors:
+  all: true
+
 # Override subgraph URLs for local dev (Docker → host networking).
 # In Docker, host.docker.internal resolves to the host machine.
 override_subgraph_url:

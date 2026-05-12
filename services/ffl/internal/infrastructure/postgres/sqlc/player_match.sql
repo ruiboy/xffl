@@ -44,7 +44,7 @@ WHERE id = $1 AND deleted_at IS NULL;
 -- name: SetDrvAFLStatusDNPForClubMatch :exec
 UPDATE ffl.player_match
 SET drv_afl_status = 'dnp', updated_at = CURRENT_TIMESTAMP
-WHERE club_match_id = $1 AND drv_afl_status IS NULL AND deleted_at IS NULL;
+WHERE club_match_id = $1 AND (drv_afl_status IS NULL OR drv_afl_status = 'named') AND deleted_at IS NULL;
 
 -- name: UpsertPlayerMatch :one
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, drv_score)

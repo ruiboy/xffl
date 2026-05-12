@@ -200,8 +200,249 @@ func TestClubMatch_Score_MultipleStartersPerPosition(t *testing.T) {
 	}
 }
 
+func pmStatus(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
+
+func TestClubMatch_Score_TM_Substitution(t *testing.T) {
+	tests := []struct {
+		name string
+		cm   ClubMatch
+		want int
+	}{
+		{
+			"subbed starter covered by bench player",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusSubbed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+				{Position: pos(PositionKicks), Score: 10},
+				{Score: 12, BackupPositions: strPtr("goals,marks")},
+			}},
+			22,
+		},
+		{
+			"named DNP starter not covered in TM mode",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusNamed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+				{Position: pos(PositionKicks), Status: pmStatus(PlayerMatchStatusSubbed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+				{Score: 12, BackupPositions: strPtr("goals,kicks")},
+			}},
+			12, // bench covers kicks (subbed), goals (named DNP) left at 0
+		},
+		{
+			"subbed starter with no eligible bench scores zero",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusSubbed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+				{Position: pos(PositionKicks), Score: 10},
+			}},
+			10,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.cm.Score())
+		})
+	}
+}
+
+func TestClubMatch_Score_TM_Interchange(t *testing.T) {
+	tests := []struct {
+		name string
+		cm   ClubMatch
+		want int
+	}{
+		{
+			"interchanged starter replaced by interchange bench player",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionKicks), Status: pmStatus(PlayerMatchStatusInterchange), Score: 5},
+				{Position: pos(PositionGoals), Score: 10},
+				{Score: 15, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
+			}},
+			25, // bench (15) replaces interchanged kicks (5); goals (10) stays
+		},
+		{
+			"named starter not replaced even though interchange bench exists",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionKicks), Status: pmStatus(PlayerMatchStatusNamed), Score: 20},
+				{Score: 15, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")},
+			}},
+			20, // no starter marked interchanged → interchange bench not used
+		},
+		{
+			"interchange bench not used as sub when interchanged starter present",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionKicks), Status: pmStatus(PlayerMatchStatusInterchange), Score: 5},
+				{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusSubbed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+				// bench player covers both kicks (interchange) and goals (sub), but is consumed by interchange
+				{Score: 15, BackupPositions: strPtr("kicks,goals"), InterchangePosition: strPtr("kicks")},
+			}},
+			15, // bench used for kicks interchange; goals sub has no bench → 0
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.cm.Score())
+		})
+	}
+}
+
+func TestClubMatch_Score_TM_SubAndInterchange(t *testing.T) {
+	cm := ClubMatch{PlayerMatches: []PlayerMatch{
+		{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusSubbed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+		{Position: pos(PositionKicks), Status: pmStatus(PlayerMatchStatusInterchange), Score: 5},
+		{Score: 12, BackupPositions: strPtr("goals,marks")},                                // sub bench
+		{Score: 18, BackupPositions: strPtr("kicks,handballs"), InterchangePosition: strPtr("kicks")}, // interchange bench
+	}}
+	assert.Equal(t, 30, cm.Score()) // 12 (sub for goals) + 18 (interchange for kicks)
+}
+
+func TestClubMatch_Score_AutoModeUnchangedWhenAllNamed(t *testing.T) {
+	// Auto mode: DNP starter still gets auto-subbed even though status is named
+	cm := ClubMatch{PlayerMatches: []PlayerMatch{
+		{Position: pos(PositionGoals), Status: pmStatus(PlayerMatchStatusNamed), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+		{Score: 12, BackupPositions: strPtr("goals,marks")},
+	}}
+	assert.Equal(t, 12, cm.Score()) // auto mode applies sub
+}
+
 func strPtr(s string) *string { return &s }
 func bpPtr(s string) *string  { return &s }
+func icPtr(s string) *string  { return &s }
+
+func TestClubMatch_DeclareSubs_Validation(t *testing.T) {
+	t.Run("error when club match is final", func(t *testing.T) {
+		cm := ClubMatch{DataStatus: ClubMatchDataFinal}
+		_, err := cm.DeclareSubs(nil, false)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "final")
+	})
+
+	t.Run("error when subbedOut ID is a bench player", func(t *testing.T) {
+		cm := ClubMatch{
+			PlayerMatches: []PlayerMatch{
+				{ID: 1, Score: 5, BackupPositions: strPtr("goals,kicks")},
+			},
+		}
+		_, err := cm.DeclareSubs([]int{1}, false)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "bench player")
+	})
+
+	t.Run("error when subbedOut starter is not DNP", func(t *testing.T) {
+		cm := ClubMatch{
+			PlayerMatches: []PlayerMatch{
+				{ID: 1, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusPlayed), Score: 10},
+			},
+		}
+		_, err := cm.DeclareSubs([]int{1}, false)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "not DNP")
+	})
+
+	t.Run("error when subbedOut starter has nil AFL status", func(t *testing.T) {
+		cm := ClubMatch{
+			PlayerMatches: []PlayerMatch{
+				{ID: 1, Position: pos(PositionGoals), AFLStatus: nil, Score: 0},
+			},
+		}
+		_, err := cm.DeclareSubs([]int{1}, false)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "not DNP")
+	})
+}
+
+func TestClubMatch_DeclareSubs_SubstitutionOnly(t *testing.T) {
+	cm := ClubMatch{
+		PlayerMatches: []PlayerMatch{
+			{ID: 1, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+			{ID: 2, Position: pos(PositionKicks), AFLStatus: aflSts(AFLStatusPlayed), Score: 10},
+			{ID: 3, Score: 8, BackupPositions: strPtr("goals,kicks")},
+		},
+	}
+	updated, err := cm.DeclareSubs([]int{1}, false)
+	require.NoError(t, err)
+	byID := make(map[int]PlayerMatch)
+	for _, pm := range updated {
+		byID[pm.ID] = pm
+	}
+	assert.Equal(t, PlayerMatchStatusSubbed, *byID[1].Status)
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[2].Status)
+	assert.Nil(t, byID[3].Status) // bench unchanged
+}
+
+func TestClubMatch_DeclareSubs_InterchangePicksLowestScorer(t *testing.T) {
+	ic := "kicks"
+	cm := ClubMatch{
+		PlayerMatches: []PlayerMatch{
+			{ID: 1, Position: pos(PositionKicks), AFLStatus: aflSts(AFLStatusPlayed), Score: 15},
+			{ID: 2, Position: pos(PositionKicks), AFLStatus: aflSts(AFLStatusPlayed), Score: 5},
+			{ID: 3, Score: 20, BackupPositions: strPtr("kicks,marks"), InterchangePosition: icPtr(ic)},
+		},
+	}
+	updated, err := cm.DeclareSubs(nil, true)
+	require.NoError(t, err)
+	byID := make(map[int]PlayerMatch)
+	for _, pm := range updated {
+		byID[pm.ID] = pm
+	}
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[1].Status)
+	assert.Equal(t, PlayerMatchStatusInterchange, *byID[2].Status) // lowest scorer
+	assert.Nil(t, byID[3].Status)
+}
+
+func TestClubMatch_DeclareSubs_InterchangeSkipsSubbedStarters(t *testing.T) {
+	ic := "goals"
+	cm := ClubMatch{
+		PlayerMatches: []PlayerMatch{
+			{ID: 1, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0},
+			{ID: 2, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusPlayed), Score: 8},
+			{ID: 3, Score: 20, BackupPositions: strPtr("goals,kicks"), InterchangePosition: icPtr(ic)},
+		},
+	}
+	updated, err := cm.DeclareSubs([]int{1}, true)
+	require.NoError(t, err)
+	byID := make(map[int]PlayerMatch)
+	for _, pm := range updated {
+		byID[pm.ID] = pm
+	}
+	assert.Equal(t, PlayerMatchStatusSubbed, *byID[1].Status)
+	assert.Equal(t, PlayerMatchStatusInterchange, *byID[2].Status) // 1 is subbed, so 2 is lowest eligible
+	assert.Nil(t, byID[3].Status)
+}
+
+func TestClubMatch_DeclareSubs_NoInterchangePlayerMeansNoInterchange(t *testing.T) {
+	cm := ClubMatch{
+		PlayerMatches: []PlayerMatch{
+			{ID: 1, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusPlayed), Score: 10},
+			{ID: 2, Score: 5, BackupPositions: strPtr("goals,kicks")}, // no InterchangePosition
+		},
+	}
+	updated, err := cm.DeclareSubs(nil, true)
+	require.NoError(t, err)
+	byID := make(map[int]PlayerMatch)
+	for _, pm := range updated {
+		byID[pm.ID] = pm
+	}
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[1].Status)
+}
+
+func TestClubMatch_DeclareSubs_ResetsPreviousDecisions(t *testing.T) {
+	cm := ClubMatch{
+		PlayerMatches: []PlayerMatch{
+			{ID: 1, Position: pos(PositionGoals), AFLStatus: aflSts(AFLStatusDNP), Score: 0,
+				Status: pmStatus(PlayerMatchStatusSubbed)},
+			{ID: 2, Position: pos(PositionKicks), AFLStatus: aflSts(AFLStatusPlayed), Score: 12,
+				Status: pmStatus(PlayerMatchStatusInterchange)},
+			{ID: 3, Score: 8, BackupPositions: strPtr("goals,kicks")},
+		},
+	}
+	// Call with empty sub list and no interchange — should reset all starters to named
+	updated, err := cm.DeclareSubs(nil, false)
+	require.NoError(t, err)
+	byID := make(map[int]PlayerMatch)
+	for _, pm := range updated {
+		byID[pm.ID] = pm
+	}
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[1].Status)
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[2].Status)
+}
 
 // validFullTeam builds a complete 18-starter team with no bench.
 func validFullTeam() []PlayerMatch {

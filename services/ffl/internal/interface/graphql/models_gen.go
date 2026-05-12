@@ -2,20 +2,11 @@
 
 package graphql
 
-type FFLPlayerMatchStatus string
-
-const (
-	FFLPlayerMatchStatusNamed        FFLPlayerMatchStatus = "named"
-	FFLPlayerMatchStatusSubbed       FFLPlayerMatchStatus = "subbed"
-	FFLPlayerMatchStatusInterchanged FFLPlayerMatchStatus = "interchanged"
-)
-
-type FFLAFLPlayerMatchStatus string
-
-const (
-	FFLAFLPlayerMatchStatusPlaying FFLAFLPlayerMatchStatus = "playing"
-	FFLAFLPlayerMatchStatusPlayed  FFLAFLPlayerMatchStatus = "played"
-	FFLAFLPlayerMatchStatusDNP     FFLAFLPlayerMatchStatus = "dnp"
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
 )
 
 type AFLPlayer struct {
@@ -78,6 +69,12 @@ type ConfirmedFFLPlayerInput struct {
 	Score               *int    `json:"score,omitempty"`
 }
 
+type DeclareFFLSubstitutionsInput struct {
+	ClubMatchID             string   `json:"clubMatchId"`
+	SubbedOutPlayerMatchIds []string `json:"subbedOutPlayerMatchIds"`
+	InterchangeApplied      bool     `json:"interchangeApplied"`
+}
+
 type FFLClub struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -125,18 +122,18 @@ type FFLPlayer struct {
 }
 
 type FFLPlayerMatch struct {
-	ID                  string           `json:"id"`
-	PlayerSeasonID      string           `json:"playerSeasonId"`
-	PlayerSeason        *FFLPlayerSeason `json:"playerSeason"`
-	Player              *FFLPlayer       `json:"player"`
-	Position  *string `json:"position,omitempty"`
-	Status    *string `json:"status,omitempty"`
-	AflStatus *string `json:"aflStatus,omitempty"`
-	BackupPositions     *string          `json:"backupPositions,omitempty"`
-	InterchangePosition *string          `json:"interchangePosition,omitempty"`
-	Score               int              `json:"score"`
-	AflPlayerMatchID    *string          `json:"aflPlayerMatchId,omitempty"`
-	AflPlayerMatch      *AFLPlayerMatch  `json:"aflPlayerMatch,omitempty"`
+	ID                  string                   `json:"id"`
+	PlayerSeasonID      string                   `json:"playerSeasonId"`
+	PlayerSeason        *FFLPlayerSeason         `json:"playerSeason"`
+	Player              *FFLPlayer               `json:"player"`
+	Position            *string                  `json:"position,omitempty"`
+	Status              *FFLPlayerMatchStatus    `json:"status,omitempty"`
+	AflStatus           *FFLAFLPlayerMatchStatus `json:"aflStatus,omitempty"`
+	BackupPositions     *string                  `json:"backupPositions,omitempty"`
+	InterchangePosition *string                  `json:"interchangePosition,omitempty"`
+	Score               int                      `json:"score"`
+	AflPlayerMatchID    *string                  `json:"aflPlayerMatchId,omitempty"`
+	AflPlayerMatch      *AFLPlayerMatch          `json:"aflPlayerMatch,omitempty"`
 }
 
 type FFLPlayerSeason struct {
@@ -242,4 +239,120 @@ type SetFFLTeamInput struct {
 type UpdateFFLPlayerSeasonInput struct {
 	ID    string  `json:"id"`
 	Notes *string `json:"notes,omitempty"`
+}
+
+type FFLAFLPlayerMatchStatus string
+
+const (
+	FFLAFLPlayerMatchStatusNamed   FFLAFLPlayerMatchStatus = "named"
+	FFLAFLPlayerMatchStatusPlaying FFLAFLPlayerMatchStatus = "playing"
+	FFLAFLPlayerMatchStatusPlayed  FFLAFLPlayerMatchStatus = "played"
+	FFLAFLPlayerMatchStatusDnp     FFLAFLPlayerMatchStatus = "dnp"
+)
+
+var AllFFLAFLPlayerMatchStatus = []FFLAFLPlayerMatchStatus{
+	FFLAFLPlayerMatchStatusNamed,
+	FFLAFLPlayerMatchStatusPlaying,
+	FFLAFLPlayerMatchStatusPlayed,
+	FFLAFLPlayerMatchStatusDnp,
+}
+
+func (e FFLAFLPlayerMatchStatus) IsValid() bool {
+	switch e {
+	case FFLAFLPlayerMatchStatusNamed, FFLAFLPlayerMatchStatusPlaying, FFLAFLPlayerMatchStatusPlayed, FFLAFLPlayerMatchStatusDnp:
+		return true
+	}
+	return false
+}
+
+func (e FFLAFLPlayerMatchStatus) String() string {
+	return string(e)
+}
+
+func (e *FFLAFLPlayerMatchStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FFLAFLPlayerMatchStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FFLAFLPlayerMatchStatus", str)
+	}
+	return nil
+}
+
+func (e FFLAFLPlayerMatchStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FFLAFLPlayerMatchStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FFLAFLPlayerMatchStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type FFLPlayerMatchStatus string
+
+const (
+	FFLPlayerMatchStatusNamed        FFLPlayerMatchStatus = "named"
+	FFLPlayerMatchStatusSubbed       FFLPlayerMatchStatus = "subbed"
+	FFLPlayerMatchStatusInterchanged FFLPlayerMatchStatus = "interchanged"
+)
+
+var AllFFLPlayerMatchStatus = []FFLPlayerMatchStatus{
+	FFLPlayerMatchStatusNamed,
+	FFLPlayerMatchStatusSubbed,
+	FFLPlayerMatchStatusInterchanged,
+}
+
+func (e FFLPlayerMatchStatus) IsValid() bool {
+	switch e {
+	case FFLPlayerMatchStatusNamed, FFLPlayerMatchStatusSubbed, FFLPlayerMatchStatusInterchanged:
+		return true
+	}
+	return false
+}
+
+func (e FFLPlayerMatchStatus) String() string {
+	return string(e)
+}
+
+func (e *FFLPlayerMatchStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FFLPlayerMatchStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FFLPlayerMatchStatus", str)
+	}
+	return nil
+}
+
+func (e FFLPlayerMatchStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FFLPlayerMatchStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FFLPlayerMatchStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

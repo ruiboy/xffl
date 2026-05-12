@@ -112,35 +112,114 @@ Everything else is derived via a single domain function per concern.
 
 **Depends on**: Derived player match status (DNP must be reliable before choices are meaningful)
 
-Once player DNP status is confidently derived, a Team Manager must be able to declare which bench
-players cover which DNP starters (substitution) and whether any interchange swaps apply, within the
-rules in `ai/architecture/domain.md`. This is a combined domain + UX concern — the order of
-application is at the TM's discretion within the constraints. Detailed design deferred.
+### Status model (agreed design)
 
-- [ ] Design and implement substitution/interchange decision model (domain + UI)
+`ffl.player_match.status` describes what happened to a player's **original named role**:
+
+| Value | Applies to | Meaning |
+|-------|-----------|---------|
+| `named` | starters + bench | Role unchanged — starter played normally, or bench player (whether called upon or not) |
+| `subbed` | starters only | Starter subbed out due to DNP; slot filled by bench player via `BackupPositions` |
+| `interchanged` | starters only | Starter displaced by the interchange bench player via `InterchangePosition` |
+
+Bench players are always `named`. Rule 5 guarantees at most one eligible bench player per
+non-star position, so the sub/interchange pairing is always unambiguous from the starter's status
+alone — no FK or extra field needed on the bench player.
+
+### Scoring modes
+
+`ClubMatch.Score()` detects two modes:
+
+- **Auto mode** (all starters `named`): current behaviour — substitutes all DNP starters with
+  first eligible bench player; applies interchange if bench player score exceeds starter's.
+- **TM mode** (any starter has `subbed` or `interchanged`): status-driven —
+  - `subbed` starter → replaced by the bench player whose `BackupPositions` covers their position
+  - `interchanged` starter → replaced by the bench player whose `InterchangePosition` matches their position
+  - `named` starter → scores normally
+
+### DeclareSubs use case
+
+Input: `clubMatchID`, `subbedOutIDs []int` (starter player_match IDs), `interchangeApplied bool`
+
+Behaviour:
+1. For each starter: set `status = subbed` if in `subbedOutIDs`, else reset to `named`
+2. If `interchangeApplied`: find the bench player with `InterchangePosition` set; auto-determine
+   which starter at that position to mark `interchanged` (lowest scorer, same logic as auto mode);
+   set that starter to `interchanged`; reset any previously-interchanged starters
+3. Trigger `RecalculateClubMatchScore`
+
+Validation: each `subbedOutID` must be a starter with `aflStatus = dnp`.
+
+### New mutation
+
+```graphql
+declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
+
+input DeclareFFLSubstitutionsInput {
+  clubMatchId: ID!
+  subbedOutPlayerMatchIds: [ID!]!
+  interchangeApplied: Boolean!
+}
+```
+
+### UI — "Subs" mode in Team Builder
+
+A third mode in the Team Builder (alongside read-only and Manage), active when the AFL match has
+started (any player has `aflStatus` set). Shows:
+
+- Starters grouped by position; DNP starters highlighted
+- Each DNP starter with an eligible bench player gets a checkbox, pre-ticked by default
+- Interchange toggle: shown if a bench player has `InterchangePosition` set; defaults to checked
+  if that bench player's current score exceeds the relevant starter's score
+- "Save Subs" button → calls `declareFFLSubstitutions`; decisions can be revised any time while
+  club match status is `submitted`
+
+### Tasks
+
+*Domain*
+- [x] Update `ClubMatch.Score()` for TM mode
+- [x] Unit-test `Score()` TM mode (subbed, interchanged, mixed, edge cases)
+
+*Application*
+- [x] `DeclareSubs` use case in `Commands`
+- [x] Integration-test `DeclareSubs`
+
+*GraphQL*
+- [x] `declareFFLSubstitutions` mutation + resolver
+
+*Frontend*
+- [x] "Subs" mode in Team Builder — DNP starter checkboxes, interchange toggle, Save Subs button
 
 ---
 
-## Side quest — Pluggable FFL scoring formula *(prerequisite for Phase 23 historical backfill)*
-
-- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
-- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
-- Each strategy should carry a human-readable description (for frontend display)
-- [ ] Design known formula variants and year ranges
-- [ ] `ScoringStrategy` interface + concrete implementations
-- [ ] `ffl.season.scoring_strategy` column (string key)
-- [ ] Wire into score calculation use case
-
 ## Step 6 — Score reconciliation *(every round)*
 
-**Rules:**
-- UI: Team Manager gets to choose how to apply any player subsitutions from the bench, within the league rules.
-- Submitted score = what the forum post recorded; `drv_score` = calculated from AFL stats
-- Current season: `drv_score` is authoritative; generate a copy-pasteable forum summary of differences
-- Previous seasons: submitted score is authoritative; record delta in `notes` column
-- [ ] Add `notes TEXT` column to `ffl.club_match` and `ffl.player_match`
-- [ ] `ReconcileScores` use case — compare submitted vs `drv_score`; produce structured diff
-- [ ] FFL frontend — submitted vs calculated scores side by side; copy-pasteable forum summary output
+*Requirements TBD — interview user when we reach this step before any implementation. Ideas to seed the conversation:*
+
+- *What does "submitted score" mean vs the calculated `drv_score`? Who owns each?*
+- *Current season: should calculated score be authoritative, or does the TM get final say?*
+- *Previous seasons: if submitted score is the record, how do we track the delta?*
+- *Is a copy-pasteable forum summary useful, or is in-app diff enough?*
+- *Do we need a `notes` field on `club_match` / `player_match` for manual overrides or commentary?*
+
+## Follow-on — Real data & ladder *(after Phase 20 close-out)*
+
+**Goal:** Replace synthetic seed data with a full current-season dataset, unlock ladder generation, and smoke-test the end-to-end data ops / team submission / substitution flow against real data.
+
+### 6a — Backup / restore reliability
+- [ ] Verify `just backup-db` and `just restore-db` round-trip cleanly (no data loss, no schema drift)
+- [ ] Document any gaps; fix before pulling live data
+
+### 6b — Pull current-season AFL & team data
+- [ ] Import all 2025 AFL rounds played to date (teams, players, match stats) via existing import tooling
+- [ ] Import all 2025 FFL round teams to date
+- [ ] Verify ladder calculation produces correct standings
+- [ ] Smoke-test team submission and substitution flows against real round data; capture any edge cases / bugs found
+
+### 6c — Retire full seed; keep slim demo seed
+- [ ] Reduce `dev/seed` to a single representative round (enough for demonstration and future dev work)
+- [ ] Confirm e2e tests still pass against slim seed
+- [ ] Live data becomes the source of truth; seed is development scaffold only
 
 ## Close out
 

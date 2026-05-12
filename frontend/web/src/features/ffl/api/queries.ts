@@ -160,6 +160,7 @@ export const GET_FFL_ROUND = gql`
             player { aflPlayer { name } }
             position
             status
+            aflStatus
             backupPositions
             interchangePosition
             score
@@ -183,6 +184,7 @@ export const GET_FFL_ROUND = gql`
             player { aflPlayer { name } }
             position
             status
+            aflStatus
             backupPositions
             interchangePosition
             score
@@ -224,6 +226,7 @@ export const GET_FFL_MATCH = gql`
           player { aflPlayer { name } }
           position
           status
+          aflStatus
           backupPositions
           interchangePosition
           score
@@ -245,6 +248,7 @@ export const GET_FFL_MATCH = gql`
           player { aflPlayer { name } }
           position
           status
+          aflStatus
           backupPositions
           interchangePosition
           score
@@ -329,6 +333,7 @@ export const GET_FFL_SEASON = gql`
               player { id aflPlayer { id name } }
               position
               status
+              aflStatus
               backupPositions
               interchangePosition
               score
@@ -354,6 +359,7 @@ export const GET_FFL_SEASON = gql`
               player { id aflPlayer { id name } }
               position
               status
+              aflStatus
               backupPositions
               interchangePosition
               score

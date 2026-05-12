@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestComputeAFLPlayerMatchStatus(t *testing.T) {
+func TestAFLPlayerMatchStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		dataStatus MatchDataStatus
@@ -14,12 +14,14 @@ func TestComputeAFLPlayerMatchStatus(t *testing.T) {
 	}{
 		{"final data status yields played", MatchDataFinal, "played"},
 		{"partial data status yields playing", MatchDataPartial, "playing"},
-		{"no_data status yields playing", MatchDataNoData, "playing"},
-		{"unknown status yields playing", MatchDataStatus("unknown"), "playing"},
+		{"no_data status yields named", MatchDataNoData, "named"},
+		{"null status yields named", MatchDataStatus(""), "named"},
+		{"unknown status yields named", MatchDataStatus("unknown"), "named"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, ComputeAFLPlayerMatchStatus(tt.dataStatus))
+			pm := PlayerMatch{MatchDataStatus: string(tt.dataStatus)}
+			assert.Equal(t, tt.want, pm.AFLPlayerMatchStatus())
 		})
 	}
 }

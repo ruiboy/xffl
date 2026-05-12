@@ -163,6 +163,17 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
+const setDrvAFLStatusDNPForClubMatch = `-- name: SetDrvAFLStatusDNPForClubMatch :exec
+UPDATE ffl.player_match
+SET drv_afl_status = 'dnp', updated_at = CURRENT_TIMESTAMP
+WHERE club_match_id = $1 AND (drv_afl_status IS NULL OR drv_afl_status = 'named') AND deleted_at IS NULL
+`
+
+func (q *Queries) SetDrvAFLStatusDNPForClubMatch(ctx context.Context, clubMatchID int32) error {
+	_, err := q.db.Exec(ctx, setDrvAFLStatusDNPForClubMatch, clubMatchID)
+	return err
+}
+
 const updateAFLPlayerMatchID = `-- name: UpdateAFLPlayerMatchID :exec
 UPDATE ffl.player_match
 SET afl_player_match_id = $2, updated_at = CURRENT_TIMESTAMP
@@ -176,22 +187,6 @@ type UpdateAFLPlayerMatchIDParams struct {
 
 func (q *Queries) UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error {
 	_, err := q.db.Exec(ctx, updateAFLPlayerMatchID, arg.ID, arg.AflPlayerMatchID)
-	return err
-}
-
-const updatePlayerMatchStatus = `-- name: UpdatePlayerMatchStatus :exec
-UPDATE ffl.player_match
-SET status = $2, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL
-`
-
-type UpdatePlayerMatchStatusParams struct {
-	ID     int32
-	Status *string
-}
-
-func (q *Queries) UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error {
-	_, err := q.db.Exec(ctx, updatePlayerMatchStatus, arg.ID, arg.Status)
 	return err
 }
 
@@ -211,14 +206,19 @@ func (q *Queries) UpdateDrvAFLStatus(ctx context.Context, arg UpdateDrvAFLStatus
 	return err
 }
 
-const setDrvAFLStatusDNPForClubMatch = `-- name: SetDrvAFLStatusDNPForClubMatch :exec
+const updatePlayerMatchStatus = `-- name: UpdatePlayerMatchStatus :exec
 UPDATE ffl.player_match
-SET drv_afl_status = 'dnp', updated_at = CURRENT_TIMESTAMP
-WHERE club_match_id = $1 AND drv_afl_status IS NULL AND deleted_at IS NULL
+SET status = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) SetDrvAFLStatusDNPForClubMatch(ctx context.Context, clubMatchID int32) error {
-	_, err := q.db.Exec(ctx, setDrvAFLStatusDNPForClubMatch, clubMatchID)
+type UpdatePlayerMatchStatusParams struct {
+	ID     int32
+	Status *string
+}
+
+func (q *Queries) UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error {
+	_, err := q.db.Exec(ctx, updatePlayerMatchStatus, arg.ID, arg.Status)
 	return err
 }
 

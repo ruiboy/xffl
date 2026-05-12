@@ -42,6 +42,21 @@ export const SET_FFL_TEAM = gql`
   }
 `
 
+export const DECLARE_FFL_SUBSTITUTIONS = gql`
+  mutation DeclareFFLSubstitutions($input: DeclareFFLSubstitutionsInput!) {
+    declareFFLSubstitutions(input: $input) {
+      id
+      playerSeasonId
+      position
+      status
+      aflStatus
+      backupPositions
+      interchangePosition
+      score
+    }
+  }
+`
+
 export const ADD_AFL_PLAYER = gql`
   mutation AddAFLPlayerForFFL($input: AddAFLPlayerInput!) {
     addAFLPlayer(input: $input) {

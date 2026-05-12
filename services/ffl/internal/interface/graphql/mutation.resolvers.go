@@ -306,6 +306,35 @@ func (r *mutationResolver) RecalculateFFLClubMatchScore(ctx context.Context, clu
 	return true, nil
 }
 
+// DeclareFFLSubstitutions is the resolver for the declareFFLSubstitutions field.
+func (r *mutationResolver) DeclareFFLSubstitutions(ctx context.Context, input DeclareFFLSubstitutionsInput) ([]*FFLPlayerMatch, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	subbedOutIDs := make([]int, 0, len(input.SubbedOutPlayerMatchIds))
+	for _, rawID := range input.SubbedOutPlayerMatchIds {
+		id, err := fromID(rawID)
+		if err != nil {
+			return nil, err
+		}
+		subbedOutIDs = append(subbedOutIDs, id)
+	}
+	pms, err := r.Commands.DeclareSubs(ctx, clubMatchID, subbedOutIDs, input.InterchangeApplied)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

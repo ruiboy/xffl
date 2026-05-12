@@ -83,6 +83,7 @@ type FflPlayerMatch struct {
 	PlayerSeasonID      int32
 	AflPlayerMatchID    *int32
 	Status              *string
+	DrvAflStatus        *string
 	Position            *string
 	BackupPositions     *string
 	InterchangePosition *string

@@ -76,12 +76,11 @@ One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match sco
 
 ### PlayerMatch status
 
-| Status | Meaning                                                         |
-|--------|-----------------------------------------------------------------|
-| `playing` | Player played / is playing in a match; match not yet finalised. |
-| `played` | Player played in a match; match is finalised.                   |
-
-Note: A PlayerMatch record exists if and only if the player participated in the match. The status is inferred from the presence of the record and the completeness of the match.
+| Status | Meaning |
+|--------|---------|
+| `named` | Player has a stats record but match data is absent or not yet started (`null`/`no_data`). |
+| `playing` | Player is playing; match has stats but is not yet finalised (`partial`). |
+| `played` | Player played; match is finalised (`final`). |
 
 ### Player tenure
 
@@ -172,7 +171,7 @@ Combining AFL Match data status and FFL ClubMatch data status determines what ca
 
 Two separate status concepts apply to an FFL PlayerMatch:
 
-**Status => Team position** — the Team Manager's (TM) choice for this player's role. Unrelated to AFL participation status.
+**Status** — the Team Manager's (TM) choice for this player's role in the FFL team. Unrelated to AFL status.
 
 | Value | Meaning                                        |
 |-------|------------------------------------------------|
@@ -180,16 +179,26 @@ Two separate status concepts apply to an FFL PlayerMatch:
 | `subbed` | Substituted out by the Team Manager. |
 | `interchanged` | Interchanged by the Team Manager. |
 
-**AFL Status => AFL participation** — whether the underlying AFL player took the field. Derived from AFL data; never set by TM decisions.
+**AFL Status** — the status of the underlying AFL player in their respective AFL match.
 
 | Value | Meaning |
 |-------|---------|
+| `named` | Linked to an AFL PlayerMatch; match has not started yet (`null`/`no_data`). |
 | `playing` | Has AFL stats; AFL match not yet final. |
 | `played` | Has AFL stats; AFL match is final. |
 | `dnp` | No AFL stats once the AFL match is final — did not play. |
-| unknown | AFL match not yet imported. |
+| `null` | Not yet linked to an AFL PlayerMatch; match not yet imported. |
 
-Note: `dnp` cannot come from the AFL service (it has no team-selection data). The FFL infers it: once an AFL match finalises, any player with no AFL stats is marked `dnp`.
+Derivation from AFL match status and whether an AFL PlayerMatch record is linked:
+
+| AFL match status | Linked? | Derived AFL status |
+|------------------|---------|--------------------|
+| `null` or `no_data` | yes | `named`            |
+| `null` or `no_data` | no | `null`             |
+| `partial` | yes | `playing`          |
+| `partial` | no | `null`             |
+| `final` | yes | `played`           |
+| `final` | no | `dnp`              |
 
 ### Substitution and interchange
 

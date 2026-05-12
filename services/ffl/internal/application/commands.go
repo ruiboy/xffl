@@ -412,6 +412,55 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 	return params
 }
 
+// DeclareSubs records substitution and interchange decisions for a club match.
+// Validation and status assignment are delegated to ClubMatch.DeclareSubs.
+// Triggers a score recalculation after writing.
+func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutIDs []int, interchangeApplied bool) ([]domain.PlayerMatch, error) {
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		cm, err := repos.ClubMatches.FindByID(ctx, clubMatchID)
+		if err != nil {
+			return fmt.Errorf("find club match: %w", err)
+		}
+		pms, err := repos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+		if err != nil {
+			return fmt.Errorf("find player matches: %w", err)
+		}
+		cm.PlayerMatches = pms
+
+		updated, err := cm.DeclareSubs(subbedOutIDs, interchangeApplied)
+		if err != nil {
+			return err
+		}
+
+		oldStatus := make(map[int]*domain.PlayerMatchStatus, len(pms))
+		for _, pm := range pms {
+			oldStatus[pm.ID] = pm.Status
+		}
+
+		for _, pm := range updated {
+			if pm.BackupPositions != nil {
+				continue
+			}
+			if old := oldStatus[pm.ID]; old != nil && *old == *pm.Status {
+				continue
+			}
+			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *pm.Status); err != nil {
+				return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.RecalculateClubMatchScore(ctx, clubMatchID); err != nil {
+		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
+	}
+
+	return c.eventRepos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+}
+
 // CalculateFantasyScore calculates and stores the fantasy score for a player match
 // based on AFL stats, then recalculates the club match total.
 func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int, stats domain.AFLStats) (domain.PlayerMatch, error) {
