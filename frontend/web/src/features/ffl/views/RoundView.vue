@@ -172,7 +172,7 @@ const topScorersByPosition = computed(() => {
     for (const side of [match.homeClubMatch, match.awayClubMatch]) {
       if (!side) continue
       for (const pm of side.playerMatches) {
-        if (pm.status === 'played' && pm.position) {
+        if (pm.aflStatus === 'played' && pm.position) {
           ;(grouped[pm.position] ??= []).push({ name: pm.player.aflPlayer.name, club: side.club.name, score: pm.score, position: pm.position })
         }
       }
