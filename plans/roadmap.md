@@ -243,7 +243,8 @@ season (or once ever) rather than every round.
 - [ ] AFL season player import — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players
 - [ ] FFL squad import — once/season CLI; resolve FFL rosters to AFL player IDs
 - [ ] AFL historical data import — one-time CLI from afltables CSV (2024-present already seeded; earlier years TBD)
-- [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires Phase 20 pluggable scoring formula)
+- [ ] Pluggable FFL scoring formula — strategy pattern keyed by season; `ScoringStrategy` interface + concrete implementations covering known formula variants; `ffl.season.scoring_strategy` column; wire into score calculation use case
+- [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires pluggable scoring formula above)
 
 ## Phase 24: CQRS Player Stats Read Model
 

@@ -192,26 +192,34 @@ started (any player has `aflStatus` set). Shows:
 
 ---
 
-## Side quest — Pluggable FFL scoring formula *(prerequisite for Phase 23 historical backfill)*
-
-- Different seasons use different scoring formulas (e.g. goals were worth 4 pts in some years, now different)
-- Strategy pattern: implementations in code keyed by a string; each `ffl.season` maps to a strategy key
-- Each strategy should carry a human-readable description (for frontend display)
-- [ ] Design known formula variants and year ranges
-- [ ] `ScoringStrategy` interface + concrete implementations
-- [ ] `ffl.season.scoring_strategy` column (string key)
-- [ ] Wire into score calculation use case
-
 ## Step 6 — Score reconciliation *(every round)*
 
-**Rules:**
-- UI: Team Manager gets to choose how to apply any player subsitutions from the bench, within the league rules.
-- Submitted score = what the forum post recorded; `drv_score` = calculated from AFL stats
-- Current season: `drv_score` is authoritative; generate a copy-pasteable forum summary of differences
-- Previous seasons: submitted score is authoritative; record delta in `notes` column
-- [ ] Add `notes TEXT` column to `ffl.club_match` and `ffl.player_match`
-- [ ] `ReconcileScores` use case — compare submitted vs `drv_score`; produce structured diff
-- [ ] FFL frontend — submitted vs calculated scores side by side; copy-pasteable forum summary output
+*Requirements TBD — interview user when we reach this step before any implementation. Ideas to seed the conversation:*
+
+- *What does "submitted score" mean vs the calculated `drv_score`? Who owns each?*
+- *Current season: should calculated score be authoritative, or does the TM get final say?*
+- *Previous seasons: if submitted score is the record, how do we track the delta?*
+- *Is a copy-pasteable forum summary useful, or is in-app diff enough?*
+- *Do we need a `notes` field on `club_match` / `player_match` for manual overrides or commentary?*
+
+## Follow-on — Real data & ladder *(after Phase 20 close-out)*
+
+**Goal:** Replace synthetic seed data with a full current-season dataset, unlock ladder generation, and smoke-test the end-to-end data ops / team submission / substitution flow against real data.
+
+### 6a — Backup / restore reliability
+- [ ] Verify `just backup-db` and `just restore-db` round-trip cleanly (no data loss, no schema drift)
+- [ ] Document any gaps; fix before pulling live data
+
+### 6b — Pull current-season AFL & team data
+- [ ] Import all 2025 AFL rounds played to date (teams, players, match stats) via existing import tooling
+- [ ] Import all 2025 FFL round teams to date
+- [ ] Verify ladder calculation produces correct standings
+- [ ] Smoke-test team submission and substitution flows against real round data; capture any edge cases / bugs found
+
+### 6c — Retire full seed; keep slim demo seed
+- [ ] Reduce `dev/seed` to a single representative round (enough for demonstration and future dev work)
+- [ ] Confirm e2e tests still pass against slim seed
+- [ ] Live data becomes the source of truth; seed is development scaffold only
 
 ## Close out
 
