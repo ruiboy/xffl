@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (bool, error)
 	CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error)
 	CreatePlayer(ctx context.Context, aflPlayerID int32) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
@@ -44,7 +45,6 @@ type Querier interface {
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
-	SetDrvAFLStatusDNPForClubMatch(ctx context.Context, clubMatchID int32) error
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error

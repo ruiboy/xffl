@@ -49,12 +49,11 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		result.MatchDataStatus = string(match.DataStatus)
 	}
 
-	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
+	payload, err := json.Marshal(events.AflPlayerMatchUpdatedPayload{
 		PlayerMatchID:  result.ID,
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         result.AFLPlayerMatchStatus(),
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,
@@ -64,11 +63,11 @@ func (c *Commands) UpdatePlayerMatch(ctx context.Context, params domain.UpsertPl
 		Behinds:        result.Behinds,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to marshal PlayerMatchUpdated event", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to marshal AflPlayerMatchUpdated event", slog.Any("error", err))
 		return result, nil
 	}
-	if err := c.dispatcher.Publish(ctx, events.PlayerMatchUpdated, payload); err != nil {
-		slog.ErrorContext(ctx, "failed to publish PlayerMatchUpdated event", slog.Any("error", err))
+	if err := c.dispatcher.Publish(ctx, events.AflPlayerMatchUpdated, payload); err != nil {
+		slog.ErrorContext(ctx, "failed to publish AflPlayerMatchUpdated event", slog.Any("error", err))
 	}
 
 	return result, nil

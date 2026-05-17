@@ -106,20 +106,35 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		slog.WarnContext(ctx, "recalculate club match score failed after SetTeam", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 	}
 
-	// Publish integration event for external subscribers.
+	// Reload player_matches after score recalculation so the snapshot is current.
+	latest, err := c.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "reload player_matches failed after SetTeam", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		latest = result
+	}
+
 	match, err := c.matches.FindByID(ctx, matchID)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to load match for FflTeamSubmitted event", slog.Int("match_id", matchID), slog.Any("error", err))
+		slog.WarnContext(ctx, "failed to load match for FflClubMatchUpdated event", slog.Int("match_id", matchID), slog.Any("error", err))
 		return result, nil
 	}
-	b, err := json.Marshal(events.FflTeamSubmittedPayload{
-		ClubMatchID: params.ClubMatchID,
-		MatchID:     matchID,
-		RoundID:     match.RoundID,
+
+	cm, err := c.clubMatches.FindByID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to load club_match for FflClubMatchUpdated event", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		return result, nil
+	}
+
+	b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   params.ClubMatchID,
+		MatchID:       matchID,
+		RoundID:       match.RoundID,
+		DataStatus:    string(cm.DataStatus),
+		PlayerMatches: buildPlayerMatchMap(latest),
 	})
 	if err == nil {
-		if err := c.dispatcher.Publish(ctx, events.FflTeamSubmitted, b); err != nil {
-			slog.WarnContext(ctx, "publish FflTeamSubmitted failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 		}
 	}
 	return result, nil
@@ -171,7 +186,28 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutID
 		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 
-	return c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Publish FFL.ClubMatchUpdated and FFL.SubsDeclared.
+	cm, _ := c.clubMatches.FindByID(ctx, clubMatchID)
+	m, _ := c.matches.FindByID(ctx, cm.MatchID)
+
+	if b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   clubMatchID,
+		MatchID:       cm.MatchID,
+		RoundID:       m.RoundID,
+		DataStatus:    string(cm.DataStatus),
+		PlayerMatches: buildPlayerMatchMap(pms),
+	}); err == nil {
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
+		}
+	}
+
+	return pms, nil
 }
 
 func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain.PlayerMatch) domain.PlayerMatch {
@@ -196,6 +232,28 @@ func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain
 		pm.Score = *e.Score
 	}
 	return pm
+}
+
+// buildPlayerMatchMap builds the FflPlayerMatchInfo snapshot from a slice of player_matches.
+func buildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatchInfo {
+	m := make(map[int]events.FflPlayerMatchInfo, len(pms))
+	for _, pm := range pms {
+		info := events.FflPlayerMatchInfo{}
+		if pm.Position != nil {
+			info.Position = string(*pm.Position)
+		}
+		if pm.Status != nil {
+			info.Status = string(*pm.Status)
+		}
+		if pm.BackupPositions != nil {
+			info.BackupPositions = *pm.BackupPositions
+		}
+		if pm.InterchangePosition != nil {
+			info.InterchangePosition = *pm.InterchangePosition
+		}
+		m[pm.ID] = info
+	}
+	return m
 }
 
 func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatchParams {

@@ -200,112 +200,108 @@ started (any player has `aflStatus` set). Shows:
 
 ### Contracts (`contracts/events/`)
 
-- [ ] Remove `AFL.MatchFinalized` constant and `AflMatchFinalizedPayload`
-- [ ] Remove `Status` field from `PlayerMatchUpdatedPayload`
-- [ ] Add `AFL.MatchUpdated` constant and `AflMatchUpdatedPayload` (`match_id`, `round_id`, `season_id`, `match_status`, `PlayerSeasonIDStatusMap map[int]string`)
-- [ ] Remove `FFL.TeamSubmitted` constant and `FflTeamSubmittedPayload`
-- [ ] Remove `FFL.TeamFinalized` constant and `FflTeamFinalizedPayload`
-- [ ] Add `FFL.ClubMatchUpdated` constant and `FflClubMatchUpdatedPayload` (`club_match_id`, `match_id`, `round_id`, `data_status`, `PlayerMatches map[int]FflPlayerMatchInfo`)
-- [ ] Add `FflPlayerMatchInfo` struct (`position`, `status`, `backup_positions`, `interchange_position`)
-- [ ] Rename `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`; rename `FantasyScoreCalculatedPayload` → `FflPlayerMatchUpdatedPayload`; add `club_match_id` field
-- [ ] Rename `FFL.MatchFinalized` → `FFL.MatchScoreFinalized`; rename `FflMatchFinalizedPayload` → `FflMatchScoreFinalizedPayload`
-- [ ] `FFL.ClubMatchScoreFinalized` and `FflClubMatchScoreFinalizedPayload` — no change
+- [x] Remove `AFL.MatchFinalized` constant and `AflMatchFinalizedPayload`
+- [x] Remove `Status` field from `PlayerMatchUpdatedPayload`
+- [x] Add `AFL.MatchUpdated` constant and `AflMatchUpdatedPayload` (`match_id`, `round_id`, `season_id`, `match_status`, `PlayerSeasonIDStatusMap map[int]string`)
+- [x] Remove `FFL.TeamSubmitted` constant and `FflTeamSubmittedPayload`
+- [x] Remove `FFL.TeamFinalized` constant and `FflTeamFinalizedPayload`
+- [x] Add `FFL.ClubMatchUpdated` constant and `FflClubMatchUpdatedPayload` (`club_match_id`, `match_id`, `round_id`, `data_status`, `PlayerMatches map[int]FflPlayerMatchInfo`)
+- [x] Add `FflPlayerMatchInfo` struct (`position`, `status`, `backup_positions`, `interchange_position`)
+- [x] Rename `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`; rename `FantasyScoreCalculatedPayload` → `FflPlayerMatchUpdatedPayload`; add `club_match_id` field
+- [x] Rename `FFL.MatchFinalized` → `FFL.MatchScoreFinalized`; rename `FflMatchFinalizedPayload` → `FflMatchScoreFinalizedPayload`
+- [x] `FFL.ClubMatchScoreFinalized` and `FflClubMatchScoreFinalizedPayload` — no change
 
 ---
 
 ### AFL service
 
 **`services/afl/internal/application/dataops.go`**
-- [ ] `ImportAFLStats`: remove `Status` from all `PlayerMatchUpdatedPayload` emissions
-- [ ] `ImportAFLStats`: after all player_matches written and `data_status → partial`, emit one `AFL.MatchUpdated(partial)` with `PlayerSeasonIDStatusMap` = all imported `afl_player_season_id → "playing"`
-- [ ] `MarkMatchStatsFinal`: remove `AFL.MatchFinalized` publish
-- [ ] `MarkMatchStatsFinal`: emit `AFL.MatchUpdated(final)` — build map: player_match rows → `"played"`, all player_seasons for both club_seasons not in player_match → `"dnp"`; requires loading player_seasons for both club_seasons (use existing `playerSeasons` repo)
-- [ ] `MarkMatchStatsFinal`: keep direct calls to derive match result + `RecalculateAFLLadder` (no change — these stay internal)
+- [x] `ImportAFLStats`: remove `Status` from all `PlayerMatchUpdatedPayload` emissions
+- [x] `ImportAFLStats`: after all player_matches written and `data_status → partial`, emit one `AFL.MatchUpdated(partial)` with `PlayerSeasonIDStatusMap` = all imported `afl_player_season_id → "playing"`
+- [x] `MarkMatchStatsFinal`: remove `AFL.MatchFinalized` publish
+- [x] `MarkMatchStatsFinal`: emit `AFL.MatchUpdated(final)` — build map: player_match rows → `"played"`, all player_seasons for both club_seasons not in player_match → `"dnp"`; inline match result derivation + ladder recalculation (no self-subscription needed)
+- [x] `MarkMatchStatsFinal`: keep direct calls to derive match result + `RecalculateAFLLadder` (no change — these stay internal)
 
 **`services/afl/internal/application/player_match.go`** (`UpdatePlayerMatch`)
-- [ ] Remove `Status` from `PlayerMatchUpdatedPayload`
+- [x] Remove `Status` from `PlayerMatchUpdatedPayload`
 
 **`services/afl/internal/interface/events/handlers.go`**
-- [ ] Remove `AFL.MatchFinalized` subscription (AFL no longer self-subscribes; finalization is handled directly)
+- [x] Remove `AFL.MatchFinalized` subscription (AFL no longer self-subscribes; finalization is handled directly)
 
 ---
 
 ### FFL service — domain
 
 **`services/ffl/internal/domain/player_match.go`**
-- [ ] Remove `AFLStatusNamed` constant (pre-match named tracking is deferred — see `ai/architecture/deferred.md`)
+- [x] Remove `AFLStatusNamed` constant (pre-match named tracking is deferred — see `plans/roadmap.md`)
 
 ---
 
 ### FFL service — application
 
 **`services/ffl/internal/application/score.go`** (or `queries.go` — wherever appropriate)
-- [ ] Add `AllAFLStatusesFinal(ctx, clubMatchID) bool` — returns true when every player_match in the club_match has `drv_afl_status ∈ {played, dnp}`; backed by a repository query
+- [x] Add `AllAFLStatusesFinal(ctx, clubMatchID) bool` — returns true when every player_match in the club_match has `drv_afl_status ∈ {played, dnp}`; backed by a repository query
 
 **`services/ffl/internal/application/reactions.go`**
-- [ ] Remove `ProcessAFLMatchFinalized` (replaced by `ProcessAFLMatchUpdated`)
-- [ ] Add `ProcessAFLMatchUpdated(ctx, AflMatchUpdatedPayload)`:
-  - For each FFL club_match in the FFL round, apply `PlayerSeasonIDStatusMap` to matching player_matches via `UpdateAFLStatusFromMap` (new repo method — see below)
-  - Recalculate score for each affected club_match
-  - If `data_status = final` AND `AllAFLStatusesFinal` → emit `FFL.ClubMatchScoreFinalized`
-- [ ] Remove `ProcessFflTeamFinalized` (replaced by `ProcessFflClubMatchUpdated`)
-- [ ] Add `ProcessFflClubMatchUpdated(ctx, FflClubMatchUpdatedPayload)`:
-  - Recalculate score
-  - If `data_status = final` AND `AllAFLStatusesFinal` → emit `FFL.ClubMatchScoreFinalized`
-- [ ] Update `ProcessPlayerMatchUpdated` — no status field in payload; just link + score recalc + ladder cascade if both axes final
-- [ ] Rename `ProcessFflMatchFinalized` → `ProcessFflMatchScoreFinalized`
-- [ ] Update `emitClubMatchScoreFinalized` — no logic change (still emits `FFL.ClubMatchScoreFinalized`)
+- [x] Remove `ProcessAFLMatchFinalized` (replaced by `ProcessAFLMatchUpdated`)
+- [x] Add `ProcessAFLMatchUpdated(ctx, AflMatchUpdatedPayload)`: applies status map via `applyAFLStatusMap`, recalculates score, emits `FFL.ClubMatchScoreFinalized` when both axes final
+- [x] Remove `ProcessFflTeamFinalized` (replaced by `ProcessFflClubMatchUpdated`)
+- [x] Add `ProcessFflClubMatchUpdated(ctx, ...)`: recalculates score, emits `FFL.ClubMatchScoreFinalized` when both axes final
+- [x] Update `ProcessPlayerMatchUpdated` — no status field in payload; just link + score recalc + ladder cascade if both axes final
+- [x] Rename `ProcessFflMatchFinalized` → `ProcessFflMatchScoreFinalized`
+- [x] Update `emitClubMatchScoreFinalized` — no logic change (still emits `FFL.ClubMatchScoreFinalized`)
+- [x] Note: `UpdateAFLStatusFromMap` implemented at application layer (`applyAFLStatusMap`) using existing `FindByIDs` + `UpdateAFLStatus` per player (sqlc unnest limitation)
 
 **`services/ffl/internal/application/team.go`** (or `dataops.go`)
-- [ ] Replace `FFL.TeamSubmitted` publish → `FFL.ClubMatchUpdated(submitted)` with full player_matches snapshot
-- [ ] Replace `FFL.TeamFinalized` publish → `FFL.ClubMatchUpdated(final)` with full player_matches snapshot
+- [x] Replace `FFL.TeamSubmitted` publish → `FFL.ClubMatchUpdated(submitted)` with full player_matches snapshot
+- [x] Replace `FFL.TeamFinalized` publish → `FFL.ClubMatchUpdated(final)` with full player_matches snapshot
 
-**`services/ffl/internal/application/squad.go`** (or wherever `DeclareSubs` lives)
-- [ ] After subs are applied: emit `FFL.ClubMatchUpdated(submitted)` with updated player_matches snapshot
-- [ ] Also emit `FFL.SubsDeclared` (new — no current subscriber; publish for future consumers)
+**`services/ffl/internal/application/team.go`** (`DeclareSubs`)
+- [x] After subs are applied: emit `FFL.ClubMatchUpdated(submitted)` with updated player_matches snapshot
+- [x] Also emit `FFL.SubsDeclared` (new — no current subscriber; published for future consumers)
 
 **`services/ffl/internal/application/score.go`**
-- [ ] `CalculateFantasyScore` / `RecalculateScore`: update emitted event from `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`; include `club_match_id` in payload
-- [ ] `ProcessPlayerMatchUpdated` ladder cascade: after score recalc, if `AllAFLStatusesFinal` AND `data_status = final` → call `RecalculateFflLadder` directly
+- [x] `RecalculateScore`: removed AFL status sync (status comes only from `AFL.MatchUpdated` now)
+- [x] `ProcessPlayerMatchUpdated` ladder cascade: after score recalc, if `AllAFLStatusesFinal` AND `data_status = final` → call `RecalculateFflLadder` directly
 
 ---
 
 ### FFL service — infrastructure
 
 **`services/ffl/internal/infrastructure/postgres/sqlc/player_match.sql`**
-- [ ] Add `UpdateAFLStatusFromMap` query — given `club_match_id` and a set of `(afl_player_season_id, status)` pairs, update `drv_afl_status` for matching player_matches (join through `ffl.player_season.afl_player_season_id`); ignore player_matches whose player_season is not in the set
-- [ ] Add `AllAFLStatusesFinal` query — returns bool: all player_matches for a club_match have `drv_afl_status IN ('played', 'dnp')`
-- [ ] Remove `SetDrvAFLStatusDNPForClubMatch` query (replaced by `UpdateAFLStatusFromMap`)
-- [ ] Regenerate sqlcgen after query changes (`sqlc generate`)
+- [x] Add `AllAFLStatusesFinal` query — returns bool: all player_matches for a club_match have `drv_afl_status IN ('played', 'dnp')`
+- [x] Remove `SetDrvAFLStatusDNPForClubMatch` query
+- [x] Regenerate sqlcgen after query changes (`sqlc generate`)
+- [x] Note: `UpdateAFLStatusFromMap` implemented at application layer (sqlc parallel unnest not supported)
 
 ---
 
 ### FFL service — event handlers
 
 **`services/ffl/internal/interface/events/handlers.go`**
-- [ ] Remove subscription to `AFL.MatchFinalized`
-- [ ] Add subscription to `AFL.MatchUpdated` → `ProcessAFLMatchUpdated`
-- [ ] Remove subscription to `FFL.TeamSubmitted`
-- [ ] Remove subscription to `FFL.TeamFinalized`
-- [ ] Add subscription to `FFL.ClubMatchUpdated` → `ProcessFflClubMatchUpdated`
-- [ ] Update `FFL.MatchFinalized` subscription → `FFL.MatchScoreFinalized` → `ProcessFflMatchScoreFinalized`
-- [ ] Update `FFL.FantasyScoreCalculated` subscription → `FFL.PlayerMatchUpdated` (Search handler)
+- [x] Remove subscription to `AFL.MatchFinalized`
+- [x] Add subscription to `AFL.MatchUpdated` → `ProcessAFLMatchUpdated`
+- [x] Remove subscription to `FFL.TeamSubmitted`
+- [x] Remove subscription to `FFL.TeamFinalized`
+- [x] Add subscription to `FFL.ClubMatchUpdated` → `ProcessFflClubMatchUpdated`
+- [x] Update `FFL.MatchFinalized` subscription → `FFL.MatchScoreFinalized` → `ProcessFflMatchScoreFinalized`
+- [x] Update `FFL.FantasyScoreCalculated` subscription → `FFL.PlayerMatchUpdated` (Search handler)
 
 ---
 
 ### Search service
 
 **`services/search/...`** *(wherever the event subscription lives)*
-- [ ] Update subscription from `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`
+- [x] Update subscription from `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`
 
 ---
 
 ### Tests
-- [ ] Unit-test `AllAFLStatusesFinal` — all played, all dnp, mixed, null present, playing present
-- [ ] Integration-test `ProcessAFLMatchUpdated` (partial): verify `drv_afl_status = playing` set for correct players only; players in other AFL matches unaffected
-- [ ] Integration-test `ProcessAFLMatchUpdated` (final): verify played + dnp set correctly; `FFL.ClubMatchScoreFinalized` emitted when FFL team is also final
-- [ ] Integration-test `ProcessFflClubMatchUpdated` (final): verify `FFL.ClubMatchScoreFinalized` NOT emitted when AFL not yet final; emitted when AFL is final
-- [ ] Regression-test full event chain: import partial → import final → finalize FFL team → verify ladder
+- [x] Unit-test `AllAFLStatusesFinal` — all played, all dnp, mixed, null present, playing present
+- [x] Integration-test `ProcessAFLMatchUpdated` (partial): verify `drv_afl_status = playing` set for correct players only; players in other AFL matches unaffected
+- [x] Integration-test `ProcessAFLMatchUpdated` (final): verify played + dnp set correctly; `FFL.ClubMatchScoreFinalized` emitted when FFL team is also final
+- [x] Integration-test `ProcessFflClubMatchUpdated` (final): verify `FFL.ClubMatchScoreFinalized` NOT emitted when AFL not yet final; emitted when AFL is final
+- [x] Regression-test full event chain: import partial → import final → finalize FFL team → verify ladder
 
 ---
 

@@ -53,8 +53,8 @@ func main() {
 
 	// Event subscriptions
 	dispatcher := pgevents.New(pool, "xffl_events")
-	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, handlers.HandlePlayerMatchUpdated)
-	dispatcher.Subscribe(contractevents.FantasyScoreCalculated, handlers.HandleFantasyScoreCalculated)
+	dispatcher.Subscribe(contractevents.AflPlayerMatchUpdated, handlers.HandleAflPlayerMatchUpdated)
+	dispatcher.Subscribe(contractevents.FflPlayerMatchUpdated, handlers.HandleFflPlayerMatchUpdated)
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
 			slog.ErrorContext(ctx, "search event listener stopped", slog.Any("error", err))

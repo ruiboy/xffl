@@ -13,12 +13,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	aflv1 "xffl/contracts/gen/afl/v1"
-	contractevents "xffl/contracts/events"
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	"xffl/services/afl/internal/infrastructure/footywire"
-	aflevents "xffl/services/afl/internal/interface/events"
 	gql "xffl/services/afl/internal/interface/graphql"
 	rpcsrv "xffl/services/afl/internal/interface/twirp"
 	"xffl/shared/clock"
@@ -81,8 +79,6 @@ func main() {
 		pg.NewRoundRepository(q, pool),
 		dispatcher,
 	)
-	eventHandlers := aflevents.NewHandlers(commands)
-	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
 
 	footywireClient := footywire.NewFootywireClient()
 	dataOps := application.NewDataOpsCommands(

@@ -128,12 +128,10 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 				Tackles:   s.Tackles,
 				Hitouts:   s.Hitouts,
 			})
-			aflStatus := domain.AFLStatus(s.Status)
 			if _, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,
 				Position:            pm.Position,
-				AFLStatus:           &aflStatus,
 				BackupPositions:     pm.BackupPositions,
 				InterchangePosition: pm.InterchangePosition,
 				Score:               &score,
@@ -210,6 +208,12 @@ func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error
 		}
 	}
 	return nil
+}
+
+// AllAFLStatusesFinal returns true when every player_match in the club_match has
+// drv_afl_status ∈ {played, dnp} — none are null or playing.
+func (c *Commands) AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error) {
+	return c.playerMatches.AllAFLStatusesFinal(ctx, clubMatchID)
 }
 
 func (c *Commands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {

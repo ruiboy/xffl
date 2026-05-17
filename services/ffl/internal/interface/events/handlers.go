@@ -7,6 +7,7 @@ import (
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/domain"
 )
 
 // Handlers translates incoming integration event payloads into application use case calls.
@@ -18,17 +19,16 @@ func NewHandlers(commands *application.Commands) *Handlers {
 	return &Handlers{commands: commands}
 }
 
-func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte) error {
-	var p contractevents.PlayerMatchUpdatedPayload
+func (h *Handlers) HandleAflPlayerMatchUpdated(ctx context.Context, payload []byte) error {
+	var p contractevents.AflPlayerMatchUpdatedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal PlayerMatchUpdated: %w", err)
+		return fmt.Errorf("unmarshal AflPlayerMatchUpdated: %w", err)
 	}
 	return h.commands.ProcessPlayerMatchUpdated(ctx, application.PlayerMatchUpdate{
 		AFLPlayerMatchID:  p.PlayerMatchID,
 		AFLPlayerSeasonID: p.PlayerSeasonID,
 		ClubMatchID:       p.ClubMatchID,
 		RoundID:           p.RoundID,
-		Status:            p.Status,
 		Goals:             p.Goals,
 		Kicks:             p.Kicks,
 		Handballs:         p.Handballs,
@@ -38,20 +38,20 @@ func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 	})
 }
 
-func (h *Handlers) HandleAflMatchFinalized(ctx context.Context, payload []byte) error {
-	var p contractevents.AflMatchFinalizedPayload
+func (h *Handlers) HandleAflMatchUpdated(ctx context.Context, payload []byte) error {
+	var p contractevents.AflMatchUpdatedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal AflMatchFinalized: %w", err)
+		return fmt.Errorf("unmarshal AflMatchUpdated: %w", err)
 	}
-	return h.commands.ProcessAFLMatchFinalized(ctx, p.RoundID)
+	return h.commands.ProcessAFLMatchUpdated(ctx, p)
 }
 
-func (h *Handlers) HandleFflTeamFinalized(ctx context.Context, payload []byte) error {
-	var p contractevents.FflTeamFinalizedPayload
+func (h *Handlers) HandleFflClubMatchUpdated(ctx context.Context, payload []byte) error {
+	var p contractevents.FflClubMatchUpdatedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal FflTeamFinalized: %w", err)
+		return fmt.Errorf("unmarshal FflClubMatchUpdated: %w", err)
 	}
-	return h.commands.ProcessFflTeamFinalized(ctx, p.ClubMatchID, p.MatchID)
+	return h.commands.ProcessFflClubMatchUpdated(ctx, p.ClubMatchID, p.MatchID, domain.ClubMatchDataStatus(p.DataStatus))
 }
 
 func (h *Handlers) HandleFflClubMatchScoreFinalized(ctx context.Context, payload []byte) error {
@@ -62,10 +62,10 @@ func (h *Handlers) HandleFflClubMatchScoreFinalized(ctx context.Context, payload
 	return h.commands.ProcessFflClubMatchScoreFinalized(ctx, p.ClubMatchID, p.MatchID)
 }
 
-func (h *Handlers) HandleFflMatchFinalized(ctx context.Context, payload []byte) error {
-	var p contractevents.FflMatchFinalizedPayload
+func (h *Handlers) HandleFflMatchScoreFinalized(ctx context.Context, payload []byte) error {
+	var p contractevents.FflMatchScoreFinalizedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("unmarshal FflMatchFinalized: %w", err)
+		return fmt.Errorf("unmarshal FflMatchScoreFinalized: %w", err)
 	}
-	return h.commands.ProcessFflMatchFinalized(ctx, p.MatchID, p.RoundID)
+	return h.commands.ProcessFflMatchScoreFinalized(ctx, p.MatchID, p.RoundID)
 }

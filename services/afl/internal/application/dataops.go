@@ -274,15 +274,13 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 		slog.WarnContext(ctx, "failed to update match data status", slog.Int("match_id", matchID), slog.Any("error", err))
 	}
 
-	// Fire PlayerMatchUpdated events. Import always sets partial, so status is always "playing".
+	// Fire per-player stats events.
 	for _, pm := range allWritten {
-		pm.MatchDataStatus = string(domain.MatchDataPartial)
-		payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
+		payload, err := json.Marshal(events.AflPlayerMatchUpdatedPayload{
 			PlayerMatchID:  pm.ID,
 			PlayerSeasonID: pm.PlayerSeasonID,
 			ClubMatchID:    pm.ClubMatchID,
 			RoundID:        roundID,
-			Status:         pm.AFLPlayerMatchStatus(),
 			Kicks:          pm.Kicks,
 			Handballs:      pm.Handballs,
 			Marks:          pm.Marks,
@@ -292,11 +290,28 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			Behinds:        pm.Behinds,
 		})
 		if err != nil {
-			slog.WarnContext(ctx, "marshal PlayerMatchUpdated failed", slog.Any("error", err))
+			slog.WarnContext(ctx, "marshal AflPlayerMatchUpdated failed", slog.Any("error", err))
 			continue
 		}
-		if err := c.dispatcher.Publish(ctx, events.PlayerMatchUpdated, payload); err != nil {
-			slog.WarnContext(ctx, "publish PlayerMatchUpdated failed", slog.Any("error", err))
+		if err := c.dispatcher.Publish(ctx, events.AflPlayerMatchUpdated, payload); err != nil {
+			slog.WarnContext(ctx, "publish AflPlayerMatchUpdated failed", slog.Any("error", err))
+		}
+	}
+
+	// Fire one AFL.MatchUpdated(partial) with all written player_season_ids → "playing".
+	statusMap := make(map[int]string, len(allWritten))
+	for _, pm := range allWritten {
+		statusMap[pm.PlayerSeasonID] = "playing"
+	}
+	if matchUpdPayload, err := json.Marshal(events.AflMatchUpdatedPayload{
+		MatchID:                 matchID,
+		RoundID:                 roundID,
+		SeasonID:                round.SeasonID,
+		MatchStatus:             string(domain.MatchDataPartial),
+		PlayerSeasonIDStatusMap: statusMap,
+	}); err == nil {
+		if err := c.dispatcher.Publish(ctx, events.AflMatchUpdated, matchUpdPayload); err != nil {
+			slog.WarnContext(ctx, "publish AflMatchUpdated(partial) failed", slog.Any("error", err))
 		}
 	}
 
@@ -327,22 +342,94 @@ func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, 
 		return match, nil
 	}
 
-	// dispatch integration event
 	round, err := c.rounds.FindByID(ctx, match.RoundID)
 	if err != nil {
 		return domain.Match{}, fmt.Errorf("load round: %w", err)
 	}
 
-	payload, _ := json.Marshal(events.AflMatchFinalizedPayload{
-		MatchID:  matchID,
-		SeasonID: round.SeasonID,
-		RoundID:  match.RoundID,
+	// Load club_matches with full scores and club_season IDs (FindByID returns a partial match).
+	homeClubMatch, homeErr := c.clubMatches.FindByID(ctx, match.Home.ID)
+	awayClubMatch, awayErr := c.clubMatches.FindByID(ctx, match.Away.ID)
+
+	// Derive and persist match result (previously done via AFL.MatchFinalized self-subscription).
+	if homeErr == nil && awayErr == nil {
+		match.Home = homeClubMatch
+		match.Away = awayClubMatch
+		if err := c.matches.UpdateResult(ctx, matchID, match.DeriveResult()); err != nil {
+			slog.WarnContext(ctx, "update match result failed", slog.Int("match_id", matchID), slog.Any("error", err))
+		}
+	} else {
+		slog.WarnContext(ctx, "load club_matches failed for result derivation",
+			slog.Int("match_id", matchID),
+			slog.Any("home_err", homeErr), slog.Any("away_err", awayErr))
+	}
+
+	// Recalculate AFL ladder (idempotent).
+	if err := c.recalculateAFLLadder(ctx, round.SeasonID); err != nil {
+		slog.WarnContext(ctx, "recalculate AFL ladder failed", slog.Int("season_id", round.SeasonID), slog.Any("error", err))
+	}
+
+	// Build PlayerSeasonIDStatusMap: played players from player_match rows; rest are dnp.
+	homePlayerMatches, _ := c.playerMatches.FindByClubMatchID(ctx, match.Home.ID)
+	awayPlayerMatches, _ := c.playerMatches.FindByClubMatchID(ctx, match.Away.ID)
+
+	playedPSIDs := make(map[int]bool)
+	for _, pm := range append(homePlayerMatches, awayPlayerMatches...) {
+		playedPSIDs[pm.PlayerSeasonID] = true
+	}
+
+	// Use the loaded club_match ClubSeasonIDs (FindByID on match doesn't populate ClubSeasonID).
+	homeClubSeasonID := homeClubMatch.ClubSeasonID
+	awayClubSeasonID := awayClubMatch.ClubSeasonID
+	if homeErr != nil {
+		homeClubSeasonID = 0
+	}
+	if awayErr != nil {
+		awayClubSeasonID = 0
+	}
+
+	statusMap := make(map[int]string)
+	for _, clubSeasonID := range []int{homeClubSeasonID, awayClubSeasonID} {
+		if clubSeasonID == 0 {
+			continue
+		}
+		psRows, _ := c.playerSeasons.FindByClubSeasonIDWithPlayer(ctx, clubSeasonID)
+		for _, ps := range psRows {
+			if playedPSIDs[ps.PlayerSeasonID] {
+				statusMap[ps.PlayerSeasonID] = "played"
+			} else {
+				statusMap[ps.PlayerSeasonID] = "dnp"
+			}
+		}
+	}
+
+	matchUpdPayload, _ := json.Marshal(events.AflMatchUpdatedPayload{
+		MatchID:                 matchID,
+		RoundID:                 match.RoundID,
+		SeasonID:                round.SeasonID,
+		MatchStatus:             string(domain.MatchDataFinal),
+		PlayerSeasonIDStatusMap: statusMap,
 	})
-	if err := c.dispatcher.Publish(ctx, events.AflMatchFinalized, payload); err != nil {
-		slog.WarnContext(ctx, "publish AflMatchFinalized failed", slog.Any("error", err))
+	if err := c.dispatcher.Publish(ctx, events.AflMatchUpdated, matchUpdPayload); err != nil {
+		slog.WarnContext(ctx, "publish AflMatchUpdated(final) failed", slog.Any("error", err))
 	}
 
 	return match, nil
+}
+
+// recalculateAFLLadder rebuilds AFL ladder standings for the season from all final matches.
+func (c *DataOpsCommands) recalculateAFLLadder(ctx context.Context, seasonID int) error {
+	matches, err := c.matches.FindFinalBySeasonID(ctx, seasonID)
+	if err != nil {
+		return fmt.Errorf("load final matches: %w", err)
+	}
+	for _, cs := range domain.CalculateLadder(matches) {
+		if err := c.clubSeasons.Update(ctx, cs); err != nil {
+			slog.WarnContext(ctx, "update club season failed",
+				slog.Int("club_season_id", cs.ID), slog.Any("error", err))
+		}
+	}
+	return nil
 }
 
 // resolveMid returns the FootyWire mid for a match, scraping the fixture list if needed.
@@ -477,12 +564,11 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		result.MatchDataStatus = string(match.DataStatus)
 	}
 
-	payload, err := json.Marshal(events.PlayerMatchUpdatedPayload{
+	payload, err := json.Marshal(events.AflPlayerMatchUpdatedPayload{
 		PlayerMatchID:  result.ID,
 		PlayerSeasonID: result.PlayerSeasonID,
 		ClubMatchID:    result.ClubMatchID,
 		RoundID:        roundID,
-		Status:         result.AFLPlayerMatchStatus(),
 		Kicks:          result.Kicks,
 		Handballs:      result.Handballs,
 		Marks:          result.Marks,
@@ -492,11 +578,11 @@ func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params Reso
 		Behinds:        result.Behinds,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to marshal PlayerMatchUpdated event", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to marshal AflPlayerMatchUpdated event", slog.Any("error", err))
 		return result, nil
 	}
-	if err := c.dispatcher.Publish(ctx, events.PlayerMatchUpdated, payload); err != nil {
-		slog.ErrorContext(ctx, "failed to publish PlayerMatchUpdated event", slog.Any("error", err))
+	if err := c.dispatcher.Publish(ctx, events.AflPlayerMatchUpdated, payload); err != nil {
+		slog.ErrorContext(ctx, "failed to publish AflPlayerMatchUpdated event", slog.Any("error", err))
 	}
 	return result, nil
 }

@@ -166,8 +166,7 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 	})
 }
 
-// MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.TeamFinalized.
-// Call this after AFL stats are final and the team selection is confirmed.
+// MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).
 func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFinalParams) error {
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataFinal)
@@ -176,14 +175,21 @@ func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFina
 		return err
 	}
 
-	b, err := json.Marshal(events.FflTeamFinalizedPayload{
-		ClubMatchID: params.ClubMatchID,
-		MatchID:     params.MatchID,
-		RoundID:     params.RoundID,
+	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+	}
+
+	b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   params.ClubMatchID,
+		MatchID:       params.MatchID,
+		RoundID:       params.RoundID,
+		DataStatus:    string(domain.ClubMatchDataFinal),
+		PlayerMatches: buildPlayerMatchMap(pms),
 	})
 	if err == nil {
-		if err := c.dispatcher.Publish(ctx, events.FflTeamFinalized, b); err != nil {
-			slog.WarnContext(ctx, "publish FflTeamFinalized failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated(final) failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 		}
 	}
 	return nil
