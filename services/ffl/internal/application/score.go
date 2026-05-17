@@ -128,14 +128,19 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 				Tackles:   s.Tackles,
 				Hitouts:   s.Hitouts,
 			})
-			if _, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
+			upsertParams := domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,
 				Position:            pm.Position,
 				BackupPositions:     pm.BackupPositions,
 				InterchangePosition: pm.InterchangePosition,
 				Score:               &score,
-			}); err != nil {
+			}
+			if s.Status != "" {
+				aflStatus := domain.AFLStatus(s.Status)
+				upsertParams.AFLStatus = &aflStatus
+			}
+			if _, err := repos.PlayerMatches.Upsert(ctx, upsertParams); err != nil {
 				return fmt.Errorf("upsert player_match %d: %w", pm.ID, err)
 			}
 		}
