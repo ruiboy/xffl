@@ -91,7 +91,7 @@
             <button
               v-if="aflMatchStarted"
               @click="enterSubsMode"
-              class="ml-auto rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
             >
               <span class="flex items-center gap-1.5">
                 <IconSubs class="w-3.5 h-3.5" />
