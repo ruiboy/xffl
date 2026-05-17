@@ -1,10 +1,20 @@
 type Mutation {
+  "Add an AFL player to a club's season squad."
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason!
+
+  "Add an additional season record for an existing AFL player."
   addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason!
+
+  "Update stats for an AFL player match."
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch!
 
+  "Import player stats for a match from the external source. Returns a result including any unmatched players."
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult!
+
+  "Manually link an unmatched player from a stats import to a player season."
   resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch!
+
+  "Mark a match's stats as complete (final) or revert to partial."
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch!
 
   "Rebuild AFL ladder standings for the given season from all final matches."
@@ -33,17 +43,6 @@ input UpdateAFLPlayerMatchInput {
   behinds: Int
 }
 
-"---- Import flow ----"
-
-type ImportAFLMatchStatsResult {
-  matchId: ID!
-  homeClubName: String!
-  awayClubName: String!
-  homePlayerCount: Int!
-  awayPlayerCount: Int!
-  unmatchedPlayers: [UnmatchedAFLPlayer!]!
-}
-
 type UnmatchedAFLPlayer {
   parsedName: String!
   clubMatchId: ID!
@@ -54,6 +53,15 @@ type UnmatchedAFLPlayer {
   tackles: Int!
   goals: Int!
   behinds: Int!
+}
+
+type ImportAFLMatchStatsResult {
+  matchId: ID!
+  homeClubName: String!
+  awayClubName: String!
+  homePlayerCount: Int!
+  awayPlayerCount: Int!
+  unmatchedPlayers: [UnmatchedAFLPlayer!]!
 }
 
 input ResolveAFLPlayerMatchInput {

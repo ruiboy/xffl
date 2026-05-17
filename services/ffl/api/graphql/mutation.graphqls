@@ -1,15 +1,23 @@
 type Mutation {
+  "Add an AFL player to an FFL club's season squad."
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
+
+  "Remove a player from an FFL club's season squad."
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean!
+
+  "Update notes for a player season."
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
+
+  "Calculate and store the fantasy score for a player match from AFL stats."
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
+
+  "Set the complete team selection for a club match."
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
 
-  # Data ops: parse a forum post and resolve players against the squad.
-  # Returns a parse result for review — no DB writes.
+  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
 
-  # Data ops: confirm a reviewed parse result and write to the database.
+  "Confirm a reviewed parse result and write player matches to the database."
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 
   "Lock a FFL club_match as final — triggers the FFL scoring chain."
@@ -25,23 +33,6 @@ type Mutation {
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
 }
 
-input DeclareFFLSubstitutionsInput {
-  clubMatchId: ID!
-  subbedOutPlayerMatchIds: [ID!]!
-  interchangeApplied: Boolean!
-}
-
-input MarkFFLTeamFinalInput {
-  clubMatchId: ID!
-  matchId: ID!
-  roundId: ID!
-}
-
-input UpdateFFLPlayerSeasonInput {
-  id: ID!
-  notes: String
-}
-
 input AddFFLPlayerToSeasonInput {
   clubSeasonId: ID!
   aflPlayerSeasonId: ID!
@@ -52,6 +43,11 @@ input AddFFLPlayerToSeasonInput {
 input RemoveFFLPlayerFromSeasonInput {
   id: ID!
   toRoundId: ID!
+}
+
+input UpdateFFLPlayerSeasonInput {
+  id: ID!
+  notes: String
 }
 
 input CalculateFFLFantasyScoreInput {
@@ -74,4 +70,55 @@ input FFLTeamPlayerInput {
   position: String!
   backupPositions: String
   interchangePosition: String
+}
+
+type ParseFFLTeamSubmissionResult {
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type ResolvedPlayer {
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input ParseFFLTeamSubmissionInput {
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+input ConfirmFFLTeamSubmissionInput {
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input ConfirmedFFLPlayerInput {
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
+
+input MarkFFLTeamFinalInput {
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
+}
+
+input DeclareFFLSubstitutionsInput {
+  clubMatchId: ID!
+  subbedOutPlayerMatchIds: [ID!]!
+  interchangeApplied: Boolean!
 }
