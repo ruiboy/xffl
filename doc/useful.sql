@@ -27,7 +27,7 @@ with afl_data as (
             when (am.data_status is null or am.data_status = 'no_data') and apm.id is not null
                 then 'named'
             when am.data_status = 'partial' and apm.id is null
-                then 'dnp'
+                then null
             when am.data_status = 'partial' and apm.id is not null
                 then 'playing'
             when am.data_status = 'final' and apm.id is null
