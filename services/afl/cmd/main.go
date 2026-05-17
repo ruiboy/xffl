@@ -73,16 +73,15 @@ func main() {
 	}()
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, pg.NewMatchRepository(q), dispatcher)
-
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q, pool),
 		dispatcher,
 	)
-	eventHandlers := aflevents.NewHandlers(scoreCommands)
+	eventHandlers := aflevents.NewHandlers(commands)
 	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
 
 	footywireClient := footywire.NewFootywireClient()
@@ -103,7 +102,7 @@ func main() {
 		dispatcher,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

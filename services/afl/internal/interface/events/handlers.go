@@ -11,11 +11,11 @@ import (
 
 // Handlers translates incoming integration event payloads into application use case calls.
 type Handlers struct {
-	scoreCommands *application.ScoreCommands
+	commands *application.Commands
 }
 
-func NewHandlers(scoreCommands *application.ScoreCommands) *Handlers {
-	return &Handlers{scoreCommands: scoreCommands}
+func NewHandlers(commands *application.Commands) *Handlers {
+	return &Handlers{commands: commands}
 }
 
 func (h *Handlers) HandleAflMatchFinalized(ctx context.Context, payload []byte) error {
@@ -23,5 +23,5 @@ func (h *Handlers) HandleAflMatchFinalized(ctx context.Context, payload []byte) 
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("unmarshal AflMatchFinalized: %w", err)
 	}
-	return h.scoreCommands.ProcessAFLMatchFinalized(ctx, p.MatchID, p.SeasonID)
+	return h.commands.ProcessAFLMatchFinalized(ctx, p.MatchID, p.SeasonID)
 }

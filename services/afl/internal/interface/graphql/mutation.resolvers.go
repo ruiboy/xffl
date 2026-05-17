@@ -166,7 +166,7 @@ func (r *mutationResolver) RecalculateAFLLadder(ctx context.Context, seasonID st
 	if err != nil {
 		return false, err
 	}
-	if err := r.ScoreCommands.RecalculateAFLLadder(ctx, id); err != nil {
+	if err := r.Commands.RecalculateAFLLadder(ctx, id); err != nil {
 		return false, err
 	}
 	return true, nil

@@ -304,8 +304,8 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 }
 
 // MarkMatchStatsFinal sets data_status to "final" (or back to "partial").
-// On transition to final, publishes AflMatchFinalized so that score/ladder
-// calculation can react via ScoreCommands.HandleAflMatchFinalized.
+// On transition to final, publishes AflMatchFinalized so that Commands.ProcessAFLMatchFinalized
+// can derive the match result and recalculate the ladder.
 func (c *DataOpsCommands) MarkMatchStatsFinal(ctx context.Context, matchID int, final bool) (domain.Match, error) {
 	// set status
 	status := domain.MatchDataPartial
