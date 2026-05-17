@@ -83,7 +83,12 @@
               v-if="aflMatchStarted"
               @click="enterSubsMode"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-            >Subs</button>
+            >
+              <span class="flex items-center gap-1.5">
+                <IconSubs class="w-3.5 h-3.5" />
+                Subs
+              </span>
+            </button>
             <button
               @click="managing = true"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -177,10 +182,8 @@
                     <span class="w-16 shrink-0">
                       <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
-                    <template v-if="playerShowScore(slot.player)">
-                      <span class="flex-1 text-right text-xs tabular-nums text-text-faint pr-2">{{ positionFormula(pos.key, slot.player.score ?? 0) ?? '' }}</span>
-                      <span class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
-                    </template>
+                    <span class="w-24 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, slot.player.score ?? 0) ?? '') : '' }}</span>
+                    <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ playerShowScore(slot.player) ? slot.player.score : '' }}</span>
                   </div>
                 </div>
               </div>
@@ -257,19 +260,15 @@
                         <span class="w-16 shrink-0">
                           <StatusBadge :status="playerStatus(slot.player)" />
                         </span>
-                        <div class="flex items-center gap-1 justify-end">
-                          <template v-if="slot.positions[0]">
-                            <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
-                              {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
-                            </span>
-                          </template>
-                          <template v-if="slot.positions[1]">
-                            <span class="text-xs bg-control rounded px-1.5 py-0.5 text-text-muted">
-                              {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
-                            </span>
-                          </template>
-                          <span v-if="playerShowScore(slot.player)" class="w-8 text-right text-sm tabular-nums text-text shrink-0">{{ slot.player.score }}</span>
+                        <div class="w-24 flex items-center justify-end gap-1 shrink-0">
+                          <span v-if="slot.positions[0]" :class="interchangePosition === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                            {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
+                          </span>
+                          <span v-if="slot.positions[1]" :class="interchangePosition === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                            {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
+                          </span>
                         </div>
+                        <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ playerShowScore(slot.player) ? benchScoreDisplay(slot) : '' }}</span>
                       </div>
                     </template>
                   </div>
@@ -412,9 +411,11 @@ import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
+import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useFflState } from '../composables/useFflState'
+import { POSITION_MULTIPLIERS } from '../utils/position'
 
 const props = defineProps<{ clubMatchId: string }>()
 
@@ -443,6 +444,12 @@ interface SquadPlayer {
   aflMatchId: string | null
   toRoundId: string | null
   pmId: string | null
+  goals: number | null
+  kicks: number | null
+  handballs: number | null
+  marks: number | null
+  tackles: number | null
+  hitouts: number | null
 }
 
 interface Slot {
@@ -564,7 +571,7 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null }>()
+  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       pmId: pm.id,
@@ -573,6 +580,12 @@ const playerMatchBySeasonId = computed(() => {
       status: pm.status ?? null,
       aflStatus: pm.aflStatus ?? null,
       aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
+      goals: pm.aflPlayerMatch?.goals ?? null,
+      kicks: pm.aflPlayerMatch?.kicks ?? null,
+      handballs: pm.aflPlayerMatch?.handballs ?? null,
+      marks: pm.aflPlayerMatch?.marks ?? null,
+      tackles: pm.aflPlayerMatch?.tackles ?? null,
+      hitouts: pm.aflPlayerMatch?.hitouts ?? null,
     })
   }
   return map
@@ -597,6 +610,12 @@ const squad = computed<SquadPlayer[]>(() => {
       aflMatchId: pm?.aflMatchId ?? null,
       toRoundId: r.toRoundId ?? null,
       pmId: pm?.pmId ?? null,
+      goals: pm?.goals ?? null,
+      kicks: pm?.kicks ?? null,
+      handballs: pm?.handballs ?? null,
+      marks: pm?.marks ?? null,
+      tackles: pm?.tackles ?? null,
+      hitouts: pm?.hitouts ?? null,
     }
   })
 })
@@ -609,6 +628,32 @@ function playerStatus(player: SquadPlayer): string | null {
 
 function playerShowScore(player: SquadPlayer): boolean {
   return player.aflStatus === 'played' || player.aflStatus === 'playing'
+}
+
+function benchPositionScore(player: SquadPlayer, pos: string): number | null {
+  if (!playerShowScore(player)) return null
+  if (pos === 'star') {
+    if (player.goals === null) return null
+    return (player.goals ?? 0) * 5 + (player.kicks ?? 0) + (player.handballs ?? 0) + (player.marks ?? 0) * 2 + (player.tackles ?? 0) * 4 + (player.hitouts ?? 0)
+  }
+  const statMap: Record<string, number | null> = {
+    goals: player.goals, kicks: player.kicks, handballs: player.handballs,
+    marks: player.marks, tackles: player.tackles, hitouts: player.hitouts,
+  }
+  const stat = statMap[pos] ?? null
+  if (stat === null) return null
+  return stat * (POSITION_MULTIPLIERS[pos] ?? 1)
+}
+
+function benchScoreDisplay(slot: BenchDualSlot): string {
+  if (!slot.player) return ''
+  const parts: string[] = []
+  for (const pos of slot.positions) {
+    if (!pos) continue
+    const s = benchPositionScore(slot.player, pos)
+    parts.push(s !== null ? String(s) : '?')
+  }
+  return parts.join('/')
 }
 
 function playerAflMatchRoute(player: SquadPlayer): { name: string; params: { matchId: string } } | null {
@@ -683,6 +728,12 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       aflMatchId: pm.aflPlayerMatch?.clubMatch?.match?.id ?? null,
       toRoundId: squadEntry?.toRoundId ?? null,
       pmId: pm.id,
+      goals: pm.aflPlayerMatch?.goals ?? null,
+      kicks: pm.aflPlayerMatch?.kicks ?? null,
+      handballs: pm.aflPlayerMatch?.handballs ?? null,
+      marks: pm.aflPlayerMatch?.marks ?? null,
+      tackles: pm.aflPlayerMatch?.tackles ?? null,
+      hitouts: pm.aflPlayerMatch?.hitouts ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 

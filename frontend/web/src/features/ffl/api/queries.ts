@@ -171,6 +171,7 @@ export const GET_FFL_ROUND = gql`
             }
             aflPlayerMatch {
               clubMatch { match { id } }
+              goals kicks handballs marks tackles hitouts
             }
           }
         }
@@ -195,6 +196,7 @@ export const GET_FFL_ROUND = gql`
             }
             aflPlayerMatch {
               clubMatch { match { id } }
+              goals kicks handballs marks tackles hitouts
             }
           }
         }
@@ -235,6 +237,9 @@ export const GET_FFL_MATCH = gql`
               clubSeason { club { name } }
             }
           }
+          aflPlayerMatch {
+            goals kicks handballs marks tackles hitouts
+          }
         }
       }
       awayClubMatch {
@@ -256,6 +261,9 @@ export const GET_FFL_MATCH = gql`
             aflPlayerSeason {
               clubSeason { club { name } }
             }
+          }
+          aflPlayerMatch {
+            goals kicks handballs marks tackles hitouts
           }
         }
       }
