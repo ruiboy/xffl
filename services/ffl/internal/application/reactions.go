@@ -10,6 +10,99 @@ import (
 	"xffl/services/ffl/internal/domain"
 )
 
+// PlayerMatchUpdate carries AFL player performance data for a single player in a round.
+type PlayerMatchUpdate struct {
+	AFLPlayerMatchID  int
+	AFLPlayerSeasonID int
+	ClubMatchID       int
+	RoundID           int
+	Status            string
+	Goals             int
+	Kicks             int
+	Handballs         int
+	Marks             int
+	Tackles           int
+	Hitouts           int
+}
+
+// ProcessPlayerMatchUpdated finds all FFL player matches for the given AFL player in the
+// matching round, links them to the AFL player match, syncs status, and recalculates scores.
+func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerMatchUpdate) error {
+	slog.DebugContext(ctx, "ProcessPlayerMatchUpdated",
+		slog.Int("afl_player_match_id", update.AFLPlayerMatchID),
+		slog.Int("afl_player_season_id", update.AFLPlayerSeasonID),
+		slog.Int("round_id", update.RoundID),
+	)
+
+	// Find the FFL round that corresponds to this AFL round.
+	fflRound, err := c.rounds.FindByAFLRoundID(ctx, update.RoundID)
+	if err != nil {
+		return nil
+	}
+
+	// Find all FFL player seasons linked to this AFL player season.
+	fflPlayerSeasons, err := c.playerSeasons.FindByAFLPlayerSeasonID(ctx, update.AFLPlayerSeasonID)
+	if err != nil {
+		return fmt.Errorf("find FFL player seasons for AFL player_season %d: %w", update.AFLPlayerSeasonID, err)
+	}
+	if len(fflPlayerSeasons) == 0 {
+		return nil // player not in any FFL squad
+	}
+
+	stats := domain.AFLStats{
+		Goals:     update.Goals,
+		Kicks:     update.Kicks,
+		Handballs: update.Handballs,
+		Marks:     update.Marks,
+		Tackles:   update.Tackles,
+		Hitouts:   update.Hitouts,
+	}
+
+	for _, ps := range fflPlayerSeasons {
+		// Find the FFL player match for this player season in the matching round.
+		pm, err := c.playerMatches.FindByPlayerSeasonAndRound(ctx, ps.ID, fflRound.ID)
+		if err != nil {
+			slog.DebugContext(ctx, "no player_match for player_season in round, skipping", slog.Int("player_season_id", ps.ID), slog.Int("round_id", fflRound.ID))
+			continue
+		}
+
+		// Link to the AFL player match if not already set.
+		if pm.AFLPlayerMatchID == nil {
+			if err := c.playerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, update.AFLPlayerMatchID); err != nil {
+				slog.ErrorContext(ctx, "failed to set afl_player_match_id on player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+			}
+		}
+
+		// Sync the AFL participation status onto the FFL record.
+		if update.Status != "" {
+			if err := c.playerMatches.UpdateAFLStatus(ctx, pm.ID, domain.AFLStatus(update.Status)); err != nil {
+				slog.WarnContext(ctx, "failed to update drv_afl_status", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+			}
+		}
+
+		// Calculate and store the fantasy score.
+		scored, err := c.CalculateFantasyScore(ctx, pm.ID, stats)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to calculate score for player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+			continue
+		}
+
+		// Publish FFL.FantasyScoreCalculated.
+		fflPayload, err := json.Marshal(events.FantasyScoreCalculatedPayload{
+			PlayerMatchID: scored.ID,
+			Score:         scored.Score,
+		})
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to marshal FantasyScoreCalculated event", slog.Any("error", err))
+			continue
+		}
+		if err := c.dispatcher.Publish(ctx, events.FantasyScoreCalculated, fflPayload); err != nil {
+			slog.ErrorContext(ctx, "failed to publish FantasyScoreCalculated event", slog.Any("error", err))
+		}
+	}
+
+	return nil
+}
 
 // ProcessAFLMatchFinalized reacts to AFL.MatchFinalized: for each FFL club_match in the
 // corresponding round, sets drv_afl_status=dnp for unlinked players and emits
@@ -120,32 +213,4 @@ func (c *Commands) ProcessFflMatchFinalized(ctx context.Context, matchID, roundI
 		slog.WarnContext(ctx, "recalculate FFL ladder failed", slog.Int("season_id", round.SeasonID), slog.Any("error", err))
 	}
 	return nil
-}
-
-// RecalculateFflLadder rebuilds FFL ladder standings for the given season from all final matches.
-// Idempotent — safe to call multiple times.
-func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error {
-	matches, err := c.matches.FindFinalBySeasonID(ctx, seasonID)
-	if err != nil {
-		return fmt.Errorf("load final FFL matches: %w", err)
-	}
-	for _, cs := range domain.CalculateLadder(matches) {
-		if err := c.clubSeasons.Update(ctx, cs); err != nil {
-			slog.WarnContext(ctx, "update club season failed",
-				slog.Int("club_season_id", cs.ID), slog.Any("error", err))
-		}
-	}
-	return nil
-}
-
-// emitClubMatchScoreFinalized publishes FFL.ClubMatchScoreFinalized for a given club_match.
-func (c *Commands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
-	b, err := json.Marshal(events.FflClubMatchScoreFinalizedPayload{
-		ClubMatchID: clubMatchID,
-		MatchID:     matchID,
-	})
-	if err != nil {
-		return err
-	}
-	return c.dispatcher.Publish(ctx, events.FflClubMatchScoreFinalized, b)
 }
