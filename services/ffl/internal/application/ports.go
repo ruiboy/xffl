@@ -10,8 +10,8 @@ type PlayerCandidate struct {
 	Club        string // AFL club name from afl.club
 }
 
-// PlayerMatch is the result of resolving a parsed name against a candidate pool.
-type PlayerMatch struct {
+// PlayerNameMatch is the result of resolving a parsed name against a candidate pool.
+type PlayerNameMatch struct {
 	Candidate  PlayerCandidate
 	Confidence float64 // 0.0–1.0
 }
@@ -45,7 +45,7 @@ type PlayerLookup interface {
 // PlayerResolver fuzzy-matches a parsed name (with optional club hint) against
 // a caller-supplied candidate pool. Decoupled from the record type being matched.
 type PlayerResolver interface {
-	Resolve(ctx context.Context, name, clubHint string, candidates []PlayerCandidate) ([]PlayerMatch, error)
+	Resolve(ctx context.Context, name, clubHint string, candidates []PlayerCandidate) ([]PlayerNameMatch, error)
 }
 
 // TeamParser parses a raw forum post into structured player rows.

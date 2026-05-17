@@ -288,7 +288,7 @@ func (r *mutationResolver) RecalculateFFLLadder(ctx context.Context, seasonID st
 	if err != nil {
 		return false, err
 	}
-	if err := r.ScoreCommands.RecalculateFflLadder(ctx, id); err != nil {
+	if err := r.Commands.RecalculateFflLadder(ctx, id); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -300,7 +300,7 @@ func (r *mutationResolver) RecalculateFFLClubMatchScore(ctx context.Context, clu
 	if err != nil {
 		return false, err
 	}
-	if err := r.Commands.RecalculateClubMatchScore(ctx, id); err != nil {
+	if err := r.Commands.RecalculateScore(ctx, id); err != nil {
 		return false, err
 	}
 	return true, nil

@@ -24,44 +24,47 @@ type TxManager interface {
 	WithTx(ctx context.Context, fn func(repos WriteRepos) error) error
 }
 
-// EventRepos provides read-only access for event handler lookups.
-type EventRepos struct {
-	Rounds        domain.RoundRepository
-	PlayerSeasons domain.PlayerSeasonRepository
-	PlayerMatches domain.PlayerMatchRepository
-	Matches       domain.MatchRepository
-	ClubMatches   domain.ClubMatchRepository
-}
-
-// TeamSubmitter is the narrow interface DataOpsCommands uses to delegate team persistence.
-type TeamSubmitter interface {
-	SetTeam(ctx context.Context, params SetTeamParams) ([]domain.PlayerMatch, error)
-}
-
 // SetTeamParams are the inputs to SetTeam.
 type SetTeamParams struct {
 	ClubMatchID int
 	Entries     []SetTeamEntry
 }
 
-// CommandsDeps bundles the dependencies Commands needs beyond the transaction
-// manager and event dispatcher. Grouping them in a struct keeps callsites
-// labelled and stable as new dependencies are added.
-type CommandsDeps struct {
-	EventRepos   EventRepos
-	PlayerLookup PlayerLookup
-}
-
-// Commands handles all write operations for the FFL service.
+// Commands handles all write and event-handling operations for the FFL service.
 type Commands struct {
-	tx           TxManager
-	dispatcher   sharedevents.Dispatcher
-	eventRepos   EventRepos
-	playerLookup PlayerLookup
+	tx            TxManager
+	dispatcher    sharedevents.Dispatcher
+	playerLookup  PlayerLookup
+	matches       domain.MatchRepository
+	clubMatches   domain.ClubMatchRepository
+	clubSeasons   domain.ClubSeasonRepository
+	rounds        domain.RoundRepository
+	playerMatches domain.PlayerMatchRepository
+	playerSeasons domain.PlayerSeasonRepository
 }
 
-func NewCommands(tx TxManager, dispatcher sharedevents.Dispatcher, deps CommandsDeps) *Commands {
-	return &Commands{tx: tx, dispatcher: dispatcher, eventRepos: deps.EventRepos, playerLookup: deps.PlayerLookup}
+func NewCommands(
+	tx TxManager,
+	dispatcher sharedevents.Dispatcher,
+	playerLookup PlayerLookup,
+	matches domain.MatchRepository,
+	clubMatches domain.ClubMatchRepository,
+	clubSeasons domain.ClubSeasonRepository,
+	rounds domain.RoundRepository,
+	playerMatches domain.PlayerMatchRepository,
+	playerSeasons domain.PlayerSeasonRepository,
+) *Commands {
+	return &Commands{
+		tx:            tx,
+		dispatcher:    dispatcher,
+		playerLookup:  playerLookup,
+		matches:       matches,
+		clubMatches:   clubMatches,
+		clubSeasons:   clubSeasons,
+		rounds:        rounds,
+		playerMatches: playerMatches,
+		playerSeasons: playerSeasons,
+	}
 }
 
 // AddPlayerToSeason adds a player to a club season squad. The AFL player_season
@@ -199,12 +202,12 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	}
 
 	// Recalculate scores now that the team is persisted and AFL stats may already be available.
-	if err := c.RecalculateClubMatchScore(ctx, params.ClubMatchID); err != nil {
+	if err := c.RecalculateScore(ctx, params.ClubMatchID); err != nil {
 		slog.WarnContext(ctx, "recalculate club match score failed after SetTeam", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 	}
 
 	// Publish integration event for external subscribers.
-	match, err := c.eventRepos.Matches.FindByID(ctx, matchID)
+	match, err := c.matches.FindByID(ctx, matchID)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to load match for FflTeamSubmitted event", slog.Int("match_id", matchID), slog.Any("error", err))
 		return result, nil
@@ -222,15 +225,15 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	return result, nil
 }
 
-// RecalculateClubMatchScore re-applies AFL stats to all player_matches for a club_match,
+// RecalculateScore re-applies AFL stats to all player_matches for a club_match,
 // then re-sums the club_match total via ClubMatch.Score().
 //
 // Two lookup paths are used:
 //   - Linked: player_matches that already have afl_player_match_id → looked up by that ID.
 //   - Unlinked: freshly submitted rows with no afl_player_match_id yet → looked up by
 //     (afl_player_season_id, afl_round_id) and the link is established as a side effect.
-func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID int) error {
-	pms, err := c.eventRepos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error {
+	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 	if err != nil {
 		return fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
 	}
@@ -263,7 +266,7 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 	statsByAFLSeasonID := make(map[int]PlayerMatchStats)
 	if len(unlinkedPSIDs) > 0 {
 		// Resolve AFL player_season_ids from ffl.player_season records.
-		playerSeasons, err := c.eventRepos.PlayerSeasons.FindByIDs(ctx, unlinkedPSIDs)
+		playerSeasons, err := c.playerSeasons.FindByIDs(ctx, unlinkedPSIDs)
 		if err != nil {
 			return fmt.Errorf("load player_seasons for unlinked player_matches: %w", err)
 		}
@@ -276,15 +279,15 @@ func (c *Commands) RecalculateClubMatchScore(ctx context.Context, clubMatchID in
 
 		if len(aflPSIDs) > 0 {
 			// Traverse clubMatchID → match → round to get the AFL round ID.
-			cm, err := c.eventRepos.ClubMatches.FindByID(ctx, clubMatchID)
+			cm, err := c.clubMatches.FindByID(ctx, clubMatchID)
 			if err != nil {
 				return fmt.Errorf("load club_match %d: %w", clubMatchID, err)
 			}
-			m, err := c.eventRepos.Matches.FindByID(ctx, cm.MatchID)
+			m, err := c.matches.FindByID(ctx, cm.MatchID)
 			if err != nil {
 				return fmt.Errorf("load match %d: %w", cm.MatchID, err)
 			}
-			r, err := c.eventRepos.Rounds.FindByID(ctx, m.RoundID)
+			r, err := c.rounds.FindByID(ctx, m.RoundID)
 			if err != nil {
 				return fmt.Errorf("load round %d: %w", m.RoundID, err)
 			}
@@ -454,11 +457,11 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutID
 		return nil, err
 	}
 
-	if err := c.RecalculateClubMatchScore(ctx, clubMatchID); err != nil {
+	if err := c.RecalculateScore(ctx, clubMatchID); err != nil {
 		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 
-	return c.eventRepos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
+	return c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 }
 
 // CalculateFantasyScore calculates and stores the fantasy score for a player match
@@ -526,13 +529,13 @@ func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerM
 	)
 
 	// Find the FFL round that corresponds to this AFL round.
-	fflRound, err := c.eventRepos.Rounds.FindByAFLRoundID(ctx, update.RoundID)
+	fflRound, err := c.rounds.FindByAFLRoundID(ctx, update.RoundID)
 	if err != nil {
 		return nil
 	}
 
 	// Find all FFL player seasons linked to this AFL player season.
-	fflPlayerSeasons, err := c.eventRepos.PlayerSeasons.FindByAFLPlayerSeasonID(ctx, update.AFLPlayerSeasonID)
+	fflPlayerSeasons, err := c.playerSeasons.FindByAFLPlayerSeasonID(ctx, update.AFLPlayerSeasonID)
 	if err != nil {
 		return fmt.Errorf("find FFL player seasons for AFL player_season %d: %w", update.AFLPlayerSeasonID, err)
 	}
@@ -551,7 +554,7 @@ func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerM
 
 	for _, ps := range fflPlayerSeasons {
 		// Find the FFL player match for this player season in the matching round.
-		pm, err := c.eventRepos.PlayerMatches.FindByPlayerSeasonAndRound(ctx, ps.ID, fflRound.ID)
+		pm, err := c.playerMatches.FindByPlayerSeasonAndRound(ctx, ps.ID, fflRound.ID)
 		if err != nil {
 			slog.DebugContext(ctx, "no player_match for player_season in round, skipping", slog.Int("player_season_id", ps.ID), slog.Int("round_id", fflRound.ID))
 			continue
@@ -559,14 +562,14 @@ func (c *Commands) ProcessPlayerMatchUpdated(ctx context.Context, update PlayerM
 
 		// Link to the AFL player match if not already set.
 		if pm.AFLPlayerMatchID == nil {
-			if err := c.eventRepos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, update.AFLPlayerMatchID); err != nil {
+			if err := c.playerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, update.AFLPlayerMatchID); err != nil {
 				slog.ErrorContext(ctx, "failed to set afl_player_match_id on player_match", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}
 
 		// Sync the AFL participation status onto the FFL record.
 		if update.Status != "" {
-			if err := c.eventRepos.PlayerMatches.UpdateAFLStatus(ctx, pm.ID, domain.AFLStatus(update.Status)); err != nil {
+			if err := c.playerMatches.UpdateAFLStatus(ctx, pm.ID, domain.AFLStatus(update.Status)); err != nil {
 				slog.WarnContext(ctx, "failed to update drv_afl_status", slog.Int("player_match_id", pm.ID), slog.Any("error", err))
 			}
 		}

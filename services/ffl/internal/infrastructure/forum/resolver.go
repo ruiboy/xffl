@@ -20,13 +20,13 @@ func NewLevenshteinResolver() *LevenshteinResolver {
 	return &LevenshteinResolver{}
 }
 
-func (r *LevenshteinResolver) Resolve(_ context.Context, name, clubHint string, candidates []application.PlayerCandidate) ([]application.PlayerMatch, error) {
+func (r *LevenshteinResolver) Resolve(_ context.Context, name, clubHint string, candidates []application.PlayerCandidate) ([]application.PlayerNameMatch, error) {
 	norm := normaliseName(name)
-	results := make([]application.PlayerMatch, 0, len(candidates))
+	results := make([]application.PlayerNameMatch, 0, len(candidates))
 
 	for _, c := range candidates {
 		conf := similarity(norm, normaliseName(c.Name))
-		results = append(results, application.PlayerMatch{
+		results = append(results, application.PlayerNameMatch{
 			Candidate:  c,
 			Confidence: conf,
 		})
@@ -74,7 +74,7 @@ func similarity(a, b string) float64 {
 	return score
 }
 
-func sortByConfidence(matches []application.PlayerMatch) {
+func sortByConfidence(matches []application.PlayerNameMatch) {
 	for i := 1; i < len(matches); i++ {
 		for j := i; j > 0 && matches[j].Confidence > matches[j-1].Confidence; j-- {
 			matches[j], matches[j-1] = matches[j-1], matches[j]

@@ -48,16 +48,17 @@ func setupTestServer(t *testing.T, pool *pgxpool.Pool) *httptest.Server {
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: &stubPlayerLookup{pool: pool},
-	})
+	commands := application.NewCommands(
+		db,
+		memevents.New(),
+		&stubPlayerLookup{pool: pool},
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
@@ -1477,26 +1478,19 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: &stubPlayerLookup{pool: pool},
-	})
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
+		memevents.New(),
+		&stubPlayerLookup{pool: pool},
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q),
 		pg.NewPlayerMatchRepository(q),
-		memevents.New(),
+		pg.NewPlayerSeasonRepository(q),
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

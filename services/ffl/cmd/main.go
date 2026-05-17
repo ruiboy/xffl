@@ -76,26 +76,18 @@ func main() {
 	playerLookup := rpc.NewAFLPlayerLookup(aflBaseURL)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, dispatcher, application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: playerLookup,
-	})
-
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
+		dispatcher,
+		playerLookup,
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q),
 		pg.NewPlayerMatchRepository(q),
-		dispatcher,
+		pg.NewPlayerSeasonRepository(q),
 	)
-	eventHandlers := fflevents.NewHandlers(commands, scoreCommands)
+	eventHandlers := fflevents.NewHandlers(commands)
 	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, eventHandlers.HandlePlayerMatchUpdated)
 	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
 	dispatcher.Subscribe(contractevents.FflTeamFinalized, eventHandlers.HandleFflTeamFinalized)
@@ -117,7 +109,7 @@ func main() {
 		commands,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

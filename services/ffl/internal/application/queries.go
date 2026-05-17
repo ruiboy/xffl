@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"errors"
 
 	"xffl/services/ffl/internal/domain"
 )
@@ -76,15 +75,8 @@ func (q *Queries) GetRound(ctx context.Context, id int) (domain.Round, error) {
 	return q.rounds.FindByID(ctx, id)
 }
 
-func (q *Queries) GetRoundByAFLRoundID(ctx context.Context, aflRoundID int) (*domain.Round, error) {
-	round, err := q.rounds.FindByAFLRoundID(ctx, aflRoundID)
-	if errors.Is(err, domain.ErrNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &round, nil
+func (q *Queries) GetRoundByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {
+	return q.rounds.FindByAFLRoundID(ctx, aflRoundID)
 }
 
 func (q *Queries) GetMatches(ctx context.Context, roundID int) ([]domain.Match, error) {

@@ -11,12 +11,11 @@ import (
 
 // Handlers translates incoming integration event payloads into application use case calls.
 type Handlers struct {
-	commands      *application.Commands
-	scoreCommands *application.ScoreCommands
+	commands *application.Commands
 }
 
-func NewHandlers(commands *application.Commands, scoreCommands *application.ScoreCommands) *Handlers {
-	return &Handlers{commands: commands, scoreCommands: scoreCommands}
+func NewHandlers(commands *application.Commands) *Handlers {
+	return &Handlers{commands: commands}
 }
 
 func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte) error {
@@ -44,7 +43,7 @@ func (h *Handlers) HandleAflMatchFinalized(ctx context.Context, payload []byte) 
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("unmarshal AflMatchFinalized: %w", err)
 	}
-	return h.scoreCommands.ProcessAFLRoundFinalized(ctx, p.RoundID)
+	return h.commands.ProcessAFLMatchFinalized(ctx, p.RoundID)
 }
 
 func (h *Handlers) HandleFflTeamFinalized(ctx context.Context, payload []byte) error {
@@ -52,7 +51,7 @@ func (h *Handlers) HandleFflTeamFinalized(ctx context.Context, payload []byte) e
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("unmarshal FflTeamFinalized: %w", err)
 	}
-	return h.scoreCommands.ProcessFflTeamFinalized(ctx, p.ClubMatchID, p.MatchID)
+	return h.commands.ProcessFflTeamFinalized(ctx, p.ClubMatchID, p.MatchID)
 }
 
 func (h *Handlers) HandleFflClubMatchScoreFinalized(ctx context.Context, payload []byte) error {
@@ -60,7 +59,7 @@ func (h *Handlers) HandleFflClubMatchScoreFinalized(ctx context.Context, payload
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("unmarshal FflClubMatchScoreFinalized: %w", err)
 	}
-	return h.scoreCommands.ProcessFflClubMatchScoreFinalized(ctx, p.ClubMatchID, p.MatchID)
+	return h.commands.ProcessFflClubMatchScoreFinalized(ctx, p.ClubMatchID, p.MatchID)
 }
 
 func (h *Handlers) HandleFflMatchFinalized(ctx context.Context, payload []byte) error {
@@ -68,5 +67,5 @@ func (h *Handlers) HandleFflMatchFinalized(ctx context.Context, payload []byte) 
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return fmt.Errorf("unmarshal FflMatchFinalized: %w", err)
 	}
-	return h.scoreCommands.ProcessFflMatchFinalized(ctx, p.MatchID, p.RoundID)
+	return h.commands.ProcessFflMatchFinalized(ctx, p.MatchID, p.RoundID)
 }

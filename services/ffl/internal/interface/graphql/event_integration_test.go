@@ -151,15 +151,17 @@ func setupCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application
 	q := sqlcgen.New(pool)
 	db := pg.NewDB(pool)
 	dispatcher := memevents.New()
-	commands := application.NewCommands(db, dispatcher, application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: &stubPlayerLookup{pool: pool},
-	})
+	commands := application.NewCommands(
+		db,
+		dispatcher,
+		&stubPlayerLookup{pool: pool},
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
 	return commands, dispatcher
 }
 
@@ -217,20 +219,6 @@ func TestHandlePlayerMatchUpdated_ignores_unknown_player(t *testing.T) {
 	assert.NoError(t, err) // should not error, just skip
 }
 
-func setupScoreCommandsWithDispatcher(t *testing.T, pool *pgxpool.Pool) (*application.ScoreCommands, *memevents.Dispatcher) {
-	t.Helper()
-	q := sqlcgen.New(pool)
-	dispatcher := memevents.New()
-	scoreCommands := application.NewScoreCommands(
-		pg.NewMatchRepository(q),
-		pg.NewClubMatchRepository(q),
-		pg.NewClubSeasonRepository(q),
-		pg.NewRoundRepository(q),
-		pg.NewPlayerMatchRepository(q),
-		dispatcher,
-	)
-	return scoreCommands, dispatcher
-}
 
 func TestHandlePlayerMatchUpdated_syncs_afl_status(t *testing.T) {
 	for _, tc := range []struct {
@@ -313,9 +301,9 @@ func TestHandleAflMatchFinalized_infers_player_statuses(t *testing.T) {
 		ids.fflPlayerSeasonID, ids.fflClubMatchID)
 	require.NoError(t, err)
 
-	scoreCommands, _ := setupScoreCommandsWithDispatcher(t, pool)
+	commands, _ := setupCommandsWithDispatcher(t, pool)
 
-	err = scoreCommands.ProcessAFLRoundFinalized(ctx, ids.aflRoundID)
+	err = commands.ProcessAFLMatchFinalized(ctx, ids.aflRoundID)
 	require.NoError(t, err)
 
 	t.Run("linked player drv_afl_status stays played", func(t *testing.T) {

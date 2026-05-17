@@ -8,41 +8,13 @@ import (
 
 	"xffl/contracts/events"
 	"xffl/services/ffl/internal/domain"
-	sharedevents "xffl/shared/events"
 )
 
-// ScoreCommands handles FFL score and ladder calculation use cases.
-type ScoreCommands struct {
-	matches       domain.MatchRepository
-	clubMatches   domain.ClubMatchRepository
-	clubSeasons   domain.ClubSeasonRepository
-	rounds        domain.RoundRepository
-	playerMatches domain.PlayerMatchRepository
-	dispatcher    sharedevents.Dispatcher
-}
 
-func NewScoreCommands(
-	matches domain.MatchRepository,
-	clubMatches domain.ClubMatchRepository,
-	clubSeasons domain.ClubSeasonRepository,
-	rounds domain.RoundRepository,
-	playerMatches domain.PlayerMatchRepository,
-	dispatcher sharedevents.Dispatcher,
-) *ScoreCommands {
-	return &ScoreCommands{
-		matches:       matches,
-		clubMatches:   clubMatches,
-		clubSeasons:   clubSeasons,
-		rounds:        rounds,
-		playerMatches: playerMatches,
-		dispatcher:    dispatcher,
-	}
-}
-
-// ProcessAFLRoundFinalized reacts to AFL.MatchFinalized: for each FFL club_match in the
-// corresponding round, recalculates provisional scores. For those already at data_status
-// 'final', emits FFL.ClubMatchScoreFinalized.
-func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID int) error {
+// ProcessAFLMatchFinalized reacts to AFL.MatchFinalized: for each FFL club_match in the
+// corresponding round, sets drv_afl_status=dnp for unlinked players and emits
+// FFL.ClubMatchScoreFinalized for club_matches already at data_status 'final'.
+func (c *Commands) ProcessAFLMatchFinalized(ctx context.Context, aflRoundID int) error {
 	fflRound, err := c.rounds.FindByAFLRoundID(ctx, aflRoundID)
 	if err != nil {
 		// No FFL round linked to this AFL round — nothing to do.
@@ -79,7 +51,7 @@ func (c *ScoreCommands) ProcessAFLRoundFinalized(ctx context.Context, aflRoundID
 // ProcessFflTeamFinalized reacts to FFL.TeamFinalized: recalculates the club_match score and
 // emits FFL.ClubMatchScoreFinalized. Assumes AFL stats are final by the time this fires (the
 // data ops workflow enforces this order; RecalculateFflLadder is the safety net).
-func (c *ScoreCommands) ProcessFflTeamFinalized(ctx context.Context, clubMatchID, matchID int) error {
+func (c *Commands) ProcessFflTeamFinalized(ctx context.Context, clubMatchID, matchID int) error {
 	if err := c.emitClubMatchScoreFinalized(ctx, clubMatchID, matchID); err != nil {
 		slog.WarnContext(ctx, "emit ClubMatchScoreFinalized failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
@@ -88,7 +60,7 @@ func (c *ScoreCommands) ProcessFflTeamFinalized(ctx context.Context, clubMatchID
 
 // ProcessFflClubMatchScoreFinalized reacts to FFL.ClubMatchScoreFinalized: if both club_matches
 // for the match are now final, emits FFL.MatchFinalized.
-func (c *ScoreCommands) ProcessFflClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
+func (c *Commands) ProcessFflClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
 	count, err := c.clubMatches.CountFinalByMatchID(ctx, matchID)
 	if err != nil {
 		return fmt.Errorf("count final club_matches for match %d: %w", matchID, err)
@@ -117,7 +89,7 @@ func (c *ScoreCommands) ProcessFflClubMatchScoreFinalized(ctx context.Context, c
 
 // ProcessFflMatchFinalized reacts to FFL.MatchFinalized: derives and persists the match result,
 // then recalculates the FFL ladder for the season.
-func (c *ScoreCommands) ProcessFflMatchFinalized(ctx context.Context, matchID, roundID int) error {
+func (c *Commands) ProcessFflMatchFinalized(ctx context.Context, matchID, roundID int) error {
 	// Load the match with its stored club_match scores to derive the result.
 	clubMatches, err := c.clubMatches.FindByMatchID(ctx, matchID)
 	if err != nil {
@@ -152,7 +124,7 @@ func (c *ScoreCommands) ProcessFflMatchFinalized(ctx context.Context, matchID, r
 
 // RecalculateFflLadder rebuilds FFL ladder standings for the given season from all final matches.
 // Idempotent — safe to call multiple times.
-func (c *ScoreCommands) RecalculateFflLadder(ctx context.Context, seasonID int) error {
+func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error {
 	matches, err := c.matches.FindFinalBySeasonID(ctx, seasonID)
 	if err != nil {
 		return fmt.Errorf("load final FFL matches: %w", err)
@@ -167,7 +139,7 @@ func (c *ScoreCommands) RecalculateFflLadder(ctx context.Context, seasonID int) 
 }
 
 // emitClubMatchScoreFinalized publishes FFL.ClubMatchScoreFinalized for a given club_match.
-func (c *ScoreCommands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
+func (c *Commands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {
 	b, err := json.Marshal(events.FflClubMatchScoreFinalizedPayload{
 		ClubMatchID: clubMatchID,
 		MatchID:     matchID,
