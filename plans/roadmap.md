@@ -259,9 +259,40 @@ season (or once ever) rather than every round.
 - [ ] CI-ready (GitHub Actions or similar)
 - [ ] ADR — Consider deployment options (AWS, GCP, etc)
 
+---
+
 ## Future Ideas
 
 - Fully feature the UX
 - Live AFL data source for ongoing weekly stats (TBD — afltables may serve for weekly reconciliation once historical load is complete)
 - Mobile app
 - Backup remote destination — choose cloud storage (recommend rclone: supports S3, GCS, B2 with a single consistent interface). Decide when deployment target is clearer.
+
+---
+
+## Parked Design — Features understood but not yet built
+
+These were considered during implementation and deliberately deferred. Each entry records what it is, why it was parked, and what would need to change when the time comes.
+
+### Pre-match AFL player naming
+
+**What:** AFL clubs announce their teams a day or two before a match (typically Thursday for a Saturday game). The named squad may change before the match starts — late omissions, bench trimming, injury replacements. Currently xffl has no record of a player being "named" before the match starts. A player either has stats (played) or has no record at all. There is no intermediate "named but not yet played" state.
+
+**Why parked:** Pre-match naming is purely informational for the current workflow — it does not affect scoring or ladder calculations. The data ops workflow only imports stats once matches are complete or in progress. Adding pre-match tracking before the scoring model is stable would add complexity with no near-term payoff. The event model was deliberately designed to accommodate it later without breaking changes.
+
+**What would need to change:**
+
+*AFL domain and data ops:*
+- A new status value `named` for AFL PlayerMatch: player is registered for this match but no stats yet.
+- A data source for pre-match squads (AFL website, Champion Data feed, or manual entry via Data Ops UI).
+- `AFL.MatchUpdated (partial)` payload would include named-but-not-yet-played players at status `"named"` alongside players with stats at `"playing"`.
+
+*FFL domain:*
+- `drv_afl_status = named` reinstated on `ffl.player_match`: player is linked to an AFL PlayerMatch but the match has not started.
+- FFL UI Team Builder could show pre-match squad status before games begin (useful for TMs planning subs in advance).
+
+*Event flow:*
+- `AFL.MatchUpdated` `PlayerSeasonIDStatusMap` would carry `"named"` as a valid third value alongside `"playing"`, `"played"`, `"dnp"`.
+- On `partial` transition: players previously `named` who now have stats transition to `"playing"`; those still without stats remain `"named"`.
+- On `final`: players still `"named"` become `"dnp"`.
+- No new events needed — `AFL.MatchUpdated` already fires on state transitions; the map just gains richer values.
