@@ -80,22 +80,22 @@
           <!-- Default mode buttons -->
           <template v-else>
             <button
-              v-if="aflMatchStarted"
-              @click="enterSubsMode"
-              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-            >
-              <span class="flex items-center gap-1.5">
-                <IconSubs class="w-3.5 h-3.5" />
-                Subs
-              </span>
-            </button>
-            <button
               @click="managing = true"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
             >
               <span class="flex items-center gap-1.5">
                 <IconManage class="w-3.5 h-3.5" />
                 Manage
+              </span>
+            </button>
+            <button
+              v-if="aflMatchStarted"
+              @click="enterSubsMode"
+              class="ml-auto rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconSubs class="w-3.5 h-3.5" />
+                Substitutions
               </span>
             </button>
           </template>
@@ -179,10 +179,11 @@
                       @change="toggleSub(slot.player.pmId ?? '')"
                       class="w-4 h-4 accent-active cursor-pointer"
                     />
+                    <span class="w-28 shrink-0"></span>
                     <span class="w-16 shrink-0">
                       <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
-                    <span class="w-24 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, slot.player.score ?? 0) ?? '') : '' }}</span>
+                    <span class="w-28 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, slot.player) ?? '') : '' }}</span>
                     <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ playerShowScore(slot.player) ? slot.player.score : '' }}</span>
                   </div>
                 </div>
@@ -257,10 +258,7 @@
                           v-model="interchangeApplied"
                           class="w-4 h-4 accent-active cursor-pointer"
                         />
-                        <span class="w-16 shrink-0">
-                          <StatusBadge :status="playerStatus(slot.player)" />
-                        </span>
-                        <div class="w-24 flex items-center justify-end gap-1 shrink-0">
+                        <div class="w-28 flex items-center justify-end gap-1 shrink-0">
                           <span v-if="slot.positions[0]" :class="interchangePosition === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
                             {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
                           </span>
@@ -268,6 +266,10 @@
                             {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                           </span>
                         </div>
+                        <span class="w-16 shrink-0">
+                          <StatusBadge :status="playerStatus(slot.player)" />
+                        </span>
+                        <span class="w-28 shrink-0"></span>
                         <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ playerShowScore(slot.player) ? benchScoreDisplay(slot) : '' }}</span>
                       </div>
                     </template>
@@ -634,7 +636,7 @@ function benchPositionScore(player: SquadPlayer, pos: string): number | null {
   if (!playerShowScore(player)) return null
   if (pos === 'star') {
     if (player.goals === null) return null
-    return (player.goals ?? 0) * 5 + (player.kicks ?? 0) + (player.handballs ?? 0) + (player.marks ?? 0) * 2 + (player.tackles ?? 0) * 4 + (player.hitouts ?? 0)
+    return (player.goals ?? 0) * 5 + (player.kicks ?? 0) + (player.handballs ?? 0) + (player.marks ?? 0) * 2 + (player.tackles ?? 0) * 4
   }
   const statMap: Record<string, number | null> = {
     goals: player.goals, kicks: player.kicks, handballs: player.handballs,

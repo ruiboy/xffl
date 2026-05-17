@@ -173,7 +173,7 @@ function benchPositionScore(pm: PlayerMatch, pos: string): number | null {
   const s = pm.aflPlayerMatch
   if (!s) return null
   if (pos === 'star') {
-    return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4 + s.hitouts
+    return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
   }
   const stat = ({ goals: s.goals, kicks: s.kicks, handballs: s.handballs, marks: s.marks, tackles: s.tackles, hitouts: s.hitouts } as Record<string, number>)[pos] ?? null
   return stat !== null ? stat * (POSITION_MULTIPLIERS[pos] ?? 1) : null
