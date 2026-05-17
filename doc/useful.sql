@@ -11,17 +11,53 @@ from ffl.player_season fps
          left outer join ffl.round frto on frto.id = fps.to_round_id
 order by fc.name, ap.name;
 
--- ffl teams
-select fr.name as round,
-       fc.name as ffl_club,
-       ap.name as afl_player,
-       ac.name as afl_club,
-       fpm.position,
-       am.data_status as afl_match_st,
-       (fpm.afl_player_match_id is not null) as pm_afl_linked,
-       fpm.status as pm_ffl_st,
-       fpm.drv_afl_status as pm_afl_st,
-       fpm.drv_score
+-- ffl team
+with afl_data as (
+    select
+        aps.id as aps_id,
+        ap.name as afl_player_name,
+        ac.name as afl_club_name,
+        am.round_id as afl_round_id,
+        am.data_status as am_data_status,
+        apm.id as apm_id,
+        (apm.id is not null) as apm_exists,
+        case
+            when (am.data_status is null or am.data_status = 'no_data') and apm.id is null
+                then null
+            when (am.data_status is null or am.data_status = 'no_data') and apm.id is not null
+                then 'named'
+            when am.data_status = 'partial' and apm.id is null
+                then 'dnp'
+            when am.data_status = 'partial' and apm.id is not null
+                then 'playing'
+            when am.data_status = 'final' and apm.id is null
+                then 'dnp'
+            when am.data_status = 'final' and apm.id is not null
+                then 'played'
+            end as apm_status_inferred
+    from afl.player_season aps
+             left join afl.player ap on ap.id = aps.player_id
+             left join afl.club_season acs on acs.id = aps.club_season_id
+             left join afl.club ac on ac.id = acs.club_id
+             left join afl.club_match acm on acm.club_season_id = acs.id
+             left join afl.match am on am.id = acm.match_id
+             left join afl.player_match apm
+                       on apm.club_match_id = acm.id
+                           and apm.player_season_id = aps.id
+)
+select
+    fr.name as ffl_round,
+    fc.name as ffl_club,
+    ad.afl_player_name as afl_player,
+    ad.afl_club_name as afl_club,
+    fpm.position as ffl_position,
+    ad.am_data_status,
+    ad.apm_exists,
+    ad.apm_status_inferred,
+    (fpm.afl_player_match_id is not null) as fpm_apm_linked,
+    fpm.drv_afl_status as fpm_drv_afl_status,
+    fpm.status as fpm_status,
+    fpm.drv_score
 from ffl.round fr
          join ffl.match fm on fm.round_id = fr.id
          join ffl.club_match fcm on fcm.match_id = fm.id
@@ -29,21 +65,10 @@ from ffl.round fr
          join ffl.club fc on fc.id = fcs.club_id
          join ffl.player_match fpm on fpm.club_match_id = fcm.id
          join ffl.player_season fps on fps.id = fpm.player_season_id
-         left join afl.player_season aps on aps.id = fps.afl_player_season_id
-         left join afl.player ap on ap.id = aps.player_id
-         left join afl.club_season acs on acs.id = aps.club_season_id
-         left join afl.club ac on ac.id = acs.club_id
-         left join afl.club_match acm
-                   on acm.club_season_id = acs.id
-                       and acm.match_id in (select id from afl.match where round_id =
-                                                                           fr.afl_round_id)
-         left join afl.match am on am.id = acm.match_id
-         left join afl.player_match apm
-                   on apm.club_match_id = acm.id
-                       and apm.player_season_id = aps.id
-where fr.name = 'Round 9'
+         left join afl_data ad on ad.aps_id = fps.afl_player_season_id and ad.afl_round_id = fr.afl_round_id
+where fr.name = 'Round 10'
   and fc.name = 'Ruiboys'
-order by fc.name, fpm.position, ap.name;
+order by fc.name, fpm.position, ad.afl_player_name;
 
 -- reset player match status
 BEGIN;

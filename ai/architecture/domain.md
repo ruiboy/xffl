@@ -29,7 +29,7 @@ Columns prefixed `drv_` in the database are **derived** (computed from other dat
 
 Real-world Australian Football League data.
 
-### Scoring
+### Scoring / Match statistics
 
 | Term | Meaning |
 |------|---------|
@@ -62,25 +62,28 @@ Real-world Australian Football League data.
 
 ### Match data status
 
-Tracks completeness of player stats for a match. Key input for scoring calculations.
+Tracks AFL match data; which comprises of match and player statistics. This is the only input for AFL scoring
+calculations, and one of two key inputs for FFL scoring calculations - the other being FFL Teams.
 
 | Status | Meaning |
 |--------|---------|
-| `no_data` | No stats imported yet. |
-| `partial` | Stats imported but not yet confirmed complete. |
-| `final` | All player stats locked — no further changes expected. |
+| `no_data` | No match data imported yet. |
+| `partial` | Match data available but not yet confirmed complete. Loosely equates to a match being "in progress". |
+| `final` | All match data available. No further changes expected. |
 
 ### Match result
 
-One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match scores; stored in `drv_result` once `data_status = final`.
+One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from match stats; stored in `drv_result` once `data_status = final`.
 
 ### PlayerMatch status
 
 | Status | Meaning |
 |--------|---------|
-| `named` | Player has a stats record but match data is absent or not yet started (`null`/`no_data`). |
-| `playing` | Player is playing; match has stats but is not yet finalised (`partial`). |
-| `played` | Player played; match is finalised (`final`). |
+| `named` | Player has a PlayerMatch record but Match data is not available (Match data status = `null`/`no_data`). |
+| `playing` | Player is playing; match has stats but is not yet finalised (Match data status = `partial`). |
+| `played` | Player played; match is finalised (Match data status = `final`). |
+
+This is inferred, but not actually stored anywhere.
 
 ### Player tenure
 
