@@ -202,7 +202,7 @@
                     slot.player
                       ? (subsMode && isInterchangeSlot(slot)
                         ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
-                        : (subsMode && subsMapReverse.has(slot.player.pmId ?? '') ? 'border-sky-500/30 bg-sky-500/5' : 'border-border bg-surface-raised'))
+                        : 'border-border bg-surface-raised')
                       : 'border-dashed border-border-subtle bg-surface',
                     recentlyClearedSlot === index ? '!border-orange-400' : ''
                   ]"
@@ -210,13 +210,18 @@
                 >
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
-                    <div v-if="slot.player" class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
-                      <component
-                        :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
-                        :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
-                        class="font-medium text-sm text-text-muted hover:text-active transition-colors"
-                      >{{ slot.player.name }}</component>
-                      <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                    <div v-if="slot.player">
+                      <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="block text-xs text-sky-400">
+                        ↑ {{ effectiveSubbedForStarter(slot.player.pmId)!.name }}
+                      </span>
+                      <div class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
+                        <component
+                          :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                          :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
+                          class="font-medium text-sm text-text-muted hover:text-active transition-colors"
+                        >{{ slot.player.name }}</component>
+                        <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                      </div>
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
                   </div>
@@ -259,11 +264,11 @@
                     <template v-else-if="slot.player">
                       <div class="flex items-center gap-2 shrink-0">
                         <div class="w-28 flex items-center justify-end gap-1 shrink-0">
-                          <span v-if="slot.positions[0]" :class="(interchangePosition === slot.positions[0] || subsMapReverse.get(slot.player?.pmId ?? '') === slot.positions[0]) ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
-                            {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template><template v-else-if="subsMapReverse.get(slot.player?.pmId ?? '') === slot.positions[0]"> · Sub</template>
+                          <span v-if="slot.positions[0]" :class="interchangePosition === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[0] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                            {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
                           </span>
-                          <span v-if="slot.positions[1]" :class="(interchangePosition === slot.positions[1] || subsMapReverse.get(slot.player?.pmId ?? '') === slot.positions[1]) ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
-                            {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template><template v-else-if="subsMapReverse.get(slot.player?.pmId ?? '') === slot.positions[1]"> · Sub</template>
+                          <span v-if="slot.positions[1]" :class="interchangePosition === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[1] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                            {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                           </span>
                         </div>
                         <span class="w-16 shrink-0">
@@ -1046,18 +1051,51 @@ function effectiveCovering(pmId: string | null): SquadPlayer | null {
     : (savedSubsMap.value.get(pmId) ?? null)
 }
 
-// Reverse of subsMapping: bench player pmId → the position key they are actively covering.
-const subsMapReverse = computed(() => {
-  const map = new Map<string, string>()
+// Maps bench pmId → the starter they are subbing for (subs mode — live UI state).
+const subsStarterMap = computed(() => {
+  const map = new Map<string, SquadPlayer>()
   for (const pos of positions) {
     for (const slot of teamSlots.value[pos.key]) {
       if (!slot.player?.pmId || !subbedOutIds.value.has(slot.player.pmId)) continue
       const cp = subsMapping.value.get(slot.player.pmId)
-      if (cp?.pmId) map.set(cp.pmId, pos.key)
+      if (cp?.pmId) map.set(cp.pmId, slot.player)
     }
   }
   return map
 })
+
+// Maps bench pmId → the starter they are subbing for (normal mode — saved server state).
+const savedSubsStarterMap = computed(() => {
+  const map = new Map<string, SquadPlayer>()
+  for (const pos of positions) {
+    for (const slot of teamSlots.value[pos.key]) {
+      if (!slot.player?.pmId || slot.player.status !== 'subbed') continue
+      const cp = savedSubsMap.value.get(slot.player.pmId)
+      if (cp?.pmId) map.set(cp.pmId, slot.player)
+    }
+  }
+  return map
+})
+
+// Returns the starter a bench player is subbing for — subs mode uses live UI state, normal mode uses saved server state.
+function effectiveSubbedForStarter(benchPmId: string | null): SquadPlayer | null {
+  if (!benchPmId) return null
+  return subsMode.value
+    ? (subsStarterMap.value.get(benchPmId) ?? null)
+    : (savedSubsStarterMap.value.get(benchPmId) ?? null)
+}
+
+// Returns the position key the bench player is actively covering (used to border-highlight the right pill).
+function effectiveCoveredPosition(benchPmId: string | null): string | null {
+  const starter = effectiveSubbedForStarter(benchPmId)
+  if (!starter?.pmId) return null
+  for (const pos of positions) {
+    for (const slot of teamSlots.value[pos.key]) {
+      if (slot.player?.pmId === starter.pmId) return pos.key
+    }
+  }
+  return null
+}
 
 function onStarterClick(player: SquadPlayer | null) {
   if (!player || !subsMode.value || player.aflStatus !== 'dnp') return

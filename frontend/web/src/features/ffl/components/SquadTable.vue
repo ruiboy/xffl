@@ -49,6 +49,9 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4">
+              <div v-if="coveredStarterMap.get(pm.id)" class="text-xs text-sky-400">
+                ↑ {{ coveredStarterMap.get(pm.id)!.player.aflPlayer.name }}
+              </div>
               <span class="font-medium text-text-muted">{{ pm.player.aflPlayer.name }}</span>
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
@@ -57,9 +60,11 @@
                 <span
                   v-for="pos in pmBackupPositions(pm)"
                   :key="pos"
-                  :class="(pm.interchangePosition === pos || coveringPositionMap.get(pm.id) === pos)
+                  :class="pm.interchangePosition === pos
                     ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400 underline'
-                    : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'"
+                    : coveredStarterMap.get(pm.id)?.position === pos
+                      ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60'
+                      : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'"
                 >{{ positionShort(pos) }}</span>
               </div>
             </td>
@@ -142,12 +147,12 @@ const coveringMap = computed(() => {
   return map
 })
 
-// Reverse: bench player pm.id → the position key they are actively covering.
-const coveringPositionMap = computed(() => {
-  const map = new Map<string, string>()
+// Maps bench pm.id → the starter PlayerMatch they are subbing for.
+const coveredStarterMap = computed(() => {
+  const map = new Map<string, PlayerMatch>()
   for (const [starterId, cp] of coveringMap.value) {
     const starter = starters.value.find(s => s.id === starterId)
-    if (starter?.position) map.set(cp.id, starter.position)
+    if (starter) map.set(cp.id, starter)
   }
   return map
 })
