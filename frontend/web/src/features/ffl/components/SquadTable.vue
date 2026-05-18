@@ -23,13 +23,18 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4">
-              <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
-              <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+              <div>
+                <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
+                <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+              </div>
+              <div v-if="coveringMap.get(pm.id)" class="text-xs text-sky-400">
+                ↑ {{ coveringMap.get(pm.id)!.player.aflPlayer.name }}
+              </div>
             </td>
             <td class="py-2 px-2"></td>
             <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
             <td class="py-2 px-2 text-right tabular-nums font-semibold">
-              {{ pmShowScore(pm) ? pm.score : '' }}
+              {{ pmShowScore(pm) ? pm.score : (coveringScoreForStarter(pm) ?? '') }}
             </td>
           </tr>
         </template>
@@ -52,7 +57,7 @@
                 <span
                   v-for="pos in pmBackupPositions(pm)"
                   :key="pos"
-                  :class="pm.interchangePosition === pos
+                  :class="(pm.interchangePosition === pos || coveringPositionMap.get(pm.id) === pos)
                     ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400 underline'
                     : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'"
                 >{{ positionShort(pos) }}</span>
@@ -121,6 +126,37 @@ const POSITION_LABELS: Record<PositionKey, string> = {
 const isBench = (pm: PlayerMatch) => pm.backupPositions != null || pm.interchangePosition != null
 const starters = computed(() => props.playerMatches.filter(pm => !isBench(pm)))
 const bench    = computed(() => props.playerMatches.filter(pm => isBench(pm)))
+
+// For each subbed-out starter, find the first bench player whose backupPositions covers that starter's position.
+const coveringMap = computed(() => {
+  const map = new Map<string, PlayerMatch>() // starter pm.id → covering bench PlayerMatch
+  for (const starter of starters.value) {
+    if (starter.status !== 'subbed' || !starter.position) continue
+    const covering = bench.value.find(bp => {
+      if (!bp.backupPositions) return false
+      const bps = bp.backupPositions === 'star' ? ['star'] : bp.backupPositions.split(',').map(p => p.trim())
+      return bps.includes(starter.position!)
+    })
+    if (covering) map.set(starter.id, covering)
+  }
+  return map
+})
+
+// Reverse: bench player pm.id → the position key they are actively covering.
+const coveringPositionMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const [starterId, cp] of coveringMap.value) {
+    const starter = starters.value.find(s => s.id === starterId)
+    if (starter?.position) map.set(cp.id, starter.position)
+  }
+  return map
+})
+
+function coveringScoreForStarter(pm: PlayerMatch): number | null {
+  const cp = coveringMap.value.get(pm.id)
+  if (!cp || !pm.position) return null
+  return benchPositionScore(cp, pm.position)
+}
 
 function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null

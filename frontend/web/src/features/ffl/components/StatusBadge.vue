@@ -30,7 +30,7 @@ const statusClass = computed(() => {
     case 'playing':      return 'bg-blue-500/15 text-blue-400'
     case 'played':       return 'bg-green-500/15 text-green-500'
     case 'dnp':          return 'bg-red-500/15 text-red-500'
-    case 'subbed':       return 'bg-orange-500/15 text-orange-500'
+    case 'subbed':       return 'bg-sky-500/15 text-sky-400'
     case 'interchanged': return 'bg-purple-500/15 text-purple-400'
     default: return 'bg-surface text-text-faint'
   }
