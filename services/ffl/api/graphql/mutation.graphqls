@@ -117,8 +117,13 @@ input MarkFFLTeamFinalInput {
   roundId: ID!
 }
 
+input FFLSubPairing {
+  replacedPmId:  ID!
+  replacingPmId: ID!
+}
+
 input DeclareFFLSubstitutionsInput {
-  clubMatchId: ID!
-  subbedOutPlayerMatchIds: [ID!]!
-  interchangeApplied: Boolean!
+  clubMatchId:  ID!
+  subs:         [FFLSubPairing!]!
+  interchange:  FFLSubPairing
 }

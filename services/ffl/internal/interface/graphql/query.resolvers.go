@@ -8,7 +8,6 @@ package graphql
 import (
 	"context"
 	"errors"
-
 	"xffl/services/ffl/internal/domain"
 )
 

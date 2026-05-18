@@ -1170,6 +1170,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputConfirmedFFLPlayerInput,
 		ec.unmarshalInputDeclareFFLSubstitutionsInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
+		ec.unmarshalInputFFLSubPairing,
 		ec.unmarshalInputFFLTeamPlayerInput,
 		ec.unmarshalInputMarkFFLTeamFinalInput,
 		ec.unmarshalInputParseFFLTeamSubmissionInput,
@@ -1258,17 +1259,25 @@ var sources = []*ast.Source{
 }
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/mutation.graphqls", Input: `type Mutation {
+  "Add an AFL player to an FFL club's season squad."
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason!
+
+  "Remove a player from an FFL club's season squad."
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean!
+
+  "Update notes for a player season."
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason!
+
+  "Calculate and store the fantasy score for a player match from AFL stats."
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
+
+  "Set the complete team selection for a club match."
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
 
-  # Data ops: parse a forum post and resolve players against the squad.
-  # Returns a parse result for review — no DB writes.
+  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
 
-  # Data ops: confirm a reviewed parse result and write to the database.
+  "Confirm a reviewed parse result and write player matches to the database."
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 
   "Lock a FFL club_match as final — triggers the FFL scoring chain."
@@ -1284,23 +1293,6 @@ var sources = []*ast.Source{
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
 }
 
-input DeclareFFLSubstitutionsInput {
-  clubMatchId: ID!
-  subbedOutPlayerMatchIds: [ID!]!
-  interchangeApplied: Boolean!
-}
-
-input MarkFFLTeamFinalInput {
-  clubMatchId: ID!
-  matchId: ID!
-  roundId: ID!
-}
-
-input UpdateFFLPlayerSeasonInput {
-  id: ID!
-  notes: String
-}
-
 input AddFFLPlayerToSeasonInput {
   clubSeasonId: ID!
   aflPlayerSeasonId: ID!
@@ -1311,6 +1303,11 @@ input AddFFLPlayerToSeasonInput {
 input RemoveFFLPlayerFromSeasonInput {
   id: ID!
   toRoundId: ID!
+}
+
+input UpdateFFLPlayerSeasonInput {
+  id: ID!
+  notes: String
 }
 
 input CalculateFFLFantasyScoreInput {
@@ -1333,6 +1330,62 @@ input FFLTeamPlayerInput {
   position: String!
   backupPositions: String
   interchangePosition: String
+}
+
+type ParseFFLTeamSubmissionResult {
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type ResolvedPlayer {
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input ParseFFLTeamSubmissionInput {
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+input ConfirmFFLTeamSubmissionInput {
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input ConfirmedFFLPlayerInput {
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
+
+input MarkFFLTeamFinalInput {
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
+}
+
+input FFLSubPairing {
+  replacedPmId:  ID!
+  replacingPmId: ID!
+}
+
+input DeclareFFLSubstitutionsInput {
+  clubMatchId:  ID!
+  subs:         [FFLSubPairing!]!
+  interchange:  FFLSubPairing
 }
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
@@ -1487,46 +1540,7 @@ type AFLPlayerMatch @key(fields: "id") {
   id: ID!
 }
 
-# --- Data ops types ---
 
-input ParseFFLTeamSubmissionInput {
-  clubSeasonId: ID!
-  clubMatchId: ID!
-  teamName: String!
-  post: String!
-}
-
-type ParseFFLTeamSubmissionResult {
-  resolvedPlayers: [ResolvedPlayer!]!
-  needsReview: [Int!]!
-}
-
-type ResolvedPlayer {
-  parsedName: String!
-  clubHint: String!
-  resolvedName: String
-  resolvedClub: String
-  position: String!
-  backupPositions: String!
-  interchangePosition: String!
-  score: Int
-  notes: String!
-  playerSeasonId: ID
-  confidence: Float!
-}
-
-input ConfirmFFLTeamSubmissionInput {
-  clubMatchId: ID!
-  players: [ConfirmedFFLPlayerInput!]!
-}
-
-input ConfirmedFFLPlayerInput {
-  playerSeasonId: ID!
-  position: String!
-  backupPositions: String
-  interchangePosition: String
-  score: Int
-}
 `, BuiltIn: false},
 	{Name: "../../../federation/directives.graphql", Input: `
 	directive @authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
@@ -8018,7 +8032,7 @@ func (ec *executionContext) unmarshalInputDeclareFFLSubstitutionsInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"clubMatchId", "subbedOutPlayerMatchIds", "interchangeApplied"}
+	fieldsInOrder := [...]string{"clubMatchId", "subs", "interchange"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8032,20 +8046,20 @@ func (ec *executionContext) unmarshalInputDeclareFFLSubstitutionsInput(ctx conte
 				return it, err
 			}
 			it.ClubMatchID = data
-		case "subbedOutPlayerMatchIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subbedOutPlayerMatchIds"))
-			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+		case "subs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subs"))
+			data, err := ec.unmarshalNFFLSubPairing2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairingᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.SubbedOutPlayerMatchIds = data
-		case "interchangeApplied":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("interchangeApplied"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			it.Subs = data
+		case "interchange":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("interchange"))
+			data, err := ec.unmarshalOFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.InterchangeApplied = data
+			it.Interchange = data
 		}
 	}
 	return it, nil
@@ -8076,6 +8090,43 @@ func (ec *executionContext) unmarshalInputFFLPlayerSeasonFilter(ctx context.Cont
 				return it, err
 			}
 			it.Active = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFFLSubPairing(ctx context.Context, obj any) (FFLSubPairing, error) {
+	var it FFLSubPairing
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"replacedPmId", "replacingPmId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "replacedPmId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("replacedPmId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReplacedPmID = data
+		case "replacingPmId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("replacingPmId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReplacingPmID = data
 		}
 	}
 	return it, nil
@@ -11145,6 +11196,26 @@ func (ec *executionContext) marshalNFFLSeason2ᚖxfflᚋservicesᚋfflᚋinterna
 	return ec._FFLSeason(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFFLSubPairing2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairingᚄ(ctx context.Context, v any) ([]*FFLSubPairing, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*FFLSubPairing, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx context.Context, v any) (*FFLSubPairing, error) {
+	res, err := ec.unmarshalInputFFLSubPairing(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFFLTeamPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInputᚄ(ctx context.Context, v any) ([]*FFLTeamPlayerInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -11211,36 +11282,6 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]string, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
-	}
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
@@ -11863,6 +11904,14 @@ func (ec *executionContext) marshalOFFLRound2ᚖxfflᚋservicesᚋfflᚋinternal
 		return graphql.Null
 	}
 	return ec._FFLRound(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx context.Context, v any) (*FFLSubPairing, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFFLSubPairing(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {

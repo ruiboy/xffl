@@ -140,10 +140,10 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	return result, nil
 }
 
-// DeclareSubs records substitution and interchange decisions for a club match.
+// DeclareSubs records explicit TM substitution and interchange decisions for a club match.
 // Validation and status assignment are delegated to ClubMatch.DeclareSubs.
 // Triggers a score recalculation after writing.
-func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutIDs []int, interchangeApplied bool) ([]domain.PlayerMatch, error) {
+func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []domain.SubPairing, interchange *domain.SubPairing) ([]domain.PlayerMatch, error) {
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		cm, err := repos.ClubMatches.FindByID(ctx, clubMatchID)
 		if err != nil {
@@ -155,7 +155,7 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutID
 		}
 		cm.PlayerMatches = pms
 
-		updated, err := cm.DeclareSubs(subbedOutIDs, interchangeApplied)
+		updated, err := cm.DeclareSubs(subs, interchange)
 		if err != nil {
 			return err
 		}
@@ -166,13 +166,14 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutID
 		}
 
 		for _, pm := range updated {
-			if pm.BackupPositions != nil {
+			newStatus := pm.Status
+			if old := oldStatus[pm.ID]; statusEqual(old, newStatus) {
 				continue
 			}
-			if old := oldStatus[pm.ID]; old != nil && *old == *pm.Status {
+			if newStatus == nil {
 				continue
 			}
-			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *pm.Status); err != nil {
+			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *newStatus); err != nil {
 				return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
 			}
 		}
@@ -254,6 +255,16 @@ func buildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatch
 		m[pm.ID] = info
 	}
 	return m
+}
+
+func statusEqual(a, b *domain.PlayerMatchStatus) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatchParams {

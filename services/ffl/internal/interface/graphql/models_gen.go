@@ -70,9 +70,9 @@ type ConfirmedFFLPlayerInput struct {
 }
 
 type DeclareFFLSubstitutionsInput struct {
-	ClubMatchID             string   `json:"clubMatchId"`
-	SubbedOutPlayerMatchIds []string `json:"subbedOutPlayerMatchIds"`
-	InterchangeApplied      bool     `json:"interchangeApplied"`
+	ClubMatchID string           `json:"clubMatchId"`
+	Subs        []*FFLSubPairing `json:"subs"`
+	Interchange *FFLSubPairing   `json:"interchange,omitempty"`
 }
 
 type FFLClub struct {
@@ -173,6 +173,11 @@ type FFLSeason struct {
 	Ladder    []*FFLClubSeason `json:"ladder"`
 	Rounds    []*FFLRound      `json:"rounds"`
 	AflSeason *AFLSeason       `json:"aflSeason,omitempty"`
+}
+
+type FFLSubPairing struct {
+	ReplacedPmID  string `json:"replacedPmId"`
+	ReplacingPmID string `json:"replacingPmId"`
 }
 
 type FFLTeamPlayerInput struct {

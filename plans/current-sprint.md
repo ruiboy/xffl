@@ -111,25 +111,25 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
       and migrate existing rows: `subbed → subbed_out`, `interchanged → interchanged_out`
 
 *Docs*
-- [ ] Update `ai/architecture/domain.md` PlayerMatch status table with the five new values
+- [x] Update `ai/architecture/domain.md` PlayerMatch status table with the five new values
 
 *Domain*
-- [ ] Update `PlayerMatchStatus` enum with the four new values
-- [ ] Replace `scoreAuto()`, `scoreTM()`, `isTMMode()` with a single `Score()`:
+- [x] Update `PlayerMatchStatus` enum with the four new values
+- [x] Replace `scoreAuto()`, `scoreTM()`, `isTMMode()` with a single `Score()`:
       sum where `status IN (named, subbed_in, interchanged_in) AND backupPositions IS NULL`
-- [ ] Update `DeclareSubs` domain method to accept explicit `[]SubPairing` + optional interchange
+- [x] Update `DeclareSubs` domain method to accept explicit `[]SubPairing` + optional interchange
       pairing; validate and return updated `[]PlayerMatch` with new statuses set on both sides
-- [ ] Unit-test `Score()` with all status combinations
-- [ ] Unit-test `DeclareSubs` validation (invalid replacedPmId, wrong bench player, re-declare)
+- [x] Unit-test `Score()` with all status combinations
+- [x] Unit-test `DeclareSubs` validation (invalid replacedPmId, wrong bench player, re-declare)
 
 *Application*
-- [ ] Update `DeclareSubs` application service: reset prior statuses, call domain method, persist
-- [ ] Update `RecalculateClubMatchScore`: no changes needed (Score() is now self-contained)
-- [ ] Integration-test `DeclareSubs`: verify player_match statuses set correctly; re-declare resets
+- [x] Update `DeclareSubs` application service: reset prior statuses, call domain method, persist
+- [x] Update `RecalculateClubMatchScore`: no changes needed (Score() is now self-contained)
+- [x] Integration-test `DeclareSubs`: verify player_match statuses set correctly; re-declare resets
 
 *GraphQL*
-- [ ] Update `declareSubs` mutation input to `FFLSubPairing` shape
-- [ ] Update `playerMatch.status` docs/schema to reflect new values
+- [x] Update `declareSubs` mutation input to `FFLSubPairing` shape
+- [x] Update `playerMatch.status` docs/schema to reflect new values
 
 *Frontend*
 - [ ] Update `onSaveSubs` in `TeamBuilderView`: build `{replacedPmId, replacingPmId}` pairs from

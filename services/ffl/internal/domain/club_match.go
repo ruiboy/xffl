@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 )
 
@@ -153,228 +152,111 @@ func containsPosition(positions string, pos Position) bool {
 	return false
 }
 
-// DeclareSubs records TM substitution and interchange decisions for this club match.
-// subbedOutIDs lists starter player_match IDs being subbed out — each must be a starter
-// with AFL status DNP. If interchangeApplied is true, the lowest-scoring non-subbed starter
-// at the interchange bench player's position is marked interchanged.
-// Returns the full player match slice with updated starter statuses; bench players unchanged.
-func (cm ClubMatch) DeclareSubs(subbedOutIDs []int, interchangeApplied bool) ([]PlayerMatch, error) {
+// SubPairing is an explicit TM declaration pairing a starter being replaced with the bench
+// player covering them.
+type SubPairing struct {
+	ReplacedPMID  int // starter going out (must be DNP for subs; any status for interchange)
+	ReplacingPMID int // bench player coming in
+}
+
+// DeclareSubs records explicit TM sub/interchange decisions for this club match.
+// subs lists starter→bench pairings for substitutions (replaced starter must be DNP).
+// interchange is an optional single starter→bench pairing for the interchange slot.
+// All prior sub/interchange statuses are reset to named before applying new declarations.
+// Returns the full player match slice with updated statuses.
+func (cm ClubMatch) DeclareSubs(subs []SubPairing, interchange *SubPairing) ([]PlayerMatch, error) {
 	if cm.DataStatus == ClubMatchDataFinal {
 		return nil, fmt.Errorf("club match %d is already final", cm.ID)
 	}
 
-	subbedSet := make(map[int]bool, len(subbedOutIDs))
-	for _, id := range subbedOutIDs {
-		subbedSet[id] = true
-	}
-
-	for _, pm := range cm.PlayerMatches {
-		if !subbedSet[pm.ID] {
-			continue
-		}
-		if pm.BackupPositions != nil {
-			return nil, fmt.Errorf("player_match %d is a bench player, cannot be subbed out", pm.ID)
-		}
-		if pm.AFLStatus == nil || *pm.AFLStatus != AFLStatusDNP {
-			return nil, fmt.Errorf("player_match %d is not DNP, cannot be subbed out", pm.ID)
-		}
-	}
-
-	interchangedStarterID := 0
-	if interchangeApplied {
-		var interchangePos Position
-		for _, pm := range cm.PlayerMatches {
-			if pm.InterchangePosition != nil {
-				interchangePos = Position(*pm.InterchangePosition)
-				break
-			}
-		}
-		if interchangePos != "" {
-			lowestScore := math.MaxInt
-			for _, pm := range cm.PlayerMatches {
-				if pm.BackupPositions != nil || pm.Position == nil {
-					continue
-				}
-				if *pm.Position == interchangePos && !subbedSet[pm.ID] && pm.Score < lowestScore {
-					lowestScore = pm.Score
-					interchangedStarterID = pm.ID
-				}
-			}
-		}
-	}
-
+	pmByID := make(map[int]*PlayerMatch, len(cm.PlayerMatches))
 	updated := make([]PlayerMatch, len(cm.PlayerMatches))
-	for i, pm := range cm.PlayerMatches {
-		if pm.BackupPositions != nil {
-			updated[i] = pm
-			continue
-		}
-		var newStatus PlayerMatchStatus
-		switch {
-		case subbedSet[pm.ID]:
-			newStatus = PlayerMatchStatusSubbed
-		case pm.ID == interchangedStarterID:
-			newStatus = PlayerMatchStatusInterchange
-		default:
-			newStatus = PlayerMatchStatusNamed
-		}
-		pm.Status = &newStatus
-		updated[i] = pm
+	copy(updated, cm.PlayerMatches)
+	for i := range updated {
+		pmByID[updated[i].ID] = &updated[i]
 	}
+
+	// Validate subs before mutating anything.
+	for _, pair := range subs {
+		replaced, ok := pmByID[pair.ReplacedPMID]
+		if !ok {
+			return nil, fmt.Errorf("player_match %d not found in club match", pair.ReplacedPMID)
+		}
+		if replaced.BackupPositions != nil {
+			return nil, fmt.Errorf("player_match %d is a bench player, cannot be subbed out", pair.ReplacedPMID)
+		}
+		if replaced.AFLStatus == nil || *replaced.AFLStatus != AFLStatusDNP {
+			return nil, fmt.Errorf("player_match %d is not DNP, cannot be subbed out", pair.ReplacedPMID)
+		}
+		replacing, ok := pmByID[pair.ReplacingPMID]
+		if !ok {
+			return nil, fmt.Errorf("player_match %d not found in club match", pair.ReplacingPMID)
+		}
+		if replacing.BackupPositions == nil {
+			return nil, fmt.Errorf("player_match %d is not a bench player, cannot be subbed in", pair.ReplacingPMID)
+		}
+	}
+	if interchange != nil {
+		replaced, ok := pmByID[interchange.ReplacedPMID]
+		if !ok {
+			return nil, fmt.Errorf("player_match %d not found in club match", interchange.ReplacedPMID)
+		}
+		if replaced.BackupPositions != nil {
+			return nil, fmt.Errorf("player_match %d is a bench player, cannot be interchanged out", interchange.ReplacedPMID)
+		}
+		replacing, ok := pmByID[interchange.ReplacingPMID]
+		if !ok {
+			return nil, fmt.Errorf("player_match %d not found in club match", interchange.ReplacingPMID)
+		}
+		if replacing.BackupPositions == nil {
+			return nil, fmt.Errorf("player_match %d is not a bench player, cannot be interchanged in", interchange.ReplacingPMID)
+		}
+	}
+
+	// Reset all prior sub/interchange statuses to named.
+	named := PlayerMatchStatusNamed
+	for i := range updated {
+		if s := updated[i].Status; s != nil {
+			switch *s {
+			case PlayerMatchStatusSubbedOut, PlayerMatchStatusSubbedIn,
+				PlayerMatchStatusInterchangedOut, PlayerMatchStatusInterchangedIn:
+				updated[i].Status = &named
+			}
+		}
+	}
+
+	// Apply new declarations.
+	for _, pair := range subs {
+		subbedOut := PlayerMatchStatusSubbedOut
+		subbedIn := PlayerMatchStatusSubbedIn
+		pmByID[pair.ReplacedPMID].Status = &subbedOut
+		pmByID[pair.ReplacingPMID].Status = &subbedIn
+	}
+	if interchange != nil {
+		interchangedOut := PlayerMatchStatusInterchangedOut
+		interchangedIn := PlayerMatchStatusInterchangedIn
+		pmByID[interchange.ReplacedPMID].Status = &interchangedOut
+		pmByID[interchange.ReplacingPMID].Status = &interchangedIn
+	}
+
 	return updated, nil
 }
 
-// Score computes the total fantasy score for this club match.
-//
-// Two modes:
-//   - Auto mode (all starters named): substitutes all DNP starters with first eligible bench
-//     player; applies interchange if bench player score exceeds the starter's.
-//   - TM mode (any starter has status subbed or interchanged): uses explicit TM decisions —
-//     subbed starters are covered via BackupPositions; interchanged starters are swapped with
-//     the interchange bench player. Bench players stay named in both modes.
+// Score computes the total fantasy score for this club match from explicit TM declarations.
+// Starters with status named score; subbed_out and interchanged_out starters do not.
+// Bench players score only when status is subbed_in or interchanged_in.
+// A DNP starter with no TM declaration scores zero.
 func (cm ClubMatch) Score() int {
-	if cm.isTMMode() {
-		return cm.scoreTM()
-	}
-	return cm.scoreAuto()
-}
-
-// isTMMode returns true if any starter has an explicit TM decision recorded.
-func (cm ClubMatch) isTMMode() bool {
+	total := 0
 	for _, pm := range cm.PlayerMatches {
 		if pm.isBench() {
-			continue
-		}
-		if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbed || *pm.Status == PlayerMatchStatusInterchange) {
-			return true
-		}
-	}
-	return false
-}
-
-// scoreAuto substitutes all DNP starters and applies interchange where beneficial.
-func (cm ClubMatch) scoreAuto() int {
-	starters := make(map[Position][]*PlayerMatch)
-	var bench []*PlayerMatch
-
-	for i := range cm.PlayerMatches {
-		pm := &cm.PlayerMatches[i]
-		if pm.isBench() {
-			bench = append(bench, pm)
-		} else if pm.Position != nil {
-			starters[*pm.Position] = append(starters[*pm.Position], pm)
-		}
-	}
-
-	used := make(map[int]bool)
-
-	// Substitution: replace each DNP starter with the first eligible bench player.
-	for pos, slots := range starters {
-		for si, starter := range slots {
-			if starter.AFLStatus == nil || *starter.AFLStatus != AFLStatusDNP {
-				continue
+			if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbedIn || *pm.Status == PlayerMatchStatusInterchangedIn) {
+				total += pm.Score
 			}
-			for i, bp := range bench {
-				if used[i] || bp.BackupPositions == nil {
-					continue
-				}
-				if containsPosition(*bp.BackupPositions, pos) {
-					starters[pos][si] = bp
-					used[i] = true
-					break
-				}
+		} else {
+			if pm.Status == nil || *pm.Status == PlayerMatchStatusNamed {
+				total += pm.Score
 			}
-		}
-	}
-
-	// Interchange: bench player beats a starter at their designated interchange position.
-	for i, bp := range bench {
-		if used[i] || bp.InterchangePosition == nil {
-			continue
-		}
-		targetPos := Position(*bp.InterchangePosition)
-		slots, ok := starters[targetPos]
-		if !ok {
-			continue
-		}
-		bestSlot := -1
-		bestGain := 0
-		for si, starter := range slots {
-			if gain := bp.Score - starter.Score; gain > bestGain {
-				bestGain = gain
-				bestSlot = si
-			}
-		}
-		if bestSlot >= 0 {
-			starters[targetPos][bestSlot] = bp
-			used[i] = true
-		}
-	}
-
-	total := 0
-	for _, slots := range starters {
-		for _, pm := range slots {
-			total += pm.Score
-		}
-	}
-	return total
-}
-
-// scoreTM applies explicit TM decisions: interchanged starters swap with the interchange
-// bench player; subbed starters are covered via BackupPositions.
-func (cm ClubMatch) scoreTM() int {
-	starters := make(map[Position][]*PlayerMatch)
-	var bench []*PlayerMatch
-
-	for i := range cm.PlayerMatches {
-		pm := &cm.PlayerMatches[i]
-		if pm.isBench() {
-			bench = append(bench, pm)
-		} else if pm.Position != nil {
-			starters[*pm.Position] = append(starters[*pm.Position], pm)
-		}
-	}
-
-	used := make(map[int]bool)
-
-	// Interchange: swap the starter marked interchanged with the interchange bench player.
-	for i, bp := range bench {
-		if used[i] || bp.InterchangePosition == nil {
-			continue
-		}
-		targetPos := Position(*bp.InterchangePosition)
-		for si, starter := range starters[targetPos] {
-			if starter.Status != nil && *starter.Status == PlayerMatchStatusInterchange {
-				starters[targetPos][si] = bp
-				used[i] = true
-				break
-			}
-		}
-	}
-
-	// Substitution: replace each subbed starter via BackupPositions.
-	for pos, slots := range starters {
-		for si, starter := range slots {
-			if starter.Status == nil || *starter.Status != PlayerMatchStatusSubbed {
-				continue
-			}
-			for i, bp := range bench {
-				if used[i] || bp.BackupPositions == nil {
-					continue
-				}
-				if containsPosition(*bp.BackupPositions, pos) {
-					starters[pos][si] = bp
-					used[i] = true
-					break
-				}
-			}
-		}
-	}
-
-	total := 0
-	for _, slots := range starters {
-		for _, pm := range slots {
-			total += pm.Score
 		}
 	}
 	return total
