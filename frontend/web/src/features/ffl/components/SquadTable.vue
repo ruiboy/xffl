@@ -34,7 +34,7 @@
             <td class="py-2 px-2"></td>
             <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
             <td class="py-2 px-2 text-right tabular-nums font-semibold">
-              {{ pmShowScore(pm) ? pm.score : (coveringScoreForStarter(pm) ?? '') }}
+              {{ coveringMap.has(pm.id) ? (coveringScoreForStarter(pm) ?? '') : (pmShowScore(pm) ? pm.score : '') }}
             </td>
           </tr>
         </template>
@@ -132,9 +132,10 @@ const isBench = (pm: PlayerMatch) => pm.backupPositions != null || pm.interchang
 const starters = computed(() => props.playerMatches.filter(pm => !isBench(pm)))
 const bench    = computed(() => props.playerMatches.filter(pm => isBench(pm)))
 
-// For each subbed-out starter, find the first bench player whose backupPositions covers that starter's position.
+// For each subbed-out or interchanged starter, find the covering bench player.
 const coveringMap = computed(() => {
   const map = new Map<string, PlayerMatch>() // starter pm.id → covering bench PlayerMatch
+  // Regular subs
   for (const starter of starters.value) {
     if (starter.status !== 'subbed' || !starter.position) continue
     const covering = bench.value.find(bp => {
@@ -144,6 +145,10 @@ const coveringMap = computed(() => {
     })
     if (covering) map.set(starter.id, covering)
   }
+  // Interchange: displaced starter → interchange bench player
+  const displaced = starters.value.find(s => s.status === 'interchanged')
+  const intBench = bench.value.find(bp => bp.interchangePosition != null)
+  if (displaced && intBench) map.set(displaced.id, intBench)
   return map
 })
 

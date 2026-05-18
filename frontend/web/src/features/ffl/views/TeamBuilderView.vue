@@ -1043,12 +1043,48 @@ const savedSubsMap = computed(() => {
   return map
 })
 
-// Returns the covering bench player for a starter — subs mode uses live UI state, normal mode uses saved server state.
+// The bench slot that holds the interchange player.
+const interchangeBenchSlot = computed(() =>
+  benchDualSlots.value.find(s => isInterchangeSlot(s)) ?? null
+)
+
+// Displaced starter in subs mode: lowest-scoring active starter at interchangePosition.
+const interchangeDisplacedStarterSubsMode = computed((): SquadPlayer | null => {
+  if (!interchangeApplied.value || !interchangePosition.value) return null
+  const posSlots = teamSlots.value[interchangePosition.value as PositionKey]
+  if (!posSlots) return null
+  const active = posSlots.filter(s => s.player && !subbedOutIds.value.has(s.player.pmId ?? ''))
+  if (!active.length) return null
+  return active.reduce((low, s) => {
+    const ls = playerShowScore(low.player!) ? (low.player!.score ?? 0) : 0
+    const ss = playerShowScore(s.player!) ? (s.player!.score ?? 0) : 0
+    return ss < ls ? s : low
+  }, active[0]).player ?? null
+})
+
+// Displaced starter in normal mode: starter with status='interchanged' at interchangePosition.
+const interchangeDisplacedStarterNormal = computed((): SquadPlayer | null => {
+  if (!interchangePosition.value) return null
+  const posSlots = teamSlots.value[interchangePosition.value as PositionKey]
+  return posSlots?.find(s => s.player?.status === 'interchanged')?.player ?? null
+})
+
+// Returns the covering bench player for a starter — covers both subs and interchange.
 function effectiveCovering(pmId: string | null): SquadPlayer | null {
   if (!pmId) return null
-  return subsMode.value
-    ? (subsMapping.value.get(pmId) ?? null)
-    : (savedSubsMap.value.get(pmId) ?? null)
+  if (subsMode.value) {
+    const sub = subsMapping.value.get(pmId)
+    if (sub) return sub
+    if (interchangeApplied.value && interchangeDisplacedStarterSubsMode.value?.pmId === pmId)
+      return interchangeBenchSlot.value?.player ?? null
+    return null
+  } else {
+    const sub = savedSubsMap.value.get(pmId)
+    if (sub) return sub
+    if (interchangeDisplacedStarterNormal.value?.pmId === pmId)
+      return interchangeBenchSlot.value?.player ?? null
+    return null
+  }
 }
 
 // Maps bench pmId → the starter they are subbing for (subs mode — live UI state).
@@ -1077,12 +1113,22 @@ const savedSubsStarterMap = computed(() => {
   return map
 })
 
-// Returns the starter a bench player is subbing for — subs mode uses live UI state, normal mode uses saved server state.
+// Returns the starter a bench player is covering (sub or interchange) — covers both modes.
 function effectiveSubbedForStarter(benchPmId: string | null): SquadPlayer | null {
   if (!benchPmId) return null
-  return subsMode.value
-    ? (subsStarterMap.value.get(benchPmId) ?? null)
-    : (savedSubsStarterMap.value.get(benchPmId) ?? null)
+  if (subsMode.value) {
+    const sub = subsStarterMap.value.get(benchPmId)
+    if (sub) return sub
+    if (interchangeApplied.value && interchangeBenchSlot.value?.player?.pmId === benchPmId)
+      return interchangeDisplacedStarterSubsMode.value ?? null
+    return null
+  } else {
+    const sub = savedSubsStarterMap.value.get(benchPmId)
+    if (sub) return sub
+    if (interchangeBenchSlot.value?.player?.pmId === benchPmId)
+      return interchangeDisplacedStarterNormal.value ?? null
+    return null
+  }
 }
 
 // Returns the position key the bench player is actively covering (used to border-highlight the right pill).
@@ -1108,12 +1154,24 @@ function onBenchRowClick(slot: BenchDualSlot) {
 }
 
 function starterDisplayScore(player: SquadPlayer, posKey: string): number | string {
-  if (subsMode.value && subbedOutIds.value.has(player.pmId ?? '')) {
-    const cp = subsMapping.value.get(player.pmId ?? '')
-    if (cp) return benchPositionScore(cp, posKey) ?? ''
-  } else if (!subsMode.value) {
-    const cp = savedSubsMap.value.get(player.pmId ?? '')
-    if (cp) return benchPositionScore(cp, posKey) ?? ''
+  if (subsMode.value) {
+    // Regular sub
+    const subCp = subsMapping.value.get(player.pmId ?? '')
+    if (subCp && subbedOutIds.value.has(player.pmId ?? '')) return benchPositionScore(subCp, posKey) ?? ''
+    // Interchange displaced starter
+    if (interchangeApplied.value && interchangeDisplacedStarterSubsMode.value?.pmId === player.pmId) {
+      const cp = interchangeBenchSlot.value?.player
+      if (cp) return benchPositionScore(cp, posKey) ?? ''
+    }
+  } else {
+    // Saved sub
+    const subCp = savedSubsMap.value.get(player.pmId ?? '')
+    if (subCp) return benchPositionScore(subCp, posKey) ?? ''
+    // Saved interchange displaced starter
+    if (interchangeDisplacedStarterNormal.value?.pmId === player.pmId) {
+      const cp = interchangeBenchSlot.value?.player
+      if (cp) return benchPositionScore(cp, posKey) ?? ''
+    }
   }
   return playerShowScore(player) ? (player.score ?? '') : ''
 }
