@@ -305,6 +305,114 @@ started (any player has `aflStatus` set). Shows:
 
 ---
 
+## Side quest — Explicit substitution/interchange records *(ffl.substitution_event)*
+
+**Problem**: The current model infers sub/interchange pairings at query time from `backup_positions`
+and `interchange_position` — the same heuristic logic is duplicated in `ClubMatch.Score()`,
+`RecalculateScore`, the GraphQL resolvers, and the frontend. This makes scoring non-deterministic
+(re-running the heuristic after squad changes can produce different pairings), prevents reliable
+stats queries ("who covered whom across the season?"), and forces the frontend to reimplement
+matching logic rather than reading a direct fact.
+
+**Proposed approach**: Introduce `ffl.substitution_event` as the source of truth for every TM
+sub/interchange decision. `DeclareSubs` writes these rows; `ClubMatch.Score()` and the frontend
+read them directly.
+
+### Schema
+
+```sql
+CREATE TABLE ffl.substitution_event (
+  id                      serial PRIMARY KEY,
+  club_match_id           integer NOT NULL REFERENCES ffl.club_match(id),
+  type                    text    NOT NULL,  -- 'sub' | 'interchange'
+  position                text    NOT NULL,  -- position key being filled
+  replaced_pm_id          integer NOT NULL REFERENCES ffl.player_match(id),
+  replacing_pm_id         integer NOT NULL REFERENCES ffl.player_match(id),
+  created_at              timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ON ffl.substitution_event (club_match_id);
+```
+
+One row per pairing. Re-declaring subs deletes all existing rows for the `club_match_id` and
+re-inserts. No versioning needed — only the latest declaration matters.
+
+### Backend changes
+
+**`DeclareSubs`**:
+1. Delete all `substitution_event` rows for `club_match_id`.
+2. For each `subbedOutID`: find the covering bench player (same pairing logic as today, but run
+   once here), insert a `sub` row.
+3. If `interchangeApplied`: find the displaced starter + interchange bench player, insert one
+   `interchange` row.
+4. Trigger `RecalculateClubMatchScore` as today.
+
+**`ClubMatch.Score()` — TM mode**:
+- Instead of re-running `backup_positions`/`interchange_position` heuristics, receive a
+  `[]SubstitutionEvent` slice and build the replacement map from it.
+- Auto mode (no substitution_event rows): behaviour unchanged.
+
+**`RecalculateClubMatchScore`**:
+- Load `substitution_event` rows for the club_match; pass to `ClubMatch.Score()`.
+
+### GraphQL
+
+```graphql
+type FFLSubstitutionEvent {
+  id:            ID!
+  type:          String!   # "sub" | "interchange"
+  position:      String!
+  replacedBy:    FFLPlayerMatch!
+  replacing:     FFLPlayerMatch!
+}
+
+extend type FFLClubMatch {
+  substitutionEvents: [FFLSubstitutionEvent!]!
+}
+```
+
+Frontend uses `substitutionEvents` instead of inferring pairings.
+
+### Frontend simplification
+
+- Drop computed refs: `subsMapping`, `savedSubsMap`, `interchangeDisplacedStarterNormal`,
+  `savedSubsStarterMap`, `coveringMap` (in both `TeamBuilderView` and `SquadTable`).
+- Replace with a map derived directly from `clubMatch.substitutionEvents`.
+- `effectiveCovering` / `effectiveSubbedForStarter` become trivial lookups into that map.
+- Subs mode (live, before Save): keep the client-side preview maps for immediate feedback;
+  on save the server response includes updated `substitutionEvents` which drives normal mode.
+
+### Tasks
+
+*Migration*
+- [ ] Write migration: create `ffl.substitution_event` table + index
+- [ ] Write sqlc queries: `InsertSubstitutionEvent`, `DeleteSubstitutionEventsByClubMatch`,
+      `GetSubstitutionEventsByClubMatch`
+- [ ] Regenerate sqlcgen
+
+*Domain*
+- [ ] Add `SubstitutionEvent` value type to `ffl` domain
+- [ ] Update `ClubMatch.Score()` signature to accept `[]SubstitutionEvent`; remove heuristic
+      pairing logic; derive replacement map from events in TM mode
+
+*Application*
+- [ ] Update `DeclareSubs`: delete+reinsert substitution_event rows; derive pairings once here
+- [ ] Update `RecalculateClubMatchScore`: load substitution_event rows; pass to `ClubMatch.Score()`
+- [ ] Unit-test updated `ClubMatch.Score()` with explicit event slices
+- [ ] Integration-test `DeclareSubs`: verify substitution_event rows written; re-declare replaces rows
+
+*GraphQL*
+- [ ] Add `FFLSubstitutionEvent` type and `substitutionEvents` field on `FFLClubMatch`
+- [ ] Add sqlc-backed resolver for `substitutionEvents`
+
+*Frontend*
+- [ ] Add `substitutionEvents` to `GET_FFL_MATCH` and `GET_FFL_ROUND` queries
+- [ ] Replace heuristic computed refs in `TeamBuilderView` with map derived from `substitutionEvents`
+- [ ] Replace `coveringMap` / `coveredStarterMap` in `SquadTable` with map derived from `substitutionEvents`
+- [ ] Verify subs mode live preview still works (client-side preview maps remain for in-flight state)
+
+---
+
 ## Step 6 — Score reconciliation *(every round)*
 
 *Requirements TBD — interview user when we reach this step before any implementation. Ideas to seed the conversation:*
