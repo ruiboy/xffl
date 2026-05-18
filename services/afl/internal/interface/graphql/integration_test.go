@@ -57,7 +57,14 @@ func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock)
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
+	commands := application.NewCommands(
+		db,
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		memevents.New(),
+	)
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
@@ -847,7 +854,14 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
+	commands := application.NewCommands(
+		db,
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q, pool),
+		memevents.New(),
+	)
 	dataOps := application.NewDataOpsCommands(
 		db,
 		pg.NewMatchRepository(q),
@@ -1355,8 +1369,8 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, pg.NewMatchRepository(q), memevents.New())
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
@@ -1364,7 +1378,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 		memevents.New(),
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -595,8 +595,8 @@ func (r *PlayerMatchRepository) UpdateAFLStatus(ctx context.Context, id int, sta
 	})
 }
 
-func (r *PlayerMatchRepository) SetAFLStatusDNP(ctx context.Context, clubMatchID int) error {
-	return r.q.SetDrvAFLStatusDNPForClubMatch(ctx, int32(clubMatchID))
+func (r *PlayerMatchRepository) AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error) {
+	return r.q.AllAFLStatusesFinal(ctx, int32(clubMatchID))
 }
 
 func posToStringPtr(p *domain.Position) *string {

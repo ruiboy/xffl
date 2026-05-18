@@ -19,15 +19,15 @@ func NewHandlers(index *IndexDocument) *Handlers {
 	return &Handlers{index: index}
 }
 
-// HandlePlayerMatchUpdated handles AFL.PlayerMatchUpdated events.
-func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte) error {
-	var p contractevents.PlayerMatchUpdatedPayload
+// HandleAflPlayerMatchUpdated handles AFL.PlayerMatchUpdated events.
+func (h *Handlers) HandleAflPlayerMatchUpdated(ctx context.Context, payload []byte) error {
+	var p contractevents.AflPlayerMatchUpdatedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("HandlePlayerMatchUpdated: unmarshal: %w", err)
+		return fmt.Errorf("HandleAflPlayerMatchUpdated: unmarshal: %w", err)
 	}
 
 	slog.DebugContext(ctx, "event received",
-		slog.String("event_type", contractevents.PlayerMatchUpdated),
+		slog.String("event_type", contractevents.AflPlayerMatchUpdated),
 		slog.Int("player_match_id", p.PlayerMatchID),
 	)
 
@@ -53,25 +53,26 @@ func (h *Handlers) HandlePlayerMatchUpdated(ctx context.Context, payload []byte)
 	return h.index.Execute(ctx, doc)
 }
 
-// HandleFantasyScoreCalculated handles FFL.FantasyScoreCalculated events.
-func (h *Handlers) HandleFantasyScoreCalculated(ctx context.Context, payload []byte) error {
-	var p contractevents.FantasyScoreCalculatedPayload
+// HandleFflPlayerMatchUpdated handles FFL.PlayerMatchUpdated events.
+func (h *Handlers) HandleFflPlayerMatchUpdated(ctx context.Context, payload []byte) error {
+	var p contractevents.FflPlayerMatchUpdatedPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return fmt.Errorf("HandleFantasyScoreCalculated: unmarshal: %w", err)
+		return fmt.Errorf("HandleFflPlayerMatchUpdated: unmarshal: %w", err)
 	}
 
 	slog.DebugContext(ctx, "event received",
-		slog.String("event_type", contractevents.FantasyScoreCalculated),
+		slog.String("event_type", contractevents.FflPlayerMatchUpdated),
 		slog.Int("player_match_id", p.PlayerMatchID),
 		slog.Int("score", p.Score),
 	)
 
 	doc := domain.SearchDocument{
-		ID:     fmt.Sprintf("ffl_fantasy_score_%d", p.PlayerMatchID),
+		ID:     fmt.Sprintf("ffl_player_match_%d", p.PlayerMatchID),
 		Source: domain.SourceFFL,
 		Type:   domain.TypeFantasyScore,
 		Data: map[string]any{
 			"player_match_id": p.PlayerMatchID,
+			"club_match_id":   p.ClubMatchID,
 			"score":           p.Score,
 		},
 	}

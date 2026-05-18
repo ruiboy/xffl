@@ -13,12 +13,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	aflv1 "xffl/contracts/gen/afl/v1"
-	contractevents "xffl/contracts/events"
 	"xffl/services/afl/internal/application"
 	pg "xffl/services/afl/internal/infrastructure/postgres"
 	"xffl/services/afl/internal/infrastructure/postgres/sqlcgen"
 	"xffl/services/afl/internal/infrastructure/footywire"
-	aflevents "xffl/services/afl/internal/interface/events"
 	gql "xffl/services/afl/internal/interface/graphql"
 	rpcsrv "xffl/services/afl/internal/interface/twirp"
 	"xffl/shared/clock"
@@ -73,17 +71,14 @@ func main() {
 	}()
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, pg.NewMatchRepository(q), dispatcher)
-
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q, pool),
 		dispatcher,
 	)
-	eventHandlers := aflevents.NewHandlers(scoreCommands)
-	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
 
 	footywireClient := footywire.NewFootywireClient()
 	dataOps := application.NewDataOpsCommands(
@@ -103,7 +98,7 @@ func main() {
 		dispatcher,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

@@ -17,7 +17,7 @@ const confidenceThreshold = 0.85
 type ResolvedPlayer struct {
 	Parsed         ParsedPlayerRow
 	PlayerSeasonID int
-	BestMatch      PlayerMatch
+	BestMatch      PlayerNameMatch
 	Confident      bool // true if confidence >= threshold
 }
 
@@ -56,17 +56,17 @@ type DataOpsCommands struct {
 	playerResolver PlayerResolver
 	teamParser     TeamParser
 	dispatcher     sharedevents.Dispatcher
-	teamSubmitter  TeamSubmitter
+	commands       *Commands
 }
 
-func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolver, parser TeamParser, dispatcher sharedevents.Dispatcher, teamSubmitter TeamSubmitter) *DataOpsCommands {
+func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolver, parser TeamParser, dispatcher sharedevents.Dispatcher, commands *Commands) *DataOpsCommands {
 	return &DataOpsCommands{
 		tx:             tx,
 		playerLookup:   lookup,
 		playerResolver: resolver,
 		teamParser:     parser,
 		dispatcher:     dispatcher,
-		teamSubmitter:  teamSubmitter,
+		commands:       commands,
 	}
 }
 
@@ -115,16 +115,16 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 	var needsReview []int
 
 	for _, row := range rows {
-		matches, err := c.playerResolver.Resolve(ctx, row.Name, row.ClubHint, candidates)
+		nameMatches, err := c.playerResolver.Resolve(ctx, row.Name, row.ClubHint, candidates)
 		if err != nil {
 			return ParseTeamSubmissionResult{}, fmt.Errorf("resolve %q: %w", row.Name, err)
 		}
 
 		rp := ResolvedPlayer{Parsed: row}
-		if len(matches) > 0 {
-			rp.BestMatch = matches[0]
-			rp.Confident = matches[0].Confidence >= confidenceThreshold
-			rp.PlayerSeasonID = matches[0].Candidate.PlayerID // PlayerID is the player_season_id in squad context
+		if len(nameMatches) > 0 {
+			rp.BestMatch = nameMatches[0]
+			rp.Confident = nameMatches[0].Confidence >= confidenceThreshold
+			rp.PlayerSeasonID = nameMatches[0].Candidate.PlayerID // PlayerID is the player_season_id in squad context
 		}
 		if !rp.Confident {
 			needsReview = append(needsReview, len(resolved))
@@ -160,14 +160,13 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		}
 		entries = append(entries, e)
 	}
-	return c.teamSubmitter.SetTeam(ctx, SetTeamParams{
+	return c.commands.SetTeam(ctx, SetTeamParams{
 		ClubMatchID: params.ClubMatchID,
 		Entries:     entries,
 	})
 }
 
-// MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.TeamFinalized.
-// Call this after AFL stats are final and the team selection is confirmed.
+// MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).
 func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFinalParams) error {
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataFinal)
@@ -176,16 +175,22 @@ func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFina
 		return err
 	}
 
-	b, err := json.Marshal(events.FflTeamFinalizedPayload{
-		ClubMatchID: params.ClubMatchID,
-		MatchID:     params.MatchID,
-		RoundID:     params.RoundID,
+	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+	}
+
+	b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   params.ClubMatchID,
+		MatchID:       params.MatchID,
+		RoundID:       params.RoundID,
+		DataStatus:    string(domain.ClubMatchDataFinal),
+		PlayerMatches: buildPlayerMatchMap(pms),
 	})
 	if err == nil {
-		if err := c.dispatcher.Publish(ctx, events.FflTeamFinalized, b); err != nil {
-			slog.WarnContext(ctx, "publish FflTeamFinalized failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated(final) failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 		}
 	}
 	return nil
 }
-

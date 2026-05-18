@@ -29,7 +29,7 @@ Columns prefixed `drv_` in the database are **derived** (computed from other dat
 
 Real-world Australian Football League data.
 
-### Scoring
+### Scoring / Match statistics
 
 | Term | Meaning |
 |------|---------|
@@ -62,25 +62,29 @@ Real-world Australian Football League data.
 
 ### Match data status
 
-Tracks completeness of player stats for a match. Key input for scoring calculations.
+Tracks AFL match data; which consists of match and player statistics. This is the only input for AFL scoring
+calculations, and one of two key inputs for FFL scoring calculations - the other being FFL Teams.
 
 | Status | Meaning |
 |--------|---------|
-| `no_data` | No stats imported yet. |
-| `partial` | Stats imported but not yet confirmed complete. |
-| `final` | All player stats locked — no further changes expected. |
+| `no_data` | No match data imported yet. |
+| `partial` | Match data available but not yet confirmed complete. Loosely equates to a match being "in progress". |
+| `final` | All match data available. No further changes expected. |
 
 ### Match result
 
-One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from club match scores; stored in `drv_result` once `data_status = final`.
+One of: `home_win`, `away_win`, `draw`, `no_result`. Derived from match stats; stored in `drv_result` once `data_status = final`.
 
 ### PlayerMatch status
 
+Inferred from whether the player has match stats and whether the match is final. Not stored.
+
 | Status | Meaning |
 |--------|---------|
-| `named` | Player has a stats record but match data is absent or not yet started (`null`/`no_data`). |
-| `playing` | Player is playing; match has stats but is not yet finalised (`partial`). |
-| `played` | Player played; match is finalised (`final`). |
+| `playing` | Player has stats; match not yet final. |
+| `played` | Player has stats; match is final. |
+
+Pre-match squad naming (`named`) is not tracked — see Parked Design in `plans/roadmap.md`.
 
 ### Player tenure
 
@@ -179,26 +183,16 @@ Two separate status concepts apply to an FFL PlayerMatch:
 | `subbed` | Substituted out by the Team Manager. |
 | `interchanged` | Interchanged by the Team Manager. |
 
-**AFL Status** — the status of the underlying AFL player in their respective AFL match.
+**AFL Status** — whether this AFL player participated in their AFL match this round. Separate from the TM's team position decisions.
 
 | Value | Meaning |
 |-------|---------|
-| `named` | Linked to an AFL PlayerMatch; match has not started yet (`null`/`no_data`). |
-| `playing` | Has AFL stats; AFL match not yet final. |
-| `played` | Has AFL stats; AFL match is final. |
-| `dnp` | No AFL stats once the AFL match is final — did not play. |
-| `null` | Not yet linked to an AFL PlayerMatch; match not yet imported. |
+| `null` | No AFL data yet for this player's match. |
+| `playing` | Player has AFL stats; match not yet final. |
+| `played` | Player has AFL stats; match is final. |
+| `dnp` | Did not play — match is final but player has no stats. |
 
-Derivation from AFL match status and whether an AFL PlayerMatch record is linked:
-
-| AFL match status | Linked? | Derived AFL status |
-|------------------|---------|--------------------|
-| `null` or `no_data` | yes | `named`            |
-| `null` or `no_data` | no | `null`             |
-| `partial` | yes | `playing`          |
-| `partial` | no | `null`             |
-| `final` | yes | `played`           |
-| `final` | no | `dnp`              |
+Derived from AFL data; never set by TM decisions. Pre-match `named` status is not tracked — see Parked Design in `plans/roadmap.md`.
 
 ### Substitution and interchange
 

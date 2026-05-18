@@ -34,11 +34,29 @@ export const POSITION_MULTIPLIERS: Record<string, number> = {
   marks: 2, tackles: 4, hitouts: 1, star: 1,
 }
 
-// Returns a formula string like "3×5" for positions with multiplier > 1, otherwise null.
-export function positionFormula(position: string, score: number): string | null {
+interface StatFields {
+  goals: number | null; kicks: number | null; handballs: number | null
+  marks: number | null; tackles: number | null; hitouts: number | null
+}
+
+// Returns a formula string computed directly from raw AFL stats.
+// Star: all five components always shown, e.g. "0×5 21 14 6×2 5×4".
+// Other positions: "stat×multiplier" when multiplier > 1, null otherwise (no formula for ×1 positions).
+export function positionFormula(position: string, stats: StatFields): string | null {
+  if (position === 'star') {
+    if (stats.goals === null) return null
+    return [
+      `${stats.goals ?? 0}×5`,
+      `${stats.kicks ?? 0}`,
+      `${stats.handballs ?? 0}`,
+      `${stats.marks ?? 0}×2`,
+      `${stats.tackles ?? 0}×4`,
+    ].join(' ')
+  }
   const multiplier = POSITION_MULTIPLIERS[position]
   if (!multiplier || multiplier <= 1) return null
-  return `${Math.round(score / multiplier)}×${multiplier}`
+  const stat = ({ goals: stats.goals, kicks: stats.kicks, handballs: stats.handballs, marks: stats.marks, tackles: stats.tackles, hitouts: stats.hitouts } as Record<string, number | null>)[position] ?? null
+  return stat !== null ? `${stat}×${multiplier}` : null
 }
 
 export interface RoundRef { id: string }

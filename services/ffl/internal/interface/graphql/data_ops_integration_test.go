@@ -75,16 +75,17 @@ func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.D
 	)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, memevents.New(), application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: &stubPlayerLookup{pool: pool},
-	})
+	commands := application.NewCommands(
+		db,
+		memevents.New(),
+		&stubPlayerLookup{pool: pool},
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := gqlhandler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
@@ -124,16 +125,17 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 	}
 	testDB := pg.NewDB(pool)
 	testQ := sqlcgen.New(pool)
-	testCommands := application.NewCommands(testDB, memevents.New(), application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(testQ),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(testQ),
-			PlayerMatches: pg.NewPlayerMatchRepository(testQ),
-			Matches:       pg.NewMatchRepository(testQ),
-			ClubMatches:   pg.NewClubMatchRepository(testQ),
-		},
-		PlayerLookup: stub,
-	})
+	testCommands := application.NewCommands(
+		testDB,
+		memevents.New(),
+		stub,
+		pg.NewMatchRepository(testQ),
+		pg.NewClubMatchRepository(testQ),
+		pg.NewClubSeasonRepository(testQ),
+		pg.NewRoundRepository(testQ),
+		pg.NewPlayerMatchRepository(testQ),
+		pg.NewPlayerSeasonRepository(testQ),
+	)
 	dataOps := application.NewDataOpsCommands(
 		testDB,
 		stub,
@@ -298,16 +300,17 @@ func TestMarkFFLTeamFinal(t *testing.T) {
 
 	db := pg.NewDB(pool)
 	q := sqlcgen.New(pool)
-	cmds := application.NewCommands(db, memevents.New(), application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: &stubPlayerLookup{pool: pool},
-	})
+	cmds := application.NewCommands(
+		db,
+		memevents.New(),
+		&stubPlayerLookup{pool: pool},
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
 	dataOps := application.NewDataOpsCommands(
 		db,
 		&stubPlayerLookup{pool: pool},

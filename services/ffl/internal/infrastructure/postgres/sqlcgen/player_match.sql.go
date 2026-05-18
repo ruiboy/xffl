@@ -9,6 +9,22 @@ import (
 	"context"
 )
 
+const allAFLStatusesFinal = `-- name: AllAFLStatusesFinal :one
+SELECT NOT EXISTS (
+    SELECT 1 FROM ffl.player_match
+    WHERE club_match_id = $1
+      AND (drv_afl_status IS NULL OR drv_afl_status NOT IN ('played', 'dnp'))
+      AND deleted_at IS NULL
+) AS result
+`
+
+func (q *Queries) AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (bool, error) {
+	row := q.db.QueryRow(ctx, allAFLStatusesFinal, clubMatchID)
+	var result bool
+	err := row.Scan(&result)
+	return result, err
+}
+
 const deletePlayerMatchByID = `-- name: DeletePlayerMatchByID :exec
 DELETE FROM ffl.player_match
 WHERE id = $1
@@ -161,17 +177,6 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 		return nil, err
 	}
 	return items, nil
-}
-
-const setDrvAFLStatusDNPForClubMatch = `-- name: SetDrvAFLStatusDNPForClubMatch :exec
-UPDATE ffl.player_match
-SET drv_afl_status = 'dnp', updated_at = CURRENT_TIMESTAMP
-WHERE club_match_id = $1 AND (drv_afl_status IS NULL OR drv_afl_status = 'named') AND deleted_at IS NULL
-`
-
-func (q *Queries) SetDrvAFLStatusDNPForClubMatch(ctx context.Context, clubMatchID int32) error {
-	_, err := q.db.Exec(ctx, setDrvAFLStatusDNPForClubMatch, clubMatchID)
-	return err
 }
 
 const updateAFLPlayerMatchID = `-- name: UpdateAFLPlayerMatchID :exec

@@ -4,6 +4,7 @@
       <thead>
         <tr class="border-b border-border text-left text-text-muted">
           <th class="py-2 pr-4 font-medium">Player</th>
+          <th class="py-2 px-2"></th>
           <th class="py-2 px-2 font-medium">Status</th>
           <th class="py-2 px-2 font-medium text-right">Score</th>
         </tr>
@@ -11,7 +12,7 @@
       <tbody>
         <template v-for="(group, i) in starterGroups" :key="group.position">
           <tr>
-            <td colspan="3" class="pb-1 text-xs font-semibold text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
+            <td colspan="4" class="pb-1 text-xs font-semibold text-text-faint" :class="i === 0 ? 'pt-3' : 'pt-5'">
               <span>{{ group.label }}</span>
               <span class="pl-3">({{ group.total }})</span>
             </td>
@@ -22,19 +23,25 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4">
-              <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
-              <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+              <div>
+                <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
+                <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+              </div>
+              <div v-if="coveringMap.get(pm.id)" class="text-xs text-sky-400">
+                ↑ {{ coveringMap.get(pm.id)!.player.aflPlayer.name }}
+              </div>
             </td>
+            <td class="py-2 px-2"></td>
             <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
             <td class="py-2 px-2 text-right tabular-nums font-semibold">
-              {{ pmShowScore(pm) ? pm.score : '' }}
+              {{ coveringMap.has(pm.id) ? (coveringScoreForStarter(pm) ?? '') : (pmShowScore(pm) ? pm.score : '') }}
             </td>
           </tr>
         </template>
 
         <template v-if="bench.length > 0">
           <tr>
-            <td colspan="3" class="pt-5 pb-2 text-xs font-semibold text-text-faint">Bench</td>
+            <td colspan="4" class="pt-5 pb-2 text-xs font-semibold text-text-faint">Bench</td>
           </tr>
           <tr
             v-for="pm in bench"
@@ -42,16 +49,28 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4">
+              <div v-if="coveredStarterMap.get(pm.id)" class="text-xs text-sky-400">
+                ↑ {{ coveredStarterMap.get(pm.id)!.player.aflPlayer.name }}
+              </div>
               <span class="font-medium text-text-muted">{{ pm.player.aflPlayer.name }}</span>
               <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2">
-              <StatusBadge :status="pmStatus(pm)" />
-              <span v-if="isSubActivated(pm)" class="text-xs text-green-500" title="Substitution activated">SUB</span>
-              <span v-else-if="isInterchangeActivated(pm)" class="text-xs text-blue-500" title="Interchange activated">INT</span>
+              <div class="flex items-center gap-1">
+                <span
+                  v-for="pos in pmBackupPositions(pm)"
+                  :key="pos"
+                  :class="pm.interchangePosition === pos
+                    ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400 underline'
+                    : coveredStarterMap.get(pm.id)?.position === pos
+                      ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60'
+                      : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'"
+                >{{ positionShort(pos) }}</span>
+              </div>
             </td>
+            <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
             <td class="py-2 px-2 text-right tabular-nums">
-              {{ pmShowScore(pm) ? pm.score : '' }}
+              {{ benchScoreDisplay(pm) }}
             </td>
           </tr>
         </template>
@@ -59,6 +78,7 @@
       <tfoot>
         <tr class="border-t border-border font-semibold">
           <td class="py-2 pr-4">Total</td>
+          <td></td>
           <td></td>
           <td class="py-2 px-2 text-right tabular-nums">{{ total }}</td>
         </tr>
@@ -85,6 +105,10 @@ interface PlayerMatch {
       clubSeason?: { club?: { name: string } | null } | null
     } | null
   } | null
+  aflPlayerMatch?: {
+    goals: number; kicks: number; handballs: number
+    marks: number; tackles: number; hitouts: number
+  } | null
 }
 
 const props = defineProps<{
@@ -107,6 +131,42 @@ const POSITION_LABELS: Record<PositionKey, string> = {
 const isBench = (pm: PlayerMatch) => pm.backupPositions != null || pm.interchangePosition != null
 const starters = computed(() => props.playerMatches.filter(pm => !isBench(pm)))
 const bench    = computed(() => props.playerMatches.filter(pm => isBench(pm)))
+
+// For each subbed-out or interchanged starter, find the covering bench player.
+const coveringMap = computed(() => {
+  const map = new Map<string, PlayerMatch>() // starter pm.id → covering bench PlayerMatch
+  // Regular subs
+  for (const starter of starters.value) {
+    if (starter.status !== 'subbed' || !starter.position) continue
+    const covering = bench.value.find(bp => {
+      if (!bp.backupPositions) return false
+      const bps = bp.backupPositions === 'star' ? ['star'] : bp.backupPositions.split(',').map(p => p.trim())
+      return bps.includes(starter.position!)
+    })
+    if (covering) map.set(starter.id, covering)
+  }
+  // Interchange: displaced starter → interchange bench player
+  const displaced = starters.value.find(s => s.status === 'interchanged')
+  const intBench = bench.value.find(bp => bp.interchangePosition != null)
+  if (displaced && intBench) map.set(displaced.id, intBench)
+  return map
+})
+
+// Maps bench pm.id → the starter PlayerMatch they are subbing for.
+const coveredStarterMap = computed(() => {
+  const map = new Map<string, PlayerMatch>()
+  for (const [starterId, cp] of coveringMap.value) {
+    const starter = starters.value.find(s => s.id === starterId)
+    if (starter) map.set(cp.id, starter)
+  }
+  return map
+})
+
+function coveringScoreForStarter(pm: PlayerMatch): number | null {
+  const cp = coveringMap.value.get(pm.id)
+  if (!cp || !pm.position) return null
+  return benchPositionScore(cp, pm.position)
+}
 
 function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
@@ -138,16 +198,37 @@ const starterGroups = computed(() => {
     }))
 })
 
-const isSubActivated = (pm: PlayerMatch) => {
-  if (!pm.backupPositions || !pmShowScore(pm)) return false
-  const backupPos = pm.backupPositions.split(',').map(p => p.trim())
-  return starters.value.some(s => s.aflStatus === 'dnp' && backupPos.includes(s.position ?? ''))
+const POSITION_LETTERS: Record<string, string> = {
+  goals: 'G', kicks: 'K', handballs: 'H', marks: 'M', tackles: 'T', hitouts: 'R', star: '★',
 }
 
-const isInterchangeActivated = (pm: PlayerMatch) => {
-  if (!pm.interchangePosition || !pmShowScore(pm)) return false
-  const starter = starters.value.find(s => s.position === pm.interchangePosition && pmShowScore(s))
-  return starter != null && pm.score > starter.score
+function positionShort(key: string): string {
+  return POSITION_LETTERS[key] ?? key
+}
+
+function pmBackupPositions(pm: PlayerMatch): string[] {
+  if (!pm.backupPositions) return []
+  return pm.backupPositions === 'star' ? ['star'] : pm.backupPositions.split(',').map(p => p.trim())
+}
+
+const POSITION_MULTIPLIERS: Record<string, number> = {
+  goals: 5, kicks: 1, handballs: 1, marks: 2, tackles: 4, hitouts: 1, star: 1,
+}
+
+function benchPositionScore(pm: PlayerMatch, pos: string): number | null {
+  const s = pm.aflPlayerMatch
+  if (!s) return null
+  if (pos === 'star') {
+    return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
+  }
+  const stat = ({ goals: s.goals, kicks: s.kicks, handballs: s.handballs, marks: s.marks, tackles: s.tackles, hitouts: s.hitouts } as Record<string, number>)[pos] ?? null
+  return stat !== null ? stat * (POSITION_MULTIPLIERS[pos] ?? 1) : null
+}
+
+function benchScoreDisplay(pm: PlayerMatch): string {
+  if (!pmShowScore(pm) || !pm.backupPositions) return ''
+  const positions = pm.backupPositions === 'star' ? ['star'] : pm.backupPositions.split(',').map(p => p.trim())
+  return positions.map(pos => { const s = benchPositionScore(pm, pos); return s !== null ? String(s) : '?' }).join('/')
 }
 
 const total = computed(() =>

@@ -13,12 +13,12 @@ import (
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
-	"xffl/services/ffl/internal/infrastructure/forum"
 	"xffl/services/ffl/internal/infrastructure/rpc"
-	gql "xffl/services/ffl/internal/interface/graphql"
 	fflevents "xffl/services/ffl/internal/interface/events"
+	gql "xffl/services/ffl/internal/interface/graphql"
 	pgevents "xffl/shared/events/pg"
 )
 
@@ -76,31 +76,23 @@ func main() {
 	playerLookup := rpc.NewAFLPlayerLookup(aflBaseURL)
 
 	db := pg.NewDB(pool)
-	commands := application.NewCommands(db, dispatcher, application.CommandsDeps{
-		EventRepos: application.EventRepos{
-			Rounds:        pg.NewRoundRepository(q),
-			PlayerSeasons: pg.NewPlayerSeasonRepository(q),
-			PlayerMatches: pg.NewPlayerMatchRepository(q),
-			Matches:       pg.NewMatchRepository(q),
-			ClubMatches:   pg.NewClubMatchRepository(q),
-		},
-		PlayerLookup: playerLookup,
-	})
-
-	scoreCommands := application.NewScoreCommands(
+	commands := application.NewCommands(
+		db,
+		dispatcher,
+		playerLookup,
 		pg.NewMatchRepository(q),
 		pg.NewClubMatchRepository(q),
 		pg.NewClubSeasonRepository(q),
 		pg.NewRoundRepository(q),
 		pg.NewPlayerMatchRepository(q),
-		dispatcher,
+		pg.NewPlayerSeasonRepository(q),
 	)
-	eventHandlers := fflevents.NewHandlers(commands, scoreCommands)
-	dispatcher.Subscribe(contractevents.PlayerMatchUpdated, eventHandlers.HandlePlayerMatchUpdated)
-	dispatcher.Subscribe(contractevents.AflMatchFinalized, eventHandlers.HandleAflMatchFinalized)
-	dispatcher.Subscribe(contractevents.FflTeamFinalized, eventHandlers.HandleFflTeamFinalized)
+	eventHandlers := fflevents.NewHandlers(commands)
+	dispatcher.Subscribe(contractevents.AflPlayerMatchUpdated, eventHandlers.HandleAflPlayerMatchUpdated)
+	dispatcher.Subscribe(contractevents.AflMatchUpdated, eventHandlers.HandleAflMatchUpdated)
+	dispatcher.Subscribe(contractevents.FflClubMatchUpdated, eventHandlers.HandleFflClubMatchUpdated)
 	dispatcher.Subscribe(contractevents.FflClubMatchScoreFinalized, eventHandlers.HandleFflClubMatchScoreFinalized)
-	dispatcher.Subscribe(contractevents.FflMatchFinalized, eventHandlers.HandleFflMatchFinalized)
+	dispatcher.Subscribe(contractevents.FflMatchScoreFinalized, eventHandlers.HandleFflMatchScoreFinalized)
 
 	go func() {
 		if err := dispatcher.Listen(ctx); err != nil {
@@ -117,7 +109,7 @@ func main() {
 		commands,
 	)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, ScoreCommands: scoreCommands}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

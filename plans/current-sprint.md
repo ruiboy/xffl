@@ -95,9 +95,7 @@ Everything else is derived via a single domain function per concern.
 - [x] `RecalculateClubMatchScore`: update `drv_afl_status` for linked players only (playing/played from AFL stats); never touch unlinked players' status
 - [x] Remove `inferPlayerMatchStatuses` entirely
 
-**Architecture docs to update after this sprint** *(do not update now — ai/ is read-only during impl)*:
-- `domain.md`: AFL PlayerMatch status section (remove `named`, document `playing`/`played`); FFL PlayerMatch status section (replace named/played/dnp table with new `status` + `drv_afl_status` tables); Substitution section (change DNP check to reference `drv_afl_status`)
-- `event-flow.md`: `AFL.PlayerMatchUpdated` payload note (carries computed AFL status `playing`/`played`); FFL subscriber description (receives AFL status → writes `drv_afl_status`)
+**Architecture docs updated** *(done — see event-flow.md, domain.md, deferred.md)*
 
 **Files to look at when starting**:
 - `services/afl/internal/domain/player_match.go` — drop status, add `ComputeAFLPlayerMatchStatus`
@@ -189,6 +187,229 @@ started (any player has `aflStatus` set). Shows:
 
 *Frontend*
 - [x] "Subs" mode in Team Builder — DNP starter checkboxes, interchange toggle, Save Subs button
+
+---
+
+## Side quest — Event flow redesign *(fix bugs + clean architecture)*
+
+**Goal:** Replace the current fragile event model with the design agreed in planning (see `ai/architecture/event-flow.md`). Fixes Bug 1 (playing→played never transitions), Bug 2 (premature DNP), and the premature `FFL.ClubMatchScoreFinalized` emission. Establishes clean, ordering-independent event semantics.
+
+**Reference:** `ai/architecture/event-flow.md` — read before starting any task here.
+
+---
+
+### Contracts (`contracts/events/`)
+
+- [x] Remove `AFL.MatchFinalized` constant and `AflMatchFinalizedPayload`
+- [x] Remove `Status` field from `PlayerMatchUpdatedPayload`
+- [x] Add `AFL.MatchUpdated` constant and `AflMatchUpdatedPayload` (`match_id`, `round_id`, `season_id`, `match_status`, `PlayerSeasonIDStatusMap map[int]string`)
+- [x] Remove `FFL.TeamSubmitted` constant and `FflTeamSubmittedPayload`
+- [x] Remove `FFL.TeamFinalized` constant and `FflTeamFinalizedPayload`
+- [x] Add `FFL.ClubMatchUpdated` constant and `FflClubMatchUpdatedPayload` (`club_match_id`, `match_id`, `round_id`, `data_status`, `PlayerMatches map[int]FflPlayerMatchInfo`)
+- [x] Add `FflPlayerMatchInfo` struct (`position`, `status`, `backup_positions`, `interchange_position`)
+- [x] Rename `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`; rename `FantasyScoreCalculatedPayload` → `FflPlayerMatchUpdatedPayload`; add `club_match_id` field
+- [x] Rename `FFL.MatchFinalized` → `FFL.MatchScoreFinalized`; rename `FflMatchFinalizedPayload` → `FflMatchScoreFinalizedPayload`
+- [x] `FFL.ClubMatchScoreFinalized` and `FflClubMatchScoreFinalizedPayload` — no change
+
+---
+
+### AFL service
+
+**`services/afl/internal/application/dataops.go`**
+- [x] `ImportAFLStats`: remove `Status` from all `PlayerMatchUpdatedPayload` emissions
+- [x] `ImportAFLStats`: after all player_matches written and `data_status → partial`, emit one `AFL.MatchUpdated(partial)` with `PlayerSeasonIDStatusMap` = all imported `afl_player_season_id → "playing"`
+- [x] `MarkMatchStatsFinal`: remove `AFL.MatchFinalized` publish
+- [x] `MarkMatchStatsFinal`: emit `AFL.MatchUpdated(final)` — build map: player_match rows → `"played"`, all player_seasons for both club_seasons not in player_match → `"dnp"`; inline match result derivation + ladder recalculation (no self-subscription needed)
+- [x] `MarkMatchStatsFinal`: keep direct calls to derive match result + `RecalculateAFLLadder` (no change — these stay internal)
+
+**`services/afl/internal/application/player_match.go`** (`UpdatePlayerMatch`)
+- [x] Remove `Status` from `PlayerMatchUpdatedPayload`
+
+**`services/afl/internal/interface/events/handlers.go`**
+- [x] Remove `AFL.MatchFinalized` subscription (AFL no longer self-subscribes; finalization is handled directly)
+
+---
+
+### FFL service — domain
+
+**`services/ffl/internal/domain/player_match.go`**
+- [x] Remove `AFLStatusNamed` constant (pre-match named tracking is deferred — see `plans/roadmap.md`)
+
+---
+
+### FFL service — application
+
+**`services/ffl/internal/application/score.go`** (or `queries.go` — wherever appropriate)
+- [x] Add `AllAFLStatusesFinal(ctx, clubMatchID) bool` — returns true when every player_match in the club_match has `drv_afl_status ∈ {played, dnp}`; backed by a repository query
+
+**`services/ffl/internal/application/reactions.go`**
+- [x] Remove `ProcessAFLMatchFinalized` (replaced by `ProcessAFLMatchUpdated`)
+- [x] Add `ProcessAFLMatchUpdated(ctx, AflMatchUpdatedPayload)`: applies status map via `applyAFLStatusMap`, recalculates score, emits `FFL.ClubMatchScoreFinalized` when both axes final
+- [x] Remove `ProcessFflTeamFinalized` (replaced by `ProcessFflClubMatchUpdated`)
+- [x] Add `ProcessFflClubMatchUpdated(ctx, ...)`: recalculates score, emits `FFL.ClubMatchScoreFinalized` when both axes final
+- [x] Update `ProcessPlayerMatchUpdated` — no status field in payload; just link + score recalc + ladder cascade if both axes final
+- [x] Rename `ProcessFflMatchFinalized` → `ProcessFflMatchScoreFinalized`
+- [x] Update `emitClubMatchScoreFinalized` — no logic change (still emits `FFL.ClubMatchScoreFinalized`)
+- [x] Note: `UpdateAFLStatusFromMap` implemented at application layer (`applyAFLStatusMap`) using existing `FindByIDs` + `UpdateAFLStatus` per player (sqlc unnest limitation)
+
+**`services/ffl/internal/application/team.go`** (or `dataops.go`)
+- [x] Replace `FFL.TeamSubmitted` publish → `FFL.ClubMatchUpdated(submitted)` with full player_matches snapshot
+- [x] Replace `FFL.TeamFinalized` publish → `FFL.ClubMatchUpdated(final)` with full player_matches snapshot
+
+**`services/ffl/internal/application/team.go`** (`DeclareSubs`)
+- [x] After subs are applied: emit `FFL.ClubMatchUpdated(submitted)` with updated player_matches snapshot
+- [x] Also emit `FFL.SubsDeclared` (new — no current subscriber; published for future consumers)
+
+**`services/ffl/internal/application/score.go`**
+- [x] `RecalculateScore`: removed AFL status sync (status comes only from `AFL.MatchUpdated` now)
+- [x] `ProcessPlayerMatchUpdated` ladder cascade: after score recalc, if `AllAFLStatusesFinal` AND `data_status = final` → call `RecalculateFflLadder` directly
+
+---
+
+### FFL service — infrastructure
+
+**`services/ffl/internal/infrastructure/postgres/sqlc/player_match.sql`**
+- [x] Add `AllAFLStatusesFinal` query — returns bool: all player_matches for a club_match have `drv_afl_status IN ('played', 'dnp')`
+- [x] Remove `SetDrvAFLStatusDNPForClubMatch` query
+- [x] Regenerate sqlcgen after query changes (`sqlc generate`)
+- [x] Note: `UpdateAFLStatusFromMap` implemented at application layer (sqlc parallel unnest not supported)
+
+---
+
+### FFL service — event handlers
+
+**`services/ffl/internal/interface/events/handlers.go`**
+- [x] Remove subscription to `AFL.MatchFinalized`
+- [x] Add subscription to `AFL.MatchUpdated` → `ProcessAFLMatchUpdated`
+- [x] Remove subscription to `FFL.TeamSubmitted`
+- [x] Remove subscription to `FFL.TeamFinalized`
+- [x] Add subscription to `FFL.ClubMatchUpdated` → `ProcessFflClubMatchUpdated`
+- [x] Update `FFL.MatchFinalized` subscription → `FFL.MatchScoreFinalized` → `ProcessFflMatchScoreFinalized`
+- [x] Update `FFL.FantasyScoreCalculated` subscription → `FFL.PlayerMatchUpdated` (Search handler)
+
+---
+
+### Search service
+
+**`services/search/...`** *(wherever the event subscription lives)*
+- [x] Update subscription from `FFL.FantasyScoreCalculated` → `FFL.PlayerMatchUpdated`
+
+---
+
+### Tests
+- [x] Unit-test `AllAFLStatusesFinal` — all played, all dnp, mixed, null present, playing present
+- [x] Integration-test `ProcessAFLMatchUpdated` (partial): verify `drv_afl_status = playing` set for correct players only; players in other AFL matches unaffected
+- [x] Integration-test `ProcessAFLMatchUpdated` (final): verify played + dnp set correctly; `FFL.ClubMatchScoreFinalized` emitted when FFL team is also final
+- [x] Integration-test `ProcessFflClubMatchUpdated` (final): verify `FFL.ClubMatchScoreFinalized` NOT emitted when AFL not yet final; emitted when AFL is final
+- [x] Regression-test full event chain: import partial → import final → finalize FFL team → verify ladder
+
+---
+
+## Side quest — Explicit substitution/interchange records *(ffl.substitution_event)*
+
+**Problem**: The current model infers sub/interchange pairings at query time from `backup_positions`
+and `interchange_position` — the same heuristic logic is duplicated in `ClubMatch.Score()`,
+`RecalculateScore`, the GraphQL resolvers, and the frontend. This makes scoring non-deterministic
+(re-running the heuristic after squad changes can produce different pairings), prevents reliable
+stats queries ("who covered whom across the season?"), and forces the frontend to reimplement
+matching logic rather than reading a direct fact.
+
+**Proposed approach**: Introduce `ffl.substitution_event` as the source of truth for every TM
+sub/interchange decision. `DeclareSubs` writes these rows; `ClubMatch.Score()` and the frontend
+read them directly.
+
+### Schema
+
+```sql
+CREATE TABLE ffl.substitution_event (
+  id                      serial PRIMARY KEY,
+  club_match_id           integer NOT NULL REFERENCES ffl.club_match(id),
+  type                    text    NOT NULL,  -- 'sub' | 'interchange'
+  position                text    NOT NULL,  -- position key being filled
+  replaced_pm_id          integer NOT NULL REFERENCES ffl.player_match(id),
+  replacing_pm_id         integer NOT NULL REFERENCES ffl.player_match(id),
+  created_at              timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ON ffl.substitution_event (club_match_id);
+```
+
+One row per pairing. Re-declaring subs deletes all existing rows for the `club_match_id` and
+re-inserts. No versioning needed — only the latest declaration matters.
+
+### Backend changes
+
+**`DeclareSubs`**:
+1. Delete all `substitution_event` rows for `club_match_id`.
+2. For each `subbedOutID`: find the covering bench player (same pairing logic as today, but run
+   once here), insert a `sub` row.
+3. If `interchangeApplied`: find the displaced starter + interchange bench player, insert one
+   `interchange` row.
+4. Trigger `RecalculateClubMatchScore` as today.
+
+**`ClubMatch.Score()` — TM mode**:
+- Instead of re-running `backup_positions`/`interchange_position` heuristics, receive a
+  `[]SubstitutionEvent` slice and build the replacement map from it.
+- Auto mode (no substitution_event rows): behaviour unchanged.
+
+**`RecalculateClubMatchScore`**:
+- Load `substitution_event` rows for the club_match; pass to `ClubMatch.Score()`.
+
+### GraphQL
+
+```graphql
+type FFLSubstitutionEvent {
+  id:            ID!
+  type:          String!   # "sub" | "interchange"
+  position:      String!
+  replacedBy:    FFLPlayerMatch!
+  replacing:     FFLPlayerMatch!
+}
+
+extend type FFLClubMatch {
+  substitutionEvents: [FFLSubstitutionEvent!]!
+}
+```
+
+Frontend uses `substitutionEvents` instead of inferring pairings.
+
+### Frontend simplification
+
+- Drop computed refs: `subsMapping`, `savedSubsMap`, `interchangeDisplacedStarterNormal`,
+  `savedSubsStarterMap`, `coveringMap` (in both `TeamBuilderView` and `SquadTable`).
+- Replace with a map derived directly from `clubMatch.substitutionEvents`.
+- `effectiveCovering` / `effectiveSubbedForStarter` become trivial lookups into that map.
+- Subs mode (live, before Save): keep the client-side preview maps for immediate feedback;
+  on save the server response includes updated `substitutionEvents` which drives normal mode.
+
+### Tasks
+
+*Migration*
+- [ ] Write migration: create `ffl.substitution_event` table + index
+- [ ] Write sqlc queries: `InsertSubstitutionEvent`, `DeleteSubstitutionEventsByClubMatch`,
+      `GetSubstitutionEventsByClubMatch`
+- [ ] Regenerate sqlcgen
+
+*Domain*
+- [ ] Add `SubstitutionEvent` value type to `ffl` domain
+- [ ] Update `ClubMatch.Score()` signature to accept `[]SubstitutionEvent`; remove heuristic
+      pairing logic; derive replacement map from events in TM mode
+
+*Application*
+- [ ] Update `DeclareSubs`: delete+reinsert substitution_event rows; derive pairings once here
+- [ ] Update `RecalculateClubMatchScore`: load substitution_event rows; pass to `ClubMatch.Score()`
+- [ ] Unit-test updated `ClubMatch.Score()` with explicit event slices
+- [ ] Integration-test `DeclareSubs`: verify substitution_event rows written; re-declare replaces rows
+
+*GraphQL*
+- [ ] Add `FFLSubstitutionEvent` type and `substitutionEvents` field on `FFLClubMatch`
+- [ ] Add sqlc-backed resolver for `substitutionEvents`
+
+*Frontend*
+- [ ] Add `substitutionEvents` to `GET_FFL_MATCH` and `GET_FFL_ROUND` queries
+- [ ] Replace heuristic computed refs in `TeamBuilderView` with map derived from `substitutionEvents`
+- [ ] Replace `coveringMap` / `coveredStarterMap` in `SquadTable` with map derived from `substitutionEvents`
+- [ ] Verify subs mode live preview still works (client-side preview maps remain for in-flight state)
 
 ---
 

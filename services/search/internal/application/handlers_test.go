@@ -26,7 +26,7 @@ func (s *stubRepo) Search(_ context.Context, _ domain.SearchQuery) (domain.Searc
 	return domain.SearchResult{}, nil
 }
 
-func TestHandlePlayerMatchUpdated(t *testing.T) {
+func TestHandleAflPlayerMatchUpdated(t *testing.T) {
 	tests := []struct {
 		name    string
 		payload []byte
@@ -103,7 +103,7 @@ func TestHandlePlayerMatchUpdated(t *testing.T) {
 			repo := &stubRepo{}
 			h := application.NewHandlers(application.NewIndexDocument(repo))
 
-			err := h.HandlePlayerMatchUpdated(context.Background(), tt.payload)
+			err := h.HandleAflPlayerMatchUpdated(context.Background(), tt.payload)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -122,7 +122,7 @@ func TestHandlePlayerMatchUpdated(t *testing.T) {
 	}
 }
 
-func TestHandleFantasyScoreCalculated(t *testing.T) {
+func TestHandleFflPlayerMatchUpdated(t *testing.T) {
 	tests := []struct {
 		name    string
 		payload []byte
@@ -133,14 +133,16 @@ func TestHandleFantasyScoreCalculated(t *testing.T) {
 			name: "valid payload",
 			payload: mustMarshal(t, map[string]any{
 				"player_match_id": 99,
+				"club_match_id":   10,
 				"score":           120,
 			}),
 			wantDoc: domain.SearchDocument{
-				ID:     "ffl_fantasy_score_99",
+				ID:     "ffl_player_match_99",
 				Source: domain.SourceFFL,
 				Type:   domain.TypeFantasyScore,
 				Data: map[string]any{
 					"player_match_id": 99,
+					"club_match_id":   10,
 					"score":           120,
 				},
 			},
@@ -149,13 +151,15 @@ func TestHandleFantasyScoreCalculated(t *testing.T) {
 			name: "zero values",
 			payload: mustMarshal(t, map[string]any{
 				"player_match_id": 5,
+				"club_match_id":   0,
 			}),
 			wantDoc: domain.SearchDocument{
-				ID:     "ffl_fantasy_score_5",
+				ID:     "ffl_player_match_5",
 				Source: domain.SourceFFL,
 				Type:   domain.TypeFantasyScore,
 				Data: map[string]any{
 					"player_match_id": 5,
+					"club_match_id":   0,
 					"score":           0,
 				},
 			},
@@ -172,7 +176,7 @@ func TestHandleFantasyScoreCalculated(t *testing.T) {
 			repo := &stubRepo{}
 			h := application.NewHandlers(application.NewIndexDocument(repo))
 
-			err := h.HandleFantasyScoreCalculated(context.Background(), tt.payload)
+			err := h.HandleFflPlayerMatchUpdated(context.Background(), tt.payload)
 
 			if tt.wantErr {
 				require.Error(t, err)

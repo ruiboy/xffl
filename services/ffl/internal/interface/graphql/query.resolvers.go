@@ -7,6 +7,9 @@ package graphql
 
 import (
 	"context"
+	"errors"
+
+	"xffl/services/ffl/internal/domain"
 )
 
 // PlayerMatches is the resolver for the playerMatches field.
@@ -372,13 +375,13 @@ func (r *queryResolver) FflRoundByAflRound(ctx context.Context, aflRoundID strin
 		return nil, err
 	}
 	round, err := r.Queries.GetRoundByAFLRoundID(ctx, id)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	if round == nil {
-		return nil, nil
-	}
-	return convertRound(*round), nil
+	return convertRound(round), nil
 }
 
 // FflClubMatch is the resolver for the fflClubMatch field.

@@ -3,70 +3,79 @@ package events
 
 // Event types for cross-service communication.
 const (
-	// PlayerMatchUpdated is published by the AFL service when a player's match stats change.
-	PlayerMatchUpdated = "AFL.PlayerMatchUpdated"
+	// AflPlayerMatchUpdated is published by the AFL service when a player's match stats change.
+	AflPlayerMatchUpdated = "AFL.PlayerMatchUpdated"
 
-	// AflMatchFinalized is published by the AFL service when afl.match.data_status transitions to final.
-	AflMatchFinalized = "AFL.MatchFinalized"
+	// AflMatchUpdated is published by the AFL service on match status transitions
+	// (no_data→partial, partial→final). Carries full participation status snapshot.
+	AflMatchUpdated = "AFL.MatchUpdated"
 
-	// FantasyScoreCalculated is published by the FFL service after recalculating a fantasy score.
-	FantasyScoreCalculated = "FFL.FantasyScoreCalculated"
+	// FflClubMatchUpdated is published by the FFL service on any change to a club's
+	// team for a round: initial submission, correction, subs declared, or finalization.
+	FflClubMatchUpdated = "FFL.ClubMatchUpdated"
 
-	// FflTeamSubmitted is published by the FFL service when ffl.club_match.data_status transitions to submitted.
-	FflTeamSubmitted = "FFL.TeamSubmitted"
-
-	// FflTeamFinalized is published by the FFL service when ffl.club_match.data_status transitions to final.
-	FflTeamFinalized = "FFL.TeamFinalized"
+	// FflPlayerMatchUpdated is published by the FFL service after recalculating a fantasy score.
+	FflPlayerMatchUpdated = "FFL.PlayerMatchUpdated"
 
 	// FflClubMatchScoreFinalized is published by the FFL service when a single club's score is locked
 	// (AFL match final + FFL team final). Fires independently per club.
 	FflClubMatchScoreFinalized = "FFL.ClubMatchScoreFinalized"
 
-	// FflMatchFinalized is published by the FFL service when both clubs in an FFL match are finalized.
-	FflMatchFinalized = "FFL.MatchFinalized"
+	// FflMatchScoreFinalized is published by the FFL service when both clubs in an FFL match are finalized.
+	FflMatchScoreFinalized = "FFL.MatchScoreFinalized"
 )
 
-// PlayerMatchUpdatedPayload carries the full player match stats.
-type PlayerMatchUpdatedPayload struct {
-	PlayerMatchID  int    `json:"player_match_id"`
-	PlayerSeasonID int    `json:"player_season_id"`
-	ClubMatchID    int    `json:"club_match_id"`
-	RoundID        int    `json:"round_id"`
-	Status         string `json:"status"`
-	Kicks          int    `json:"kicks"`
-	Handballs      int    `json:"handballs"`
-	Marks          int    `json:"marks"`
-	Hitouts        int    `json:"hitouts"`
-	Tackles        int    `json:"tackles"`
-	Goals          int    `json:"goals"`
-	Behinds        int    `json:"behinds"`
+// AflPlayerMatchUpdatedPayload carries the full player match stats. Note there is no status field —
+// participation status is carried exclusively by AflMatchUpdatedPayload, which tracks the match state.
+type AflPlayerMatchUpdatedPayload struct {
+	PlayerMatchID  int `json:"player_match_id"`
+	PlayerSeasonID int `json:"player_season_id"`
+	ClubMatchID    int `json:"club_match_id"`
+	RoundID        int `json:"round_id"`
+	Kicks          int `json:"kicks"`
+	Handballs      int `json:"handballs"`
+	Marks          int `json:"marks"`
+	Hitouts        int `json:"hitouts"`
+	Tackles        int `json:"tackles"`
+	Goals          int `json:"goals"`
+	Behinds        int `json:"behinds"`
 }
 
-// AflMatchFinalizedPayload carries identifiers for the finalized AFL match.
-type AflMatchFinalizedPayload struct {
-	MatchID  int `json:"match_id"`
-	SeasonID int `json:"season_id"`
-	RoundID  int `json:"round_id"`
+// AflMatchUpdatedPayload is published on AFL match status transitions.
+// PlayerSeasonIDStatusMap maps afl_player_season_id → status ("playing"/"played"/"dnp").
+// On partial: players with stats → "playing". On final: players with stats → "played";
+// all squad members without stats → "dnp".
+type AflMatchUpdatedPayload struct {
+	MatchID                 int            `json:"match_id"`
+	RoundID                 int            `json:"round_id"`
+	SeasonID                int            `json:"season_id"`
+	MatchStatus             string         `json:"match_status"`
+	PlayerSeasonIDStatusMap map[int]string `json:"player_season_id_status_map"`
 }
 
-// FantasyScoreCalculatedPayload carries the calculated fantasy score.
-type FantasyScoreCalculatedPayload struct {
+// FflPlayerMatchInfo describes a single player's position and role in an FFL team snapshot.
+type FflPlayerMatchInfo struct {
+	Position            string `json:"position"`
+	Status              string `json:"status"`
+	BackupPositions     string `json:"backup_positions"`
+	InterchangePosition string `json:"interchange_position"`
+}
+
+// FflClubMatchUpdatedPayload is published on any team change: submission, correction,
+// subs declared, or finalization. PlayerMatches maps player_match_id → info snapshot.
+type FflClubMatchUpdatedPayload struct {
+	ClubMatchID   int                        `json:"club_match_id"`
+	MatchID       int                        `json:"match_id"`
+	RoundID       int                        `json:"round_id"`
+	DataStatus    string                     `json:"data_status"`
+	PlayerMatches map[int]FflPlayerMatchInfo `json:"player_matches"`
+}
+
+// FflPlayerMatchUpdatedPayload carries the calculated fantasy score for a single player.
+type FflPlayerMatchUpdatedPayload struct {
 	PlayerMatchID int `json:"player_match_id"`
+	ClubMatchID   int `json:"club_match_id"`
 	Score         int `json:"score"`
-}
-
-// FflTeamSubmittedPayload carries identifiers for the submitted FFL club match.
-type FflTeamSubmittedPayload struct {
-	ClubMatchID int `json:"club_match_id"`
-	MatchID     int `json:"match_id"`
-	RoundID     int `json:"round_id"`
-}
-
-// FflTeamFinalizedPayload carries identifiers for the finalized FFL club match.
-type FflTeamFinalizedPayload struct {
-	ClubMatchID int `json:"club_match_id"`
-	MatchID     int `json:"match_id"`
-	RoundID     int `json:"round_id"`
 }
 
 // FflClubMatchScoreFinalizedPayload carries identifiers for a single club's finalized score.
@@ -75,8 +84,8 @@ type FflClubMatchScoreFinalizedPayload struct {
 	MatchID     int `json:"match_id"`
 }
 
-// FflMatchFinalizedPayload carries identifiers for a fully finalized FFL match.
-type FflMatchFinalizedPayload struct {
+// FflMatchScoreFinalizedPayload carries identifiers for a fully finalized FFL match.
+type FflMatchScoreFinalizedPayload struct {
 	MatchID int `json:"match_id"`
 	RoundID int `json:"round_id"`
 }
