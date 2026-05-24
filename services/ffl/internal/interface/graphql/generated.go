@@ -1492,8 +1492,10 @@ input FFLPlayerSeasonFilter {
 
 enum FFLPlayerMatchStatus {
   named
-  subbed
-  interchanged
+  subbed_out
+  subbed_in
+  interchanged_out
+  interchanged_in
 }
 
 enum FFLAFLPlayerMatchStatus {

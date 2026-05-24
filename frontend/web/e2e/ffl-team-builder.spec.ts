@@ -275,6 +275,207 @@ test.describe('FFL Team Builder', () => {
     })
   })
 
+  // ── Subs mode — substitution ─────────────────────────────────────────────
+  //
+  // Round 2, The Howling Cows (club_match id=4):
+  //   Henry Smith   — goals, played, 48  (active starter)
+  //   Hugh McCluggage — kicks, DNP, 0    (candidate to sub out)
+  //   Brock Thunder — bench kicks, played, 20  (will sub in)
+
+  test.describe('subs mode: substitution', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/4/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+    })
+
+    test('Substitutions button appears when AFL match has started', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible()
+    })
+
+    test('entering subs mode shows Cancel and Save Subs buttons', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await expect(page.getByRole('button', { name: 'Save Subs' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).not.toBeVisible()
+    })
+
+    test('DNP starter has amber highlight in subs mode', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      const kicksSection = positionSection(page, 'Kicks')
+      const hughRow = kicksSection.locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' })
+      await expect(hughRow).toHaveClass(/border-amber-600/)
+    })
+
+    test('clicking DNP starter toggles to sky selection border', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      const kicksSection = positionSection(page, 'Kicks')
+      const hughRow = kicksSection.locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' })
+      await hughRow.click()
+      await expect(hughRow).toHaveClass(/border-sky-500/)
+    })
+
+    test('clicking DNP starter again deselects it', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      const kicksSection = positionSection(page, 'Kicks')
+      const hughRow = kicksSection.locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' })
+      await hughRow.click()
+      await hughRow.click()
+      await expect(hughRow).toHaveClass(/border-amber-600/)
+    })
+
+    test('Cancel exits subs mode without saving', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await page.getByRole('button', { name: 'Cancel' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible()
+      // No badges should be changed
+      const kicksSection = positionSection(page, 'Kicks')
+      await expect(kicksSection.getByText('Subbed')).not.toBeVisible()
+    })
+
+    test('Save Subs persists subbed_out and subbed_in statuses', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      const kicksSection = positionSection(page, 'Kicks')
+      await kicksSection.locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+
+      // Wait for normal mode to return
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Hugh shows Subbed badge
+      await expect(kicksSection.getByText('Subbed')).toBeVisible()
+      // Brock shows Sub badge in bench
+      await expect(benchSection(page).getByText('Sub')).toBeVisible()
+    })
+
+    test('after sub saved, bench shows covering arrow for the DNP starter', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Brock's bench row shows "↑ Hugh McCluggage"
+      await expect(benchSection(page).getByText(/↑.*Hugh McCluggage/)).toBeVisible()
+    })
+
+    test('after sub saved, starter row shows covering bench player', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Hugh's starter row shows "↑ Brock Thunder"
+      await expect(positionSection(page, 'Kicks').getByText(/↑.*Brock Thunder/)).toBeVisible()
+    })
+
+    test('re-declaring with empty subs resets statuses to named', async ({ page }) => {
+      // First declare a sub
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Re-enter subs mode and save with no subs selected
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Badges should be gone
+      await expect(positionSection(page, 'Kicks').getByText('Subbed')).not.toBeVisible()
+      await expect(benchSection(page).getByText('Sub')).not.toBeVisible()
+    })
+
+    test('sub badges visible in match SquadTable after saving', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Navigate to Round 2 match view (match id=2)
+      await page.goto('/ffl/matches/2')
+      await page.waitForLoadState('networkidle')
+
+      // SquadTable: Hugh shows Subbed, Brock shows Sub
+      await expect(page.getByText('Subbed').first()).toBeVisible()
+      await expect(page.getByText('Sub').first()).toBeVisible()
+    })
+
+    test('SquadTable shows covering arrow after sub saved', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Hugh McCluggage' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      await page.goto('/ffl/matches/2')
+      await page.waitForLoadState('networkidle')
+
+      // SquadTable: covering arrow visible for Brock's bench row
+      await expect(page.getByText(/↑.*Hugh McCluggage/).first()).toBeVisible()
+    })
+  })
+
+  // ── Subs mode — interchange ───────────────────────────────────────────────
+  //
+  // Round 4, The Howling Cows (club_match id=8):
+  //   Henry Smith     — goals, played, 48  (higher score, stays)
+  //   Hugh McCluggage — goals, played, 30  (lower score, displaced by interchange)
+  //   Brock Thunder   — bench goals/IC, played, 50  (interchange bench, outscores Hugh)
+
+  test.describe('subs mode: interchange', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/8/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+    })
+
+    test('Substitutions button appears for a round with AFL data', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible()
+    })
+
+    test('interchange bench row is shown in subs mode', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      // Brock is the interchange bench player — his row must be visible
+      await expect(benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })).toBeVisible()
+    })
+
+    test('interchange is pre-applied when bench outscores target starter', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      // Brock (50) outscores Hugh (30) → interchange beneficial → row shows sky border (applied)
+      const brockRow = benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })
+      await expect(brockRow).toHaveClass(/border-sky-500/)
+    })
+
+    test('clicking interchange row toggles it off (amber border)', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      const brockRow = benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })
+      await brockRow.click()
+      await expect(brockRow).toHaveClass(/border-amber-600/)
+    })
+
+    test('Save Subs persists interchanged_out and interchanged_in statuses', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      // Interchange is pre-applied (beneficial) — save immediately
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      // Hugh (displaced) shows IC Out; Brock (interchange) shows IC In
+      await expect(positionSection(page, 'Goals').getByText('IC Out')).toBeVisible()
+      await expect(benchSection(page).getByText('IC In')).toBeVisible()
+      // Henry remains with normal AFL status (Played)
+      await expect(positionSection(page, 'Goals').getByText('Played').first()).toBeVisible()
+    })
+
+    test('declining interchange saves with no statuses changed', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      // Toggle interchange off
+      await benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' }).click()
+      await page.getByRole('button', { name: 'Save Subs' }).click()
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
+
+      await expect(positionSection(page, 'Goals').getByText('IC Out')).not.toBeVisible()
+      await expect(benchSection(page).getByText('IC In')).not.toBeVisible()
+    })
+  })
+
   // ── Navigate away and back (server persistence) ───────────────────────────
 
   test.describe('navigate away and back', () => {

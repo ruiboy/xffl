@@ -135,19 +135,19 @@ const bench    = computed(() => props.playerMatches.filter(pm => isBench(pm)))
 // For each subbed-out or interchanged starter, find the covering bench player.
 const coveringMap = computed(() => {
   const map = new Map<string, PlayerMatch>() // starter pm.id → covering bench PlayerMatch
-  // Regular subs
+  // Regular subs: starter is subbed_out, bench is subbed_in with matching position
   for (const starter of starters.value) {
-    if (starter.status !== 'subbed' || !starter.position) continue
+    if (starter.status !== 'subbed_out' || !starter.position) continue
     const covering = bench.value.find(bp => {
-      if (!bp.backupPositions) return false
+      if (bp.status !== 'subbed_in' || !bp.backupPositions) return false
       const bps = bp.backupPositions === 'star' ? ['star'] : bp.backupPositions.split(',').map(p => p.trim())
       return bps.includes(starter.position!)
     })
     if (covering) map.set(starter.id, covering)
   }
-  // Interchange: displaced starter → interchange bench player
-  const displaced = starters.value.find(s => s.status === 'interchanged')
-  const intBench = bench.value.find(bp => bp.interchangePosition != null)
+  // Interchange: displaced starter is interchanged_out, bench is interchanged_in
+  const displaced = starters.value.find(s => s.status === 'interchanged_out')
+  const intBench = bench.value.find(bp => bp.status === 'interchanged_in')
   if (displaced && intBench) map.set(displaced.id, intBench)
   return map
 })
@@ -173,8 +173,7 @@ function pmAflClub(pm: PlayerMatch): string | null {
 }
 
 function pmStatus(pm: PlayerMatch): string | null {
-  if (pm.status === 'subbed') return 'subbed'
-  if (pm.status === 'interchanged') return 'interchanged'
+  if (pm.status && pm.status !== 'named') return pm.status
   return pm.aflStatus
 }
 

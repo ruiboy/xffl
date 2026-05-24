@@ -132,13 +132,13 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 - [x] Update `playerMatch.status` docs/schema to reflect new values
 
 *Frontend*
-- [ ] Update `onSaveSubs` in `TeamBuilderView`: build `{replacedPmId, replacingPmId}` pairs from
+- [x] Update `onSaveSubs` in `TeamBuilderView`: build `{replacedPmId, replacingPmId}` pairs from
       existing `subsMapping` ref; send to updated mutation
-- [ ] Display mode in `TeamBuilderView`: replace `savedSubsMap`, `interchangeDisplacedStarterNormal`,
+- [x] Display mode in `TeamBuilderView`: replace `savedSubsMap`, `interchangeDisplacedStarterNormal`,
       `savedSubsStarterMap`, `effectiveCovering`, `effectiveSubbedForStarter` with direct `status` reads
-- [ ] `SquadTable`: replace `coveringMap` / `coveredStarterMap` heuristics with direct `status` reads
-- [ ] Update `initSubsState` to seed from `subbed_out` / `interchanged_out` statuses
-- [ ] Update e2e tests: `declareSubs` mutation shape + any assertions on player status values
+- [x] `SquadTable`: replace `coveringMap` / `coveredStarterMap` heuristics with direct `status` reads
+- [x] Update `initSubsState` to seed from `subbed_out` / `interchanged_out` statuses
+- [x] Update e2e tests: `declareSubs` mutation shape + any assertions on player status values (none found)
 
 ---
 

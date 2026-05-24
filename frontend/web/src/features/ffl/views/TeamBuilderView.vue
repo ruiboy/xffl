@@ -408,7 +408,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH } from '../api/queries'
 import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
@@ -628,8 +628,7 @@ const squad = computed<SquadPlayer[]>(() => {
 })
 
 function playerStatus(player: SquadPlayer): string | null {
-  if (player.status === 'subbed') return 'subbed'
-  if (player.status === 'interchanged') return 'interchanged'
+  if (player.status && player.status !== 'named') return player.status
   return player.aflStatus
 }
 
@@ -973,13 +972,13 @@ function initSubsState() {
   // Pre-populate from stored TM decisions.
   subbedOutIds.value = new Set(
     pms
-      .filter((pm: { status: string | null }) => pm.status === 'subbed')
+      .filter((pm: { status: string | null }) => pm.status === 'subbed_out')
       .map((pm: { id: string }) => pm.id)
   )
   // Check if interchange is currently applied.
-  interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged')
+  interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
   // Default interchange to checked if beneficial and no decision stored yet.
-  if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed' || pm.status === 'interchanged')) {
+  if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed_out' || pm.status === 'interchanged_out')) {
     interchangeApplied.value = interchangeBeneficial.value
   }
 }
@@ -1000,11 +999,13 @@ function exitSubsMode() {
 }
 
 function toggleSub(pmId: string) {
-  if (subbedOutIds.value.has(pmId)) {
-    subbedOutIds.value.delete(pmId)
+  const next = new Set(subbedOutIds.value)
+  if (next.has(pmId)) {
+    next.delete(pmId)
   } else {
-    subbedOutIds.value.add(pmId)
+    next.add(pmId)
   }
+  subbedOutIds.value = next
 }
 
 // Maps subbed-out starter pmId → the first bench player whose backup positions cover that starter's position.
@@ -1025,14 +1026,14 @@ const subsMapping = computed(() => {
   return map
 })
 
-// Covering map based on saved server state (status === 'subbed') — used in normal (non-subs) mode.
+// Covering map based on saved server state (status === 'subbed_out') — used in normal (non-subs) mode.
 const savedSubsMap = computed(() => {
   const map = new Map<string, SquadPlayer>()
   for (const pos of positions) {
     for (const slot of teamSlots.value[pos.key]) {
-      if (!slot.player?.pmId || slot.player.status !== 'subbed') continue
+      if (!slot.player?.pmId || slot.player.status !== 'subbed_out') continue
       for (const bSlot of benchDualSlots.value) {
-        if (!bSlot.player) continue
+        if (!bSlot.player || bSlot.player.status !== 'subbed_in') continue
         if ((bSlot.positions as (string | null)[]).includes(pos.key)) {
           map.set(slot.player.pmId, bSlot.player)
           break
@@ -1062,11 +1063,11 @@ const interchangeDisplacedStarterSubsMode = computed((): SquadPlayer | null => {
   }, active[0]).player ?? null
 })
 
-// Displaced starter in normal mode: starter with status='interchanged' at interchangePosition.
+// Displaced starter in normal mode: starter with status='interchanged_out' at interchangePosition.
 const interchangeDisplacedStarterNormal = computed((): SquadPlayer | null => {
   if (!interchangePosition.value) return null
   const posSlots = teamSlots.value[interchangePosition.value as PositionKey]
-  return posSlots?.find(s => s.player?.status === 'interchanged')?.player ?? null
+  return posSlots?.find(s => s.player?.status === 'interchanged_out')?.player ?? null
 })
 
 // Returns the covering bench player for a starter — covers both subs and interchange.
@@ -1105,7 +1106,7 @@ const savedSubsStarterMap = computed(() => {
   const map = new Map<string, SquadPlayer>()
   for (const pos of positions) {
     for (const slot of teamSlots.value[pos.key]) {
-      if (!slot.player?.pmId || slot.player.status !== 'subbed') continue
+      if (!slot.player?.pmId || slot.player.status !== 'subbed_out') continue
       const cp = savedSubsMap.value.get(slot.player.pmId)
       if (cp?.pmId) map.set(cp.pmId, slot.player)
     }
@@ -1186,13 +1187,30 @@ async function onSaveSubs() {
   subsSaving.value = true
   subsMessage.value = ''
   try {
+    const subs = Array.from(subsMapping.value.entries()).map(([replacedPmId, benchPlayer]) => ({
+      replacedPmId,
+      replacingPmId: benchPlayer.pmId!,
+    }))
+
+    let interchange: { replacedPmId: string; replacingPmId: string } | null = null
+    if (interchangeApplied.value) {
+      const displacedPmId = interchangeDisplacedStarterSubsMode.value?.pmId
+      const icPmId = interchangeBenchSlot.value?.player?.pmId
+      if (displacedPmId && icPmId) {
+        interchange = { replacedPmId: displacedPmId, replacingPmId: icPmId }
+      }
+    }
+
     await declareSubs({
       input: {
         clubMatchId: clubMatch.value.id,
-        subbedOutPlayerMatchIds: Array.from(subbedOutIds.value),
-        interchangeApplied: interchangeApplied.value,
+        subs,
+        interchange,
       },
     })
+    // nextTick lets Vue flush the Apollo cache → reactive update before we read
+    // clubMatch.value, so loadTeamFromMatch sees the new statuses.
+    await nextTick()
     if (clubMatch.value) {
       loadTeamFromMatch(clubMatch.value)
       initializedMatchId.value = clubMatch.value.id

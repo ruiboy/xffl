@@ -5,3 +5,6 @@ supergraph:
 override_subgraph_url:
   afl: http://host.docker.internal:8180/query
   ffl: http://host.docker.internal:8181/query
+
+include_subgraph_errors:
+  all: true
