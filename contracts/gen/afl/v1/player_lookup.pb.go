@@ -587,6 +587,210 @@ func (x *PlayerMatchStats) GetPlayerSeasonId() int32 {
 	return 0
 }
 
+type LookupByeInfoRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	PlayerSeasonIds []int32                `protobuf:"varint,1,rep,packed,name=player_season_ids,json=playerSeasonIds,proto3" json:"player_season_ids,omitempty"`
+	RoundId         int32                  `protobuf:"varint,2,opt,name=round_id,json=roundId,proto3" json:"round_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *LookupByeInfoRequest) Reset() {
+	*x = LookupByeInfoRequest{}
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LookupByeInfoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LookupByeInfoRequest) ProtoMessage() {}
+
+func (x *LookupByeInfoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LookupByeInfoRequest.ProtoReflect.Descriptor instead.
+func (*LookupByeInfoRequest) Descriptor() ([]byte, []int) {
+	return file_afl_v1_player_lookup_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LookupByeInfoRequest) GetPlayerSeasonIds() []int32 {
+	if x != nil {
+		return x.PlayerSeasonIds
+	}
+	return nil
+}
+
+func (x *LookupByeInfoRequest) GetRoundId() int32 {
+	if x != nil {
+		return x.RoundId
+	}
+	return 0
+}
+
+type ByePlayerInfo struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PlayerSeasonId int32                  `protobuf:"varint,1,opt,name=player_season_id,json=playerSeasonId,proto3" json:"player_season_id,omitempty"`
+	HasBye         bool                   `protobuf:"varint,2,opt,name=has_bye,json=hasBye,proto3" json:"has_bye,omitempty"`
+	PlayedLast     bool                   `protobuf:"varint,3,opt,name=played_last,json=playedLast,proto3" json:"played_last,omitempty"`
+	AvgGoals       float64                `protobuf:"fixed64,4,opt,name=avg_goals,json=avgGoals,proto3" json:"avg_goals,omitempty"`
+	AvgKicks       float64                `protobuf:"fixed64,5,opt,name=avg_kicks,json=avgKicks,proto3" json:"avg_kicks,omitempty"`
+	AvgHandballs   float64                `protobuf:"fixed64,6,opt,name=avg_handballs,json=avgHandballs,proto3" json:"avg_handballs,omitempty"`
+	AvgMarks       float64                `protobuf:"fixed64,7,opt,name=avg_marks,json=avgMarks,proto3" json:"avg_marks,omitempty"`
+	AvgTackles     float64                `protobuf:"fixed64,8,opt,name=avg_tackles,json=avgTackles,proto3" json:"avg_tackles,omitempty"`
+	AvgHitouts     float64                `protobuf:"fixed64,9,opt,name=avg_hitouts,json=avgHitouts,proto3" json:"avg_hitouts,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ByePlayerInfo) Reset() {
+	*x = ByePlayerInfo{}
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ByePlayerInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ByePlayerInfo) ProtoMessage() {}
+
+func (x *ByePlayerInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ByePlayerInfo.ProtoReflect.Descriptor instead.
+func (*ByePlayerInfo) Descriptor() ([]byte, []int) {
+	return file_afl_v1_player_lookup_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ByePlayerInfo) GetPlayerSeasonId() int32 {
+	if x != nil {
+		return x.PlayerSeasonId
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetHasBye() bool {
+	if x != nil {
+		return x.HasBye
+	}
+	return false
+}
+
+func (x *ByePlayerInfo) GetPlayedLast() bool {
+	if x != nil {
+		return x.PlayedLast
+	}
+	return false
+}
+
+func (x *ByePlayerInfo) GetAvgGoals() float64 {
+	if x != nil {
+		return x.AvgGoals
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetAvgKicks() float64 {
+	if x != nil {
+		return x.AvgKicks
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetAvgHandballs() float64 {
+	if x != nil {
+		return x.AvgHandballs
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetAvgMarks() float64 {
+	if x != nil {
+		return x.AvgMarks
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetAvgTackles() float64 {
+	if x != nil {
+		return x.AvgTackles
+	}
+	return 0
+}
+
+func (x *ByePlayerInfo) GetAvgHitouts() float64 {
+	if x != nil {
+		return x.AvgHitouts
+	}
+	return 0
+}
+
+type LookupByeInfoResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Players       []*ByePlayerInfo       `protobuf:"bytes,1,rep,name=players,proto3" json:"players,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LookupByeInfoResponse) Reset() {
+	*x = LookupByeInfoResponse{}
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LookupByeInfoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LookupByeInfoResponse) ProtoMessage() {}
+
+func (x *LookupByeInfoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_afl_v1_player_lookup_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LookupByeInfoResponse.ProtoReflect.Descriptor instead.
+func (*LookupByeInfoResponse) Descriptor() ([]byte, []int) {
+	return file_afl_v1_player_lookup_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *LookupByeInfoResponse) GetPlayers() []*ByePlayerInfo {
+	if x != nil {
+		return x.Players
+	}
+	return nil
+}
+
 var File_afl_v1_player_lookup_proto protoreflect.FileDescriptor
 
 const file_afl_v1_player_lookup_proto_rawDesc = "" +
@@ -625,11 +829,30 @@ const file_afl_v1_player_lookup_proto_rawDesc = "" +
 	"\x05marks\x18\x06 \x01(\x05R\x05marks\x12\x18\n" +
 	"\atackles\x18\a \x01(\x05R\atackles\x12\x18\n" +
 	"\ahitouts\x18\b \x01(\x05R\ahitouts\x12(\n" +
-	"\x10player_season_id\x18\t \x01(\x05R\x0eplayerSeasonId2\x93\x02\n" +
+	"\x10player_season_id\x18\t \x01(\x05R\x0eplayerSeasonId\"]\n" +
+	"\x14LookupByeInfoRequest\x12*\n" +
+	"\x11player_season_ids\x18\x01 \x03(\x05R\x0fplayerSeasonIds\x12\x19\n" +
+	"\bround_id\x18\x02 \x01(\x05R\aroundId\"\xb1\x02\n" +
+	"\rByePlayerInfo\x12(\n" +
+	"\x10player_season_id\x18\x01 \x01(\x05R\x0eplayerSeasonId\x12\x17\n" +
+	"\ahas_bye\x18\x02 \x01(\bR\x06hasBye\x12\x1f\n" +
+	"\vplayed_last\x18\x03 \x01(\bR\n" +
+	"playedLast\x12\x1b\n" +
+	"\tavg_goals\x18\x04 \x01(\x01R\bavgGoals\x12\x1b\n" +
+	"\tavg_kicks\x18\x05 \x01(\x01R\bavgKicks\x12#\n" +
+	"\ravg_handballs\x18\x06 \x01(\x01R\favgHandballs\x12\x1b\n" +
+	"\tavg_marks\x18\a \x01(\x01R\bavgMarks\x12\x1f\n" +
+	"\vavg_tackles\x18\b \x01(\x01R\n" +
+	"avgTackles\x12\x1f\n" +
+	"\vavg_hitouts\x18\t \x01(\x01R\n" +
+	"avgHitouts\"H\n" +
+	"\x15LookupByeInfoResponse\x12/\n" +
+	"\aplayers\x18\x01 \x03(\v2\x15.afl.v1.ByePlayerInfoR\aplayers2\xe1\x02\n" +
 	"\fPlayerLookup\x12L\n" +
 	"\rLookupPlayers\x12\x1c.afl.v1.LookupPlayersRequest\x1a\x1d.afl.v1.LookupPlayersResponse\x12[\n" +
 	"\x12LookupPlayerSeason\x12!.afl.v1.LookupPlayerSeasonRequest\x1a\".afl.v1.LookupPlayerSeasonResponse\x12X\n" +
-	"\x11LookupPlayerMatch\x12 .afl.v1.LookupPlayerMatchRequest\x1a!.afl.v1.LookupPlayerMatchResponseB!Z\x1fxffl/contracts/gen/afl/v1;aflv1b\x06proto3"
+	"\x11LookupPlayerMatch\x12 .afl.v1.LookupPlayerMatchRequest\x1a!.afl.v1.LookupPlayerMatchResponse\x12L\n" +
+	"\rLookupByeInfo\x12\x1c.afl.v1.LookupByeInfoRequest\x1a\x1d.afl.v1.LookupByeInfoResponseB!Z\x1fxffl/contracts/gen/afl/v1;aflv1b\x06proto3"
 
 var (
 	file_afl_v1_player_lookup_proto_rawDescOnce sync.Once
@@ -643,7 +866,7 @@ func file_afl_v1_player_lookup_proto_rawDescGZIP() []byte {
 	return file_afl_v1_player_lookup_proto_rawDescData
 }
 
-var file_afl_v1_player_lookup_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_afl_v1_player_lookup_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_afl_v1_player_lookup_proto_goTypes = []any{
 	(*LookupPlayersRequest)(nil),       // 0: afl.v1.LookupPlayersRequest
 	(*LookupPlayersResponse)(nil),      // 1: afl.v1.LookupPlayersResponse
@@ -655,23 +878,29 @@ var file_afl_v1_player_lookup_proto_goTypes = []any{
 	(*LookupBySeasonRound)(nil),        // 7: afl.v1.LookupBySeasonRound
 	(*LookupPlayerMatchResponse)(nil),  // 8: afl.v1.LookupPlayerMatchResponse
 	(*PlayerMatchStats)(nil),           // 9: afl.v1.PlayerMatchStats
+	(*LookupByeInfoRequest)(nil),       // 10: afl.v1.LookupByeInfoRequest
+	(*ByePlayerInfo)(nil),              // 11: afl.v1.ByePlayerInfo
+	(*LookupByeInfoResponse)(nil),      // 12: afl.v1.LookupByeInfoResponse
 }
 var file_afl_v1_player_lookup_proto_depIdxs = []int32{
-	2, // 0: afl.v1.LookupPlayersResponse.players:type_name -> afl.v1.PlayerInfo
-	6, // 1: afl.v1.LookupPlayerMatchRequest.by_ids:type_name -> afl.v1.LookupByIDs
-	7, // 2: afl.v1.LookupPlayerMatchRequest.by_season_round:type_name -> afl.v1.LookupBySeasonRound
-	9, // 3: afl.v1.LookupPlayerMatchResponse.stats:type_name -> afl.v1.PlayerMatchStats
-	0, // 4: afl.v1.PlayerLookup.LookupPlayers:input_type -> afl.v1.LookupPlayersRequest
-	3, // 5: afl.v1.PlayerLookup.LookupPlayerSeason:input_type -> afl.v1.LookupPlayerSeasonRequest
-	5, // 6: afl.v1.PlayerLookup.LookupPlayerMatch:input_type -> afl.v1.LookupPlayerMatchRequest
-	1, // 7: afl.v1.PlayerLookup.LookupPlayers:output_type -> afl.v1.LookupPlayersResponse
-	4, // 8: afl.v1.PlayerLookup.LookupPlayerSeason:output_type -> afl.v1.LookupPlayerSeasonResponse
-	8, // 9: afl.v1.PlayerLookup.LookupPlayerMatch:output_type -> afl.v1.LookupPlayerMatchResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2,  // 0: afl.v1.LookupPlayersResponse.players:type_name -> afl.v1.PlayerInfo
+	6,  // 1: afl.v1.LookupPlayerMatchRequest.by_ids:type_name -> afl.v1.LookupByIDs
+	7,  // 2: afl.v1.LookupPlayerMatchRequest.by_season_round:type_name -> afl.v1.LookupBySeasonRound
+	9,  // 3: afl.v1.LookupPlayerMatchResponse.stats:type_name -> afl.v1.PlayerMatchStats
+	11, // 4: afl.v1.LookupByeInfoResponse.players:type_name -> afl.v1.ByePlayerInfo
+	0,  // 5: afl.v1.PlayerLookup.LookupPlayers:input_type -> afl.v1.LookupPlayersRequest
+	3,  // 6: afl.v1.PlayerLookup.LookupPlayerSeason:input_type -> afl.v1.LookupPlayerSeasonRequest
+	5,  // 7: afl.v1.PlayerLookup.LookupPlayerMatch:input_type -> afl.v1.LookupPlayerMatchRequest
+	10, // 8: afl.v1.PlayerLookup.LookupByeInfo:input_type -> afl.v1.LookupByeInfoRequest
+	1,  // 9: afl.v1.PlayerLookup.LookupPlayers:output_type -> afl.v1.LookupPlayersResponse
+	4,  // 10: afl.v1.PlayerLookup.LookupPlayerSeason:output_type -> afl.v1.LookupPlayerSeasonResponse
+	8,  // 11: afl.v1.PlayerLookup.LookupPlayerMatch:output_type -> afl.v1.LookupPlayerMatchResponse
+	12, // 12: afl.v1.PlayerLookup.LookupByeInfo:output_type -> afl.v1.LookupByeInfoResponse
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_afl_v1_player_lookup_proto_init() }
@@ -689,7 +918,7 @@ func file_afl_v1_player_lookup_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_afl_v1_player_lookup_proto_rawDesc), len(file_afl_v1_player_lookup_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

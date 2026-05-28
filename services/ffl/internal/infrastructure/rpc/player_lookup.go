@@ -83,6 +83,35 @@ func (a *AFLPlayerLookup) LookupPlayerMatchBySeasonRound(ctx context.Context, af
 	return toPlayerMatchStats(resp.Stats), nil
 }
 
+func (a *AFLPlayerLookup) LookupByeInfo(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]application.ByePlayerInfo, error) {
+	ids := make([]int32, len(aflPlayerSeasonIDs))
+	for i, id := range aflPlayerSeasonIDs {
+		ids[i] = int32(id)
+	}
+	resp, err := a.client.LookupByeInfo(ctx, &aflv1.LookupByeInfoRequest{
+		PlayerSeasonIds: ids,
+		RoundId:         int32(aflRoundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]application.ByePlayerInfo, len(resp.Players))
+	for i, p := range resp.Players {
+		out[i] = application.ByePlayerInfo{
+			PlayerSeasonID: int(p.PlayerSeasonId),
+			HasBye:         p.HasBye,
+			PlayedLast:     p.PlayedLast,
+			AvgGoals:       p.AvgGoals,
+			AvgKicks:       p.AvgKicks,
+			AvgHandballs:   p.AvgHandballs,
+			AvgMarks:       p.AvgMarks,
+			AvgTackles:     p.AvgTackles,
+			AvgHitouts:     p.AvgHitouts,
+		}
+	}
+	return out, nil
+}
+
 func toPlayerMatchStats(stats []*aflv1.PlayerMatchStats) []application.PlayerMatchStats {
 	out := make([]application.PlayerMatchStats, len(stats))
 	for i, s := range stats {

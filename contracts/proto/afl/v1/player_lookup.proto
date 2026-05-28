@@ -8,6 +8,7 @@ service PlayerLookup {
   rpc LookupPlayers(LookupPlayersRequest) returns (LookupPlayersResponse);
   rpc LookupPlayerSeason(LookupPlayerSeasonRequest) returns (LookupPlayerSeasonResponse);
   rpc LookupPlayerMatch(LookupPlayerMatchRequest) returns (LookupPlayerMatchResponse);
+  rpc LookupByeInfo(LookupByeInfoRequest) returns (LookupByeInfoResponse);
 }
 
 message LookupPlayersRequest {
@@ -62,4 +63,25 @@ message PlayerMatchStats {
   int32  tackles          = 7;
   int32  hitouts          = 8;
   int32  player_season_id = 9;
+}
+
+message LookupByeInfoRequest {
+  repeated int32 player_season_ids = 1;
+  int32          round_id          = 2;
+}
+
+message ByePlayerInfo {
+  int32  player_season_id = 1;
+  bool   has_bye          = 2;
+  bool   played_last      = 3;
+  double avg_goals        = 4;
+  double avg_kicks        = 5;
+  double avg_handballs    = 6;
+  double avg_marks        = 7;
+  double avg_tackles      = 8;
+  double avg_hitouts      = 9;
+}
+
+message LookupByeInfoResponse {
+  repeated ByePlayerInfo players = 1;
 }

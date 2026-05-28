@@ -8,13 +8,14 @@ import (
 )
 
 type playerLookupServer struct {
-	players        domain.PlayerRepository
-	playerSeasons  domain.PlayerSeasonRepository
-	playerMatches  domain.PlayerMatchRepository
+	players       domain.PlayerRepository
+	playerSeasons domain.PlayerSeasonRepository
+	playerMatches domain.PlayerMatchRepository
+	byes          domain.ByeRepository
 }
 
-func NewPlayerLookupServer(players domain.PlayerRepository, playerSeasons domain.PlayerSeasonRepository, playerMatches domain.PlayerMatchRepository) aflv1.PlayerLookup {
-	return &playerLookupServer{players: players, playerSeasons: playerSeasons, playerMatches: playerMatches}
+func NewPlayerLookupServer(players domain.PlayerRepository, playerSeasons domain.PlayerSeasonRepository, playerMatches domain.PlayerMatchRepository, byes domain.ByeRepository) aflv1.PlayerLookup {
+	return &playerLookupServer{players: players, playerSeasons: playerSeasons, playerMatches: playerMatches, byes: byes}
 }
 
 func (s *playerLookupServer) LookupPlayers(ctx context.Context, req *aflv1.LookupPlayersRequest) (*aflv1.LookupPlayersResponse, error) {
@@ -75,6 +76,58 @@ func (s *playerLookupServer) LookupPlayerMatch(ctx context.Context, req *aflv1.L
 	default:
 		return &aflv1.LookupPlayerMatchResponse{}, nil
 	}
+}
+
+func (s *playerLookupServer) LookupByeInfo(ctx context.Context, req *aflv1.LookupByeInfoRequest) (*aflv1.LookupByeInfoResponse, error) {
+	psIDs := make([]int, len(req.PlayerSeasonIds))
+	for i, id := range req.PlayerSeasonIds {
+		psIDs[i] = int(id)
+	}
+	roundID := int(req.RoundId)
+
+	byeStatus, err := s.playerMatches.FindByeStatusBatch(ctx, psIDs, roundID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect player_season_ids that have a bye — only fetch averages for those.
+	var byePSIDs []int
+	for _, bs := range byeStatus {
+		if bs.HasBye {
+			byePSIDs = append(byePSIDs, bs.PlayerSeasonID)
+		}
+	}
+
+	avgsByPS := make(map[int]domain.PlayerSeasonAverages)
+	if len(byePSIDs) > 0 {
+		avgs, err := s.playerMatches.GetSeasonAveragesBatch(ctx, byePSIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range avgs {
+			avgsByPS[a.PlayerSeasonID] = a
+		}
+	}
+
+	infos := make([]*aflv1.ByePlayerInfo, len(byeStatus))
+	for i, bs := range byeStatus {
+		info := &aflv1.ByePlayerInfo{
+			PlayerSeasonId: int32(bs.PlayerSeasonID),
+			HasBye:         bs.HasBye,
+			PlayedLast:     bs.PlayedLast,
+		}
+		if a, ok := avgsByPS[bs.PlayerSeasonID]; ok {
+			info.AvgGoals = a.Goals
+			info.AvgKicks = a.Kicks
+			info.AvgHandballs = a.Handballs
+			info.AvgMarks = a.Marks
+			info.AvgTackles = a.Tackles
+			info.AvgHitouts = a.Hitouts
+		}
+		infos[i] = info
+	}
+
+	return &aflv1.LookupByeInfoResponse{Players: infos}, nil
 }
 
 func toProtoStats(pms []domain.PlayerMatch) []*aflv1.PlayerMatchStats {

@@ -59,11 +59,31 @@ type UpsertPlayerMatchParams struct {
 	Behinds        *int
 }
 
+// ByeStatus holds bye-round eligibility data for a player_season.
+type ByeStatus struct {
+	PlayerSeasonID int
+	HasBye         bool
+	PlayedLast     bool
+}
+
+// PlayerSeasonAverages holds season-to-date average stats for a player_season.
+type PlayerSeasonAverages struct {
+	PlayerSeasonID int
+	Goals          float64
+	Kicks          float64
+	Handballs      float64
+	Marks          float64
+	Tackles        float64
+	Hitouts        float64
+}
+
 type PlayerMatchRepository interface {
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	FindByIDs(ctx context.Context, ids []int) ([]PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerMatch, error)
+	FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]ByeStatus, error)
+	GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int) ([]PlayerSeasonAverages, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }

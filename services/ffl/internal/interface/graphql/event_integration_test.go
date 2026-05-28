@@ -837,3 +837,6 @@ func (s *subsScoreStub) LookupPlayerMatch(_ context.Context, ids []int) ([]appli
 func (s *subsScoreStub) LookupPlayerMatchBySeasonRound(_ context.Context, _ []int, _ int) ([]application.PlayerMatchStats, error) {
 	return nil, nil
 }
+func (s *subsScoreStub) LookupByeInfo(_ context.Context, _ []int, _ int) ([]application.ByePlayerInfo, error) {
+	return nil, nil
+}

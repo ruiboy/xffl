@@ -12,6 +12,10 @@ type Querier interface {
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
 	FindByeByRoundAndClub(ctx context.Context, arg FindByeByRoundAndClubParams) (FindByeByRoundAndClubRow, error)
+	// For each player_season_id, returns whether their club has a bye in the given
+	// round, and whether they played in their club's most recent non-bye final match
+	// before that round.
+	FindByeStatusBatch(ctx context.Context, arg FindByeStatusBatchParams) ([]FindByeStatusBatchRow, error)
 	FindByesByRoundID(ctx context.Context, roundID int32) ([]FindByesByRoundIDRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
@@ -43,6 +47,8 @@ type Querier interface {
 	FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	// Returns season-to-date average stats for each player_season, across all matches played.
+	GetPlayerSeasonAveragesBatch(ctx context.Context, playerSeasonIds []int32) ([]GetPlayerSeasonAveragesBatchRow, error)
 	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
 	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)

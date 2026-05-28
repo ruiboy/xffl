@@ -187,13 +187,13 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 - [x] Add `bye` to `AFLStatus` enum
 - [x] No new DB column needed for bye scores: starters have `drv_score` set at submission (from season average); bench players have `drv_score` set at sub declaration time (compute from AFL history at the position they activate into)
 - [x] Add `CalculateByeScore(position, avgStats)` pure domain function — unit tested
-- [ ] Update team submission validation: reject naming a bye player who didn't play last game
-- [ ] Update score calculation: when `drv_afl_status = "bye"`, `drv_score` is already set at submission (starter) or at sub declaration (bench) — no separate lookup needed
+- [x] Update team submission validation: reject naming a bye player who didn't play last game
+- [x] Update score calculation: when `drv_afl_status = "bye"`, `drv_score` is already set at submission (starter) or at sub declaration (bench) — no separate lookup needed
 
 *Application*
-- [ ] On team submission for a bye round: for each bye-club starter, compute season-average stats, call `CalculateByeScore`, write to `drv_score`, set `drv_afl_status = "bye"`
-- [ ] On `DeclareSubs` for a bye round: for each activated bench player whose club has a bye, compute season-average stats at their assigned position, call `CalculateByeScore`, write to `drv_score`
-- [ ] Integration-test: bye player named + eligible → scores via average; ineligible → submission rejected; bench bye player activated → correct position score used
+- [x] On team submission for a bye round: for each bye-club starter, compute season-average stats, call `CalculateByeScore`, write to `drv_score`, set `drv_afl_status = "bye"`
+- [x] On `DeclareSubs` for a bye round: for each activated bench player whose club has a bye, compute season-average stats at their assigned position, call `CalculateByeScore`, write to `drv_score`
+- [x] Integration-test: bye player named + eligible → scores via average; ineligible → submission rejected; bench bye player activated → correct position score used
 
 *GraphQL / frontend*
 - [x] Add `bye` to `FFLAFLPlayerMatchStatus` enum in `query.graphqls` and regenerate — field, resolver, and converter are already wired

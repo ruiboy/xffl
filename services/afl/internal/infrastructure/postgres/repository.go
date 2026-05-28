@@ -717,6 +717,53 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 	return out, nil
 }
 
+func (r *PlayerMatchRepository) FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.ByeStatus, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindByeStatusBatch(ctx, sqlcgen.FindByeStatusBatchParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ByeStatus, len(rows))
+	for i, row := range rows {
+		out[i] = domain.ByeStatus{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			HasBye:         row.HasBye,
+			PlayedLast:     row.PlayedLast,
+		}
+	}
+	return out, nil
+}
+
+func (r *PlayerMatchRepository) GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int) ([]domain.PlayerSeasonAverages, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.GetPlayerSeasonAveragesBatch(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonAverages, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonAverages{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			Goals:          row.AvgGoals,
+			Kicks:          row.AvgKicks,
+			Handballs:      row.AvgHandballs,
+			Marks:          row.AvgMarks,
+			Tackles:        row.AvgTackles,
+			Hitouts:        row.AvgHitouts,
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:    int32(params.ClubMatchID),
