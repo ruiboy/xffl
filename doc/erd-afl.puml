@@ -18,13 +18,14 @@ class Round <<league>> {
 }
 class Match <<league>> {
   eg. CROWS v NM in AFL 2025 Rd 1
-  home_club_match_id
-  away_club_match_id
   venue
   start_dt
   --
   <<denormalized>>
   result: home_win|away_win|draw|no_result
+}
+class Bye <<league>> {
+  eg. CROWS Bye in AFL 2025 Rd 1
 }
 
 class Club <<club>> {
@@ -44,6 +45,7 @@ class ClubSeason <<club>> {
 }
 class ClubMatch <<club>> {
   eg. CROWS in CROWS v NM in AFL 2025 Rd 1
+  side: home|away
   rushed_behinds
   --
   <<denormalized>>
@@ -71,9 +73,11 @@ class PlayerMatch <<player>> {
 League *-- "0..*" Season
 Season *-- "0..*" Round
 Round *-- "0..*" Match
+Round *-- "0..*" Bye
 
 Club *-- "0..*" ClubSeason
 Season *-- "0..*" ClubSeason
+Bye *-- "1" ClubSeason
 
 Match *-- "2" ClubMatch
 ClubSeason *-- "0..*" ClubMatch
