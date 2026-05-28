@@ -145,6 +145,7 @@ type PlayerMatchRepository interface {
 	FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (PlayerMatch, error)
 	UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error
 	UpdateStatus(ctx context.Context, id int, status PlayerMatchStatus) error
+	UpdatePosition(ctx context.Context, id int, position *Position) error
 	UpdateAFLStatus(ctx context.Context, id int, status AFLStatus) error
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)

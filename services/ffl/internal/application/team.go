@@ -161,20 +161,27 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []doma
 		}
 
 		oldStatus := make(map[int]*domain.PlayerMatchStatus, len(pms))
+		oldPosition := make(map[int]*domain.Position, len(pms))
 		for _, pm := range pms {
 			oldStatus[pm.ID] = pm.Status
+			oldPosition[pm.ID] = pm.Position
 		}
 
 		for _, pm := range updated {
-			newStatus := pm.Status
-			if old := oldStatus[pm.ID]; statusEqual(old, newStatus) {
+			statusChanged := !statusEqual(oldStatus[pm.ID], pm.Status)
+			posChanged := !positionEqual(oldPosition[pm.ID], pm.Position)
+			if !statusChanged && !posChanged {
 				continue
 			}
-			if newStatus == nil {
-				continue
+			if statusChanged && pm.Status != nil {
+				if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *pm.Status); err != nil {
+					return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+				}
 			}
-			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *newStatus); err != nil {
-				return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+			if posChanged {
+				if err := repos.PlayerMatches.UpdatePosition(ctx, pm.ID, pm.Position); err != nil {
+					return fmt.Errorf("update position for player_match %d: %w", pm.ID, err)
+				}
 			}
 		}
 		return nil
@@ -258,6 +265,16 @@ func buildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatch
 }
 
 func statusEqual(a, b *domain.PlayerMatchStatus) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func positionEqual(a, b *domain.Position) bool {
 	if a == nil && b == nil {
 		return true
 	}

@@ -87,7 +87,8 @@ func TestClubMatch_Score(t *testing.T) {
 			ClubMatch{PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionGoals), Status: pmSts(PlayerMatchStatusSubbedOut), Score: 0},
 				{Position: pos(PositionKicks), Status: pmSts(PlayerMatchStatusNamed), Score: 10},
-				{Score: 25, BackupPositions: strPtr("goals"), Status: pmSts(PlayerMatchStatusSubbedIn)},
+				// Position inherited from subbed-out goals starter.
+				{Position: pos(PositionGoals), Score: 25, BackupPositions: strPtr("goals"), Status: pmSts(PlayerMatchStatusSubbedIn)},
 			}},
 			35, // subbed_in bench (25) + kicks starter (10)
 		},
@@ -96,7 +97,8 @@ func TestClubMatch_Score(t *testing.T) {
 			ClubMatch{PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionKicks), Status: pmSts(PlayerMatchStatusInterchangedOut), Score: 5},
 				{Position: pos(PositionGoals), Status: pmSts(PlayerMatchStatusNamed), Score: 10},
-				{Score: 20, BackupPositions: strPtr("kicks"), Status: pmSts(PlayerMatchStatusInterchangedIn)},
+				// Position set to interchange position (kicks).
+				{Position: pos(PositionKicks), Score: 20, BackupPositions: strPtr("kicks"), Status: pmSts(PlayerMatchStatusInterchangedIn)},
 			}},
 			30, // interchanged_in bench (20) + goals starter (10)
 		},
@@ -106,8 +108,8 @@ func TestClubMatch_Score(t *testing.T) {
 				{Position: pos(PositionGoals), Status: pmSts(PlayerMatchStatusSubbedOut), Score: 0},
 				{Position: pos(PositionKicks), Status: pmSts(PlayerMatchStatusInterchangedOut), Score: 5},
 				{Position: pos(PositionMarks), Status: pmSts(PlayerMatchStatusNamed), Score: 8},
-				{Score: 12, BackupPositions: strPtr("goals"), Status: pmSts(PlayerMatchStatusSubbedIn)},
-				{Score: 18, BackupPositions: strPtr("kicks"), Status: pmSts(PlayerMatchStatusInterchangedIn)},
+				{Position: pos(PositionGoals), Score: 12, BackupPositions: strPtr("goals"), Status: pmSts(PlayerMatchStatusSubbedIn)},
+				{Position: pos(PositionKicks), Score: 18, BackupPositions: strPtr("kicks"), Status: pmSts(PlayerMatchStatusInterchangedIn)},
 			}},
 			38, // 12 (sub) + 18 (interchange) + 8 (marks)
 		},

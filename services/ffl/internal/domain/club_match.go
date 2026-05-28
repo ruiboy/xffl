@@ -214,13 +214,16 @@ func (cm ClubMatch) DeclareSubs(subs []SubPairing, interchange *SubPairing) ([]P
 	}
 
 	// Reset all prior sub/interchange statuses to named.
+	// Bench players that were activated also have their inherited position cleared.
 	named := PlayerMatchStatusNamed
 	for i := range updated {
 		if s := updated[i].Status; s != nil {
 			switch *s {
-			case PlayerMatchStatusSubbedOut, PlayerMatchStatusSubbedIn,
-				PlayerMatchStatusInterchangedOut, PlayerMatchStatusInterchangedIn:
+			case PlayerMatchStatusSubbedOut, PlayerMatchStatusInterchangedOut:
 				updated[i].Status = &named
+			case PlayerMatchStatusSubbedIn, PlayerMatchStatusInterchangedIn:
+				updated[i].Status = &named
+				updated[i].Position = nil // clear position inherited from the starter
 			}
 		}
 	}
@@ -229,34 +232,50 @@ func (cm ClubMatch) DeclareSubs(subs []SubPairing, interchange *SubPairing) ([]P
 	for _, pair := range subs {
 		subbedOut := PlayerMatchStatusSubbedOut
 		subbedIn := PlayerMatchStatusSubbedIn
-		pmByID[pair.ReplacedPMID].Status = &subbedOut
-		pmByID[pair.ReplacingPMID].Status = &subbedIn
+		replaced := pmByID[pair.ReplacedPMID]
+		replacing := pmByID[pair.ReplacingPMID]
+		replaced.Status = &subbedOut
+		// Bench player inherits the starter's position so CalculateScore works correctly.
+		starterPos := *replaced.Position
+		replacing.Status = &subbedIn
+		replacing.Position = &starterPos
 	}
 	if interchange != nil {
 		interchangedOut := PlayerMatchStatusInterchangedOut
 		interchangedIn := PlayerMatchStatusInterchangedIn
-		pmByID[interchange.ReplacedPMID].Status = &interchangedOut
-		pmByID[interchange.ReplacingPMID].Status = &interchangedIn
+		replaced := pmByID[interchange.ReplacedPMID]
+		replacing := pmByID[interchange.ReplacingPMID]
+		replaced.Status = &interchangedOut
+		// Bench player scores at the declared interchange position (always one of their
+		// backup positions and validated by SubmitTeam). Fall back to the displaced
+		// starter's position if InterchangePosition is somehow unset.
+		var icPos Position
+		if replacing.InterchangePosition != nil {
+			icPos = Position(*replacing.InterchangePosition)
+		} else {
+			icPos = *replaced.Position
+		}
+		replacing.Status = &interchangedIn
+		replacing.Position = &icPos
 	}
 
 	return updated, nil
 }
 
-// Score computes the total fantasy score for this club match from explicit TM declarations.
-// Starters with status named score; subbed_out and interchanged_out starters do not.
-// Bench players score only when status is subbed_in or interchanged_in.
-// A DNP starter with no TM declaration scores zero.
+// Score computes the total fantasy score for this club match.
+// A player contributes iff they have a position (are actively assigned to score)
+// and their status is named, subbed_in, or interchanged_in.
+// Inactive bench players (position nil) and excluded starters (subbed_out,
+// interchanged_out) are naturally filtered by these two conditions.
 func (cm ClubMatch) Score() int {
 	total := 0
 	for _, pm := range cm.PlayerMatches {
-		if pm.isBench() {
-			if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbedIn || *pm.Status == PlayerMatchStatusInterchangedIn) {
-				total += pm.Score
-			}
-		} else {
-			if pm.Status == nil || *pm.Status == PlayerMatchStatusNamed {
-				total += pm.Score
-			}
+		if pm.Position == nil {
+			continue
+		}
+		if pm.Status == nil || *pm.Status == PlayerMatchStatusNamed ||
+			*pm.Status == PlayerMatchStatusSubbedIn || *pm.Status == PlayerMatchStatusInterchangedIn {
+			total += pm.Score
 		}
 	}
 	return total

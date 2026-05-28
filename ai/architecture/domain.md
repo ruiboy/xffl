@@ -179,13 +179,17 @@ Two separate status concepts apply to an FFL PlayerMatch:
 
 | Value | Who | Scores? |
 |-------|-----|---------|
-| `named` | Starter playing; unused bench player |
-| `subbed_out` | Starter explicitly replaced by TM |
-| `subbed_in` | Bench player brought in by TM to cover a subbed-out starter |
-| `interchanged_out` | Starter explicitly displaced by TM's interchange decision |
-| `interchanged_in` | Interchange bench player activated by TM |
+| `named` | Starter playing; unused bench player | Starters yes; bench no |
+| `subbed_out` | Starter explicitly replaced by TM | No |
+| `subbed_in` | Bench player brought in by TM to cover a subbed-out starter | Yes — position inherited from starter |
+| `interchanged_out` | Starter explicitly displaced by TM's interchange decision | No |
+| `interchanged_in` | Interchange bench player activated by TM | Yes — position set to `InterchangePosition` |
 
 TM declarations are always explicit — there is no automatic substitution heuristic. A DNP starter with no TM declaration scores zero.
+
+**Scoring rule:** a player contributes to the club match total only when they have an active scoring position assigned and a status that
+indicates they are participating. Position determines *how* a score is calculated (which multiplier applies); status determines *whether*
+that score is included. These two conditions are orthogonal.
 
 **AFL Status** — whether this AFL player participated in their AFL match this round. Separate from the TM's team position decisions.
 
@@ -206,6 +210,12 @@ All substitution and interchange decisions are **explicit TM declarations**. The
 - **Interchange** — TM pairs any starter with the interchange bench player.
 
 A bench player may only be used once — either as a sub or an interchange, not both.
+
+**Position on activation:** when a bench player is activated, they take on a scoring position:
+- A substitute inherits the replaced starter's scoring position.
+- An interchange player scores at their declared interchange position.
+
+When declarations are reset, activated bench players return to their inactive state with no assigned scoring position. A starter's position is never modified by sub or interchange decisions — it is their permanent record.
 
 ### Match style
 

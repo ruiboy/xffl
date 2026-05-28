@@ -595,6 +595,13 @@ func (r *PlayerMatchRepository) UpdateAFLStatus(ctx context.Context, id int, sta
 	})
 }
 
+func (r *PlayerMatchRepository) UpdatePosition(ctx context.Context, id int, position *domain.Position) error {
+	return r.q.UpdatePlayerMatchPosition(ctx, sqlcgen.UpdatePlayerMatchPositionParams{
+		ID:       int32(id),
+		Position: posToStringPtr(position),
+	})
+}
+
 func (r *PlayerMatchRepository) AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error) {
 	return r.q.AllAFLStatusesFinal(ctx, int32(clubMatchID))
 }

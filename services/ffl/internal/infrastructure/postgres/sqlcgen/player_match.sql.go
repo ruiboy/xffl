@@ -211,6 +211,22 @@ func (q *Queries) UpdateDrvAFLStatus(ctx context.Context, arg UpdateDrvAFLStatus
 	return err
 }
 
+const updatePlayerMatchPosition = `-- name: UpdatePlayerMatchPosition :exec
+UPDATE ffl.player_match
+SET position = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdatePlayerMatchPositionParams struct {
+	ID       int32
+	Position *string
+}
+
+func (q *Queries) UpdatePlayerMatchPosition(ctx context.Context, arg UpdatePlayerMatchPositionParams) error {
+	_, err := q.db.Exec(ctx, updatePlayerMatchPosition, arg.ID, arg.Position)
+	return err
+}
+
 const updatePlayerMatchStatus = `-- name: UpdatePlayerMatchStatus :exec
 UPDATE ffl.player_match
 SET status = $2, updated_at = CURRENT_TIMESTAMP

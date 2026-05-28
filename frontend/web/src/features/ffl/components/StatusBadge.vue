@@ -19,8 +19,8 @@ const label = computed(() => {
     case 'played':            return 'Played'
     case 'dnp':               return 'DNP'
     case 'subbed_out':        return 'Subbed'
-    case 'subbed_in':         return 'Sub'
-    case 'interchanged_out':  return 'IC Out'
+    case 'subbed_in':         return 'Sub In'
+    case 'interchanged_out':  return 'IC\'ed'
     case 'interchanged_in':   return 'IC In'
     default: return '—'
   }
@@ -32,9 +32,9 @@ const statusClass = computed(() => {
     case 'playing':           return 'bg-blue-500/15 text-blue-400'
     case 'played':            return 'bg-green-500/15 text-green-500'
     case 'dnp':               return 'bg-red-500/15 text-red-500'
-    case 'subbed_out':        return 'bg-sky-500/15 text-sky-400'
+    case 'subbed_out':        return 'bg-green-500/15 text-green-500'
     case 'subbed_in':         return 'bg-sky-500/15 text-sky-400'
-    case 'interchanged_out':  return 'bg-sky-500/15 text-sky-400'
+    case 'interchanged_out':  return 'bg-green-500/15 text-green-500'
     case 'interchanged_in':   return 'bg-sky-500/15 text-sky-400'
     default: return 'bg-surface text-text-faint'
   }

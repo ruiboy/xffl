@@ -36,6 +36,11 @@ UPDATE ffl.player_match
 SET status = $2, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdatePlayerMatchPosition :exec
+UPDATE ffl.player_match
+SET position = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: UpdateDrvAFLStatus :exec
 UPDATE ffl.player_match
 SET drv_afl_status = $2, updated_at = CURRENT_TIMESTAMP
