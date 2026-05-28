@@ -11,6 +11,8 @@ import (
 type Querier interface {
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
+	FindByeByRoundAndClub(ctx context.Context, arg FindByeByRoundAndClubParams) (FindByeByRoundAndClubRow, error)
+	FindByesByRoundID(ctx context.Context, roundID int32) ([]FindByesByRoundIDRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)
@@ -49,6 +51,7 @@ type Querier interface {
 	UpdateClubSeason(ctx context.Context, arg UpdateClubSeasonParams) error
 	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpdateMatchResult(ctx context.Context, arg UpdateMatchResultParams) error
+	UpsertBye(ctx context.Context, arg UpsertByeParams) (UpsertByeRow, error)
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
 	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)

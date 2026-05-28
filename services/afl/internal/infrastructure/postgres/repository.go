@@ -38,6 +38,48 @@ func int32PtrToIntPtr(p *int32) *int {
 	return &v
 }
 
+// --- Bye ---
+
+type ByeRepository struct{ q *sqlcgen.Queries }
+
+func NewByeRepository(q *sqlcgen.Queries) *ByeRepository {
+	return &ByeRepository{q: q}
+}
+
+func (r *ByeRepository) FindByRoundID(ctx context.Context, roundID int) ([]domain.Bye, error) {
+	rows, err := r.q.FindByesByRoundID(ctx, int32(roundID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Bye, len(rows))
+	for i, row := range rows {
+		out[i] = domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}
+	}
+	return out, nil
+}
+
+func (r *ByeRepository) FindByRoundAndClub(ctx context.Context, roundID int, clubSeasonID int) (domain.Bye, error) {
+	row, err := r.q.FindByeByRoundAndClub(ctx, sqlcgen.FindByeByRoundAndClubParams{
+		RoundID:      int32(roundID),
+		ClubSeasonID: int32(clubSeasonID),
+	})
+	if err != nil {
+		return domain.Bye{}, err
+	}
+	return domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}, nil
+}
+
+func (r *ByeRepository) Upsert(ctx context.Context, roundID int, clubSeasonID int) (domain.Bye, error) {
+	row, err := r.q.UpsertBye(ctx, sqlcgen.UpsertByeParams{
+		RoundID:      int32(roundID),
+		ClubSeasonID: int32(clubSeasonID),
+	})
+	if err != nil {
+		return domain.Bye{}, err
+	}
+	return domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}, nil
+}
+
 // --- Club ---
 
 type ClubRepository struct{ q *sqlcgen.Queries }

@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AflBye struct {
+	ID           int32
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
+	RoundID      int32
+	ClubSeasonID int32
+}
+
 type AflClub struct {
 	ID        int32
 	CreatedAt pgtype.Timestamptz
@@ -23,6 +32,7 @@ type AflClubMatch struct {
 	DeletedAt            pgtype.Timestamptz
 	MatchID              int32
 	ClubSeasonID         int32
+	Side                 string
 	RushedBehinds        *int32
 	DrvScore             *int32
 	DrvPremiershipPoints *int32
@@ -71,17 +81,15 @@ type AflLeague struct {
 }
 
 type AflMatch struct {
-	ID              int32
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-	DeletedAt       pgtype.Timestamptz
-	RoundID         int32
-	HomeClubMatchID *int32
-	AwayClubMatchID *int32
-	Venue           *string
-	StartDt         pgtype.Timestamptz
-	DataStatus      string
-	DrvResult       *string
+	ID         int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	DeletedAt  pgtype.Timestamptz
+	RoundID    int32
+	Venue      *string
+	StartDt    pgtype.Timestamptz
+	DataStatus string
+	DrvResult  *string
 }
 
 type AflPlayer struct {
@@ -99,7 +107,6 @@ type AflPlayerMatch struct {
 	DeletedAt      pgtype.Timestamptz
 	ClubMatchID    int32
 	PlayerSeasonID int32
-	Status         *string
 	Kicks          *int32
 	Handballs      *int32
 	Marks          *int32

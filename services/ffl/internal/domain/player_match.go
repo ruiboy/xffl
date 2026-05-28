@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"math"
 	"strings"
 )
 
@@ -58,6 +59,7 @@ const (
 	AFLStatusPlaying AFLStatus = "playing" // AFL match in progress, player has stats
 	AFLStatusPlayed  AFLStatus = "played"  // AFL match final, player participated
 	AFLStatusDNP     AFLStatus = "dnp"     // did not play in AFL match
+	AFLStatusBye     AFLStatus = "bye"     // player's AFL club has a bye this round
 )
 
 // AFLStats holds the AFL performance statistics used to calculate fantasy scores.
@@ -114,6 +116,49 @@ func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
 			stats.Handballs*HandballsMultiplier +
 			stats.Marks*MarksMultiplier +
 			stats.Tackles*TacklesMultiplier
+	default:
+		return 0
+	}
+}
+
+// AFLAvgStats holds season-average AFL statistics for bye score calculation.
+// Values are raw averages (not yet floored); CalculateByeScore floors per stat before multiplying.
+type AFLAvgStats struct {
+	Goals     float64
+	Kicks     float64
+	Handballs float64
+	Marks     float64
+	Tackles   float64
+	Hitouts   float64
+}
+
+// CalculateByeScore computes the bye fantasy score from season-average stats.
+// Each stat is floored individually before the position multiplier is applied.
+// For star, each component is floored and multiplied separately before summing.
+func (pm PlayerMatch) CalculateByeScore(avg AFLAvgStats) int {
+	if pm.Position == nil {
+		return 0
+	}
+	fl := func(f float64) int { return int(math.Floor(f)) }
+	switch *pm.Position {
+	case PositionGoals:
+		return fl(avg.Goals) * GoalsMultiplier
+	case PositionKicks:
+		return fl(avg.Kicks) * KicksMultiplier
+	case PositionHandballs:
+		return fl(avg.Handballs) * HandballsMultiplier
+	case PositionMarks:
+		return fl(avg.Marks) * MarksMultiplier
+	case PositionTackles:
+		return fl(avg.Tackles) * TacklesMultiplier
+	case PositionHitouts:
+		return fl(avg.Hitouts) * HitoutsMultiplier
+	case PositionStar:
+		return fl(avg.Goals)*GoalsMultiplier +
+			fl(avg.Kicks)*KicksMultiplier +
+			fl(avg.Handballs)*HandballsMultiplier +
+			fl(avg.Marks)*MarksMultiplier +
+			fl(avg.Tackles)*TacklesMultiplier
 	default:
 		return 0
 	}

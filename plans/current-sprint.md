@@ -173,31 +173,30 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 - Score is the player's season-to-date average for their position, with each AFL stat **floored per stat** before the multiplier is applied.
   - Non-star: `floor(avg_stat) × multiplier`
   - Star: `floor(avg_goals)×5 + floor(avg_kicks)×1 + floor(avg_handballs)×1 + floor(avg_marks)×2 + floor(avg_tackles)×4`
-- Scores are snapshotted at team submission into a new `drv_bye_scores` field (a map of position → pre-computed score).
-  - Starters: one entry (their position).
-  - Bench players: one entry per backup position — on activation, the assigned position selects the score.
-- `backup_positions` is not overloaded; `drv_bye_scores` is a separate field.
+- For starters: `drv_score` is set at team submission (same field, sourced from average instead of match stats).
+- For bench players: `drv_score` is set at sub declaration time, once the activated position is known. No new DB column needed.
 
 ### Tasks
 
 *AFL domain*
-- [ ] Add `Bye` entity and repository (`FindByRoundID`, `FindByRoundAndClub`, `Upsert`)
-- [ ] Add `afl.bye` table to init script (no migration needed)
-- [ ] Seed `afl.bye` rows for all rounds — bye clubs are already noted in comments on each round block in `dev/postgres/seed/01_afl_seed.sql`; derive from clubs absent from that round's matches
+- [x] Add `Bye` entity and repository (`FindByRoundID`, `FindByRoundAndClub`, `Upsert`)
+- [x] Add `afl.bye` table to init script (no migration needed)
+- [x] Seed `afl.bye` rows for all rounds — bye clubs are already noted in comments on each round block in `dev/postgres/seed/01_afl_seed.sql`; derive from clubs absent from that round's matches
 
 *FFL domain*
-- [ ] Add `bye` to `AFLStatus` enum
-- [ ] No new DB column needed for bye scores: starters have `drv_score` set at submission (from season average); bench players have `drv_score` set at sub declaration time (compute from AFL history at the position they activate into)
-- [ ] Add `CalculateByeScore(position, avgStats)` pure domain function
+- [x] Add `bye` to `AFLStatus` enum
+- [x] No new DB column needed for bye scores: starters have `drv_score` set at submission (from season average); bench players have `drv_score` set at sub declaration time (compute from AFL history at the position they activate into)
+- [x] Add `CalculateByeScore(position, avgStats)` pure domain function — unit tested
 - [ ] Update team submission validation: reject naming a bye player who didn't play last game
-- [ ] Update score calculation: when `drv_afl_status = "bye"`, use `drv_bye_scores[position]` instead of AFL stats
+- [ ] Update score calculation: when `drv_afl_status = "bye"`, `drv_score` is already set at submission (starter) or at sub declaration (bench) — no separate lookup needed
 
 *Application*
-- [ ] On team submission for a bye round: compute season-average stats per bye player, populate `drv_bye_scores`, set `drv_afl_status = "bye"`
+- [ ] On team submission for a bye round: for each bye-club starter, compute season-average stats, call `CalculateByeScore`, write to `drv_score`, set `drv_afl_status = "bye"`
+- [ ] On `DeclareSubs` for a bye round: for each activated bench player whose club has a bye, compute season-average stats at their assigned position, call `CalculateByeScore`, write to `drv_score`
 - [ ] Integration-test: bye player named + eligible → scores via average; ineligible → submission rejected; bench bye player activated → correct position score used
 
 *GraphQL / frontend*
-- [ ] Add `bye` to `FFLAFLPlayerMatchStatus` enum in `query.graphqls` and regenerate — field, resolver, and converter are already wired
+- [x] Add `bye` to `FFLAFLPlayerMatchStatus` enum in `query.graphqls` and regenerate — field, resolver, and converter are already wired
 - [ ] Team Builder: show bye indicator and season-average score for bye players
 
 ---

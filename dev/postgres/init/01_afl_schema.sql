@@ -127,6 +127,17 @@ CREATE TABLE IF NOT EXISTS afl.player_match (
     CONSTRAINT uni_afl_player_match UNIQUE (player_season_id, club_match_id)
 );
 
+-- Create bye table
+CREATE TABLE IF NOT EXISTS afl.bye (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    round_id INTEGER NOT NULL REFERENCES afl.round(id) ON DELETE CASCADE,
+    club_season_id INTEGER NOT NULL REFERENCES afl.club_season(id) ON DELETE CASCADE,
+    CONSTRAINT uni_afl_bye UNIQUE (round_id, club_season_id)
+);
+
 -- Create indexes for foreign keys and performance
 CREATE INDEX IF NOT EXISTS idx_afl_season_league_id ON afl.season(league_id);
 CREATE INDEX IF NOT EXISTS idx_afl_round_season_id ON afl.round(season_id);
@@ -154,4 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_afl_club_match_deleted_at ON afl.club_match(delet
 CREATE INDEX IF NOT EXISTS idx_afl_player_deleted_at ON afl.player(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_season_deleted_at ON afl.player_season(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_afl_player_match_deleted_at ON afl.player_match(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_afl_bye_round_id ON afl.bye(round_id);
+CREATE INDEX IF NOT EXISTS idx_afl_bye_club_season_id ON afl.bye(club_season_id);
+CREATE INDEX IF NOT EXISTS idx_afl_bye_deleted_at ON afl.bye(deleted_at);
 
