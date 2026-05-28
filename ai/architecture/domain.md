@@ -177,11 +177,19 @@ Two separate status concepts apply to an FFL PlayerMatch:
 
 **Status** — the Team Manager's (TM) choice for this player's role in the FFL team. Unrelated to AFL status.
 
-| Value | Meaning                                        |
-|-------|------------------------------------------------|
-| `named` | Named In the team.                     |
-| `subbed` | Substituted out by the Team Manager. |
-| `interchanged` | Interchanged by the Team Manager. |
+| Value | Who | Scores? |
+|-------|-----|---------|
+| `named` | Starter playing; unused bench player | Starters yes; bench no |
+| `subbed_out` | Starter explicitly replaced by TM | No |
+| `subbed_in` | Bench player brought in by TM to cover a subbed-out starter | Yes — position inherited from starter |
+| `interchanged_out` | Starter explicitly displaced by TM's interchange decision | No |
+| `interchanged_in` | Interchange bench player activated by TM | Yes — position set to `InterchangePosition` |
+
+TM declarations are always explicit — there is no automatic substitution heuristic. A DNP starter with no TM declaration scores zero.
+
+**Scoring rule:** a player contributes to the club match total only when they have an active scoring position assigned and a status that
+indicates they are participating. Position determines *how* a score is calculated (which multiplier applies); status determines *whether*
+that score is included. These two conditions are orthogonal.
 
 **AFL Status** — whether this AFL player participated in their AFL match this round. Separate from the TM's team position decisions.
 
@@ -196,14 +204,18 @@ Derived from AFL data; never set by TM decisions. Pre-match `named` status is no
 
 ### Substitution and interchange
 
-`ClubMatch.Score()` aggregates fantasy scores with two replacement rules, applied per starter slot:
+All substitution and interchange decisions are **explicit TM declarations**. There is no automatic heuristic.
 
-1. **Substitution** — if a starter's AFL participation status is `dnp`, a bench player whose `BackupPositions` includes that starter's position fills that slot. A player who played but earned 0 points **cannot** be substituted. A bench player may cover multiple positions but is consumed by at most one **substitution**.
-2. **Interchange** — if a bench player's `InterchangePosition` matches a starter's position *and* the bench player's score exceeds the starter's, they can swap. Applies only for the position labelled as **interchange**.
+- **Substitution** — TM pairs a DNP starter with a bench player who will cover their slot. Only DNP starters may be subbed out.
+- **Interchange** — TM pairs any starter with the interchange bench player.
 
-Constraints:
-- A bench player can only be used **once** (sub or interchange, not both).
-- The order of applying substitution and interchange is at the Team Managers discretion within the bounds of the above rules.
+A bench player may only be used once — either as a sub or an interchange, not both.
+
+**Position on activation:** when a bench player is activated, they take on a scoring position:
+- A substitute inherits the replaced starter's scoring position.
+- An interchange player scores at their declared interchange position.
+
+When declarations are reset, activated bench players return to their inactive state with no assigned scoring position. A starter's position is never modified by sub or interchange decisions — it is their permanent record.
 
 ### Match style
 

@@ -205,8 +205,8 @@ input DeclareFFLSubstitutionsInput
   @join__type(graph: FFL)
 {
   clubMatchId: ID!
-  subbedOutPlayerMatchIds: [ID!]!
-  interchangeApplied: Boolean!
+  subs: [FFLSubPairing!]!
+  interchange: FFLSubPairing
 }
 
 enum FFLAFLPlayerMatchStatus
@@ -295,8 +295,10 @@ enum FFLPlayerMatchStatus
   @join__type(graph: FFL)
 {
   named @join__enumValue(graph: FFL)
-  subbed @join__enumValue(graph: FFL)
-  interchanged @join__enumValue(graph: FFL)
+  subbed_out @join__enumValue(graph: FFL)
+  subbed_in @join__enumValue(graph: FFL)
+  interchanged_out @join__enumValue(graph: FFL)
+  interchanged_in @join__enumValue(graph: FFL)
 }
 
 type FFLPlayerSeason
@@ -348,6 +350,13 @@ type FFLSeason
   aflSeason: AFLSeason
 }
 
+input FFLSubPairing
+  @join__type(graph: FFL)
+{
+  replacedPmId: ID!
+  replacingPmId: ID!
+}
+
 input FFLTeamPlayerInput
   @join__type(graph: FFL)
 {
@@ -357,7 +366,6 @@ input FFLTeamPlayerInput
   interchangePosition: String
 }
 
-"""---- Import flow ----"""
 type ImportAFLMatchStatsResult
   @join__type(graph: AFL)
 {
@@ -402,23 +410,58 @@ type Mutation
   @join__type(graph: AFL)
   @join__type(graph: FFL)
 {
+  """Add an AFL player to a club's season squad."""
   addAFLPlayer(input: AddAFLPlayerInput!): AFLPlayerSeason! @join__field(graph: AFL)
+
+  """Add an additional season record for an existing AFL player."""
   addAFLPlayerSeason(input: AddAFLPlayerSeasonInput!): AFLPlayerSeason! @join__field(graph: AFL)
+
+  """Update stats for an AFL player match."""
   updateAFLPlayerMatch(input: UpdateAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
+
+  """
+  Import player stats for a match from the external source. Returns a result including any unmatched players.
+  """
   importAFLMatchStats(matchId: ID!): ImportAFLMatchStatsResult! @join__field(graph: AFL)
+
+  """
+  Manually link an unmatched player from a stats import to a player season.
+  """
   resolveAFLPlayerMatch(input: ResolveAFLPlayerMatchInput!): AFLPlayerMatch! @join__field(graph: AFL)
+
+  """Mark a match's stats as complete (final) or revert to partial."""
   markAFLMatchStatsComplete(matchId: ID!, complete: Boolean!): AFLMatch! @join__field(graph: AFL)
 
   """
   Rebuild AFL ladder standings for the given season from all final matches.
   """
   recalculateAFLLadder(seasonId: ID!): Boolean! @join__field(graph: AFL)
+
+  """Add an AFL player to an FFL club's season squad."""
   addFFLPlayerToSeason(input: AddFFLPlayerToSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
+
+  """Remove a player from an FFL club's season squad."""
   removeFFLPlayerFromSeason(input: RemoveFFLPlayerFromSeasonInput!): Boolean! @join__field(graph: FFL)
+
+  """Update notes for a player season."""
   updateFFLPlayerSeason(input: UpdateFFLPlayerSeasonInput!): FFLPlayerSeason! @join__field(graph: FFL)
+
+  """
+  Calculate and store the fantasy score for a player match from AFL stats.
+  """
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
+
+  """Set the complete team selection for a club match."""
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+
+  """
+  Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes.
+  """
   parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
+
+  """
+  Confirm a reviewed parse result and write player matches to the database.
+  """
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 
   """Lock a FFL club_match as final — triggers the FFL scoring chain."""

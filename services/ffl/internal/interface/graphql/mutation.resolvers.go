@@ -312,15 +312,34 @@ func (r *mutationResolver) DeclareFFLSubstitutions(ctx context.Context, input De
 	if err != nil {
 		return nil, err
 	}
-	subbedOutIDs := make([]int, 0, len(input.SubbedOutPlayerMatchIds))
-	for _, rawID := range input.SubbedOutPlayerMatchIds {
-		id, err := fromID(rawID)
+
+	subs := make([]domain.SubPairing, 0, len(input.Subs))
+	for _, pair := range input.Subs {
+		replaced, err := fromID(pair.ReplacedPmID)
 		if err != nil {
 			return nil, err
 		}
-		subbedOutIDs = append(subbedOutIDs, id)
+		replacing, err := fromID(pair.ReplacingPmID)
+		if err != nil {
+			return nil, err
+		}
+		subs = append(subs, domain.SubPairing{ReplacedPMID: replaced, ReplacingPMID: replacing})
 	}
-	pms, err := r.Commands.DeclareSubs(ctx, clubMatchID, subbedOutIDs, input.InterchangeApplied)
+
+	var interchange *domain.SubPairing
+	if input.Interchange != nil {
+		replaced, err := fromID(input.Interchange.ReplacedPmID)
+		if err != nil {
+			return nil, err
+		}
+		replacing, err := fromID(input.Interchange.ReplacingPmID)
+		if err != nil {
+			return nil, err
+		}
+		interchange = &domain.SubPairing{ReplacedPMID: replaced, ReplacingPMID: replacing}
+	}
+
+	pms, err := r.Commands.DeclareSubs(ctx, clubMatchID, subs, interchange)
 	if err != nil {
 		return nil, err
 	}

@@ -184,11 +184,8 @@ FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club
 WHERE p.name = 'Henry Smith' AND r.name = 'Round 2'
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
-INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
-SELECT ps.id, cm.id, 14, 8, 9, 0, 3, 0, 2
-FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club_season cs ON ps.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id JOIN afl.club_match cm ON cm.club_season_id = cs.id JOIN afl.round r ON r.id = (SELECT round_id FROM afl.match WHERE id = cm.match_id)
-WHERE p.name = 'Hugh McCluggage' AND r.name = 'Round 2'
-ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
+-- Hugh McCluggage is DNP in Round 2 (no AFL player_match entry); omitting here
+-- preserves the FFL seed's drv_afl_status='dnp' through RecalculateScore.
 
 -- Round 3 — fixed date for CLOCK_OVERRIDE e2e live-round tests
 -- Window: midnight 2026-01-15 Adelaide → midnight 2026-01-16 Adelaide
@@ -216,5 +213,11 @@ FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.se
 JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
 WHERE l.name = 'AFL' AND r.name = 'Round 3' AND c.name = 'Brisbane Lions'
 ON CONFLICT (club_season_id, match_id) DO NOTHING;
+
+-- Round 4 — used by FFL interchange e2e test scenario
+INSERT INTO afl.round (season_id, name)
+SELECT s.id, 'Round 4'
+FROM afl.season s JOIN afl.league l ON s.league_id = l.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026';
 
 COMMIT;

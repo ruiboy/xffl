@@ -5,6 +5,7 @@ package graphql_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -663,4 +664,176 @@ func TestEventChain_fullRoundTrip(t *testing.T) {
 
 func unmarshalJSON(data []byte, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// DeclareSubs: position inheritance + score recalculation
+// ────────────────────────────────────────────────────────────────────────────
+
+// TestDeclareSubs_scoreBenchPlayerAtStarterPosition verifies the full sub lifecycle:
+//  1. Starter (kicks) is DNP — their score does not contribute.
+//  2. Bench player is subbed in — inherits the kicks position.
+//  3. RecalculateScore (triggered by DeclareSubs) computes bench player's kicks score.
+//  4. ClubMatch total reflects the bench player's contribution.
+//  5. Re-declaration resets positions and scores correctly.
+func TestDeclareSubs_scoreBenchPlayerAtStarterPosition(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedEventTestData(t, pool)
+	ctx := context.Background()
+
+	// The seed creates one starter at 'kicks'. Add a second AFL player for the bench slot.
+	var benchAFLPlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player (name) VALUES ('Bench Player') RETURNING id").Scan(&benchAFLPlayerID))
+
+	// Resolve the AFL club_season used by the event test seed.
+	var aflClubSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"SELECT club_season_id FROM afl.club_match WHERE id = $1", ids.aflClubMatchID).Scan(&aflClubSeasonID))
+
+	var benchAFLPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		benchAFLPlayerID, aflClubSeasonID).Scan(&benchAFLPlayerSeasonID))
+
+	// FFL bench player linked to the new AFL player.
+	var benchFflPlayerID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player (afl_player_id) VALUES ($1) RETURNING id", benchAFLPlayerID).Scan(&benchFflPlayerID))
+
+	var benchFflPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.player_season (player_id, club_season_id, afl_player_season_id) VALUES ($1, $2, $3) RETURNING id",
+		benchFflPlayerID, ids.fflClubSeasonID, benchAFLPlayerSeasonID).Scan(&benchFflPlayerSeasonID))
+
+	// Insert the FFL bench player_match (no position, backup_positions = 'kicks,handballs').
+	var benchPMID int
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO ffl.player_match (club_match_id, player_season_id, backup_positions, status)
+		 VALUES ($1, $2, 'kicks,handballs', 'named') RETURNING id`,
+		ids.fflClubMatchID, benchFflPlayerSeasonID).Scan(&benchPMID))
+
+	// Retrieve the starter's player_match ID.
+	var starterPMID int
+	require.NoError(t, pool.QueryRow(ctx,
+		`SELECT id FROM ffl.player_match WHERE club_match_id = $1 AND player_season_id = $2`,
+		ids.fflClubMatchID, ids.fflPlayerSeasonID).Scan(&starterPMID))
+
+	// Seed AFL match data so RecalculateScore can look up stats.
+	// Starter: DNP (no AFL player_match). Bench player played: 12 kicks.
+	var benchAFLMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, goals, handballs, marks, tackles, hitouts)
+		 VALUES ($1, $2, 12, 0, 3, 1, 2, 0) RETURNING id`,
+		benchAFLPlayerSeasonID, ids.aflClubMatchID).Scan(&benchAFLMatchID))
+
+	// Link the bench player_match to their AFL player_match and mark them as played.
+	_, err := pool.Exec(ctx,
+		`UPDATE ffl.player_match SET afl_player_match_id = $1, drv_afl_status = 'played' WHERE id = $2`,
+		benchAFLMatchID, benchPMID)
+	require.NoError(t, err)
+
+	// Mark the starter as DNP.
+	_, err = pool.Exec(ctx,
+		`UPDATE ffl.player_match SET drv_afl_status = 'dnp' WHERE id = $1`, starterPMID)
+	require.NoError(t, err)
+
+	// Build a stub that returns kicks=12 for the bench player's AFL match.
+	statsStub := &subsScoreStub{stats: map[int]application.PlayerMatchStats{
+		benchAFLMatchID: {ID: benchAFLMatchID, PlayerSeasonID: benchAFLPlayerSeasonID, Kicks: 12, Status: "played"},
+	}}
+
+	q := sqlcgen.New(pool)
+	db := pg.NewDB(pool)
+	commands := application.NewCommands(
+		db,
+		memevents.New(),
+		statsStub,
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
+
+	// Declare the sub: starter (kicks, DNP) → bench player.
+	_, err = commands.DeclareSubs(ctx, ids.fflClubMatchID,
+		[]domain.SubPairing{{ReplacedPMID: starterPMID, ReplacingPMID: benchPMID}},
+		nil,
+	)
+	require.NoError(t, err)
+
+	t.Run("bench player position is set to starter's position (kicks)", func(t *testing.T) {
+		var pos *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT position FROM ffl.player_match WHERE id = $1", benchPMID).Scan(&pos))
+		require.NotNil(t, pos)
+		assert.Equal(t, "kicks", *pos)
+	})
+
+	t.Run("starter position is unchanged", func(t *testing.T) {
+		var pos *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT position FROM ffl.player_match WHERE id = $1", starterPMID).Scan(&pos))
+		require.NotNil(t, pos)
+		assert.Equal(t, "kicks", *pos)
+	})
+
+	t.Run("bench player drv_score = kicks * multiplier (12)", func(t *testing.T) {
+		var score int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT drv_score FROM ffl.player_match WHERE id = $1", benchPMID).Scan(&score))
+		assert.Equal(t, 12, score) // kicks multiplier = 1
+	})
+
+	t.Run("club match total reflects bench player contribution, not DNP starter", func(t *testing.T) {
+		var total int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT drv_score FROM ffl.club_match WHERE id = $1", ids.fflClubMatchID).Scan(&total))
+		assert.Equal(t, 12, total)
+	})
+
+	// Re-declare with no subs — verify positions reset.
+	_, err = commands.DeclareSubs(ctx, ids.fflClubMatchID, nil, nil)
+	require.NoError(t, err)
+
+	t.Run("re-declaration clears bench player's inherited position", func(t *testing.T) {
+		var pos *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT position FROM ffl.player_match WHERE id = $1", benchPMID).Scan(&pos))
+		assert.Nil(t, pos)
+	})
+
+	t.Run("re-declaration resets starter status to named", func(t *testing.T) {
+		var status *string
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT status FROM ffl.player_match WHERE id = $1", starterPMID).Scan(&status))
+		require.NotNil(t, status)
+		assert.Equal(t, "named", *status)
+	})
+}
+
+// subsScoreStub implements application.PlayerLookup; returns canned AFL stats for linked lookups.
+type subsScoreStub struct {
+	stats map[int]application.PlayerMatchStats
+}
+
+func (s *subsScoreStub) LookupPlayers(_ context.Context, _ []int) ([]application.PlayerCandidate, error) {
+	return nil, nil
+}
+func (s *subsScoreStub) LookupPlayerSeason(_ context.Context, _ int) (int, error) {
+	return 0, fmt.Errorf("not supported")
+}
+func (s *subsScoreStub) LookupPlayerMatch(_ context.Context, ids []int) ([]application.PlayerMatchStats, error) {
+	var out []application.PlayerMatchStats
+	for _, id := range ids {
+		if st, ok := s.stats[id]; ok {
+			out = append(out, st)
+		}
+	}
+	return out, nil
+}
+func (s *subsScoreStub) LookupPlayerMatchBySeasonRound(_ context.Context, _ []int, _ int) ([]application.PlayerMatchStats, error) {
+	return nil, nil
 }

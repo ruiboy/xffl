@@ -39,13 +39,15 @@ const (
 	HitoutsMultiplier   = 1
 )
 
-// PlayerMatchStatus reflects the player's position in the FFL team lineup.
+// PlayerMatchStatus reflects the TM's explicit declaration for this player's role.
 type PlayerMatchStatus string
 
 const (
-	PlayerMatchStatusNamed       PlayerMatchStatus = "named"       // on the field (starter slot)
-	PlayerMatchStatusSubbed      PlayerMatchStatus = "subbed"      // substituted off during match
-	PlayerMatchStatusInterchange PlayerMatchStatus = "interchanged" // came on from the bench
+	PlayerMatchStatusNamed           PlayerMatchStatus = "named"            // starter playing; unused bench
+	PlayerMatchStatusSubbedOut       PlayerMatchStatus = "subbed_out"       // starter explicitly replaced by TM
+	PlayerMatchStatusSubbedIn        PlayerMatchStatus = "subbed_in"        // bench player brought in by TM
+	PlayerMatchStatusInterchangedOut PlayerMatchStatus = "interchanged_out" // starter displaced by TM interchange
+	PlayerMatchStatusInterchangedIn  PlayerMatchStatus = "interchanged_in"  // interchange bench player activated
 )
 
 // AFLStatus is the AFL participation status for this player in this match.
@@ -143,6 +145,7 @@ type PlayerMatchRepository interface {
 	FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (PlayerMatch, error)
 	UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error
 	UpdateStatus(ctx context.Context, id int, status PlayerMatchStatus) error
+	UpdatePosition(ctx context.Context, id int, position *Position) error
 	UpdateAFLStatus(ctx context.Context, id int, status AFLStatus) error
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)

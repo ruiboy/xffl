@@ -70,9 +70,9 @@ type ConfirmedFFLPlayerInput struct {
 }
 
 type DeclareFFLSubstitutionsInput struct {
-	ClubMatchID             string   `json:"clubMatchId"`
-	SubbedOutPlayerMatchIds []string `json:"subbedOutPlayerMatchIds"`
-	InterchangeApplied      bool     `json:"interchangeApplied"`
+	ClubMatchID string           `json:"clubMatchId"`
+	Subs        []*FFLSubPairing `json:"subs"`
+	Interchange *FFLSubPairing   `json:"interchange,omitempty"`
 }
 
 type FFLClub struct {
@@ -173,6 +173,11 @@ type FFLSeason struct {
 	Ladder    []*FFLClubSeason `json:"ladder"`
 	Rounds    []*FFLRound      `json:"rounds"`
 	AflSeason *AFLSeason       `json:"aflSeason,omitempty"`
+}
+
+type FFLSubPairing struct {
+	ReplacedPmID  string `json:"replacedPmId"`
+	ReplacingPmID string `json:"replacingPmId"`
 }
 
 type FFLTeamPlayerInput struct {
@@ -303,20 +308,24 @@ func (e FFLAFLPlayerMatchStatus) MarshalJSON() ([]byte, error) {
 type FFLPlayerMatchStatus string
 
 const (
-	FFLPlayerMatchStatusNamed        FFLPlayerMatchStatus = "named"
-	FFLPlayerMatchStatusSubbed       FFLPlayerMatchStatus = "subbed"
-	FFLPlayerMatchStatusInterchanged FFLPlayerMatchStatus = "interchanged"
+	FFLPlayerMatchStatusNamed           FFLPlayerMatchStatus = "named"
+	FFLPlayerMatchStatusSubbedOut       FFLPlayerMatchStatus = "subbed_out"
+	FFLPlayerMatchStatusSubbedIn        FFLPlayerMatchStatus = "subbed_in"
+	FFLPlayerMatchStatusInterchangedOut FFLPlayerMatchStatus = "interchanged_out"
+	FFLPlayerMatchStatusInterchangedIn  FFLPlayerMatchStatus = "interchanged_in"
 )
 
 var AllFFLPlayerMatchStatus = []FFLPlayerMatchStatus{
 	FFLPlayerMatchStatusNamed,
-	FFLPlayerMatchStatusSubbed,
-	FFLPlayerMatchStatusInterchanged,
+	FFLPlayerMatchStatusSubbedOut,
+	FFLPlayerMatchStatusSubbedIn,
+	FFLPlayerMatchStatusInterchangedOut,
+	FFLPlayerMatchStatusInterchangedIn,
 }
 
 func (e FFLPlayerMatchStatus) IsValid() bool {
 	switch e {
-	case FFLPlayerMatchStatusNamed, FFLPlayerMatchStatusSubbed, FFLPlayerMatchStatusInterchanged:
+	case FFLPlayerMatchStatusNamed, FFLPlayerMatchStatusSubbedOut, FFLPlayerMatchStatusSubbedIn, FFLPlayerMatchStatusInterchangedOut, FFLPlayerMatchStatusInterchangedIn:
 		return true
 	}
 	return false

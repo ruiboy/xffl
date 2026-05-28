@@ -144,11 +144,24 @@ SELECT cm.id, ps.id, 'goals', 'named', 'played', 31
 FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.round r ON r.id = (SELECT round_id FROM ffl.match WHERE id = cm.match_id)
 WHERE c.name = 'Ruiboys' AND ap.name = 'Jordan Dawson' AND r.name = 'Round 2';
 
--- Round 2 player matches; 1 player in team  — The Howling Cows
+-- Round 2 player matches — The Howling Cows
+-- Henry Smith: goals starter, played (used for subs-mode test; aflMatchStarted = true)
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
 SELECT cm.id, ps.id, 'goals', 'named', 'played', 48
-FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.round r ON r.id = (SELECT round_id FROM ffl.match WHERE id = cm.match_id)
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
 WHERE c.name = 'The Howling Cows' AND ap.name = 'Henry Smith' AND r.name = 'Round 2';
+
+-- Hugh McCluggage: kicks starter, DNP — candidate to be subbed out
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+SELECT cm.id, ps.id, 'kicks', 'named', 'dnp', 0
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Hugh McCluggage' AND r.name = 'Round 2';
+
+-- Brock Thunder: bench covering kicks, played — will sub in for Hugh
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, drv_score)
+SELECT cm.id, ps.id, 'kicks', 'named', 'played', 'kicks', 20
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Brock Thunder' AND r.name = 'Round 2';
 
 -- Club season stats after Round 2
 UPDATE ffl.club_season SET drv_played = 2, drv_won = 1, drv_lost = 1, drv_for = 153, drv_against = 163, drv_premiership_points = 4
@@ -175,6 +188,46 @@ INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, drv_premiership
     ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 3')),
      (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
      0, 0, 'away');
+
+-- Round 4 — linked to AFL Round 4; used for the interchange e2e test scenario.
+-- The Howling Cows club_match for Round 4 = id 8 (insert order: R1-R=1, R1-C=2, R2-R=3, R2-C=4,
+--   R3-R=5, R3-C=6, R4-R=7, R4-C=8).
+INSERT INTO ffl.round (name, season_id, afl_round_id)
+VALUES (
+    'Round 4',
+    (SELECT id FROM ffl.season WHERE name = 'FFL 2026'),
+    (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 4')
+);
+
+INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
+    ((SELECT id FROM ffl.round WHERE name = 'Round 4'), 'versus', 'MCG', '2026-01-22 19:30:00+00');
+
+INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, side) VALUES
+    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 4')),
+     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
+     0, 0, 'home'),
+    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 4')),
+     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
+     0, 0, 'away');
+
+-- Round 4 player matches — The Howling Cows (interchange test scenario)
+-- Henry Smith: goals starter, played — will remain (higher score)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+SELECT cm.id, ps.id, 'goals', 'named', 'played', 48
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Henry Smith' AND r.name = 'Round 4';
+
+-- Hugh McCluggage: goals starter, played, lower score — will be displaced by interchange
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+SELECT cm.id, ps.id, 'goals', 'named', 'played', 30
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Hugh McCluggage' AND r.name = 'Round 4';
+
+-- Brock Thunder: bench covering goals with interchange slot, played, score 50 — will interchange in
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, drv_score)
+SELECT cm.id, ps.id, 'goals', 'named', 'played', 'goals', 'goals', 50
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Brock Thunder' AND r.name = 'Round 4';
 
 -- Link FFL player matches to AFL player matches via round bridge + shared player
 UPDATE ffl.player_match fpm

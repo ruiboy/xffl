@@ -140,10 +140,10 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	return result, nil
 }
 
-// DeclareSubs records substitution and interchange decisions for a club match.
+// DeclareSubs records explicit TM substitution and interchange decisions for a club match.
 // Validation and status assignment are delegated to ClubMatch.DeclareSubs.
 // Triggers a score recalculation after writing.
-func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutIDs []int, interchangeApplied bool) ([]domain.PlayerMatch, error) {
+func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []domain.SubPairing, interchange *domain.SubPairing) ([]domain.PlayerMatch, error) {
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		cm, err := repos.ClubMatches.FindByID(ctx, clubMatchID)
 		if err != nil {
@@ -155,25 +155,33 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subbedOutID
 		}
 		cm.PlayerMatches = pms
 
-		updated, err := cm.DeclareSubs(subbedOutIDs, interchangeApplied)
+		updated, err := cm.DeclareSubs(subs, interchange)
 		if err != nil {
 			return err
 		}
 
 		oldStatus := make(map[int]*domain.PlayerMatchStatus, len(pms))
+		oldPosition := make(map[int]*domain.Position, len(pms))
 		for _, pm := range pms {
 			oldStatus[pm.ID] = pm.Status
+			oldPosition[pm.ID] = pm.Position
 		}
 
 		for _, pm := range updated {
-			if pm.BackupPositions != nil {
+			statusChanged := !statusEqual(oldStatus[pm.ID], pm.Status)
+			posChanged := !positionEqual(oldPosition[pm.ID], pm.Position)
+			if !statusChanged && !posChanged {
 				continue
 			}
-			if old := oldStatus[pm.ID]; old != nil && *old == *pm.Status {
-				continue
+			if statusChanged && pm.Status != nil {
+				if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *pm.Status); err != nil {
+					return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+				}
 			}
-			if err := repos.PlayerMatches.UpdateStatus(ctx, pm.ID, *pm.Status); err != nil {
-				return fmt.Errorf("update status for player_match %d: %w", pm.ID, err)
+			if posChanged {
+				if err := repos.PlayerMatches.UpdatePosition(ctx, pm.ID, pm.Position); err != nil {
+					return fmt.Errorf("update position for player_match %d: %w", pm.ID, err)
+				}
 			}
 		}
 		return nil
@@ -254,6 +262,26 @@ func buildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatch
 		m[pm.ID] = info
 	}
 	return m
+}
+
+func statusEqual(a, b *domain.PlayerMatchStatus) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func positionEqual(a, b *domain.Position) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatchParams {
