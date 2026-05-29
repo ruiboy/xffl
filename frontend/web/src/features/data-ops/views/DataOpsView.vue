@@ -184,7 +184,7 @@
           <span class="text-sm text-text-faint">Byes</span>
           <template v-for="bye in aflByes" :key="bye.id">
             <span class="text-sm text-border">·</span>
-            <span class="flex items-center gap-1.5 opacity-50">
+            <span class="flex items-center gap-1.5 opacity-70">
               <img :src="clubLogoUrl(bye.club.name)" :alt="bye.club.name" class="w-5 h-5 object-contain" />
               <span class="text-sm text-text-faint">{{ abbrevClub(bye.club.name) }}</span>
             </span>
@@ -287,8 +287,11 @@
                     <router-link
                       :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
                       target="_blank" rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1 text-sm font-semibold text-text hover:text-active transition-colors"
-                    >{{ row.clubName }}<svg class="w-3 h-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></router-link>
+                      class="inline-flex items-center gap-1.5 text-sm font-semibold text-text hover:text-active transition-colors"
+                    >
+                      <img v-if="fflClubLogoUrl(row.clubName)" :src="fflClubLogoUrl(row.clubName)" :alt="row.clubName" class="w-5 h-5 object-contain" />
+                      {{ row.clubName }}<svg class="w-3 h-3 opacity-40 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </router-link>
                   </td>
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
@@ -485,6 +488,7 @@ import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS,
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
+import { clubLogoUrl as fflClubLogoUrl } from '@/features/ffl/utils/clubLogos'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
