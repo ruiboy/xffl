@@ -343,8 +343,8 @@ test.describe('FFL Team Builder', () => {
 
       // Hugh shows Subbed badge
       await expect(kicksSection.getByText('Subbed')).toBeVisible()
-      // Brock shows Sub badge in bench
-      await expect(benchSection(page).getByText('Sub')).toBeVisible()
+      // Brock shows Sub In badge in bench
+      await expect(benchSection(page).getByText('Sub In')).toBeVisible()
     })
 
     test('after sub saved, bench shows covering arrow for the DNP starter', async ({ page }) => {
@@ -382,7 +382,7 @@ test.describe('FFL Team Builder', () => {
 
       // Badges should be gone
       await expect(positionSection(page, 'Kicks').getByText('Subbed')).not.toBeVisible()
-      await expect(benchSection(page).getByText('Sub')).not.toBeVisible()
+      await expect(benchSection(page).getByText('Sub In')).not.toBeVisible()
     })
 
     test('sub badges visible in match SquadTable after saving', async ({ page }) => {
@@ -395,9 +395,9 @@ test.describe('FFL Team Builder', () => {
       await page.goto('/ffl/matches/2')
       await page.waitForLoadState('networkidle')
 
-      // SquadTable: Hugh shows Subbed, Brock shows Sub
+      // SquadTable: Hugh shows Subbed, Brock shows Sub In
       await expect(page.getByText('Subbed').first()).toBeVisible()
-      await expect(page.getByText('Sub').first()).toBeVisible()
+      await expect(page.getByText('Sub In').first()).toBeVisible()
     })
 
     test('SquadTable shows covering arrow after sub saved', async ({ page }) => {
@@ -457,8 +457,8 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
-      // Hugh (displaced) shows IC Out; Brock (interchange) shows IC In
-      await expect(positionSection(page, 'Goals').getByText('IC Out')).toBeVisible()
+      // Hugh (displaced) shows IC'ed; Brock (interchange) shows IC In
+      await expect(positionSection(page, 'Goals').getByText('IC\'ed')).toBeVisible()
       await expect(benchSection(page).getByText('IC In')).toBeVisible()
       // Henry remains with normal AFL status (Played)
       await expect(positionSection(page, 'Goals').getByText('Played').first()).toBeVisible()
@@ -471,8 +471,35 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
-      await expect(positionSection(page, 'Goals').getByText('IC Out')).not.toBeVisible()
+      await expect(positionSection(page, 'Goals').getByText('IC\'ed')).not.toBeVisible()
       await expect(benchSection(page).getByText('IC In')).not.toBeVisible()
+    })
+  })
+
+  // ── Bye badge ─────────────────────────────────────────────────────────────
+  //
+  // Round 5, The Howling Cows (club_match id=10):
+  //   Henry Smith    — goals, bye, 38  (Brisbane Lions on AFL bye)
+  //   Hugh McCluggage — kicks, bye, 14
+
+  test.describe('bye badge', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/10/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+    })
+
+    test('bye players show Bye badge', async ({ page }) => {
+      await expect(positionSection(page, 'Goals').getByText('Bye')).toBeVisible()
+      await expect(positionSection(page, 'Kicks').getByText('Bye')).toBeVisible()
+    })
+
+    test('bye starters display their pre-computed average score', async ({ page }) => {
+      await expect(positionSection(page, 'Goals').getByText('38', { exact: true })).toBeVisible()
+      await expect(positionSection(page, 'Kicks').getByText('14', { exact: true })).toBeVisible()
+    })
+
+    test('Substitutions button appears in a bye round', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible()
     })
   })
 
