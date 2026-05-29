@@ -58,6 +58,22 @@ func (r *ByeRepository) FindByRoundID(ctx context.Context, roundID int) ([]domai
 	return out, nil
 }
 
+func (r *ByeRepository) FindByRoundIDWithClub(ctx context.Context, roundID int) ([]domain.ByeWithClub, error) {
+	rows, err := r.q.FindByesByRoundIDWithClub(ctx, int32(roundID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ByeWithClub, len(rows))
+	for i, row := range rows {
+		out[i] = domain.ByeWithClub{
+			Bye:      domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)},
+			ClubID:   int(row.ClubID),
+			ClubName: row.ClubName,
+		}
+	}
+	return out, nil
+}
+
 func (r *ByeRepository) FindByRoundAndClub(ctx context.Context, roundID int, clubSeasonID int) (domain.Bye, error) {
 	row, err := r.q.FindByeByRoundAndClub(ctx, sqlcgen.FindByeByRoundAndClubParams{
 		RoundID:      int32(roundID),

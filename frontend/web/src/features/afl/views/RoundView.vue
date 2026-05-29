@@ -24,6 +24,16 @@
             :to="{ name: 'afl-match', params: { matchId: match.id } }"
           />
         </div>
+        <div v-if="data.round.byes?.length" class="mt-3 flex items-center gap-2 flex-wrap">
+          <span class="text-sm text-text">Byes</span>
+          <template v-for="bye in data.round.byes" :key="bye.id">
+            <span class="text-sm text-border">·</span>
+            <span class="flex items-center gap-1.5">
+              <img :src="clubLogoUrl(bye.club.name)" :alt="bye.club.name" class="w-5 h-5 object-contain opacity-60" />
+              <span class="text-sm text-text">{{ bye.club.name }}</span>
+            </span>
+          </template>
+        </div>
       </section>
 
       <section v-if="topPlayerStats.length > 0" class="mb-8">
@@ -59,6 +69,7 @@ import { GET_AFL_ROUND } from '../api/queries'
 import { useAflState } from '../composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
+import { clubLogoUrl } from '../utils/clubLogos'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'

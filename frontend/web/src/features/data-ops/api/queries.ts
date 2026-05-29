@@ -11,6 +11,10 @@ export const GET_AFL_ROUND_STATS = gql`
         homeClubMatch { id clubSeasonId club { id name } score playerMatches { id } }
         awayClubMatch { id clubSeasonId club { id name } score playerMatches { id } }
       }
+      byes {
+        id
+        club { id name }
+      }
     }
   }
 `

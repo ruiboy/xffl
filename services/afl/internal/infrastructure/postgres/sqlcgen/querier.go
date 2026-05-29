@@ -17,6 +17,7 @@ type Querier interface {
 	// before that round.
 	FindByeStatusBatch(ctx context.Context, arg FindByeStatusBatchParams) ([]FindByeStatusBatchRow, error)
 	FindByesByRoundID(ctx context.Context, roundID int32) ([]FindByesByRoundIDRow, error)
+	FindByesByRoundIDWithClub(ctx context.Context, roundID int32) ([]FindByesByRoundIDWithClubRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)

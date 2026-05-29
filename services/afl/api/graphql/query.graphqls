@@ -35,6 +35,12 @@ type AFLRound @key(fields: "id") {
   name: String!
   season: AFLSeason!
   matches: [AFLMatch!]!
+  byes: [AFLBye!]! @goField(forceResolver: true)
+}
+
+type AFLBye {
+  id: ID!
+  club: AFLClub!
 }
 
 type AFLMatch {

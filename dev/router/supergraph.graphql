@@ -43,6 +43,13 @@ input AddFFLPlayerToSeasonInput
   costCents: Int
 }
 
+type AFLBye
+  @join__type(graph: AFL)
+{
+  id: ID!
+  club: AFLClub!
+}
+
 type AFLClub
   @join__type(graph: AFL)
 {
@@ -159,6 +166,7 @@ type AFLRound
   name: String! @join__field(graph: AFL)
   season: AFLSeason! @join__field(graph: AFL)
   matches: [AFLMatch!]! @join__field(graph: AFL)
+  byes: [AFLBye!]! @join__field(graph: AFL)
 }
 
 type AFLSeason

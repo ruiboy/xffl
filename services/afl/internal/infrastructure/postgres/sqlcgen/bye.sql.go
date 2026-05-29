@@ -65,6 +65,49 @@ func (q *Queries) FindByesByRoundID(ctx context.Context, roundID int32) ([]FindB
 	return items, nil
 }
 
+const findByesByRoundIDWithClub = `-- name: FindByesByRoundIDWithClub :many
+SELECT b.id, b.round_id, b.club_season_id, c.id AS club_id, c.name AS club_name
+FROM afl.bye b
+JOIN afl.club_season cs ON cs.id = b.club_season_id AND cs.deleted_at IS NULL
+JOIN afl.club c ON c.id = cs.club_id AND c.deleted_at IS NULL
+WHERE b.round_id = $1 AND b.deleted_at IS NULL
+ORDER BY c.name
+`
+
+type FindByesByRoundIDWithClubRow struct {
+	ID           int32
+	RoundID      int32
+	ClubSeasonID int32
+	ClubID       int32
+	ClubName     string
+}
+
+func (q *Queries) FindByesByRoundIDWithClub(ctx context.Context, roundID int32) ([]FindByesByRoundIDWithClubRow, error) {
+	rows, err := q.db.Query(ctx, findByesByRoundIDWithClub, roundID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindByesByRoundIDWithClubRow{}
+	for rows.Next() {
+		var i FindByesByRoundIDWithClubRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoundID,
+			&i.ClubSeasonID,
+			&i.ClubID,
+			&i.ClubName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertBye = `-- name: UpsertBye :one
 INSERT INTO afl.bye (round_id, club_season_id)
 VALUES ($1, $2)

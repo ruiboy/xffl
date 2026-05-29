@@ -115,6 +115,10 @@ export const GET_AFL_ROUND = gql`
           }
         }
       }
+      byes {
+        id
+        club { id name }
+      }
     }
   }
 `

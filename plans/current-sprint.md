@@ -197,7 +197,7 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 
 *GraphQL / frontend*
 - [x] Add `bye` to `FFLAFLPlayerMatchStatus` enum in `query.graphqls` and regenerate — field, resolver, and converter are already wired
-- [ ] Team Builder: show bye indicator and season-average score for bye players
+- [x] Team Builder: show bye indicator and season-average score for bye players
 
 ---
 

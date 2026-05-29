@@ -230,6 +230,23 @@ func (r *aFLRoundResolver) Matches(ctx context.Context, obj *AFLRound) ([]*AFLMa
 	return convertMatches(matches), nil
 }
 
+// Byes is the resolver for the byes field.
+func (r *aFLRoundResolver) Byes(ctx context.Context, obj *AFLRound) ([]*AFLBye, error) {
+	roundID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	byes, err := r.Queries.GetByes(ctx, roundID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*AFLBye, len(byes))
+	for i, b := range byes {
+		out[i] = &AFLBye{ID: toID(b.ID), Club: &AFLClub{ID: toID(b.ClubID), Name: b.ClubName}}
+	}
+	return out, nil
+}
+
 // Ladder is the resolver for the ladder field.
 func (r *aFLSeasonResolver) Ladder(ctx context.Context, obj *AFLSeason) ([]*AFLClubSeason, error) {
 	seasonID, err := fromID(obj.ID)

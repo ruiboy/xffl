@@ -19,6 +19,7 @@ type Queries struct {
 	players       domain.PlayerRepository
 	playerMatches domain.PlayerMatchRepository
 	playerSeasons domain.PlayerSeasonRepository
+	byes          domain.ByeRepository
 }
 
 func NewQueries(
@@ -32,6 +33,7 @@ func NewQueries(
 	players domain.PlayerRepository,
 	playerMatches domain.PlayerMatchRepository,
 	playerSeasons domain.PlayerSeasonRepository,
+	byes domain.ByeRepository,
 ) *Queries {
 	return &Queries{
 		clock:         clk,
@@ -44,6 +46,7 @@ func NewQueries(
 		players:       players,
 		playerMatches: playerMatches,
 		playerSeasons: playerSeasons,
+		byes:          byes,
 	}
 }
 
@@ -186,4 +189,8 @@ func (q *Queries) GetPlayerForPlayerSeason(ctx context.Context, playerSeasonID i
 		return domain.Player{}, err
 	}
 	return q.players.FindByID(ctx, ps.PlayerID)
+}
+
+func (q *Queries) GetByes(ctx context.Context, roundID int) ([]domain.ByeWithClub, error) {
+	return q.byes.FindByRoundIDWithClub(ctx, roundID)
 }
