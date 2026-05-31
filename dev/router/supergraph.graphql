@@ -393,6 +393,7 @@ type ImportAFLMatchStatsResult
   homePlayerCount: Int!
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
+  match: AFLMatch!
 }
 
 scalar join__FieldSet

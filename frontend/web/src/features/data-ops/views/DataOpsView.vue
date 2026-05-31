@@ -571,7 +571,6 @@ async function scrape(match: any) {
     const res = await importStatsMutation({ matchId: match.id })
     const data = res?.data?.importAFLMatchStats
     if (data) scrapeResult.value[match.id] = data
-    await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Scrape failed'
   } finally {

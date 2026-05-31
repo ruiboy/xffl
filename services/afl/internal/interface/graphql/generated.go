@@ -158,6 +158,7 @@ type ComplexityRoot struct {
 		AwayPlayerCount  func(childComplexity int) int
 		HomeClubName     func(childComplexity int) int
 		HomePlayerCount  func(childComplexity int) int
+		Match            func(childComplexity int) int
 		MatchID          func(childComplexity int) int
 		UnmatchedPlayers func(childComplexity int) int
 	}
@@ -775,6 +776,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ImportAFLMatchStatsResult.HomePlayerCount(childComplexity), true
+	case "ImportAFLMatchStatsResult.match":
+		if e.ComplexityRoot.ImportAFLMatchStatsResult.Match == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ImportAFLMatchStatsResult.Match(childComplexity), true
 	case "ImportAFLMatchStatsResult.matchId":
 		if e.ComplexityRoot.ImportAFLMatchStatsResult.MatchID == nil {
 			break
@@ -1210,6 +1217,7 @@ type ImportAFLMatchStatsResult {
   homePlayerCount: Int!
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
+  match: AFLMatch!
 }
 
 input ResolveAFLPlayerMatchInput {
@@ -4456,6 +4464,53 @@ func (ec *executionContext) fieldContext_ImportAFLMatchStatsResult_unmatchedPlay
 	return fc, nil
 }
 
+func (ec *executionContext) _ImportAFLMatchStatsResult_match(ctx context.Context, field graphql.CollectedField, obj *ImportAFLMatchStatsResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportAFLMatchStatsResult_match,
+		func(ctx context.Context) (any, error) {
+			return obj.Match, nil
+		},
+		nil,
+		ec.marshalNAFLMatch2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLMatch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportAFLMatchStatsResult_match(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportAFLMatchStatsResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AFLMatch_id(ctx, field)
+			case "venue":
+				return ec.fieldContext_AFLMatch_venue(ctx, field)
+			case "startTime":
+				return ec.fieldContext_AFLMatch_startTime(ctx, field)
+			case "result":
+				return ec.fieldContext_AFLMatch_result(ctx, field)
+			case "dataStatus":
+				return ec.fieldContext_AFLMatch_dataStatus(ctx, field)
+			case "round":
+				return ec.fieldContext_AFLMatch_round(ctx, field)
+			case "homeClubMatch":
+				return ec.fieldContext_AFLMatch_homeClubMatch(ctx, field)
+			case "awayClubMatch":
+				return ec.fieldContext_AFLMatch_awayClubMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AFLMatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_addAFLPlayer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4668,6 +4723,8 @@ func (ec *executionContext) fieldContext_Mutation_importAFLMatchStats(ctx contex
 				return ec.fieldContext_ImportAFLMatchStatsResult_awayPlayerCount(ctx, field)
 			case "unmatchedPlayers":
 				return ec.fieldContext_ImportAFLMatchStatsResult_unmatchedPlayers(ctx, field)
+			case "match":
+				return ec.fieldContext_ImportAFLMatchStatsResult_match(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ImportAFLMatchStatsResult", field.Name)
 		},
@@ -9026,6 +9083,11 @@ func (ec *executionContext) _ImportAFLMatchStatsResult(ctx context.Context, sel 
 			}
 		case "unmatchedPlayers":
 			out.Values[i] = ec._ImportAFLMatchStatsResult_unmatchedPlayers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "match":
+			out.Values[i] = ec._ImportAFLMatchStatsResult_match(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

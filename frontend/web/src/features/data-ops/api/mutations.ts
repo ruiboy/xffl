@@ -13,6 +13,12 @@ export const IMPORT_AFL_MATCH_STATS = gql`
         clubMatchId
         kicks handballs marks hitouts tackles goals behinds
       }
+      match {
+        id
+        dataStatus
+        homeClubMatch { id score playerMatches { id } }
+        awayClubMatch { id score playerMatches { id } }
+      }
     }
   }
 `
