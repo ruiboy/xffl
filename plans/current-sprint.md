@@ -220,7 +220,7 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 - [ ] Apply home-first ordering to FFL match queries
 - [ ] Apply `side` ordering to club_match queries (AFL and FFL)
 - [ ] Apply name ordering to AFL player-in-match queries
-- [ ] Add `display_order` to `ffl.player_match`; wire through domain → repository → application → GraphQL → frontend (see separate player ordering side quest)
+- [x] Add `display_order` to `ffl.player_match`; wire through domain → repository → application → GraphQL → frontend (see separate player ordering side quest)
 
 ---
 
