@@ -22,8 +22,9 @@ func (e ByeIneligibleError) Error() string {
 
 // SetTeamParams are the inputs to SetTeam.
 type SetTeamParams struct {
-	ClubMatchID int
-	Entries     []SetTeamEntry
+	ClubMatchID     int
+	Entries         []SetTeamEntry
+	ClubMatchNotes  *string // optional notes to write on the club_match row
 }
 
 // SetTeamEntry represents a single player assignment in a team.
@@ -32,8 +33,9 @@ type SetTeamEntry struct {
 	Position            string
 	BackupPositions     *string
 	InterchangePosition *string
-	DisplayOrder        int  // display position within the player's position group (or bench)
-	Score               *int // optional seed score for new players (AFL events are authoritative once set)
+	DisplayOrder        int     // display position within the player's position group (or bench)
+	Notes               *string // optional notes to write on the player_match row
+	Score               *int    // optional seed score for new players (AFL events are authoritative once set)
 }
 
 // SetTeam persists a complete team for a club match using diff-based persistence to
@@ -130,6 +132,11 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		cm.PlayerMatches = result
 		if err := repos.ClubMatches.UpdateScore(ctx, cm.ID, cm.Score()); err != nil {
 			return fmt.Errorf("update club match score: %w", err)
+		}
+		if params.ClubMatchNotes != nil {
+			if err := repos.ClubMatches.UpdateNotes(ctx, cm.ID, *params.ClubMatchNotes); err != nil {
+				return fmt.Errorf("update club match notes: %w", err)
+			}
 		}
 		if err := repos.ClubMatches.UpdateDataStatus(ctx, cm.ID, cm.DataStatus); err != nil {
 			return fmt.Errorf("update club match data status: %w", err)
@@ -278,6 +285,7 @@ func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain
 		pm.Position = &pos
 	}
 	pm.DisplayOrder = e.DisplayOrder
+	pm.Notes = e.Notes
 	if ex, ok := existing[e.PlayerSeasonID]; ok {
 		pm.ID = ex.ID
 		pm.Score = ex.Score
@@ -340,6 +348,7 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
 		DisplayOrder:        pm.DisplayOrder,
+		Notes:               pm.Notes,
 	}
 	if pm.Score != 0 {
 		s := pm.Score

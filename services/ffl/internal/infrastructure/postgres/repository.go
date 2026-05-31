@@ -405,6 +405,13 @@ func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int
 	})
 }
 
+func (r *ClubMatchRepository) UpdateNotes(ctx context.Context, id int, notes string) error {
+	return r.q.UpdateClubMatchNotes(ctx, sqlcgen.UpdateClubMatchNotesParams{
+		ID:    int32(id),
+		Notes: &notes,
+	})
+}
+
 func (r *ClubMatchRepository) UpdateDataStatus(ctx context.Context, id int, status domain.ClubMatchDataStatus) error {
 	return r.q.UpdateClubMatchDataStatus(ctx, sqlcgen.UpdateClubMatchDataStatusParams{
 		ID:         int32(id),

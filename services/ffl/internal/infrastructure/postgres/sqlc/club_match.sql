@@ -15,6 +15,12 @@ SET drv_score = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdateClubMatchNotes :exec
+UPDATE ffl.club_match
+SET notes      = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: UpdateClubMatchDataStatus :exec
 UPDATE ffl.club_match
 SET data_status = $2,

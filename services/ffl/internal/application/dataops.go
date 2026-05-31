@@ -142,9 +142,13 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 // ImportRoundTeams converts resolved players to team entries and delegates to teamSubmitter.SetTeam,
 // which handles validation, diff-based persistence, scoring, and event publishing.
 // display_order is auto-assigned: starters and bench are numbered within each position group by parse order.
+// When a player has a posted score, "posted:NN" is written to player_match.notes.
+// The sum of all posted player scores is written to club_match.notes as "posted:NN".
 func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRoundTeamsParams) ([]domain.PlayerMatch, error) {
 	positionCount := make(map[string]int)
 	entries := make([]SetTeamEntry, 0, len(params.ResolvedPlayers))
+	postedTotal := 0
+	anyPosted := false
 	for _, rp := range params.ResolvedPlayers {
 		if rp.PlayerSeasonID == 0 {
 			continue
@@ -160,6 +164,12 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 			DisplayOrder:   positionCount[groupKey],
 			Score:          rp.Parsed.Score,
 		}
+		if rp.Parsed.Score != nil {
+			note := fmt.Sprintf("posted:%d", *rp.Parsed.Score)
+			e.Notes = &note
+			postedTotal += *rp.Parsed.Score
+			anyPosted = true
+		}
 		if rp.Parsed.BackupPositions != "" {
 			e.BackupPositions = &rp.Parsed.BackupPositions
 		}
@@ -168,10 +178,15 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		}
 		entries = append(entries, e)
 	}
-	return c.commands.SetTeam(ctx, SetTeamParams{
+	sp := SetTeamParams{
 		ClubMatchID: params.ClubMatchID,
 		Entries:     entries,
-	})
+	}
+	if anyPosted {
+		note := fmt.Sprintf("posted:%d", postedTotal)
+		sp.ClubMatchNotes = &note
+	}
+	return c.commands.SetTeam(ctx, sp)
 }
 
 // MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).

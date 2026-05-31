@@ -110,6 +110,23 @@ func (q *Queries) UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubM
 	return err
 }
 
+const updateClubMatchNotes = `-- name: UpdateClubMatchNotes :exec
+UPDATE ffl.club_match
+SET notes      = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchNotesParams struct {
+	ID    int32
+	Notes *string
+}
+
+func (q *Queries) UpdateClubMatchNotes(ctx context.Context, arg UpdateClubMatchNotesParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchNotes, arg.ID, arg.Notes)
+	return err
+}
+
 const updateClubMatchScore = `-- name: UpdateClubMatchScore :exec
 UPDATE ffl.club_match
 SET drv_score = $2,
