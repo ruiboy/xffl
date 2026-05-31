@@ -122,6 +122,7 @@ FROM afl.match m
 LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
 LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
 WHERE m.id = ANY($1::int[]) AND m.deleted_at IS NULL
+ORDER BY m.start_dt
 `
 
 type FindMatchesByIDsRow struct {
@@ -176,6 +177,7 @@ FROM afl.match m
 LEFT JOIN afl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
 LEFT JOIN afl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
 WHERE m.round_id = $1 AND m.deleted_at IS NULL
+ORDER BY m.start_dt
 `
 
 type FindMatchesByRoundIDRow struct {

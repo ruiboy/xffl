@@ -131,6 +131,7 @@ type FFLPlayerMatch struct {
 	AflStatus           *FFLAFLPlayerMatchStatus `json:"aflStatus,omitempty"`
 	BackupPositions     *string                  `json:"backupPositions,omitempty"`
 	InterchangePosition *string                  `json:"interchangePosition,omitempty"`
+	DisplayOrder        int                      `json:"displayOrder"`
 	Score               int                      `json:"score"`
 	AflPlayerMatchID    *string                  `json:"aflPlayerMatchId,omitempty"`
 	AflPlayerMatch      *AFLPlayerMatch          `json:"aflPlayerMatch,omitempty"`
@@ -185,6 +186,7 @@ type FFLTeamPlayerInput struct {
 	Position            string  `json:"position"`
 	BackupPositions     *string `json:"backupPositions,omitempty"`
 	InterchangePosition *string `json:"interchangePosition,omitempty"`
+	DisplayOrder        int     `json:"displayOrder"`
 }
 
 type MarkFFLTeamFinalInput struct {
@@ -253,6 +255,7 @@ const (
 	FFLAFLPlayerMatchStatusPlaying FFLAFLPlayerMatchStatus = "playing"
 	FFLAFLPlayerMatchStatusPlayed  FFLAFLPlayerMatchStatus = "played"
 	FFLAFLPlayerMatchStatusDnp     FFLAFLPlayerMatchStatus = "dnp"
+	FFLAFLPlayerMatchStatusBye     FFLAFLPlayerMatchStatus = "bye"
 )
 
 var AllFFLAFLPlayerMatchStatus = []FFLAFLPlayerMatchStatus{
@@ -260,11 +263,12 @@ var AllFFLAFLPlayerMatchStatus = []FFLAFLPlayerMatchStatus{
 	FFLAFLPlayerMatchStatusPlaying,
 	FFLAFLPlayerMatchStatusPlayed,
 	FFLAFLPlayerMatchStatusDnp,
+	FFLAFLPlayerMatchStatusBye,
 }
 
 func (e FFLAFLPlayerMatchStatus) IsValid() bool {
 	switch e {
-	case FFLAFLPlayerMatchStatusNamed, FFLAFLPlayerMatchStatusPlaying, FFLAFLPlayerMatchStatusPlayed, FFLAFLPlayerMatchStatusDnp:
+	case FFLAFLPlayerMatchStatusNamed, FFLAFLPlayerMatchStatusPlaying, FFLAFLPlayerMatchStatusPlayed, FFLAFLPlayerMatchStatusDnp, FFLAFLPlayerMatchStatusBye:
 		return true
 	}
 	return false
@@ -361,6 +365,61 @@ func (e *FFLPlayerMatchStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e FFLPlayerMatchStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type FFLReorderDirection string
+
+const (
+	FFLReorderDirectionUp   FFLReorderDirection = "UP"
+	FFLReorderDirectionDown FFLReorderDirection = "DOWN"
+)
+
+var AllFFLReorderDirection = []FFLReorderDirection{
+	FFLReorderDirectionUp,
+	FFLReorderDirectionDown,
+}
+
+func (e FFLReorderDirection) IsValid() bool {
+	switch e {
+	case FFLReorderDirectionUp, FFLReorderDirectionDown:
+		return true
+	}
+	return false
+}
+
+func (e FFLReorderDirection) String() string {
+	return string(e)
+}
+
+func (e *FFLReorderDirection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FFLReorderDirection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FFLReorderDirection", str)
+	}
+	return nil
+}
+
+func (e FFLReorderDirection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FFLReorderDirection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FFLReorderDirection) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

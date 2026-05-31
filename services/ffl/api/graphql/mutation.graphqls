@@ -11,7 +11,11 @@ type Mutation {
   "Calculate and store the fantasy score for a player match from AFL stats."
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
 
-  "Set the complete team selection for a club match."
+  """
+  Set the complete team selection for a club match.
+  Errors:
+    BYE_INELIGIBLE — extensions.playerSeasonId identifies the ineligible player.
+  """
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
 
   "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
@@ -31,6 +35,9 @@ type Mutation {
 
   "Record Team Manager substitution and interchange decisions for a club match."
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
+
+  "Move a player match up or down within its position group, adjusting display order."
+  reorderFFLPlayerMatch(id: ID!, direction: FFLReorderDirection!): [FFLPlayerMatch!]!
 }
 
 input AddFFLPlayerToSeasonInput {
@@ -70,6 +77,7 @@ input FFLTeamPlayerInput {
   position: String!
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
 }
 
 type ParseFFLTeamSubmissionResult {
@@ -126,4 +134,9 @@ input DeclareFFLSubstitutionsInput {
   clubMatchId:  ID!
   subs:         [FFLSubPairing!]!
   interchange:  FFLSubPairing
+}
+
+enum FFLReorderDirection {
+  UP
+  DOWN
 }

@@ -126,6 +126,7 @@ type FFLPlayerMatch {
   aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch

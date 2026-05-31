@@ -8,7 +8,8 @@ SELECT m.id, m.round_id,
 FROM ffl.match m
 LEFT JOIN ffl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
 LEFT JOIN ffl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
-WHERE m.round_id = $1 AND m.deleted_at IS NULL;
+WHERE m.round_id = $1 AND m.deleted_at IS NULL
+ORDER BY m.id;
 
 -- name: FindMatchByID :one
 SELECT m.id, m.round_id,
@@ -32,7 +33,8 @@ SELECT m.id, m.round_id,
 FROM ffl.match m
 LEFT JOIN ffl.club_match home ON home.match_id = m.id AND home.side = 'home' AND home.deleted_at IS NULL
 LEFT JOIN ffl.club_match away ON away.match_id = m.id AND away.side = 'away' AND away.deleted_at IS NULL
-WHERE m.id = ANY(@ids::int[]) AND m.deleted_at IS NULL;
+WHERE m.id = ANY(@ids::int[]) AND m.deleted_at IS NULL
+ORDER BY m.id;
 
 -- name: UpdateFflMatchResult :exec
 UPDATE ffl.match

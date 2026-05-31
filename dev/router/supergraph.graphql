@@ -295,6 +295,7 @@ type FFLPlayerMatch
   aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch
@@ -338,6 +339,13 @@ input FFLPlayerSeasonFilter
   active: Boolean
 }
 
+enum FFLReorderDirection
+  @join__type(graph: FFL)
+{
+  UP @join__enumValue(graph: FFL)
+  DOWN @join__enumValue(graph: FFL)
+}
+
 type FFLRound
   @join__type(graph: FFL)
 {
@@ -373,6 +381,7 @@ input FFLTeamPlayerInput
   position: String!
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
 }
 
 type ImportAFLMatchStatsResult
@@ -384,6 +393,7 @@ type ImportAFLMatchStatsResult
   homePlayerCount: Int!
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
+  match: AFLMatch!
 }
 
 scalar join__FieldSet
@@ -460,7 +470,11 @@ type Mutation
   """
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch! @join__field(graph: FFL)
 
-  """Set the complete team selection for a club match."""
+  """
+  Set the complete team selection for a club match.
+  Errors:
+    BYE_INELIGIBLE — extensions.playerSeasonId identifies the ineligible player.
+  """
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 
   """
@@ -490,6 +504,11 @@ type Mutation
   Record Team Manager substitution and interchange decisions for a club match.
   """
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+
+  """
+  Move a player match up or down within its position group, adjusting display order.
+  """
+  reorderFFLPlayerMatch(id: ID!, direction: FFLReorderDirection!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 }
 
 type PageInfo

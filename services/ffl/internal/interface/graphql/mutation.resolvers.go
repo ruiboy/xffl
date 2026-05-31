@@ -7,7 +7,11 @@ package graphql
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 )
@@ -116,10 +120,21 @@ func (r *mutationResolver) SetFFLTeam(ctx context.Context, input SetFFLTeamInput
 			Position:            p.Position,
 			BackupPositions:     p.BackupPositions,
 			InterchangePosition: p.InterchangePosition,
+			DisplayOrder:        p.DisplayOrder,
 		}
 	}
 	pms, err := r.Commands.SetTeam(ctx, application.SetTeamParams{ClubMatchID: clubMatchID, Entries: entries})
 	if err != nil {
+		var byeErr application.ByeIneligibleError
+		if errors.As(err, &byeErr) {
+			return nil, &gqlerror.Error{
+				Message: byeErr.Error(),
+				Extensions: map[string]any{
+					"code":           "BYE_INELIGIBLE",
+					"playerSeasonId": strconv.Itoa(byeErr.PlayerSeasonID),
+				},
+			}
+		}
 		return nil, err
 	}
 	result := make([]*FFLPlayerMatch, len(pms))
@@ -244,6 +259,16 @@ func (r *mutationResolver) ConfirmFFLTeamSubmission(ctx context.Context, input C
 		ResolvedPlayers: resolved,
 	})
 	if err != nil {
+		var byeErr application.ByeIneligibleError
+		if errors.As(err, &byeErr) {
+			return nil, &gqlerror.Error{
+				Message: byeErr.Error(),
+				Extensions: map[string]any{
+					"code":           "BYE_INELIGIBLE",
+					"playerSeasonId": strconv.Itoa(byeErr.PlayerSeasonID),
+				},
+			}
+		}
 		return nil, err
 	}
 
@@ -340,6 +365,28 @@ func (r *mutationResolver) DeclareFFLSubstitutions(ctx context.Context, input De
 	}
 
 	pms, err := r.Commands.DeclareSubs(ctx, clubMatchID, subs, interchange)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
+}
+
+// ReorderFFLPlayerMatch is the resolver for the reorderFFLPlayerMatch field.
+func (r *mutationResolver) ReorderFFLPlayerMatch(ctx context.Context, id string, direction FFLReorderDirection) ([]*FFLPlayerMatch, error) {
+	pmID, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	dir := application.ReorderDirection(direction)
+	pms, err := r.Commands.ReorderPlayerMatch(ctx, pmID, dir)
 	if err != nil {
 		return nil, err
 	}

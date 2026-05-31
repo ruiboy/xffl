@@ -13,8 +13,7 @@ Hugh McCluggage – Bris            * (INT)    52
 test.describe('FFL Data Ops', () => {
   test.beforeEach(async ({ page }) => {
     await setupFflSession(page)
-    await page.getByRole('link', { name: /Data Ops/i }).click()
-    await page.waitForURL('/ffl/data-ops')
+    await page.goto('/ffl/data-ops')
   })
 
   test('AFL Stats tab shows match table with correct columns', async ({ page }) => {

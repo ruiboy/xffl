@@ -7,6 +7,7 @@ package graphql
 
 import (
 	"context"
+	"fmt"
 	"xffl/services/afl/internal/application"
 	"xffl/services/afl/internal/domain"
 )
@@ -102,6 +103,10 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 			Behinds:     u.Behinds,
 		}
 	}
+	match, err := r.Queries.GetMatch(ctx, result.MatchID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch updated match: %w", err)
+	}
 	return &ImportAFLMatchStatsResult{
 		MatchID:          toID(result.MatchID),
 		HomeClubName:     result.HomeClubName,
@@ -109,6 +114,7 @@ func (r *mutationResolver) ImportAFLMatchStats(ctx context.Context, matchID stri
 		HomePlayerCount:  result.HomePlayerCount,
 		AwayPlayerCount:  result.AwayPlayerCount,
 		UnmatchedPlayers: unmatched,
+		Match:            convertMatch(match),
 	}, nil
 }
 

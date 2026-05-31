@@ -134,6 +134,7 @@ FROM afl.player_match pm
 JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
 JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.club_match_id = $1 AND pm.deleted_at IS NULL
+ORDER BY pm.id
 `
 
 type FindPlayerMatchesByClubMatchIDRow struct {
@@ -190,6 +191,7 @@ FROM afl.player_match pm
 JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
 JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.id = ANY($1::int[]) AND pm.deleted_at IS NULL
+ORDER BY pm.id
 `
 
 type FindPlayerMatchesByIDsRow struct {
@@ -305,6 +307,7 @@ JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.player_season_id = ANY($1::int[])
   AND m.round_id = $2
   AND pm.deleted_at IS NULL
+ORDER BY pm.id
 `
 
 type FindPlayerMatchesBySeasonIDsAndRoundIDParams struct {

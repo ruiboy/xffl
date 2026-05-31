@@ -171,6 +171,19 @@
                     >
                       {{ target.short }}
                     </button>
+                    <span class="w-px h-3 bg-border-subtle shrink-0" />
+                    <button
+                      v-if="index > 0 && teamSlots[pos.key][index - 1].player"
+                      aria-label="Move up"
+                      class="text-xs text-text-faint hover:text-text transition-colors"
+                      @click.stop="swapStarters(pos.key, index, index - 1)"
+                    >↑</button>
+                    <button
+                      v-if="index < teamSlots[pos.key].length - 1 && teamSlots[pos.key][index + 1].player"
+                      aria-label="Move down"
+                      class="text-xs text-text-faint hover:text-text transition-colors"
+                      @click.stop="swapStarters(pos.key, index, index + 1)"
+                    >↓</button>
                     <button
                       aria-label="Remove"
                       class="text-xs text-red-400 hover:text-red-300 transition-colors"
@@ -870,6 +883,14 @@ function removeFromTeam(key: PositionKey, index: number) {
   markDirty()
 }
 
+function swapStarters(key: PositionKey, indexA: number, indexB: number) {
+  const slots = teamSlots.value[key]
+  const tmp = slots[indexA].player
+  slots[indexA].player = slots[indexB].player
+  slots[indexB].player = tmp
+  markDirty()
+}
+
 function moveToPosition(fromKey: PositionKey, fromIndex: number, toKey: PositionKey) {
   const player = teamSlots.value[fromKey][fromIndex].player
   if (!player) return
@@ -1253,20 +1274,25 @@ async function submitTeam(): Promise<boolean> {
     position: string
     backupPositions?: string
     interchangePosition?: string
+    displayOrder: number
   }[] = []
 
-  // Starters
+  // Starters — displayOrder is 1-based within each position group, in slot order.
   for (const pos of positions) {
+    let posOrder = 0
     for (const slot of teamSlots.value[pos.key]) {
       if (slot.player) {
-        players.push({ playerSeasonId: slot.player.id, position: pos.key })
+        posOrder++
+        players.push({ playerSeasonId: slot.player.id, position: pos.key, displayOrder: posOrder })
       }
     }
   }
 
-  // Bench slots
+  // Bench slots — displayOrder is 1-based across all bench slots.
+  let benchOrder = 0
   for (const slot of benchDualSlots.value) {
     if (!slot.player) continue
+    benchOrder++
     const [p1, p2] = slot.positions
     const isStar = p1 === 'star'
     const bp = isStar ? 'star' : [p1, p2].filter(Boolean).join(',')
@@ -1274,6 +1300,7 @@ async function submitTeam(): Promise<boolean> {
       playerSeasonId: slot.player.id,
       position: p1 ?? p2 ?? 'goals',
       backupPositions: bp || undefined,
+      displayOrder: benchOrder,
     }
     if (interchangePosition.value && (p1 === interchangePosition.value || p2 === interchangePosition.value)) {
       entry.interchangePosition = interchangePosition.value ?? undefined
@@ -1288,8 +1315,14 @@ async function submitTeam(): Promise<boolean> {
     setTimeout(() => { submitMessage.value = '' }, 3000)
     return true
   } catch (e: unknown) {
-    const msg = (e as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]?.message
-    submitMessage.value = msg ?? 'Failed to save team'
+    const gqlErr = (e as { graphQLErrors?: { message: string; extensions?: Record<string, string> }[] })?.graphQLErrors?.[0]
+    if (gqlErr?.extensions?.code === 'BYE_INELIGIBLE') {
+      const psId = gqlErr.extensions.playerSeasonId
+      const player = squad.value.find(p => p.id === psId)
+      submitMessage.value = `${player?.name ?? 'A player'} is on a bye but didn't play last round — remove them to save`
+    } else {
+      submitMessage.value = gqlErr?.message ?? 'Failed to save team'
+    }
     return false
   } finally {
     submitting.value = false

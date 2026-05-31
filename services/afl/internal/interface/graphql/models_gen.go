@@ -135,6 +135,7 @@ type ImportAFLMatchStatsResult struct {
 	HomePlayerCount  int                   `json:"homePlayerCount"`
 	AwayPlayerCount  int                   `json:"awayPlayerCount"`
 	UnmatchedPlayers []*UnmatchedAFLPlayer `json:"unmatchedPlayers"`
+	Match            *AFLMatch             `json:"match"`
 }
 
 type Mutation struct {

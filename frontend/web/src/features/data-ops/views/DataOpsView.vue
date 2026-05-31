@@ -571,7 +571,6 @@ async function scrape(match: any) {
     const res = await importStatsMutation({ matchId: match.id })
     const data = res?.data?.importAFLMatchStats
     if (data) scrapeResult.value[match.id] = data
-    await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Scrape failed'
   } finally {
@@ -858,7 +857,14 @@ async function onConfirm() {
     activeImportClubSeasonId.value = ''
     await refetchSeasonData()
   } catch (e: any) {
-    confirmError.value = e.message ?? 'Confirm failed'
+    const gqlErr = e?.graphQLErrors?.[0]
+    if (gqlErr?.extensions?.code === 'BYE_INELIGIBLE') {
+      const psId = gqlErr.extensions.playerSeasonId
+      const rp = resolvedPlayers.value.find(p => p.playerSeasonId === psId)
+      confirmError.value = `${rp?.resolvedName ?? 'A player'} is on a bye but didn't play last round — remove them to import`
+    } else {
+      confirmError.value = gqlErr?.message ?? e.message ?? 'Confirm failed'
+    }
   } finally {
     confirming.value = false
   }

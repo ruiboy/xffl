@@ -52,6 +52,7 @@ const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
 SELECT id, match_id, club_season_id, data_status, drv_score
 FROM ffl.club_match
 WHERE match_id = $1 AND deleted_at IS NULL
+ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END
 `
 
 type FindClubMatchesByMatchIDRow struct {

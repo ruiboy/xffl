@@ -703,6 +703,7 @@ type teamPlayer struct {
 	position            string
 	backupPositions     *string
 	interchangePosition *string
+	displayOrder        int
 }
 
 func buildSetTeamMutation(clubMatchID string, players []teamPlayer) string {
@@ -722,7 +723,8 @@ func buildSetTeamMutation(clubMatchID string, players []teamPlayer) string {
 				position: "%s"
 				backupPositions: %s
 				interchangePosition: %s
-			}`, p.playerSeasonID, p.position, bp, ic)
+				displayOrder: %d
+			}`, p.playerSeasonID, p.position, bp, ic, p.displayOrder)
 	}
 	return fmt.Sprintf(`mutation {
 		setFFLTeam(input: {

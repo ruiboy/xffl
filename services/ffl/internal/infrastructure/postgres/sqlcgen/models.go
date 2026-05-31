@@ -87,6 +87,7 @@ type FflPlayerMatch struct {
 	Position            *string
 	BackupPositions     *string
 	InterchangePosition *string
+	DisplayOrder        int32
 	DrvScore            *int32
 }
 

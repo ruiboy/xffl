@@ -201,6 +201,29 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 
 ---
 
+## Side quest — Consistent display ordering
+
+**Goal:** Make row ordering deterministic and meaningful everywhere in the UX. Avoid `display_order` columns unless no natural key exists.
+
+**Agreed approach per context:**
+
+| Context | Ordering |
+|---|---|
+| AFL matches within a round | `start_dt ASC` — already a TIMESTAMP; ensure import populates times correctly |
+| FFL matches within a round | Home club name `ASC` (stable, no real-world time exists) |
+| Clubs within a match | `side`: home first, away second |
+| AFL players in a match | Player name `ASC` |
+| FFL `player_match` within a position group | `display_order ASC` — user-defined; only place a `display_order` column is needed |
+
+**Tasks**
+- [x] Apply `ORDER BY start_dt ASC` to AFL match queries; verify import populates match times (not just dates)
+- [x] Apply home-first ordering to FFL match queries (ORDER BY id — frontend owns name-based sort)
+- [x] Apply `side` ordering to club_match queries (AFL and FFL)
+- [x] Apply name ordering to AFL player-in-match queries (ORDER BY id — frontend owns name sort)
+- [x] Add `display_order` to `ffl.player_match`; wire through domain → repository → application → GraphQL → frontend (see separate player ordering side quest)
+
+---
+
 ## Step 6 — Score reconciliation *(every round)*
 
 *Requirements TBD — interview user when we reach this step before any implementation. Ideas to seed the conversation:*

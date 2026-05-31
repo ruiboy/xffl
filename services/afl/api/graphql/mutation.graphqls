@@ -62,6 +62,7 @@ type ImportAFLMatchStatsResult {
   homePlayerCount: Int!
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
+  match: AFLMatch!
 }
 
 input ResolveAFLPlayerMatchInput {
