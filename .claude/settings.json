@@ -1,16 +1,6 @@
 {
   "includeCoAuthoredBy": false,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "input=$(cat); echo \"$input\" | jq -r '.tool_input.command' | grep -q 'git commit' && echo '{\"decision\":\"block\",\"reason\":\"Git commit requires explicit user permission — stop and ask the user before proceeding.\"}' && exit 2; exit 0"
-          }
-        ]
-      }
-    ]
+  "permissions": {
+    "ask": ["Bash(git commit*)"]
   }
 }
