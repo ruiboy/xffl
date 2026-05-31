@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS ffl.club_match (
     club_season_id INTEGER NOT NULL REFERENCES ffl.club_season(id) ON DELETE CASCADE,
     side VARCHAR(50) NOT NULL,
     data_status VARCHAR(50) NOT NULL DEFAULT 'no_data',
+    notes TEXT,
     drv_score INTEGER DEFAULT 0,
     drv_premiership_points INTEGER DEFAULT 0,
     CONSTRAINT uni_ffl_club_match UNIQUE (club_season_id, match_id)
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     backup_positions VARCHAR(255),
     interchange_position VARCHAR(255),
     display_order INTEGER NOT NULL DEFAULT 0,
+    notes TEXT,
     drv_score INTEGER DEFAULT 0,
     CONSTRAINT uni_ffl_player_match UNIQUE (player_season_id, club_match_id)
 );

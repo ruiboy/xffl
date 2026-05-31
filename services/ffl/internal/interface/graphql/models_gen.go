@@ -87,6 +87,7 @@ type FFLClubMatch struct {
 	SeasonID      *string           `json:"seasonId,omitempty"`
 	Club          *FFLClub          `json:"club"`
 	DataStatus    string            `json:"dataStatus"`
+	Notes         *string           `json:"notes,omitempty"`
 	Score         int               `json:"score"`
 	PlayerMatches []*FFLPlayerMatch `json:"playerMatches"`
 }
@@ -132,6 +133,7 @@ type FFLPlayerMatch struct {
 	BackupPositions     *string                  `json:"backupPositions,omitempty"`
 	InterchangePosition *string                  `json:"interchangePosition,omitempty"`
 	DisplayOrder        int                      `json:"displayOrder"`
+	Notes               *string                  `json:"notes,omitempty"`
 	Score               int                      `json:"score"`
 	AflPlayerMatchID    *string                  `json:"aflPlayerMatchId,omitempty"`
 	AflPlayerMatch      *AFLPlayerMatch          `json:"aflPlayerMatch,omitempty"`

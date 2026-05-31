@@ -20,6 +20,7 @@ type ClubMatch struct {
 	MatchID       int
 	ClubSeasonID  int
 	DataStatus    ClubMatchDataStatus
+	Notes         *string
 	StoredScore   int
 	PlayerMatches []PlayerMatch
 }

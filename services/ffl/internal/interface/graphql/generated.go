@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 		ClubSeasonID  func(childComplexity int) int
 		DataStatus    func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Notes         func(childComplexity int) int
 		PlayerMatches func(childComplexity int) int
 		RoundID       func(childComplexity int) int
 		Score         func(childComplexity int) int
@@ -126,6 +127,7 @@ type ComplexityRoot struct {
 		DisplayOrder        func(childComplexity int) int
 		ID                  func(childComplexity int) int
 		InterchangePosition func(childComplexity int) int
+		Notes               func(childComplexity int) int
 		Player              func(childComplexity int) int
 		PlayerSeason        func(childComplexity int) int
 		PlayerSeasonID      func(childComplexity int) int
@@ -446,6 +448,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubMatch.ID(childComplexity), true
+	case "FFLClubMatch.notes":
+		if e.ComplexityRoot.FFLClubMatch.Notes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubMatch.Notes(childComplexity), true
 	case "FFLClubMatch.playerMatches":
 		if e.ComplexityRoot.FFLClubMatch.PlayerMatches == nil {
 			break
@@ -647,6 +655,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLPlayerMatch.InterchangePosition(childComplexity), true
+	case "FFLPlayerMatch.notes":
+		if e.ComplexityRoot.FFLPlayerMatch.Notes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPlayerMatch.Notes(childComplexity), true
 	case "FFLPlayerMatch.player":
 		if e.ComplexityRoot.FFLPlayerMatch.Player == nil {
 			break
@@ -1524,6 +1538,7 @@ type FFLClubMatch {
   seasonId: ID
   club: FFLClub!
   dataStatus: String!
+  notes: String
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }
@@ -1585,6 +1600,7 @@ type FFLPlayerMatch {
   backupPositions: String
   interchangePosition: String
   displayOrder: Int!
+  notes: String
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch
@@ -2688,6 +2704,35 @@ func (ec *executionContext) fieldContext_FFLClubMatch_dataStatus(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLClubMatch_notes(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubMatch_notes,
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubMatch_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLClubMatch_score(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2761,6 +2806,8 @@ func (ec *executionContext) fieldContext_FFLClubMatch_playerMatches(_ context.Co
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -3324,6 +3371,8 @@ func (ec *executionContext) fieldContext_FFLMatch_homeClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
 			case "dataStatus":
 				return ec.fieldContext_FFLClubMatch_dataStatus(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLClubMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
@@ -3371,6 +3420,8 @@ func (ec *executionContext) fieldContext_FFLMatch_awayClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
 			case "dataStatus":
 				return ec.fieldContext_FFLClubMatch_dataStatus(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLClubMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
@@ -3790,6 +3841,35 @@ func (ec *executionContext) fieldContext_FFLPlayerMatch_displayOrder(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPlayerMatch_notes(ctx context.Context, field graphql.CollectedField, obj *FFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPlayerMatch_notes,
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPlayerMatch_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPlayerMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4238,6 +4318,8 @@ func (ec *executionContext) fieldContext_FFLPlayerSeason_playerMatches(_ context
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -4950,6 +5032,8 @@ func (ec *executionContext) fieldContext_Mutation_calculateFFLFantasyScore(ctx c
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5019,6 +5103,8 @@ func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5135,6 +5221,8 @@ func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx c
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5327,6 +5415,8 @@ func (ec *executionContext) fieldContext_Mutation_declareFFLSubstitutions(ctx co
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5396,6 +5486,8 @@ func (ec *executionContext) fieldContext_Mutation_reorderFFLPlayerMatch(ctx cont
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
 			case "displayOrder":
 				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -6120,6 +6212,8 @@ func (ec *executionContext) fieldContext_Query_fflClubMatch(ctx context.Context,
 				return ec.fieldContext_FFLClubMatch_club(ctx, field)
 			case "dataStatus":
 				return ec.fieldContext_FFLClubMatch_dataStatus(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLClubMatch_notes(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
@@ -9258,6 +9352,8 @@ func (ec *executionContext) _FFLClubMatch(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "notes":
+			out.Values[i] = ec._FFLClubMatch_notes(ctx, field, obj)
 		case "score":
 			out.Values[i] = ec._FFLClubMatch_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9715,6 +9811,8 @@ func (ec *executionContext) _FFLPlayerMatch(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "notes":
+			out.Values[i] = ec._FFLPlayerMatch_notes(ctx, field, obj)
 		case "score":
 			out.Values[i] = ec._FFLPlayerMatch_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

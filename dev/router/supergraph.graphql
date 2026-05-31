@@ -243,6 +243,7 @@ type FFLClubMatch
   seasonId: ID
   club: FFLClub!
   dataStatus: String!
+  notes: String
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
 }
@@ -296,6 +297,7 @@ type FFLPlayerMatch
   backupPositions: String
   interchangePosition: String
   displayOrder: Int!
+  notes: String
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch
