@@ -5,7 +5,8 @@ SELECT pm.id, pm.club_match_id, pm.player_season_id,
 FROM afl.player_match pm
 JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
 JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
-WHERE pm.club_match_id = $1 AND pm.deleted_at IS NULL;
+WHERE pm.club_match_id = $1 AND pm.deleted_at IS NULL
+ORDER BY pm.id;
 
 -- name: FindPlayerMatchByID :one
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
@@ -33,7 +34,8 @@ SELECT pm.id, pm.club_match_id, pm.player_season_id,
 FROM afl.player_match pm
 JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
 JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
-WHERE pm.id = ANY(@ids::int[]) AND pm.deleted_at IS NULL;
+WHERE pm.id = ANY(@ids::int[]) AND pm.deleted_at IS NULL
+ORDER BY pm.id;
 
 -- name: FindPlayerMatchesBySeasonIDsAndRoundID :many
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
@@ -44,7 +46,8 @@ JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
 JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.player_season_id = ANY(@player_season_ids::int[])
   AND m.round_id = @round_id
-  AND pm.deleted_at IS NULL;
+  AND pm.deleted_at IS NULL
+ORDER BY pm.id;
 
 -- name: FindByeStatusBatch :many
 -- For each player_season_id, returns whether their club has a bye in the given

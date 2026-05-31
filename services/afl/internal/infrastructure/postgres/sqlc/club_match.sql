@@ -1,7 +1,8 @@
 -- name: FindClubMatchesByMatchID :many
 SELECT id, match_id, club_season_id, rushed_behinds, drv_score
 FROM afl.club_match
-WHERE match_id = $1 AND deleted_at IS NULL;
+WHERE match_id = $1 AND deleted_at IS NULL
+ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END;
 
 -- name: FindClubMatchByID :one
 SELECT id, match_id, club_season_id, rushed_behinds, drv_score

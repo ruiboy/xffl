@@ -216,10 +216,10 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 | FFL `player_match` within a position group | `display_order ASC` — user-defined; only place a `display_order` column is needed |
 
 **Tasks**
-- [ ] Apply `ORDER BY start_dt ASC` to AFL match queries; verify import populates match times (not just dates)
-- [ ] Apply home-first ordering to FFL match queries
-- [ ] Apply `side` ordering to club_match queries (AFL and FFL)
-- [ ] Apply name ordering to AFL player-in-match queries
+- [x] Apply `ORDER BY start_dt ASC` to AFL match queries; verify import populates match times (not just dates)
+- [x] Apply home-first ordering to FFL match queries (ORDER BY id — frontend owns name-based sort)
+- [x] Apply `side` ordering to club_match queries (AFL and FFL)
+- [x] Apply name ordering to AFL player-in-match queries (ORDER BY id — frontend owns name sort)
 - [x] Add `display_order` to `ffl.player_match`; wire through domain → repository → application → GraphQL → frontend (see separate player ordering side quest)
 
 ---
