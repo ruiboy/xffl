@@ -1,3 +1,10 @@
+-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id,
+       position, status, drv_afl_status, backup_positions, interchange_position, display_order, drv_score, afl_player_match_id
+FROM ffl.player_match
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id;
+
 -- name: FindPlayerMatchesByClubMatchID :many
 SELECT id, club_match_id, player_season_id,
        position, status, drv_afl_status, backup_positions, interchange_position, display_order, drv_score, afl_player_match_id

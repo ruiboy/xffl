@@ -72,7 +72,15 @@
                   ]"
                   @click="managing && toggleRow(row)"
                 >
-                  <td class="py-2 pr-4 font-medium">{{ row.player.aflPlayer.name }}</td>
+                  <td class="py-2 pr-4 font-medium">
+                    <router-link
+                      v-if="row.aflPlayerSeason?.id"
+                      :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }"
+                      class="hover:underline hover:text-active transition-colors"
+                      @click.stop
+                    >{{ row.player.aflPlayer.name }}</router-link>
+                    <span v-else>{{ row.player.aflPlayer.name }}</span>
+                  </td>
                   <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
@@ -142,7 +150,15 @@
                   ]"
                   @click="managing && toggleRow(row)"
                 >
-                  <td class="py-2 pr-4 font-medium">{{ row.player.aflPlayer.name }}</td>
+                  <td class="py-2 pr-4 font-medium">
+                    <router-link
+                      v-if="row.aflPlayerSeason?.id"
+                      :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }"
+                      class="hover:underline hover:text-active transition-colors"
+                      @click.stop
+                    >{{ row.player.aflPlayer.name }}</router-link>
+                    <span v-else>{{ row.player.aflPlayer.name }}</span>
+                  </td>
                   <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
@@ -430,7 +446,7 @@ async function onPlayerAdded() {
 interface PlayerSeasonRow {
   id: string
   player: { id: string; aflPlayerId: string; aflPlayer: { id: string; name: string } }
-  aflPlayerSeason?: { clubSeason?: { club?: { name: string } } } | null
+  aflPlayerSeason?: { id: string; clubSeason?: { club?: { name: string } } } | null
   fromRoundId?: string | null
   toRoundId?: string | null
   notes?: string | null

@@ -40,6 +40,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/ffl/afl/player-seasons/:aflPlayerSeasonId',
+      name: 'ffl-afl-player-season',
+      component: () => import('@/features/ffl/views/AFLPlayerSeasonView.vue'),
+      props: true,
+    },
+    {
       path: '/ffl/data-ops',
       name: 'ffl-data-ops',
       component: () => import('@/features/data-ops/views/DataOpsView.vue'),

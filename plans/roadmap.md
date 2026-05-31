@@ -218,23 +218,24 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Pluggable FFL scoring formula — strategy pattern keyed per season (prerequisite for Phase 23 backfill)
 - [ ] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table
 
-## Phase 21: Search Frontend + Index Enrichment
+## Phase 21: UX — Player & Club Pages
+
+**Goal:** FFL-lens player and club detail pages. See [`plans/player-club-pages.md`](player-club-pages.md) for full design.
+
+- [ ] `/ffl/afl/club-seasons/:id` — FFL view of AFL club: all players (incl. unowned), FFL ownership summary, best unowned sublist, sortable master table
+- [ ] `/ffl/afl/player-seasons/:id` — FFL league view of AFL player: all FFL stints + unowned gaps, per-round stats + * score + position
+- [ ] `/ffl/player-seasons/:id` — FFL club view of one player stint: scoped averages, club-specific notes (promotion of SquadView expand-row)
+- [ ] Wire AFL ladder club links → `/ffl/afl/club-seasons/`; AFL match player links → `/ffl/afl/player-seasons/`
+- [ ] Team Builder player analytics — season averages, rolling averages, last-N-games stats surfaced at team-building time (season average is first use case, required for bye scoring)
+- [ ] Playwright tests
+
+## Phase 22: Search Frontend + Index Enrichment
 
 **Goal:** Search UI backed by an enriched Typesense index with whatever data the UX needs.
 
 - [ ] Search view — full-text search with filters (source, type)
 - [ ] Expand search index as needed to support UX data requirements (player stats, aggregates, etc.)
 - [ ] Playwright tests
-
-## Phase 22: UX — Player & Team Pages
-
-**Goal:** Player and team detail pages with career stats, season history, and richer stat data across existing views.
-
-- [ ] Player pages — career stats, season history, club timeline
-- [ ] Team pages — squad, round-by-round scores, season summary
-- [ ] Other season pages (TBD based on usage)
-- [ ] Richer stat data surfaced in existing views
-- [ ] Team Builder player analytics — season averages, rolling averages, last-N-games stats, and other aggregates surfaced at team-building time to support TM decision-making (season average is first use case, required for bye scoring)
 
 ## Phase 23: Data Management — Data Setup & Historical Import
 

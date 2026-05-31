@@ -24,6 +24,7 @@ export const GET_FFL_CLUB_SEASON = gql`
           id
           player { id aflPlayerId aflPlayer { id name } }
           aflPlayerSeason {
+            id
             clubSeason {
               club { id name }
             }
@@ -397,6 +398,67 @@ export const GET_AFL_SEASON_CLUB_SEASONS = gql`
         ladder {
           id
           club { name }
+        }
+      }
+    }
+  }
+`
+
+export const GET_AFL_PLAYER_SEASON_STATS = gql`
+  query GetAFLPlayerSeasonStats($id: ID!) {
+    aflPlayerSeason(id: $id) {
+      id
+      player { id name }
+      clubSeason {
+        club { id name }
+        season { id name }
+      }
+      matches {
+        id
+        status
+        kicks
+        handballs
+        marks
+        tackles
+        hitouts
+        goals
+        behinds
+        score
+        clubMatch {
+          club { id name }
+          match {
+            round { id name }
+            homeClubMatch { club { id name } }
+            awayClubMatch { club { id name } }
+          }
+        }
+      }
+    }
+  }
+`
+
+export const GET_FFL_PLAYER_STINTS = gql`
+  query GetFFLPlayerStints($aflPlayerSeasonId: ID!) {
+    fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: $aflPlayerSeasonId) {
+      id
+      club { id name }
+      fromRoundId
+      toRoundId
+      playerMatches {
+        id
+        position
+        status
+        aflStatus
+        score
+        aflPlayerMatch {
+          id
+          clubMatch {
+            match {
+              round { id name }
+              homeClubMatch { club { id name } }
+              awayClubMatch { club { id name } }
+            }
+          }
         }
       }
     }

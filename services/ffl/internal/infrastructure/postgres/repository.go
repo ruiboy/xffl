@@ -560,6 +560,19 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
+func (r *PlayerMatchRepository) FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]domain.PlayerMatch, error) {
+	rows, err := r.q.FindPlayerMatchesByPlayerSeasonID(ctx, int32(playerSeasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerMatch, len(rows))
+	for i, row := range rows {
+		out[i] = toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
+			row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID)
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (domain.PlayerMatch, error) {
 	row, err := r.q.FindPlayerMatchByPlayerSeasonAndRound(ctx, sqlcgen.FindPlayerMatchByPlayerSeasonAndRoundParams{
 		PlayerSeasonID: int32(playerSeasonID),

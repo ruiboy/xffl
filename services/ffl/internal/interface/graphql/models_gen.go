@@ -138,15 +138,17 @@ type FFLPlayerMatch struct {
 }
 
 type FFLPlayerSeason struct {
-	ID                string           `json:"id"`
-	Player            *FFLPlayer       `json:"player"`
-	ClubSeasonID      string           `json:"clubSeasonId"`
-	AflPlayerSeasonID *string          `json:"aflPlayerSeasonId,omitempty"`
-	AflPlayerSeason   *AFLPlayerSeason `json:"aflPlayerSeason,omitempty"`
-	FromRoundID       *string          `json:"fromRoundId,omitempty"`
-	ToRoundID         *string          `json:"toRoundId,omitempty"`
-	Notes             *string          `json:"notes,omitempty"`
-	CostCents         *int             `json:"costCents,omitempty"`
+	ID                string            `json:"id"`
+	Player            *FFLPlayer        `json:"player"`
+	Club              *FFLClub          `json:"club"`
+	ClubSeasonID      string            `json:"clubSeasonId"`
+	AflPlayerSeasonID *string           `json:"aflPlayerSeasonId,omitempty"`
+	AflPlayerSeason   *AFLPlayerSeason  `json:"aflPlayerSeason,omitempty"`
+	FromRoundID       *string           `json:"fromRoundId,omitempty"`
+	ToRoundID         *string           `json:"toRoundId,omitempty"`
+	Notes             *string           `json:"notes,omitempty"`
+	CostCents         *int              `json:"costCents,omitempty"`
+	PlayerMatches     []*FFLPlayerMatch `json:"playerMatches"`
 }
 
 type FFLPlayerSeasonConnection struct {

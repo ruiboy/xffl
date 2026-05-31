@@ -188,6 +188,7 @@ type PlayerMatchRepository interface {
 	DeleteByID(ctx context.Context, id int) error
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
+	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (PlayerMatch, error)
 	UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error
 	UpdateStatus(ctx context.Context, id int, status PlayerMatchStatus) error

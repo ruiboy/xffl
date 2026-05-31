@@ -316,6 +316,7 @@ type FFLPlayerSeason
 {
   id: ID!
   player: FFLPlayer!
+  club: FFLClub!
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
   aflPlayerSeason: AFLPlayerSeason
@@ -323,6 +324,7 @@ type FFLPlayerSeason
   toRoundId: ID
   notes: String
   costCents: Int
+  playerMatches: [FFLPlayerMatch!]!
 }
 
 type FFLPlayerSeasonConnection
@@ -560,6 +562,7 @@ type Query
   fflPlayer(id: ID!): FFLPlayer! @join__field(graph: FFL)
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
   fflClubMatch(id: ID!): FFLClubMatch @join__field(graph: FFL)
+  fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]! @join__field(graph: FFL)
 }
 
 input RemoveFFLPlayerFromSeasonInput

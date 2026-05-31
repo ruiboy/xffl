@@ -123,6 +123,14 @@ func (q *Queries) GetPlayerSeasonByID(ctx context.Context, id int) (domain.Playe
 	return q.playerSeasons.FindByID(ctx, id)
 }
 
+func (q *Queries) GetPlayerSeasonsByAFLPlayerSeasonID(ctx context.Context, aflPlayerSeasonID int) ([]domain.PlayerSeason, error) {
+	return q.playerSeasons.FindByAFLPlayerSeasonID(ctx, aflPlayerSeasonID)
+}
+
+func (q *Queries) GetPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]domain.PlayerMatch, error) {
+	return q.playerMatches.FindByPlayerSeasonID(ctx, playerSeasonID)
+}
+
 func (q *Queries) GetClubsByIDs(ctx context.Context, ids []int) (map[int]domain.Club, error) {
 	return q.clubs.FindByIDs(ctx, ids)
 }
