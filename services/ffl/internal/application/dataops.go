@@ -141,15 +141,23 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 
 // ImportRoundTeams converts resolved players to team entries and delegates to teamSubmitter.SetTeam,
 // which handles validation, diff-based persistence, scoring, and event publishing.
+// display_order is auto-assigned: starters and bench are numbered within each position group by parse order.
 func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRoundTeamsParams) ([]domain.PlayerMatch, error) {
+	positionCount := make(map[string]int)
 	entries := make([]SetTeamEntry, 0, len(params.ResolvedPlayers))
 	for _, rp := range params.ResolvedPlayers {
 		if rp.PlayerSeasonID == 0 {
 			continue
 		}
+		groupKey := rp.Parsed.Position
+		if rp.Parsed.BackupPositions != "" {
+			groupKey = "bench"
+		}
+		positionCount[groupKey]++
 		e := SetTeamEntry{
 			PlayerSeasonID: rp.PlayerSeasonID,
 			Position:       rp.Parsed.Position,
+			DisplayOrder:   positionCount[groupKey],
 			Score:          rp.Parsed.Score,
 		}
 		if rp.Parsed.BackupPositions != "" {

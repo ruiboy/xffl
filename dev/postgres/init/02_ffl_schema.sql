@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     position VARCHAR(255),
     backup_positions VARCHAR(255),
     interchange_position VARCHAR(255),
+    display_order INTEGER NOT NULL DEFAULT 0,
     drv_score INTEGER DEFAULT 0,
     CONSTRAINT uni_ffl_player_match UNIQUE (player_season_id, club_match_id)
 );

@@ -131,6 +131,7 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *FFLPlayerM
 		Player:              convertPlayer(player),
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
+		DisplayOrder:        pm.DisplayOrder,
 		Score:               pm.Score,
 	}
 	if pm.Position != nil {

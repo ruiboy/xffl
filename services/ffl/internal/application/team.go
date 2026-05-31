@@ -22,6 +22,7 @@ type SetTeamEntry struct {
 	Position            string
 	BackupPositions     *string
 	InterchangePosition *string
+	DisplayOrder        int  // display position within the player's position group (or bench)
 	Score               *int // optional seed score for new players (AFL events are authoritative once set)
 }
 
@@ -266,6 +267,7 @@ func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain
 		pos := domain.Position(e.Position)
 		pm.Position = &pos
 	}
+	pm.DisplayOrder = e.DisplayOrder
 	if ex, ok := existing[e.PlayerSeasonID]; ok {
 		pm.ID = ex.ID
 		pm.Score = ex.Score
@@ -327,6 +329,7 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 		AFLStatus:           pm.AFLStatus,
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
+		DisplayOrder:        pm.DisplayOrder,
 	}
 	if pm.Score != 0 {
 		s := pm.Score
@@ -491,6 +494,7 @@ func (c *Commands) applyByeScoresForActivated(ctx context.Context, clubMatchID i
 			Status:              pm.Status,
 			BackupPositions:     pm.BackupPositions,
 			InterchangePosition: pm.InterchangePosition,
+			DisplayOrder:        pm.DisplayOrder,
 			Score:               &s,
 		}); err != nil {
 			slog.WarnContext(ctx, "upsert bye score for activated bench player failed",
@@ -505,4 +509,84 @@ func (c *Commands) applyByeScoresForActivated(ctx context.Context, clubMatchID i
 	}
 	cm.PlayerMatches = updated
 	return c.clubMatches.UpdateScore(ctx, clubMatchID, cm.Score())
+}
+
+// ReorderDirection indicates which direction to move a player match within its position group.
+type ReorderDirection string
+
+const (
+	ReorderUp   ReorderDirection = "UP"
+	ReorderDown ReorderDirection = "DOWN"
+)
+
+// ReorderPlayerMatch swaps the display_order of a player match with its neighbour in the
+// same position group (or bench group), then returns all player matches for the club match.
+func (c *Commands) ReorderPlayerMatch(ctx context.Context, id int, direction ReorderDirection) ([]domain.PlayerMatch, error) {
+	var result []domain.PlayerMatch
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		target, err := repos.PlayerMatches.FindByID(ctx, id)
+		if err != nil {
+			return fmt.Errorf("find player match: %w", err)
+		}
+
+		all, err := repos.PlayerMatches.FindByClubMatchID(ctx, target.ClubMatchID)
+		if err != nil {
+			return fmt.Errorf("find player matches: %w", err)
+		}
+
+		// Build the ordered group: players in the same position slot (starters share position,
+		// bench players share nil position). Already sorted by display_order from the query.
+		group := make([]domain.PlayerMatch, 0)
+		for _, pm := range all {
+			sameGroup := (pm.Position == nil && target.Position == nil) ||
+				(pm.Position != nil && target.Position != nil && *pm.Position == *target.Position)
+			// Bench: both have BackupPositions set; starter: both have Position set.
+			isBench := pm.BackupPositions != nil
+			targetIsBench := target.BackupPositions != nil
+			if isBench != targetIsBench {
+				continue
+			}
+			if sameGroup {
+				group = append(group, pm)
+			}
+		}
+
+		// Find the target's index in the group.
+		idx := -1
+		for i, pm := range group {
+			if pm.ID == id {
+				idx = i
+				break
+			}
+		}
+		if idx < 0 {
+			return fmt.Errorf("player match %d not found in its position group", id)
+		}
+
+		// Find the neighbour to swap with.
+		var neighbourIdx int
+		if direction == ReorderUp {
+			if idx == 0 {
+				return nil // already first, no-op
+			}
+			neighbourIdx = idx - 1
+		} else {
+			if idx == len(group)-1 {
+				return nil // already last, no-op
+			}
+			neighbourIdx = idx + 1
+		}
+
+		a, b := group[idx], group[neighbourIdx]
+		if err := repos.PlayerMatches.UpdateDisplayOrder(ctx, a.ID, b.DisplayOrder); err != nil {
+			return fmt.Errorf("update display order for %d: %w", a.ID, err)
+		}
+		if err := repos.PlayerMatches.UpdateDisplayOrder(ctx, b.ID, a.DisplayOrder); err != nil {
+			return fmt.Errorf("update display order for %d: %w", b.ID, err)
+		}
+
+		result, err = repos.PlayerMatches.FindByClubMatchID(ctx, target.ClubMatchID)
+		return err
+	})
+	return result, err
 }

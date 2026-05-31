@@ -272,7 +272,7 @@ func (r *MatchRepository) hydrateClubMatch(ctx context.Context, cm *domain.ClubM
 	cm.PlayerMatches = make([]domain.PlayerMatch, len(pmRows))
 	for i, pmRow := range pmRows {
 		cm.PlayerMatches[i] = toPlayerMatch(pmRow.ID, pmRow.ClubMatchID, pmRow.PlayerSeasonID,
-			pmRow.Position, pmRow.Status, pmRow.DrvAflStatus, pmRow.BackupPositions, pmRow.InterchangePosition, pmRow.DrvScore, pmRow.AflPlayerMatchID)
+			pmRow.Position, pmRow.Status, pmRow.DrvAflStatus, pmRow.BackupPositions, pmRow.InterchangePosition, pmRow.DisplayOrder, pmRow.DrvScore, pmRow.AflPlayerMatchID)
 	}
 	return nil
 }
@@ -514,7 +514,7 @@ func aflStatusPtr(s *string) *domain.AFLStatus {
 	return &st
 }
 
-func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status, drvAflStatus *string, backupPositions, interchangePosition *string, score *int32, aflPlayerMatchID *int32) domain.PlayerMatch {
+func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status, drvAflStatus *string, backupPositions, interchangePosition *string, displayOrder int32, score *int32, aflPlayerMatchID *int32) domain.PlayerMatch {
 	return domain.PlayerMatch{
 		ID:                  int(id),
 		ClubMatchID:         int(clubMatchID),
@@ -524,6 +524,7 @@ func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status, drvA
 		AFLStatus:           aflStatusPtr(drvAflStatus),
 		BackupPositions:     backupPositions,
 		InterchangePosition: interchangePosition,
+		DisplayOrder:        int(displayOrder),
 		Score:               derefOr(score),
 		AFLPlayerMatchID:    int32PtrToIntPtr(aflPlayerMatchID),
 	}
@@ -545,7 +546,7 @@ func (r *PlayerMatchRepository) FindByClubMatchID(ctx context.Context, clubMatch
 	out := make([]domain.PlayerMatch, len(rows))
 	for i, row := range rows {
 		out[i] = toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-			row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID)
+			row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID)
 	}
 	return out, nil
 }
@@ -556,7 +557,7 @@ func (r *PlayerMatchRepository) FindByID(ctx context.Context, id int) (domain.Pl
 		return domain.PlayerMatch{}, err
 	}
 	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
+		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
 func (r *PlayerMatchRepository) FindByPlayerSeasonAndRound(ctx context.Context, playerSeasonID int, roundID int) (domain.PlayerMatch, error) {
@@ -568,7 +569,7 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonAndRound(ctx context.Context, 
 		return domain.PlayerMatch{}, err
 	}
 	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
+		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
 func (r *PlayerMatchRepository) UpdateAFLPlayerMatchID(ctx context.Context, id int, aflPlayerMatchID int) error {
@@ -630,6 +631,13 @@ func drvAFLStatusToStringPtr(s *domain.AFLStatus) *string {
 	return &str
 }
 
+func (r *PlayerMatchRepository) UpdateDisplayOrder(ctx context.Context, id int, displayOrder int) error {
+	return r.q.UpdatePlayerMatchDisplayOrder(ctx, sqlcgen.UpdatePlayerMatchDisplayOrderParams{
+		ID:           int32(id),
+		DisplayOrder: int32(displayOrder),
+	})
+}
+
 func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.UpsertPlayerMatchParams) (domain.PlayerMatch, error) {
 	row, err := r.q.UpsertPlayerMatch(ctx, sqlcgen.UpsertPlayerMatchParams{
 		ClubMatchID:         int32(params.ClubMatchID),
@@ -639,13 +647,14 @@ func (r *PlayerMatchRepository) Upsert(ctx context.Context, params domain.Upsert
 		DrvAflStatus:        drvAFLStatusToStringPtr(params.AFLStatus),
 		BackupPositions:     params.BackupPositions,
 		InterchangePosition: params.InterchangePosition,
+		DisplayOrder:        int32(params.DisplayOrder),
 		DrvScore:            intToInt32Ptr(params.Score),
 	})
 	if err != nil {
 		return domain.PlayerMatch{}, err
 	}
 	return toPlayerMatch(row.ID, row.ClubMatchID, row.PlayerSeasonID,
-		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DrvScore, row.AflPlayerMatchID), nil
+		row.Position, row.Status, row.DrvAflStatus, row.BackupPositions, row.InterchangePosition, row.DisplayOrder, row.DrvScore, row.AflPlayerMatchID), nil
 }
 
 // --- PlayerSeason ---

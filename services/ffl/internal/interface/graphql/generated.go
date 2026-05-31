@@ -123,6 +123,7 @@ type ComplexityRoot struct {
 		AflPlayerMatchID    func(childComplexity int) int
 		AflStatus           func(childComplexity int) int
 		BackupPositions     func(childComplexity int) int
+		DisplayOrder        func(childComplexity int) int
 		ID                  func(childComplexity int) int
 		InterchangePosition func(childComplexity int) int
 		Player              func(childComplexity int) int
@@ -177,6 +178,7 @@ type ComplexityRoot struct {
 		RecalculateFFLClubMatchScore func(childComplexity int, clubMatchID string) int
 		RecalculateFFLLadder         func(childComplexity int, seasonID string) int
 		RemoveFFLPlayerFromSeason    func(childComplexity int, input RemoveFFLPlayerFromSeasonInput) int
+		ReorderFFLPlayerMatch        func(childComplexity int, id string, direction FFLReorderDirection) int
 		SetFFLTeam                   func(childComplexity int, input SetFFLTeamInput) int
 		UpdateFFLPlayerSeason        func(childComplexity int, input UpdateFFLPlayerSeasonInput) int
 	}
@@ -278,6 +280,7 @@ type MutationResolver interface {
 	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
 	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (bool, error)
 	DeclareFFLSubstitutions(ctx context.Context, input DeclareFFLSubstitutionsInput) ([]*FFLPlayerMatch, error)
+	ReorderFFLPlayerMatch(ctx context.Context, id string, direction FFLReorderDirection) ([]*FFLPlayerMatch, error)
 }
 type QueryResolver interface {
 	FflSeasons(ctx context.Context) ([]*FFLSeason, error)
@@ -618,6 +621,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLPlayerMatch.BackupPositions(childComplexity), true
+	case "FFLPlayerMatch.displayOrder":
+		if e.ComplexityRoot.FFLPlayerMatch.DisplayOrder == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPlayerMatch.DisplayOrder(childComplexity), true
 	case "FFLPlayerMatch.id":
 		if e.ComplexityRoot.FFLPlayerMatch.ID == nil {
 			break
@@ -902,6 +911,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveFFLPlayerFromSeason(childComplexity, args["input"].(RemoveFFLPlayerFromSeasonInput)), true
+	case "Mutation.reorderFFLPlayerMatch":
+		if e.ComplexityRoot.Mutation.ReorderFFLPlayerMatch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reorderFFLPlayerMatch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReorderFFLPlayerMatch(childComplexity, args["id"].(string), args["direction"].(FFLReorderDirection)), true
 	case "Mutation.setFFLTeam":
 		if e.ComplexityRoot.Mutation.SetFFLTeam == nil {
 			break
@@ -1291,6 +1311,9 @@ var sources = []*ast.Source{
 
   "Record Team Manager substitution and interchange decisions for a club match."
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
+
+  "Move a player match up or down within its position group, adjusting display order."
+  reorderFFLPlayerMatch(id: ID!, direction: FFLReorderDirection!): [FFLPlayerMatch!]!
 }
 
 input AddFFLPlayerToSeasonInput {
@@ -1330,6 +1353,7 @@ input FFLTeamPlayerInput {
   position: String!
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
 }
 
 type ParseFFLTeamSubmissionResult {
@@ -1386,6 +1410,11 @@ input DeclareFFLSubstitutionsInput {
   clubMatchId:  ID!
   subs:         [FFLSubPairing!]!
   interchange:  FFLSubPairing
+}
+
+enum FFLReorderDirection {
+  UP
+  DOWN
 }
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
@@ -1503,6 +1532,7 @@ enum FFLAFLPlayerMatchStatus {
   playing
   played
   dnp
+  bye
 }
 
 type FFLPlayerMatch {
@@ -1515,6 +1545,7 @@ type FFLPlayerMatch {
   aflStatus: FFLAFLPlayerMatchStatus
   backupPositions: String
   interchangePosition: String
+  displayOrder: Int!
   score: Int!
   aflPlayerMatchId: ID
   aflPlayerMatch: AFLPlayerMatch
@@ -1796,6 +1827,22 @@ func (ec *executionContext) field_Mutation_removeFFLPlayerFromSeason_args(ctx co
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reorderFFLPlayerMatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "direction", ec.unmarshalNFFLReorderDirection2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLReorderDirection)
+	if err != nil {
+		return nil, err
+	}
+	args["direction"] = arg1
 	return args, nil
 }
 
@@ -2662,6 +2709,8 @@ func (ec *executionContext) fieldContext_FFLClubMatch_playerMatches(_ context.Co
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -3658,6 +3707,35 @@ func (ec *executionContext) fieldContext_FFLPlayerMatch_interchangePosition(_ co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPlayerMatch_displayOrder(ctx context.Context, field graphql.CollectedField, obj *FFLPlayerMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPlayerMatch_displayOrder,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayOrder, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPlayerMatch_displayOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPlayerMatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4712,6 +4790,8 @@ func (ec *executionContext) fieldContext_Mutation_calculateFFLFantasyScore(ctx c
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -4779,6 +4859,8 @@ func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -4893,6 +4975,8 @@ func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx c
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5083,6 +5167,8 @@ func (ec *executionContext) fieldContext_Mutation_declareFFLSubstitutions(ctx co
 				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
 			case "interchangePosition":
 				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
 			case "score":
 				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
 			case "aflPlayerMatchId":
@@ -5101,6 +5187,75 @@ func (ec *executionContext) fieldContext_Mutation_declareFFLSubstitutions(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_declareFFLSubstitutions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reorderFFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reorderFFLPlayerMatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReorderFFLPlayerMatch(ctx, fc.Args["id"].(string), fc.Args["direction"].(FFLReorderDirection))
+		},
+		nil,
+		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reorderFFLPlayerMatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_FFLPlayerMatch_playerSeasonId(ctx, field)
+			case "playerSeason":
+				return ec.fieldContext_FFLPlayerMatch_playerSeason(ctx, field)
+			case "player":
+				return ec.fieldContext_FFLPlayerMatch_player(ctx, field)
+			case "position":
+				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
+			case "status":
+				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
+			case "backupPositions":
+				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
+			case "interchangePosition":
+				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "score":
+				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
+			case "aflPlayerMatchId":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatchId(ctx, field)
+			case "aflPlayerMatch":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPlayerMatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reorderFFLPlayerMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8145,7 +8300,7 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"playerSeasonId", "position", "backupPositions", "interchangePosition"}
+	fieldsInOrder := [...]string{"playerSeasonId", "position", "backupPositions", "interchangePosition", "displayOrder"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8180,6 +8335,13 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 				return it, err
 			}
 			it.InterchangePosition = data
+		case "displayOrder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayOrder"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayOrder = data
 		}
 	}
 	return it, nil
@@ -9325,6 +9487,11 @@ func (ec *executionContext) _FFLPlayerMatch(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._FFLPlayerMatch_backupPositions(ctx, field, obj)
 		case "interchangePosition":
 			out.Values[i] = ec._FFLPlayerMatch_interchangePosition(ctx, field, obj)
+		case "displayOrder":
+			out.Values[i] = ec._FFLPlayerMatch_displayOrder(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "score":
 			out.Values[i] = ec._FFLPlayerMatch_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9947,6 +10114,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "declareFFLSubstitutions":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_declareFFLSubstitutions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reorderFFLPlayerMatch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reorderFFLPlayerMatch(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -11140,6 +11314,16 @@ func (ec *executionContext) marshalNFFLPlayerSeasonConnection2ᚖxfflᚋservices
 		return graphql.Null
 	}
 	return ec._FFLPlayerSeasonConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFFLReorderDirection2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLReorderDirection(ctx context.Context, v any) (FFLReorderDirection, error) {
+	var res FFLReorderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFFLReorderDirection2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLReorderDirection(ctx context.Context, sel ast.SelectionSet, v FFLReorderDirection) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNFFLRound2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLRoundᚄ(ctx context.Context, sel ast.SelectionSet, v []*FFLRound) graphql.Marshaler {

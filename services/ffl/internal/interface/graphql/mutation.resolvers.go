@@ -116,6 +116,7 @@ func (r *mutationResolver) SetFFLTeam(ctx context.Context, input SetFFLTeamInput
 			Position:            p.Position,
 			BackupPositions:     p.BackupPositions,
 			InterchangePosition: p.InterchangePosition,
+			DisplayOrder:        p.DisplayOrder,
 		}
 	}
 	pms, err := r.Commands.SetTeam(ctx, application.SetTeamParams{ClubMatchID: clubMatchID, Entries: entries})
@@ -340,6 +341,28 @@ func (r *mutationResolver) DeclareFFLSubstitutions(ctx context.Context, input De
 	}
 
 	pms, err := r.Commands.DeclareSubs(ctx, clubMatchID, subs, interchange)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, player)
+	}
+	return result, nil
+}
+
+// ReorderFFLPlayerMatch is the resolver for the reorderFFLPlayerMatch field.
+func (r *mutationResolver) ReorderFFLPlayerMatch(ctx context.Context, id string, direction FFLReorderDirection) ([]*FFLPlayerMatch, error) {
+	pmID, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	dir := application.ReorderDirection(direction)
+	pms, err := r.Commands.ReorderPlayerMatch(ctx, pmID, dir)
 	if err != nil {
 		return nil, err
 	}

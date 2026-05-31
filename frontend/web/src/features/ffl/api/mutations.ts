@@ -37,6 +37,7 @@ export const SET_FFL_TEAM = gql`
       status
       backupPositions
       interchangePosition
+      displayOrder
       score
     }
   }

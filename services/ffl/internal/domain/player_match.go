@@ -78,9 +78,10 @@ type PlayerMatch struct {
 	PlayerSeasonID      int
 	Position            *Position
 	Status              *PlayerMatchStatus
-	AFLStatus        *AFLStatus
+	AFLStatus           *AFLStatus
 	BackupPositions     *string
 	InterchangePosition *string
+	DisplayOrder        int
 	Score               int
 	AFLPlayerMatchID    *int
 }
@@ -192,6 +193,7 @@ type PlayerMatchRepository interface {
 	UpdateStatus(ctx context.Context, id int, status PlayerMatchStatus) error
 	UpdatePosition(ctx context.Context, id int, position *Position) error
 	UpdateAFLStatus(ctx context.Context, id int, status AFLStatus) error
+	UpdateDisplayOrder(ctx context.Context, id int, displayOrder int) error
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }
@@ -202,8 +204,9 @@ type UpsertPlayerMatchParams struct {
 	PlayerSeasonID      int
 	Position            *Position
 	Status              *PlayerMatchStatus
-	AFLStatus        *AFLStatus
+	AFLStatus           *AFLStatus
 	BackupPositions     *string
 	InterchangePosition *string
+	DisplayOrder        int
 	Score               *int
 }
