@@ -229,6 +229,39 @@ SELECT cm.id, ps.id, 'goals', 'named', 'played', 'goals', 'goals', 50
 FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
 WHERE c.name = 'The Howling Cows' AND ap.name = 'Brock Thunder' AND r.name = 'Round 4';
 
+-- Round 5 — Brisbane Lions have an AFL bye; The Howling Cows players score via season average.
+-- FFL club_match insert order: R1-Rui=1, R1-Cows=2, R2-Rui=3, R2-Cows=4,
+--   R3-Rui=5, R3-Cows=6, R4-Rui=7, R4-Cows=8, R5-Rui=9, R5-Cows=10
+INSERT INTO ffl.round (name, season_id, afl_round_id)
+VALUES (
+    'Round 5',
+    (SELECT id FROM ffl.season WHERE name = 'FFL 2026'),
+    (SELECT r.id FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 5')
+);
+
+INSERT INTO ffl.match (round_id, match_style, venue, start_dt) VALUES
+    ((SELECT id FROM ffl.round WHERE name = 'Round 5'), 'versus', 'MCG', '2026-01-29 19:30:00+00');
+
+INSERT INTO ffl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, side) VALUES
+    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 5')),
+     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'Ruiboys'),
+     0, 0, 'home'),
+    ((SELECT id FROM ffl.match WHERE round_id = (SELECT id FROM ffl.round WHERE name = 'Round 5')),
+     (SELECT cs.id FROM ffl.club_season cs JOIN ffl.club c ON cs.club_id = c.id WHERE c.name = 'The Howling Cows'),
+     0, 0, 'away');
+
+-- Henry Smith: goals starter, bye — scores 38 (pre-computed from season average)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+SELECT cm.id, ps.id, 'goals', 'named', 'bye', 38
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Henry Smith' AND r.name = 'Round 5';
+
+-- Hugh McCluggage: kicks starter, bye — scores 14 (pre-computed from season average)
+INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, drv_score)
+SELECT cm.id, ps.id, 'kicks', 'named', 'bye', 14
+FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
+WHERE c.name = 'The Howling Cows' AND ap.name = 'Hugh McCluggage' AND r.name = 'Round 5';
+
 -- Link FFL player matches to AFL player matches via round bridge + shared player
 UPDATE ffl.player_match fpm
 SET afl_player_match_id = apm.id

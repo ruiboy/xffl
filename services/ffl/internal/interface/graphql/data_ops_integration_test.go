@@ -31,6 +31,7 @@ import (
 type stubPlayerLookup struct {
 	pool       *pgxpool.Pool
 	candidates []application.PlayerCandidate
+	byeInfo    map[int]application.ByePlayerInfo // keyed by AFL player_season_id; nil = no bye handling
 }
 
 func (s *stubPlayerLookup) LookupPlayers(_ context.Context, _ []int) ([]application.PlayerCandidate, error) {
@@ -56,6 +57,19 @@ func (s *stubPlayerLookup) LookupPlayerMatch(_ context.Context, _ []int) ([]appl
 
 func (s *stubPlayerLookup) LookupPlayerMatchBySeasonRound(_ context.Context, _ []int, _ int) ([]application.PlayerMatchStats, error) {
 	return nil, nil
+}
+
+func (s *stubPlayerLookup) LookupByeInfo(_ context.Context, aflPSIDs []int, _ int) ([]application.ByePlayerInfo, error) {
+	if s.byeInfo == nil {
+		return nil, nil
+	}
+	out := make([]application.ByePlayerInfo, 0, len(aflPSIDs))
+	for _, id := range aflPSIDs {
+		if info, ok := s.byeInfo[id]; ok {
+			out = append(out, info)
+		}
+	}
+	return out, nil
 }
 
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {

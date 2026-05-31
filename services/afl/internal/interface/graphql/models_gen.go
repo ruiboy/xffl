@@ -2,6 +2,11 @@
 
 package graphql
 
+type AFLBye struct {
+	ID   string   `json:"id"`
+	Club *AFLClub `json:"club"`
+}
+
 type AFLClub struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -98,6 +103,7 @@ type AFLRound struct {
 	Name    string      `json:"name"`
 	Season  *AFLSeason  `json:"season"`
 	Matches []*AFLMatch `json:"matches"`
+	Byes    []*AFLBye   `json:"byes"`
 }
 
 func (AFLRound) IsEntity() {}
@@ -122,7 +128,6 @@ type AddAFLPlayerSeasonInput struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 }
 
-// ---- Import flow ----
 type ImportAFLMatchStatsResult struct {
 	MatchID          string                `json:"matchId"`
 	HomeClubName     string                `json:"homeClubName"`
@@ -172,11 +177,11 @@ type UnmatchedAFLPlayer struct {
 type UpdateAFLPlayerMatchInput struct {
 	PlayerSeasonID string `json:"playerSeasonId"`
 	ClubMatchID    string `json:"clubMatchId"`
-	Kicks          *int    `json:"kicks,omitempty"`
-	Handballs      *int    `json:"handballs,omitempty"`
-	Marks          *int    `json:"marks,omitempty"`
-	Hitouts        *int    `json:"hitouts,omitempty"`
-	Tackles        *int    `json:"tackles,omitempty"`
-	Goals          *int    `json:"goals,omitempty"`
-	Behinds        *int    `json:"behinds,omitempty"`
+	Kicks          *int   `json:"kicks,omitempty"`
+	Handballs      *int   `json:"handballs,omitempty"`
+	Marks          *int   `json:"marks,omitempty"`
+	Hitouts        *int   `json:"hitouts,omitempty"`
+	Tackles        *int   `json:"tackles,omitempty"`
+	Goals          *int   `json:"goals,omitempty"`
+	Behinds        *int   `json:"behinds,omitempty"`
 }

@@ -234,6 +234,7 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [ ] Team pages — squad, round-by-round scores, season summary
 - [ ] Other season pages (TBD based on usage)
 - [ ] Richer stat data surfaced in existing views
+- [ ] Team Builder player analytics — season averages, rolling averages, last-N-games stats, and other aggregates surfaced at team-building time to support TM decision-making (season average is first use case, required for bye scoring)
 
 ## Phase 23: Data Management — Data Setup & Historical Import
 

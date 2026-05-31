@@ -9,6 +9,80 @@ import (
 	"context"
 )
 
+const findByeStatusBatch = `-- name: FindByeStatusBatch :many
+SELECT
+  ps.id AS player_season_id,
+  EXISTS (
+    SELECT 1 FROM afl.bye b
+    WHERE b.round_id = $1
+      AND b.club_season_id = ps.club_season_id
+      AND b.deleted_at IS NULL
+  ) AS has_bye,
+  EXISTS (
+    SELECT 1
+    FROM afl.player_match pm
+    JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+    JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+    WHERE pm.player_season_id = ps.id
+      AND pm.deleted_at IS NULL
+      AND m.round_id = (
+        SELECT r.id
+        FROM afl.match m2
+        JOIN afl.club_match cm2 ON cm2.match_id = m2.id AND cm2.deleted_at IS NULL
+        JOIN afl.round r ON r.id = m2.round_id AND r.deleted_at IS NULL
+        WHERE cm2.club_season_id = ps.club_season_id
+          AND r.id < $1
+          AND m2.deleted_at IS NULL
+          AND m2.data_status = 'final'
+          AND NOT EXISTS (
+            SELECT 1 FROM afl.bye b2
+            WHERE b2.round_id = r.id
+              AND b2.club_season_id = ps.club_season_id
+              AND b2.deleted_at IS NULL
+          )
+        ORDER BY r.id DESC
+        LIMIT 1
+      )
+  ) AS played_last
+FROM afl.player_season ps
+WHERE ps.id = ANY($2::int[])
+  AND ps.deleted_at IS NULL
+`
+
+type FindByeStatusBatchParams struct {
+	RoundID         int32
+	PlayerSeasonIds []int32
+}
+
+type FindByeStatusBatchRow struct {
+	PlayerSeasonID int32
+	HasBye         bool
+	PlayedLast     bool
+}
+
+// For each player_season_id, returns whether their club has a bye in the given
+// round, and whether they played in their club's most recent non-bye final match
+// before that round.
+func (q *Queries) FindByeStatusBatch(ctx context.Context, arg FindByeStatusBatchParams) ([]FindByeStatusBatchRow, error) {
+	rows, err := q.db.Query(ctx, findByeStatusBatch, arg.RoundID, arg.PlayerSeasonIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindByeStatusBatchRow{}
+	for rows.Next() {
+		var i FindByeStatusBatchRow
+		if err := rows.Scan(&i.PlayerSeasonID, &i.HasBye, &i.PlayedLast); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
        pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,
@@ -273,6 +347,60 @@ func (q *Queries) FindPlayerMatchesBySeasonIDsAndRoundID(ctx context.Context, ar
 			&i.Goals,
 			&i.Behinds,
 			&i.DataStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPlayerSeasonAveragesBatch = `-- name: GetPlayerSeasonAveragesBatch :many
+SELECT
+  pm.player_season_id,
+  AVG(pm.goals)::float8     AS avg_goals,
+  AVG(pm.kicks)::float8     AS avg_kicks,
+  AVG(pm.handballs)::float8 AS avg_handballs,
+  AVG(pm.marks)::float8     AS avg_marks,
+  AVG(pm.tackles)::float8   AS avg_tackles,
+  AVG(pm.hitouts)::float8   AS avg_hitouts
+FROM afl.player_match pm
+WHERE pm.player_season_id = ANY($1::int[])
+  AND pm.deleted_at IS NULL
+GROUP BY pm.player_season_id
+`
+
+type GetPlayerSeasonAveragesBatchRow struct {
+	PlayerSeasonID int32
+	AvgGoals       float64
+	AvgKicks       float64
+	AvgHandballs   float64
+	AvgMarks       float64
+	AvgTackles     float64
+	AvgHitouts     float64
+}
+
+// Returns season-to-date average stats for each player_season, across all matches played.
+func (q *Queries) GetPlayerSeasonAveragesBatch(ctx context.Context, playerSeasonIds []int32) ([]GetPlayerSeasonAveragesBatchRow, error) {
+	rows, err := q.db.Query(ctx, getPlayerSeasonAveragesBatch, playerSeasonIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPlayerSeasonAveragesBatchRow{}
+	for rows.Next() {
+		var i GetPlayerSeasonAveragesBatchRow
+		if err := rows.Scan(
+			&i.PlayerSeasonID,
+			&i.AvgGoals,
+			&i.AvgKicks,
+			&i.AvgHandballs,
+			&i.AvgMarks,
+			&i.AvgTackles,
+			&i.AvgHitouts,
 		); err != nil {
 			return nil, err
 		}

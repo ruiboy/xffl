@@ -33,7 +33,13 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	var result []domain.PlayerMatch
 	var matchID int
 
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+	// Resolve bye info before the transaction — this is a network call to the AFL service.
+	byeByFFFLPS, err := c.lookupByeInfoForTeam(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		// load the ClubMatch
 		cm, err := repos.ClubMatches.FindByID(ctx, params.ClubMatchID)
 		if err != nil {
@@ -62,6 +68,28 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 			}
 			inNewTeam[e.PlayerSeasonID] = true
 			newPlayers = append(newPlayers, entryToPlayerMatch(e, params.ClubMatchID, existingByPS))
+		}
+
+		// Apply bye status and scores. Starters on a bye get drv_afl_status = "bye" and
+		// drv_score computed from season average. Bench players on a bye get the status only
+		// (score is set at activation via DeclareSubs).
+		for i, pm := range newPlayers {
+			bi, hasBye := byeByFFFLPS[pm.PlayerSeasonID]
+			if !hasBye {
+				continue
+			}
+			if !bi.PlayedLast {
+				return fmt.Errorf("player_season %d is on a bye but did not play in their club's most recent match: ineligible to be named", pm.PlayerSeasonID)
+			}
+			status := domain.AFLStatusBye
+			newPlayers[i].AFLStatus = &status
+			if pm.Position != nil {
+				score := pm.CalculateByeScore(domain.AFLAvgStats{
+					Goals: bi.AvgGoals, Kicks: bi.AvgKicks, Handballs: bi.AvgHandballs,
+					Marks: bi.AvgMarks, Tackles: bi.AvgTackles, Hitouts: bi.AvgHitouts,
+				})
+				newPlayers[i].Score = score
+			}
 		}
 
 		// validate and submit the team
@@ -194,6 +222,12 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []doma
 		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 
+	// For any newly activated bench player whose AFL club has a bye, RecalculateScore
+	// won't find AFL stats. Compute and persist their bye score explicitly.
+	if err := c.applyByeScoresForActivated(ctx, clubMatchID); err != nil {
+		slog.WarnContext(ctx, "apply bye scores after DeclareSubs failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
+	}
+
 	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 	if err != nil {
 		return nil, err
@@ -290,6 +324,7 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 		PlayerSeasonID:      pm.PlayerSeasonID,
 		Position:            pm.Position,
 		Status:              pm.Status,
+		AFLStatus:           pm.AFLStatus,
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
 	}
@@ -298,4 +333,176 @@ func upsertParamsFromPlayerMatch(pm domain.PlayerMatch) domain.UpsertPlayerMatch
 		params.Score = &s
 	}
 	return params
+}
+
+// lookupByeInfoForTeam resolves bye status and season averages for all players in a SetTeam
+// submission. Returns a map of FFL player_season_id → ByePlayerInfo (only for players whose
+// AFL club has a bye in this round). Returns nil if the round has no AFL link.
+func (c *Commands) lookupByeInfoForTeam(ctx context.Context, params SetTeamParams) (map[int]ByePlayerInfo, error) {
+	cm, err := c.clubMatches.FindByID(ctx, params.ClubMatchID)
+	if err != nil {
+		return nil, fmt.Errorf("find club match for bye lookup: %w", err)
+	}
+	m, err := c.matches.FindByID(ctx, cm.MatchID)
+	if err != nil {
+		return nil, fmt.Errorf("find match for bye lookup: %w", err)
+	}
+	r, err := c.rounds.FindByID(ctx, m.RoundID)
+	if err != nil {
+		return nil, fmt.Errorf("find round for bye lookup: %w", err)
+	}
+	if r.AFLRoundID == 0 {
+		return nil, nil
+	}
+
+	var psIDs []int
+	for _, e := range params.Entries {
+		if e.PlayerSeasonID != 0 {
+			psIDs = append(psIDs, e.PlayerSeasonID)
+		}
+	}
+	if len(psIDs) == 0 {
+		return nil, nil
+	}
+
+	playerSeasons, err := c.playerSeasons.FindByIDs(ctx, psIDs)
+	if err != nil {
+		return nil, fmt.Errorf("find player seasons for bye lookup: %w", err)
+	}
+
+	fflToAFLPS := make(map[int]int, len(playerSeasons))
+	var aflPSIDs []int
+	for _, ps := range playerSeasons {
+		if ps.AFLPlayerSeasonID != 0 {
+			fflToAFLPS[ps.ID] = ps.AFLPlayerSeasonID
+			aflPSIDs = append(aflPSIDs, ps.AFLPlayerSeasonID)
+		}
+	}
+	if len(aflPSIDs) == 0 {
+		return nil, nil
+	}
+
+	byeSlice, err := c.playerLookup.LookupByeInfo(ctx, aflPSIDs, r.AFLRoundID)
+	if err != nil {
+		return nil, fmt.Errorf("lookup bye info from AFL service: %w", err)
+	}
+
+	byeByAFLPS := make(map[int]ByePlayerInfo, len(byeSlice))
+	for _, bi := range byeSlice {
+		byeByAFLPS[bi.PlayerSeasonID] = bi
+	}
+
+	result := make(map[int]ByePlayerInfo)
+	for fflPSID, aflPSID := range fflToAFLPS {
+		if bi, ok := byeByAFLPS[aflPSID]; ok && bi.HasBye {
+			result[fflPSID] = bi
+		}
+	}
+	return result, nil
+}
+
+// applyByeScoresForActivated sets drv_score for any bench player who was just activated
+// (subbed_in or interchanged_in) and whose AFL club has a bye. RecalculateScore won't
+// find AFL stats for these players, so we compute from their season average.
+func (c *Commands) applyByeScoresForActivated(ctx context.Context, clubMatchID int) error {
+	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+	if err != nil {
+		return err
+	}
+
+	activated := make([]domain.PlayerMatch, 0)
+	for _, pm := range pms {
+		isActivated := pm.Status != nil &&
+			(*pm.Status == domain.PlayerMatchStatusSubbedIn || *pm.Status == domain.PlayerMatchStatusInterchangedIn)
+		isBye := pm.AFLStatus != nil && *pm.AFLStatus == domain.AFLStatusBye
+		if isActivated && isBye && pm.Position != nil && pm.Score == 0 {
+			activated = append(activated, pm)
+		}
+	}
+	if len(activated) == 0 {
+		return nil
+	}
+
+	// Resolve AFL round ID.
+	cm, err := c.clubMatches.FindByID(ctx, clubMatchID)
+	if err != nil {
+		return err
+	}
+	m, err := c.matches.FindByID(ctx, cm.MatchID)
+	if err != nil {
+		return err
+	}
+	r, err := c.rounds.FindByID(ctx, m.RoundID)
+	if err != nil {
+		return err
+	}
+	if r.AFLRoundID == 0 {
+		return nil
+	}
+
+	// Collect AFL player_season_ids for activated bye bench players.
+	psIDs := make([]int, len(activated))
+	for i, pm := range activated {
+		psIDs[i] = pm.PlayerSeasonID
+	}
+	playerSeasons, err := c.playerSeasons.FindByIDs(ctx, psIDs)
+	if err != nil {
+		return err
+	}
+	fflToAFLPS := make(map[int]int, len(playerSeasons))
+	var aflPSIDs []int
+	for _, ps := range playerSeasons {
+		if ps.AFLPlayerSeasonID != 0 {
+			fflToAFLPS[ps.ID] = ps.AFLPlayerSeasonID
+			aflPSIDs = append(aflPSIDs, ps.AFLPlayerSeasonID)
+		}
+	}
+	if len(aflPSIDs) == 0 {
+		return nil
+	}
+
+	byeSlice, err := c.playerLookup.LookupByeInfo(ctx, aflPSIDs, r.AFLRoundID)
+	if err != nil {
+		return fmt.Errorf("lookup bye info for activated bench player: %w", err)
+	}
+	byeByAFLPS := make(map[int]ByePlayerInfo, len(byeSlice))
+	for _, bi := range byeSlice {
+		byeByAFLPS[bi.PlayerSeasonID] = bi
+	}
+
+	for _, pm := range activated {
+		aflPSID, ok := fflToAFLPS[pm.PlayerSeasonID]
+		if !ok {
+			continue
+		}
+		bi, ok := byeByAFLPS[aflPSID]
+		if !ok {
+			continue
+		}
+		score := pm.CalculateByeScore(domain.AFLAvgStats{
+			Goals: bi.AvgGoals, Kicks: bi.AvgKicks, Handballs: bi.AvgHandballs,
+			Marks: bi.AvgMarks, Tackles: bi.AvgTackles, Hitouts: bi.AvgHitouts,
+		})
+		s := score
+		if _, err := c.playerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
+			ClubMatchID:         pm.ClubMatchID,
+			PlayerSeasonID:      pm.PlayerSeasonID,
+			Position:            pm.Position,
+			Status:              pm.Status,
+			BackupPositions:     pm.BackupPositions,
+			InterchangePosition: pm.InterchangePosition,
+			Score:               &s,
+		}); err != nil {
+			slog.WarnContext(ctx, "upsert bye score for activated bench player failed",
+				slog.Int("player_match_id", pm.ID), slog.Any("error", err))
+		}
+	}
+
+	// Re-sum the club match total.
+	updated, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+	if err != nil {
+		return err
+	}
+	cm.PlayerMatches = updated
+	return c.clubMatches.UpdateScore(ctx, clubMatchID, cm.Score())
 }

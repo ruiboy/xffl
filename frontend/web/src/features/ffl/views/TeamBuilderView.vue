@@ -416,6 +416,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
+import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
@@ -633,7 +634,7 @@ function playerStatus(player: SquadPlayer): string | null {
 }
 
 function playerShowScore(player: SquadPlayer): boolean {
-  return player.aflStatus === 'played' || player.aflStatus === 'playing'
+  return isScoring(player.aflStatus)
 }
 
 function benchPositionScore(player: SquadPlayer, pos: string): number | null {
@@ -931,7 +932,7 @@ function setInterchange(value: string) {
 const aflMatchStarted = computed(() => {
   const pms = clubMatch.value?.playerMatches ?? []
   return pms.some((pm: { aflStatus: string | null }) =>
-    pm.aflStatus === 'playing' || pm.aflStatus === 'played' || pm.aflStatus === 'dnp'
+    pm.aflStatus === 'playing' || pm.aflStatus === 'played' || pm.aflStatus === 'dnp' || pm.aflStatus === 'bye'
   )
 })
 
@@ -1233,8 +1234,8 @@ const submitting = ref(false)
 const submitMessage = ref('')
 
 async function onSaveTeam() {
-  await submitTeam()
-  managing.value = false
+  const ok = await submitTeam()
+  if (ok) managing.value = false
 }
 
 function cancelManage() {
@@ -1242,8 +1243,8 @@ function cancelManage() {
   managing.value = false
 }
 
-async function submitTeam() {
-  if (!clubMatch.value) return
+async function submitTeam(): Promise<boolean> {
+  if (!clubMatch.value) return false
   submitting.value = true
   submitMessage.value = ''
 
@@ -1285,8 +1286,11 @@ async function submitTeam() {
     takeSnapshot()
     submitMessage.value = 'Saved'
     setTimeout(() => { submitMessage.value = '' }, 3000)
-  } catch (e) {
-    submitMessage.value = 'Failed to save team'
+    return true
+  } catch (e: unknown) {
+    const msg = (e as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]?.message
+    submitMessage.value = msg ?? 'Failed to save team'
+    return false
   } finally {
     submitting.value = false
   }

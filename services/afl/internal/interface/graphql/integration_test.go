@@ -54,6 +54,7 @@ func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock)
 		pg.NewPlayerRepository(q),
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
+		pg.NewByeRepository(q),
 	)
 
 	db := pg.NewDB(pool)
@@ -851,6 +852,7 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 		pg.NewPlayerRepository(q),
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
+		pg.NewByeRepository(q),
 	)
 
 	db := pg.NewDB(pool)
@@ -1348,6 +1350,87 @@ func TestEntity_FindAFLSeasonByID_UnknownIDErrors(t *testing.T) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// AFL byes integration tests
+// ════════════════════════════════════════════════════════════════
+
+func TestAFLRound_Byes(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	roundID := fmt.Sprintf("%d", ids.roundID)
+
+	t.Run("round with no byes returns empty list", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflRound(id: "`+roundID+`") { byes { id club { name } } }
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflRound struct {
+				Byes []struct {
+					ID   string `json:"id"`
+					Club struct{ Name string } `json:"club"`
+				} `json:"byes"`
+			} `json:"aflRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		assert.Empty(t, data.AflRound.Byes)
+	})
+
+	t.Run("round with one bye returns that club", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := pool.Exec(ctx,
+			"INSERT INTO afl.bye (round_id, club_season_id) VALUES ($1, $2)",
+			ids.roundID, ids.homeClubSeaID)
+		require.NoError(t, err)
+
+		result := execQuery(t, server, `{
+			aflRound(id: "`+roundID+`") { byes { id club { name } } }
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflRound struct {
+				Byes []struct {
+					ID   string `json:"id"`
+					Club struct{ Name string } `json:"club"`
+				} `json:"byes"`
+			} `json:"aflRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.Len(t, data.AflRound.Byes, 1)
+		assert.Equal(t, "Sky Pilots", data.AflRound.Byes[0].Club.Name)
+	})
+
+	t.Run("two clubs on bye returns both ordered by club name", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := pool.Exec(ctx,
+			"INSERT INTO afl.bye (round_id, club_season_id) VALUES ($1, $2)",
+			ids.roundID, ids.awayClubSeaID)
+		require.NoError(t, err)
+
+		result := execQuery(t, server, `{
+			aflRound(id: "`+roundID+`") { byes { club { name } } }
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data struct {
+			AflRound struct {
+				Byes []struct {
+					Club struct{ Name string } `json:"club"`
+				} `json:"byes"`
+			} `json:"aflRound"`
+		}
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.Len(t, data.AflRound.Byes, 2)
+		assert.Equal(t, "Mountain Goats", data.AflRound.Byes[0].Club.Name)
+		assert.Equal(t, "Sky Pilots", data.AflRound.Byes[1].Club.Name)
+	})
+}
+
+// ════════════════════════════════════════════════════════════════
 // RecalculateAFLLadder integration test
 // ════════════════════════════════════════════════════════════════
 
@@ -1366,6 +1449,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 		pg.NewPlayerRepository(q),
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
+		pg.NewByeRepository(q),
 	)
 
 	db := pg.NewDB(pool)

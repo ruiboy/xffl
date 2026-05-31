@@ -49,7 +49,7 @@ started (any player has `aflStatus` set).
 
 ---
 
-## Side quest — Explicit substitution/interchange records
+## Side quest — Explicit substitution/interchange records - DONE
 
 **Problem**: The current model infers sub/interchange pairings at query time from `backup_positions`
 and `interchange_position` — the same heuristic logic is duplicated in `ClubMatch.Score()`,
@@ -74,9 +74,13 @@ DNP players with no TM declaration score zero.
 ### Scoring — no modes, no heuristics
 
 ```
-Score = sum(pm.score) where pm.status IN ('named', 'subbed_in', 'interchanged_in')
-        AND pm.backupPositions IS NULL   -- excludes named bench players
+Score = sum(pm.score) where pm.position IS NOT NULL
+        AND pm.status IN ('named', 'subbed_in', 'interchanged_in')
 ```
+
+Inactive bench players always have `position = NULL`; activated bench players inherit the
+starter's position (sub) or their declared interchange position (interchange). These two
+conditions are orthogonal — no `backupPositions` check needed.
 
 ### `DeclareSubs` input (explicit pairings from TM via frontend)
 
@@ -125,7 +129,7 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 *Application*
 - [x] Update `DeclareSubs` application service: reset prior statuses, call domain method, persist
 - [x] Update `RecalculateClubMatchScore`: no changes needed (Score() is now self-contained)
-- [x] Integration-test `DeclareSubs`: verify player_match statuses set correctly; re-declare resets
+- [x] Integration-test `DeclareSubs`: verify player_match statuses set correctly; re-declare resets; bench player inherits position and scores correctly after RecalculateScore
 
 *GraphQL*
 - [x] Update `declareSubs` mutation input to `FFLSubPairing` shape
@@ -139,6 +143,61 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 - [x] `SquadTable`: replace `coveringMap` / `coveredStarterMap` heuristics with direct `status` reads
 - [x] Update `initSubsState` to seed from `subbed_out` / `interchanged_out` statuses
 - [x] Update e2e tests: `declareSubs` mutation shape + any assertions on player status values (none found)
+
+---
+
+## Side quest — AFL Byes
+
+**Goal:** Support AFL bye rounds in both the AFL and FFL contexts — clubs on a bye have no match, but their eligible FFL players can still score via season average.
+
+### Agreed design
+
+**AFL context**
+
+- A new **Bye** entity (`afl.bye`) records a club's absence from a round. It is a first-class entity, not a variant of Match — no `kind` column on `afl.match` is needed.
+- Bye clubs have no `ClubMatch` or `PlayerMatch` records for that round. No AFL data is imported for bye rounds.
+
+**FFL context — AFL Status**
+
+- `drv_afl_status = "bye"` is added as a new AFL Status value on `ffl.player_match`. It is derived from AFL data (the club has a bye this round); never set by TM.
+- TM status remains clean — the TM still sets the player as `named`. AFL Status = `"bye"` changes the *scoring input*, not the *gating condition* (position + TM status still determines whether a player contributes).
+
+**Eligibility**
+
+- A bye player may only be named if they played in their club's most recent non-bye AFL match.
+- Validated at team submission; an ineligible player cannot be named.
+- No eligibility flag needs to be stored — it is enforced at submission and queryable from AFL history.
+
+**Scoring**
+
+- Score is the player's season-to-date average for their position, with each AFL stat **floored per stat** before the multiplier is applied.
+  - Non-star: `floor(avg_stat) × multiplier`
+  - Star: `floor(avg_goals)×5 + floor(avg_kicks)×1 + floor(avg_handballs)×1 + floor(avg_marks)×2 + floor(avg_tackles)×4`
+- For starters: `drv_score` is set at team submission (same field, sourced from average instead of match stats).
+- For bench players: `drv_score` is set at sub declaration time, once the activated position is known. No new DB column needed.
+
+### Tasks
+
+*AFL domain*
+- [x] Add `Bye` entity and repository (`FindByRoundID`, `FindByRoundAndClub`, `Upsert`)
+- [x] Add `afl.bye` table to init script (no migration needed)
+- [x] Seed `afl.bye` rows for all rounds — bye clubs are already noted in comments on each round block in `dev/postgres/seed/01_afl_seed.sql`; derive from clubs absent from that round's matches
+
+*FFL domain*
+- [x] Add `bye` to `AFLStatus` enum
+- [x] No new DB column needed for bye scores: starters have `drv_score` set at submission (from season average); bench players have `drv_score` set at sub declaration time (compute from AFL history at the position they activate into)
+- [x] Add `CalculateByeScore(position, avgStats)` pure domain function — unit tested
+- [x] Update team submission validation: reject naming a bye player who didn't play last game
+- [x] Update score calculation: when `drv_afl_status = "bye"`, `drv_score` is already set at submission (starter) or at sub declaration (bench) — no separate lookup needed
+
+*Application*
+- [x] On team submission for a bye round: for each bye-club starter, compute season-average stats, call `CalculateByeScore`, write to `drv_score`, set `drv_afl_status = "bye"`
+- [x] On `DeclareSubs` for a bye round: for each activated bench player whose club has a bye, compute season-average stats at their assigned position, call `CalculateByeScore`, write to `drv_score`
+- [x] Integration-test: bye player named + eligible → scores via average; ineligible → submission rejected; bench bye player activated → correct position score used
+
+*GraphQL / frontend*
+- [x] Add `bye` to `FFLAFLPlayerMatchStatus` enum in `query.graphqls` and regenerate — field, resolver, and converter are already wired
+- [x] Team Builder: show bye indicator and season-average score for bye players
 
 ---
 

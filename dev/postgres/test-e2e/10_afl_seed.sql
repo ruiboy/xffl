@@ -4,6 +4,7 @@ BEGIN;
 -- Clear existing data and reset identity sequences so re-runs produce stable IDs.
 -- CASCADE handles referential dependencies.
 TRUNCATE TABLE
+    afl.bye,
     afl.player_match,
     afl.player_season,
     afl.club_match,
@@ -219,5 +220,39 @@ INSERT INTO afl.round (season_id, name)
 SELECT s.id, 'Round 4'
 FROM afl.season s JOIN afl.league l ON s.league_id = l.id
 WHERE l.name = 'AFL' AND s.name = 'AFL 2026';
+
+-- Round 5 — Brisbane Lions have a bye; used by FFL bye badge e2e test
+INSERT INTO afl.round (season_id, name)
+SELECT s.id, 'Round 5'
+FROM afl.season s JOIN afl.league l ON s.league_id = l.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026';
+
+-- Adelaide play a match in Round 5 (no Brisbane club_match — they have a bye)
+INSERT INTO afl.match (round_id, venue, start_dt, data_status)
+SELECT r.id, 'Adelaide Oval', '2026-01-29 19:30:00+00', 'final'
+FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 5';
+
+INSERT INTO afl.club_match (match_id, club_season_id, drv_score, drv_premiership_points, rushed_behinds, side)
+SELECT m.id, cs.id, 80, 4, 0, 'home'
+FROM afl.match m JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND r.name = 'Round 5' AND c.name = 'Adelaide Crows'
+ON CONFLICT (club_season_id, match_id) DO NOTHING;
+
+-- Brisbane Lions have a bye in Round 5
+INSERT INTO afl.bye (round_id, club_season_id)
+SELECT r.id, cs.id
+FROM afl.round r JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+JOIN afl.club_season cs ON cs.season_id = s.id JOIN afl.club c ON cs.club_id = c.id
+WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name = 'Round 5' AND c.name = 'Brisbane Lions'
+ON CONFLICT (round_id, club_season_id) DO NOTHING;
+
+-- Adelaide Round 5 player matches (for season-average calculation)
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, 14, 8, 3, 0, 2, 1, 1
+FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club_season cs ON ps.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id JOIN afl.club_match cm ON cm.club_season_id = cs.id JOIN afl.match m ON cm.match_id = m.id JOIN afl.round r ON m.round_id = r.id JOIN afl.season s ON r.season_id = s.id JOIN afl.league l ON s.league_id = l.id
+WHERE p.name = 'Jordan Dawson' AND r.name = 'Round 5' AND l.name = 'AFL'
+ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
 COMMIT;

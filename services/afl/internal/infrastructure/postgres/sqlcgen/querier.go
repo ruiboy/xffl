@@ -11,6 +11,13 @@ import (
 type Querier interface {
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
+	FindByeByRoundAndClub(ctx context.Context, arg FindByeByRoundAndClubParams) (FindByeByRoundAndClubRow, error)
+	// For each player_season_id, returns whether their club has a bye in the given
+	// round, and whether they played in their club's most recent non-bye final match
+	// before that round.
+	FindByeStatusBatch(ctx context.Context, arg FindByeStatusBatchParams) ([]FindByeStatusBatchRow, error)
+	FindByesByRoundID(ctx context.Context, roundID int32) ([]FindByesByRoundIDRow, error)
+	FindByesByRoundIDWithClub(ctx context.Context, roundID int32) ([]FindByesByRoundIDWithClubRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)
@@ -41,6 +48,8 @@ type Querier interface {
 	FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	// Returns season-to-date average stats for each player_season, across all matches played.
+	GetPlayerSeasonAveragesBatch(ctx context.Context, playerSeasonIds []int32) ([]GetPlayerSeasonAveragesBatchRow, error)
 	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
 	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
@@ -49,6 +58,7 @@ type Querier interface {
 	UpdateClubSeason(ctx context.Context, arg UpdateClubSeasonParams) error
 	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpdateMatchResult(ctx context.Context, arg UpdateMatchResultParams) error
+	UpsertBye(ctx context.Context, arg UpsertByeParams) (UpsertByeRow, error)
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
 	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)

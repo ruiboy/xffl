@@ -15,15 +15,7 @@
 
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
-          <router-link
-            v-if="isFfl || isAfl"
-            :to="{ name: 'ffl-data-ops' }"
-            class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-            title="Data Ops"
-          >
-            <IconDataOps class="w-4 h-4" />
-            Data Ops
-          </router-link>
+
           <template v-if="isFfl">
             <router-link
               v-if="selectedClubId && selectedClubSeasonId"
@@ -90,7 +82,7 @@ import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
+
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()

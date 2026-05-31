@@ -343,4 +343,43 @@ BEGIN
     RAISE NOTICE 'club_matches inserted: %', v_cm_count;
 END $$;
 
+-- Byes (derived from clubs absent in each round's match list)
+INSERT INTO afl.bye (round_id, club_season_id)
+SELECT r.id, cs.id
+FROM (VALUES
+    ('Round 2',  'Brisbane Lions'),
+    ('Round 2',  'Carlton Blues'),
+    ('Round 2',  'Collingwood Magpies'),
+    ('Round 2',  'Geelong Cats'),
+    ('Round 3',  'Gold Coast Suns'),
+    ('Round 3',  'Hawthorn Hawks'),
+    ('Round 3',  'Sydney Swans'),
+    ('Round 3',  'Western Bulldogs'),
+    ('Round 4',  'Greater Western Sydney Giants'),
+    ('Round 4',  'St Kilda Saints'),
+    ('Round 12', 'Adelaide Crows'),
+    ('Round 12', 'Gold Coast Suns'),
+    ('Round 12', 'North Melbourne Kangaroos'),
+    ('Round 12', 'Port Adelaide Power'),
+    ('Round 13', 'Greater Western Sydney Giants'),
+    ('Round 13', 'Richmond Tigers'),
+    ('Round 14', 'Carlton Blues'),
+    ('Round 14', 'Collingwood Magpies'),
+    ('Round 14', 'Fremantle Dockers'),
+    ('Round 14', 'Hawthorn Hawks'),
+    ('Round 15', 'Brisbane Lions'),
+    ('Round 15', 'Essendon Bombers'),
+    ('Round 15', 'Sydney Swans'),
+    ('Round 15', 'West Coast Eagles'),
+    ('Round 16', 'Geelong Cats'),
+    ('Round 16', 'Melbourne Demons'),
+    ('Round 16', 'St Kilda Saints'),
+    ('Round 16', 'Western Bulldogs')
+) AS byes(round_name, club_name)
+JOIN afl.season s ON s.name = 'AFL 2026' AND s.deleted_at IS NULL
+JOIN afl.round r ON r.name = byes.round_name AND r.season_id = s.id AND r.deleted_at IS NULL
+JOIN afl.club c ON c.name = byes.club_name AND c.deleted_at IS NULL
+JOIN afl.club_season cs ON cs.club_id = c.id AND cs.season_id = s.id AND cs.deleted_at IS NULL
+ON CONFLICT (round_id, club_season_id) DO NOTHING;
+
 COMMIT;

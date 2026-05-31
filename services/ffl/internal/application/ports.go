@@ -29,6 +29,19 @@ type PlayerMatchStats struct {
 	PlayerSeasonID int // populated by LookupPlayerMatchBySeasonRound; 0 when looked up by ID
 }
 
+// ByePlayerInfo holds bye status, eligibility, and season averages for a player.
+type ByePlayerInfo struct {
+	PlayerSeasonID int
+	HasBye         bool
+	PlayedLast     bool // true if player played in their club's most recent non-bye final match
+	AvgGoals       float64
+	AvgKicks       float64
+	AvgHandballs   float64
+	AvgMarks       float64
+	AvgTackles     float64
+	AvgHitouts     float64
+}
+
 // PlayerLookup fetches entities from the AFL service by ID, to return information required cross-service.
 type PlayerLookup interface {
 	// LookupPlayers fetches an AFL Player by ID.
@@ -40,6 +53,9 @@ type PlayerLookup interface {
 	// LookupPlayerMatchBySeasonRound fetches AFL match stats for a set of AFL player_season IDs
 	// within a specific AFL round. PlayerSeasonID is populated in each returned stat.
 	LookupPlayerMatchBySeasonRound(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]PlayerMatchStats, error)
+	// LookupByeInfo returns bye status, eligibility, and season averages for a batch of
+	// AFL player_season_ids for a given AFL round.
+	LookupByeInfo(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]ByePlayerInfo, error)
 }
 
 // PlayerResolver fuzzy-matches a parsed name (with optional club hint) against

@@ -38,6 +38,64 @@ func int32PtrToIntPtr(p *int32) *int {
 	return &v
 }
 
+// --- Bye ---
+
+type ByeRepository struct{ q *sqlcgen.Queries }
+
+func NewByeRepository(q *sqlcgen.Queries) *ByeRepository {
+	return &ByeRepository{q: q}
+}
+
+func (r *ByeRepository) FindByRoundID(ctx context.Context, roundID int) ([]domain.Bye, error) {
+	rows, err := r.q.FindByesByRoundID(ctx, int32(roundID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Bye, len(rows))
+	for i, row := range rows {
+		out[i] = domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}
+	}
+	return out, nil
+}
+
+func (r *ByeRepository) FindByRoundIDWithClub(ctx context.Context, roundID int) ([]domain.ByeWithClub, error) {
+	rows, err := r.q.FindByesByRoundIDWithClub(ctx, int32(roundID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ByeWithClub, len(rows))
+	for i, row := range rows {
+		out[i] = domain.ByeWithClub{
+			Bye:      domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)},
+			ClubID:   int(row.ClubID),
+			ClubName: row.ClubName,
+		}
+	}
+	return out, nil
+}
+
+func (r *ByeRepository) FindByRoundAndClub(ctx context.Context, roundID int, clubSeasonID int) (domain.Bye, error) {
+	row, err := r.q.FindByeByRoundAndClub(ctx, sqlcgen.FindByeByRoundAndClubParams{
+		RoundID:      int32(roundID),
+		ClubSeasonID: int32(clubSeasonID),
+	})
+	if err != nil {
+		return domain.Bye{}, err
+	}
+	return domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}, nil
+}
+
+func (r *ByeRepository) Upsert(ctx context.Context, roundID int, clubSeasonID int) (domain.Bye, error) {
+	row, err := r.q.UpsertBye(ctx, sqlcgen.UpsertByeParams{
+		RoundID:      int32(roundID),
+		ClubSeasonID: int32(clubSeasonID),
+	})
+	if err != nil {
+		return domain.Bye{}, err
+	}
+	return domain.Bye{ID: int(row.ID), RoundID: int(row.RoundID), ClubSeasonID: int(row.ClubSeasonID)}, nil
+}
+
 // --- Club ---
 
 type ClubRepository struct{ q *sqlcgen.Queries }
@@ -670,6 +728,53 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 			Tackles:         derefOr(row.Tackles),
 			Goals:           derefOr(row.Goals),
 			Behinds:         derefOr(row.Behinds),
+		}
+	}
+	return out, nil
+}
+
+func (r *PlayerMatchRepository) FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.ByeStatus, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindByeStatusBatch(ctx, sqlcgen.FindByeStatusBatchParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ByeStatus, len(rows))
+	for i, row := range rows {
+		out[i] = domain.ByeStatus{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			HasBye:         row.HasBye,
+			PlayedLast:     row.PlayedLast,
+		}
+	}
+	return out, nil
+}
+
+func (r *PlayerMatchRepository) GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int) ([]domain.PlayerSeasonAverages, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.GetPlayerSeasonAveragesBatch(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonAverages, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonAverages{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			Goals:          row.AvgGoals,
+			Kicks:          row.AvgKicks,
+			Handballs:      row.AvgHandballs,
+			Marks:          row.AvgMarks,
+			Tackles:        row.AvgTackles,
+			Hitouts:        row.AvgHitouts,
 		}
 	}
 	return out, nil

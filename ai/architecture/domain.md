@@ -1,10 +1,12 @@
 # Ubiquitous Language
 
-Shared vocabulary for the xffl codebase. Every entity, value, and rule listed here should be used consistently in code, tests, docs, and conversation.
+Shared vocabulary for the xffl codebase. Every entity, value, and rule listed here should be used consistently in code,
+tests, docs, and conversation.
 
 ## Shared Entities
 
-These entities appear in both AFL and FFL bounded contexts. They share the same names but belong to separate schemas (`afl.*`, `ffl.*`) — no cross-service imports.
+These entities appear in both AFL and FFL bounded contexts. They share the same names but belong to separate schemas
+(`afl.*`, `ffl.*`) — no cross-service imports.
 
 | Term | Meaning |
 |------|---------|
@@ -16,12 +18,13 @@ These entities appear in both AFL and FFL bounded contexts. They share the same 
 | **ClubSeason** | A club's record for one season (played, won, lost, drawn, for, against). Used to build the ladder. |
 | **ClubMatch** | One side of a match — a club's performance in that game. |
 | **Player** | An individual athlete. Exists independently — club association is through PlayerSeason. |
-| **PlayerSeason** | A player's registration with a club for a season (via ClubSeason). This is where the player–club relationship lives. Includes `from_round_id` / `to_round_id` to track when a player joined or left a club during the season (null = start/end of season). |
+| **PlayerSeason** | A player's registration with a club for a season, or part thereof (via ClubSeason). |
 | **PlayerMatch** | A player's involvement in a single match. Fields differ by context (see below). |
 
 ### Derived fields
 
-Columns prefixed `drv_` in the database are **derived** (computed from other data). Examples: `drv_score`, `drv_played`, `drv_premiership_points`. Domain entities drop the prefix — `ClubSeason.Won` maps to `drv_won`.
+Columns prefixed `drv_` in the database are **derived** (computed from other data). Examples: `drv_score`,
+`drv_premiership_points`. Domain entities drop the prefix.
 
 ---
 
@@ -86,9 +89,15 @@ Inferred from whether the player has match stats and whether the match is final.
 
 Pre-match squad naming (`named`) is not tracked — see Parked Design in `plans/roadmap.md`.
 
+### Bye
+
+A club's absence from a round due to having no scheduled match. A **Bye** is a separate concept from a Match — it has
+no score, no result, and no player statistics. Clubs on a bye have no ClubMatch or PlayerMatch records for that round.
+
 ### Player tenure
 
-`PlayerSeason` includes `from_round_id` and `to_round_id` to track when a player joined or left a club during the season (trades, delistings). Null means start/end of season respectively.
+`PlayerSeason` includes `from_round_id` and `to_round_id` to track when a player joined or left a club during the season
+(trades, delistings). Null means start/end of season respectively.
 
 ### Events published
 
@@ -102,7 +111,8 @@ Fantasy Football League — a fantasy competition built on AFL statistics.
 
 ### Positions (fantasy)
 
-A **position** is a scoring slot in a fantasy team. It determines *which* AFL stat earns fantasy points and at what rate. Positions are **not** field positions (forward, midfielder, etc.).
+A **position** is a scoring slot in a fantasy team. It determines *which* AFL stat earns fantasy points and at what rate.
+Positions are **not** field positions (forward, midfielder, etc.).
 
 | Position | Scores from | Multiplier | Starter slots |
 |----------|-------------|------------|---------------|
@@ -150,7 +160,9 @@ Hard rules enforced by `domain.ValidateTeam()`:
 
 ### FFL Player and AFL linkage
 
-Every FFL player links to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and `PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys (no cross-schema joins).
+Every FFL player links to an AFL player. `Player.afl_player_id`, `PlayerSeason.afl_player_season_id`, and
+`PlayerMatch.afl_player_match_id` store the corresponding AFL row IDs. These are plain integers, not foreign keys
+(no cross-schema joins).
 
 ### ClubMatch data status
 
@@ -168,14 +180,14 @@ Combining AFL Match data status and FFL ClubMatch data status determines what ca
 
 | AFL status | FFL status | Score tier |
 |-----------|-----------|-----------|
-| `partial` or `final` | `submitted` or `final` | **Provisional** — may change as stats arrive or manager resolves subs (which can alter team structure, including the interchange slot) |
+| `partial` or `final` | `submitted` or `final` | **Provisional** — may change as stats arrive or manager resolves subs |
 | `final` | `final` | **Final** — locked; updates the official ladder |
 
 ### PlayerMatch status
 
 Two separate status concepts apply to an FFL PlayerMatch:
 
-**Status** — the Team Manager's (TM) choice for this player's role in the FFL team. Unrelated to AFL status.
+**FFL Status** — the Team Manager's (TM) choice for this player's role in the FFL team. Unrelated to AFL status.
 
 | Value | Who | Scores? |
 |-------|-----|---------|
@@ -187,11 +199,8 @@ Two separate status concepts apply to an FFL PlayerMatch:
 
 TM declarations are always explicit — there is no automatic substitution heuristic. A DNP starter with no TM declaration scores zero.
 
-**Scoring rule:** a player contributes to the club match total only when they have an active scoring position assigned and a status that
-indicates they are participating. Position determines *how* a score is calculated (which multiplier applies); status determines *whether*
-that score is included. These two conditions are orthogonal.
-
-**AFL Status** — whether this AFL player participated in their AFL match this round. Separate from the TM's team position decisions.
+**AFL Status** — whether this AFL player participated in their AFL match this round. Derived from AFL data; never set by
+TM decisions. Pre-match `named` status is not tracked — see Parked Design in `plans/roadmap.md`.
 
 | Value | Meaning |
 |-------|---------|
@@ -199,8 +208,20 @@ that score is included. These two conditions are orthogonal.
 | `playing` | Player has AFL stats; match not yet final. |
 | `played` | Player has AFL stats; match is final. |
 | `dnp` | Did not play — match is final but player has no stats. |
+| `bye` | Player's AFL club has a bye this round. |
 
-Derived from AFL data; never set by TM decisions. Pre-match `named` status is not tracked — see Parked Design in `plans/roadmap.md`.
+### Player scoring
+
+A player contributes to the club match total when they have a scoring position and a participating FFL status (`named`,
+`subbed_in`, or `interchanged_in`). Position determines *how* (which multiplier); FFL status determines *whether*;
+AFL Status determines the *input*: for `playing`/`played`, actual match stats; for `bye`, the season-to-date average.
+
+**Bye eligibility:** a player on a bye may only be named if they played in their club's most recent non-bye match.
+Validated at team submission.
+
+**Bye score calculation:** each AFL stat is averaged across all matches played this season and floored per stat before
+multiplying. Scores are snapshotted at submission — for bench players, one score per backup position; activation selects
+the applicable one.
 
 ### Substitution and interchange
 
