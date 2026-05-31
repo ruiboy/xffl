@@ -38,6 +38,9 @@
           :readonly="!managing"
           @update="handleUpdate"
         />
+        <p v-if="side.clubMatch" class="text-sm text-text-muted mt-2">
+          Rushed behinds: {{ side.clubMatch.rushedBehinds ?? 0 }}
+        </p>
       </div>
 
       <div v-if="matchData" class="mt-8">

@@ -105,6 +105,12 @@ export const MARK_FFL_TEAM_FINAL = gql`
   }
 `
 
+export const MARK_FFL_TEAM_SUBMITTED = gql`
+  mutation MarkFFLTeamSubmitted($input: MarkFFLTeamFinalInput!) {
+    markFFLTeamSubmitted(input: $input)
+  }
+`
+
 export const RECALCULATE_AFL_LADDER = gql`
   mutation RecalculateAFLLadder($seasonId: ID!) {
     recalculateAFLLadder(seasonId: $seasonId)

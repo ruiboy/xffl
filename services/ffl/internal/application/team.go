@@ -148,7 +148,7 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 	}
 
 	// Recalculate scores now that the team is persisted and AFL stats may already be available.
-	if err := c.RecalculateScore(ctx, params.ClubMatchID); err != nil {
+	if _, err := c.RecalculateScore(ctx, params.ClubMatchID); err != nil {
 		slog.WarnContext(ctx, "recalculate club match score failed after SetTeam", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 	}
 
@@ -236,7 +236,7 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []doma
 		return nil, err
 	}
 
-	if err := c.RecalculateScore(ctx, clubMatchID); err != nil {
+	if _, err := c.RecalculateScore(ctx, clubMatchID); err != nil {
 		slog.WarnContext(ctx, "recalculate score failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 

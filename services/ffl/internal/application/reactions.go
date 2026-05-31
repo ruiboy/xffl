@@ -123,7 +123,7 @@ func (c *Commands) ProcessAFLMatchUpdated(ctx context.Context, payload events.Af
 				slog.WarnContext(ctx, "apply AFL status map failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 			}
 
-			if err := c.RecalculateScore(ctx, cm.ID); err != nil {
+			if _, err := c.RecalculateScore(ctx, cm.ID); err != nil {
 				slog.WarnContext(ctx, "recalculate score failed", slog.Int("club_match_id", cm.ID), slog.Any("error", err))
 			}
 
@@ -188,7 +188,7 @@ func (c *Commands) applyAFLStatusMap(ctx context.Context, clubMatchID int, statu
 // ProcessFflClubMatchUpdated reacts to FFL.ClubMatchUpdated: recalculates the club_match score
 // and emits FFL.ClubMatchScoreFinalized if both axes are final.
 func (c *Commands) ProcessFflClubMatchUpdated(ctx context.Context, clubMatchID, matchID int, dataStatus domain.ClubMatchDataStatus) error {
-	if err := c.RecalculateScore(ctx, clubMatchID); err != nil {
+	if _, err := c.RecalculateScore(ctx, clubMatchID); err != nil {
 		slog.WarnContext(ctx, "recalculate score failed", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 	}
 

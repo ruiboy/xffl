@@ -189,6 +189,35 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 	return c.commands.SetTeam(ctx, sp)
 }
 
+// MarkTeamSubmitted reverts the club_match data_status to 'submitted' and publishes FFL.ClubMatchUpdated(submitted).
+func (c *DataOpsCommands) MarkTeamSubmitted(ctx context.Context, params MarkTeamFinalParams) error {
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataSubmitted)
+	})
+	if err != nil {
+		return err
+	}
+
+	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+	}
+
+	b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   params.ClubMatchID,
+		MatchID:       params.MatchID,
+		RoundID:       params.RoundID,
+		DataStatus:    string(domain.ClubMatchDataSubmitted),
+		PlayerMatches: buildPlayerMatchMap(pms),
+	})
+	if err == nil {
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated(submitted) failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		}
+	}
+	return nil
+}
+
 // MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).
 func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFinalParams) error {
 	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {

@@ -178,6 +178,7 @@ type ComplexityRoot struct {
 		ConfirmFFLTeamSubmission     func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
 		DeclareFFLSubstitutions      func(childComplexity int, input DeclareFFLSubstitutionsInput) int
 		MarkFFLTeamFinal             func(childComplexity int, input MarkFFLTeamFinalInput) int
+		MarkFFLTeamSubmitted         func(childComplexity int, input MarkFFLTeamFinalInput) int
 		ParseFFLTeamSubmission       func(childComplexity int, input ParseFFLTeamSubmissionInput) int
 		RecalculateFFLClubMatchScore func(childComplexity int, clubMatchID string) int
 		RecalculateFFLLadder         func(childComplexity int, seasonID string) int
@@ -286,8 +287,9 @@ type MutationResolver interface {
 	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
 	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
 	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
+	MarkFFLTeamSubmitted(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
 	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
-	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (bool, error)
+	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (int, error)
 	DeclareFFLSubstitutions(ctx context.Context, input DeclareFFLSubstitutionsInput) ([]*FFLPlayerMatch, error)
 	ReorderFFLPlayerMatch(ctx context.Context, id string, direction FFLReorderDirection) ([]*FFLPlayerMatch, error)
 }
@@ -901,6 +903,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.MarkFFLTeamFinal(childComplexity, args["input"].(MarkFFLTeamFinalInput)), true
+	case "Mutation.markFFLTeamSubmitted":
+		if e.ComplexityRoot.Mutation.MarkFFLTeamSubmitted == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markFFLTeamSubmitted_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.MarkFFLTeamSubmitted(childComplexity, args["input"].(MarkFFLTeamFinalInput)), true
 	case "Mutation.parseFFLTeamSubmission":
 		if e.ComplexityRoot.Mutation.ParseFFLTeamSubmission == nil {
 			break
@@ -1352,11 +1365,14 @@ var sources = []*ast.Source{
   "Lock a FFL club_match as final — triggers the FFL scoring chain."
   markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
 
+  "Revert a FFL club_match from final back to submitted, allowing further edits."
+  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean!
+
   "Rebuild FFL ladder standings for the given season from all final matches."
   recalculateFFLLadder(seasonId: ID!): Boolean!
 
-  "Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total."
-  recalculateFFLClubMatchScore(clubMatchId: ID!): Boolean!
+  "Re-apply AFL stats to all linked player_matches for a club_match and re-sum the total. Returns the new club match score."
+  recalculateFFLClubMatchScore(clubMatchId: ID!): Int!
 
   "Record Team Manager substitution and interchange decisions for a club match."
   declareFFLSubstitutions(input: DeclareFFLSubstitutionsInput!): [FFLPlayerMatch!]!
@@ -1831,6 +1847,17 @@ func (ec *executionContext) field_Mutation_declareFFLSubstitutions_args(ctx cont
 }
 
 func (ec *executionContext) field_Mutation_markFFLTeamFinal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMarkFFLTeamFinalInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐMarkFFLTeamFinalInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_markFFLTeamSubmitted_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMarkFFLTeamFinalInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐMarkFFLTeamFinalInput)
@@ -5288,6 +5315,47 @@ func (ec *executionContext) fieldContext_Mutation_markFFLTeamFinal(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markFFLTeamSubmitted,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MarkFFLTeamSubmitted(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markFFLTeamSubmitted_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_recalculateFFLLadder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5340,7 +5408,7 @@ func (ec *executionContext) _Mutation_recalculateFFLClubMatchScore(ctx context.C
 			return ec.Resolvers.Mutation().RecalculateFFLClubMatchScore(ctx, fc.Args["clubMatchId"].(string))
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalNInt2int,
 		true,
 		true,
 	)
@@ -5353,7 +5421,7 @@ func (ec *executionContext) fieldContext_Mutation_recalculateFFLClubMatchScore(c
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	defer func() {
@@ -10486,6 +10554,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "markFFLTeamFinal":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markFFLTeamFinal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markFFLTeamSubmitted":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markFFLTeamSubmitted(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
