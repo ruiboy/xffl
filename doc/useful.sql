@@ -13,6 +13,7 @@ order by fc.name, ap.name;
 
 -- ffl team
 with afl_data as (
+    -- Players with an AFL match in this round
     select
         aps.id as aps_id,
         ap.name as afl_player_name,
@@ -44,6 +45,24 @@ with afl_data as (
              left join afl.player_match apm
                        on apm.club_match_id = acm.id
                            and apm.player_season_id = aps.id
+
+    union all
+
+    -- Players whose AFL club has a bye in this round (no club_match exists)
+    select
+        aps.id as aps_id,
+        ap.name as afl_player_name,
+        ac.name as afl_club_name,
+        ab.round_id as afl_round_id,
+        null as am_data_status,
+        null as apm_id,
+        false as apm_exists,
+        'bye' as apm_status_inferred
+    from afl.player_season aps
+             join afl.player ap on ap.id = aps.player_id
+             join afl.club_season acs on acs.id = aps.club_season_id
+             join afl.club ac on ac.id = acs.club_id
+             join afl.bye ab on ab.club_season_id = acs.id
 )
 select
     fr.name as ffl_round,
@@ -51,6 +70,9 @@ select
     ad.afl_player_name as afl_player,
     ad.afl_club_name as afl_club,
     fpm.position as ffl_position,
+    fpm.display_order,
+    fpm.backup_positions,
+    fpm.interchange_position,
     ad.am_data_status,
     ad.apm_exists,
     ad.apm_status_inferred,
@@ -66,9 +88,10 @@ from ffl.round fr
          join ffl.player_match fpm on fpm.club_match_id = fcm.id
          join ffl.player_season fps on fps.id = fpm.player_season_id
          left join afl_data ad on ad.aps_id = fps.afl_player_season_id and ad.afl_round_id = fr.afl_round_id
-where fr.name = 'Round 10'
+where fr.name = 'Round 12'
   and fc.name = 'Ruiboys'
-order by fc.name, fpm.position, ad.afl_player_name;
+order by fc.name, fpm.position, fpm.display_order, ad.afl_player_name;
+
 
 -- reset player match status
 BEGIN;
