@@ -145,6 +145,30 @@ Both services use these in `repository.go`:
 - **Components**: Vue 3 `<script setup>`, TypeScript, feature-folder structure (`features/{afl,ffl}/{api,components,views}`)
 - **Numbers**: `.toFixed(1)` for averages, `tabular-nums` class for alignment
 
+## GraphQL error codes
+
+GraphQL has no spec-standard for typed errors. We use **schema comments** to document expected error extensions on mutations — not union result types (too much boilerplate for every mutation).
+
+When a mutation can fail with a structured error:
+1. Define a sentinel error type in the **application layer** (not domain): `type ByeIneligibleError struct { PlayerSeasonID int }`
+2. In the **resolver**, use `errors.As` to detect it and return a `*gqlerror.Error` with `Extensions`:
+   ```go
+   return nil, &gqlerror.Error{
+       Message: "A named player is ineligible due to bye rules",
+       Extensions: map[string]any{"code": "BYE_INELIGIBLE", "playerSeasonId": strconv.Itoa(e.PlayerSeasonID)},
+   }
+   ```
+3. Document the codes in the **schema comment** on the mutation:
+   ```graphql
+   """
+   Set the complete team selection for a club match.
+   Errors:
+     BYE_INELIGIBLE — extensions.playerSeasonId identifies the ineligible player.
+   """
+   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
+   ```
+4. The **frontend** resolves names/labels from its own state — the backend only emits IDs in extensions, never does extra lookups to format the message.
+
 ## Recipe: Add an integration (external data source)
 
 See `ai/architecture/integrations.md` for the production adapter pattern (ACL, outbound ports, secondary adapters, cache policy).
