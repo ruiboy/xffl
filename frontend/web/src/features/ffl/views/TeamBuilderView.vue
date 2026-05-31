@@ -416,6 +416,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { positionFormula } from '../utils/position'
+import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
@@ -633,7 +634,7 @@ function playerStatus(player: SquadPlayer): string | null {
 }
 
 function playerShowScore(player: SquadPlayer): boolean {
-  return player.aflStatus === 'played' || player.aflStatus === 'playing' || player.aflStatus === 'bye'
+  return isScoring(player.aflStatus)
 }
 
 function benchPositionScore(player: SquadPlayer, pos: string): number | null {

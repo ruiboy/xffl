@@ -33,8 +33,12 @@
             </td>
             <td class="py-2 px-2"></td>
             <td class="py-2 px-2"><StatusBadge :status="pmStatus(pm)" /></td>
-            <td class="py-2 px-2 text-right tabular-nums font-semibold">
+            <td class="relative py-2 px-2 text-right tabular-nums font-semibold group/score">
               {{ coveringMap.has(pm.id) ? (coveringScoreForStarter(pm) ?? '') : (pmShowScore(pm) ? pm.score : '') }}
+              <span
+                v-if="starterFormula(pm)"
+                class="pointer-events-none absolute bottom-full right-0 mb-1 hidden group-hover/score:block whitespace-nowrap rounded border border-border bg-surface-raised px-2 py-1 text-xs font-normal text-text-faint tabular-nums z-10"
+              >{{ starterFormula(pm) }}</span>
             </td>
           </tr>
         </template>
@@ -90,6 +94,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import StatusBadge from './StatusBadge.vue'
+import { isScoring } from '../utils/scoring'
+import { positionFormula } from '../utils/position'
 
 interface PlayerMatch {
   id: string
@@ -168,6 +174,14 @@ function coveringScoreForStarter(pm: PlayerMatch): number | null {
   return benchPositionScore(cp, pm.position)
 }
 
+function starterFormula(pm: PlayerMatch): string | null {
+  if (!pmShowScore(pm) || !pm.position) return null
+  const covering = coveringMap.value.get(pm.id)
+  const stats = covering ? covering.aflPlayerMatch : pm.aflPlayerMatch
+  if (!stats) return null
+  return positionFormula(pm.position, stats)
+}
+
 function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
 }
@@ -178,7 +192,7 @@ function pmStatus(pm: PlayerMatch): string | null {
 }
 
 function pmShowScore(pm: PlayerMatch): boolean {
-  return pm.aflStatus === 'played' || pm.aflStatus === 'playing'
+  return isScoring(pm.aflStatus)
 }
 
 const starterGroups = computed(() => {
