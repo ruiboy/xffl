@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/vektah/gqlparser/v2/gqlerror"
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // AddFFLPlayerToSeason is the resolver for the addFFLPlayerToSeason field.

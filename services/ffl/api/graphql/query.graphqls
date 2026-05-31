@@ -13,6 +13,8 @@ type Query {
 
   fflRoundByAflRound(aflRoundId: ID!): FFLRound
   fflClubMatch(id: ID!): FFLClubMatch
+
+  fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]!
 }
 
 type FFLSeason {
@@ -81,6 +83,7 @@ type FFLPlayer {
 type FFLPlayerSeason {
   id: ID!
   player: FFLPlayer!
+  club: FFLClub!
   clubSeasonId: ID!
   aflPlayerSeasonId: ID
   aflPlayerSeason: AFLPlayerSeason
@@ -88,6 +91,7 @@ type FFLPlayerSeason {
   toRoundId: ID
   notes: String
   costCents: Int
+  playerMatches: [FFLPlayerMatch!]!
 }
 
 type FFLPlayerSeasonConnection {

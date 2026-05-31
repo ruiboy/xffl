@@ -58,7 +58,9 @@ models:
 
   FFLPlayerSeason:
     fields:
+      club: { resolver: true }
       aflPlayerSeason: { resolver: true }
+      playerMatches: { resolver: true }
 
   FFLPlayerMatch:
     fields:

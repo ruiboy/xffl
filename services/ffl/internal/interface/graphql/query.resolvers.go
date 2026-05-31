@@ -146,6 +146,19 @@ func (r *fFLPlayerMatchResolver) AflPlayerMatch(ctx context.Context, obj *FFLPla
 	return &AFLPlayerMatch{ID: *obj.AflPlayerMatchID}, nil
 }
 
+// Club is the resolver for the club field.
+func (r *fFLPlayerSeasonResolver) Club(ctx context.Context, obj *FFLPlayerSeason) (*FFLClub, error) {
+	csID, err := fromID(obj.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	club, err := r.Queries.GetClubForClubSeason(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	return convertClub(club), nil
+}
+
 // AflPlayerSeason is the resolver for the aflPlayerSeason field.
 // Returns a stub with the AFL entity ID; the router fetches full data from the AFL subgraph.
 func (r *fFLPlayerSeasonResolver) AflPlayerSeason(ctx context.Context, obj *FFLPlayerSeason) (*AFLPlayerSeason, error) {
@@ -153,6 +166,28 @@ func (r *fFLPlayerSeasonResolver) AflPlayerSeason(ctx context.Context, obj *FFLP
 		return nil, nil
 	}
 	return &AFLPlayerSeason{ID: *obj.AflPlayerSeasonID}, nil
+}
+
+// PlayerMatches is the resolver for the playerMatches field.
+func (r *fFLPlayerSeasonResolver) PlayerMatches(ctx context.Context, obj *FFLPlayerSeason) ([]*FFLPlayerMatch, error) {
+	psID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	pms, err := r.Queries.GetPlayerMatchesByPlayerSeasonID(ctx, psID)
+	if err != nil {
+		return nil, err
+	}
+	loaders := LoadersFromCtx(ctx)
+	result := make([]*FFLPlayerMatch, len(pms))
+	for i, pm := range pms {
+		player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, pm.PlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerMatch(pm, *player)
+	}
+	return result, nil
 }
 
 // AflRound is the resolver for the aflRound field.
@@ -410,6 +445,28 @@ func (r *queryResolver) FflClubMatch(ctx context.Context, id string) (*FFLClubMa
 	seasonID := toID(round.SeasonID)
 	result.RoundID = &roundID
 	result.SeasonID = &seasonID
+	return result, nil
+}
+
+// FflPlayerSeasonsByAflPlayerSeason is the resolver for the fflPlayerSeasonsByAflPlayerSeason field.
+func (r *queryResolver) FflPlayerSeasonsByAflPlayerSeason(ctx context.Context, aflPlayerSeasonID string) ([]*FFLPlayerSeason, error) {
+	aflPsID, err := fromID(aflPlayerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	playerSeasons, err := r.Queries.GetPlayerSeasonsByAFLPlayerSeasonID(ctx, aflPsID)
+	if err != nil {
+		return nil, err
+	}
+	loaders := LoadersFromCtx(ctx)
+	result := make([]*FFLPlayerSeason, len(playerSeasons))
+	for i, ps := range playerSeasons {
+		player, err := loaders.PlayerByPlayerSeasonID.Load(ctx, ps.ID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerSeason(ps, *player)
+	}
 	return result, nil
 }
 

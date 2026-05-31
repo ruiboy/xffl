@@ -17,7 +17,12 @@
           :key="pm.id"
           class="border-b border-border-subtle hover:bg-surface-hover"
         >
-          <td class="py-2 pr-4 font-medium">{{ pm.player.name }}</td>
+          <td class="py-2 pr-4 font-medium">
+            <router-link
+              :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: pm.playerSeasonId } }"
+              class="hover:underline hover:text-active transition-colors"
+            >{{ pm.player.name }}</router-link>
+          </td>
           <td v-for="col in statColumns" :key="col.key" class="py-1 px-1 text-right">
             <input
               v-if="!readonly"

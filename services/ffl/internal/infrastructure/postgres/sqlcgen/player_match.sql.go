@@ -186,6 +186,60 @@ func (q *Queries) FindPlayerMatchesByClubMatchID(ctx context.Context, clubMatchI
 	return items, nil
 }
 
+const findPlayerMatchesByPlayerSeasonID = `-- name: FindPlayerMatchesByPlayerSeasonID :many
+SELECT id, club_match_id, player_season_id,
+       position, status, drv_afl_status, backup_positions, interchange_position, display_order, drv_score, afl_player_match_id
+FROM ffl.player_match
+WHERE player_season_id = $1 AND deleted_at IS NULL
+ORDER BY id
+`
+
+type FindPlayerMatchesByPlayerSeasonIDRow struct {
+	ID                  int32
+	ClubMatchID         int32
+	PlayerSeasonID      int32
+	Position            *string
+	Status              *string
+	DrvAflStatus        *string
+	BackupPositions     *string
+	InterchangePosition *string
+	DisplayOrder        int32
+	DrvScore            *int32
+	AflPlayerMatchID    *int32
+}
+
+func (q *Queries) FindPlayerMatchesByPlayerSeasonID(ctx context.Context, playerSeasonID int32) ([]FindPlayerMatchesByPlayerSeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findPlayerMatchesByPlayerSeasonID, playerSeasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindPlayerMatchesByPlayerSeasonIDRow{}
+	for rows.Next() {
+		var i FindPlayerMatchesByPlayerSeasonIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubMatchID,
+			&i.PlayerSeasonID,
+			&i.Position,
+			&i.Status,
+			&i.DrvAflStatus,
+			&i.BackupPositions,
+			&i.InterchangePosition,
+			&i.DisplayOrder,
+			&i.DrvScore,
+			&i.AflPlayerMatchID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateAFLPlayerMatchID = `-- name: UpdateAFLPlayerMatchID :exec
 UPDATE ffl.player_match
 SET afl_player_match_id = $2, updated_at = CURRENT_TIMESTAMP
