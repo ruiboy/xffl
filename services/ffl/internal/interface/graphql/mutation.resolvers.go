@@ -7,7 +7,11 @@ package graphql
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 )
@@ -121,6 +125,16 @@ func (r *mutationResolver) SetFFLTeam(ctx context.Context, input SetFFLTeamInput
 	}
 	pms, err := r.Commands.SetTeam(ctx, application.SetTeamParams{ClubMatchID: clubMatchID, Entries: entries})
 	if err != nil {
+		var byeErr application.ByeIneligibleError
+		if errors.As(err, &byeErr) {
+			return nil, &gqlerror.Error{
+				Message: byeErr.Error(),
+				Extensions: map[string]any{
+					"code":           "BYE_INELIGIBLE",
+					"playerSeasonId": strconv.Itoa(byeErr.PlayerSeasonID),
+				},
+			}
+		}
 		return nil, err
 	}
 	result := make([]*FFLPlayerMatch, len(pms))
@@ -245,6 +259,16 @@ func (r *mutationResolver) ConfirmFFLTeamSubmission(ctx context.Context, input C
 		ResolvedPlayers: resolved,
 	})
 	if err != nil {
+		var byeErr application.ByeIneligibleError
+		if errors.As(err, &byeErr) {
+			return nil, &gqlerror.Error{
+				Message: byeErr.Error(),
+				Extensions: map[string]any{
+					"code":           "BYE_INELIGIBLE",
+					"playerSeasonId": strconv.Itoa(byeErr.PlayerSeasonID),
+				},
+			}
+		}
 		return nil, err
 	}
 

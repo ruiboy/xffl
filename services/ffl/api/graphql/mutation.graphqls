@@ -11,7 +11,11 @@ type Mutation {
   "Calculate and store the fantasy score for a player match from AFL stats."
   calculateFFLFantasyScore(input: CalculateFFLFantasyScoreInput!): FFLPlayerMatch!
 
-  "Set the complete team selection for a club match."
+  """
+  Set the complete team selection for a club match.
+  Errors:
+    BYE_INELIGIBLE — extensions.playerSeasonId identifies the ineligible player.
+  """
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
 
   "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."

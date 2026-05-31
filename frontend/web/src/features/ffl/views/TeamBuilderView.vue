@@ -1315,8 +1315,14 @@ async function submitTeam(): Promise<boolean> {
     setTimeout(() => { submitMessage.value = '' }, 3000)
     return true
   } catch (e: unknown) {
-    const msg = (e as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]?.message
-    submitMessage.value = msg ?? 'Failed to save team'
+    const gqlErr = (e as { graphQLErrors?: { message: string; extensions?: Record<string, string> }[] })?.graphQLErrors?.[0]
+    if (gqlErr?.extensions?.code === 'BYE_INELIGIBLE') {
+      const psId = gqlErr.extensions.playerSeasonId
+      const player = squad.value.find(p => p.id === psId)
+      submitMessage.value = `${player?.name ?? 'A player'} is on a bye but didn't play last round — remove them to save`
+    } else {
+      submitMessage.value = gqlErr?.message ?? 'Failed to save team'
+    }
     return false
   } finally {
     submitting.value = false

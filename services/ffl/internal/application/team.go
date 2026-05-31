@@ -10,6 +10,16 @@ import (
 	"xffl/services/ffl/internal/domain"
 )
 
+// ByeIneligibleError is returned when a named player's AFL club has a bye
+// but they did not play in their club's most recent non-bye match.
+type ByeIneligibleError struct {
+	PlayerSeasonID int
+}
+
+func (e ByeIneligibleError) Error() string {
+	return fmt.Sprintf("player_season %d is on a bye but did not play in their club's most recent match: ineligible to be named", e.PlayerSeasonID)
+}
+
 // SetTeamParams are the inputs to SetTeam.
 type SetTeamParams struct {
 	ClubMatchID int
@@ -80,7 +90,7 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 				continue
 			}
 			if !bi.PlayedLast {
-				return fmt.Errorf("player_season %d is on a bye but did not play in their club's most recent match: ineligible to be named", pm.PlayerSeasonID)
+				return ByeIneligibleError{PlayerSeasonID: pm.PlayerSeasonID}
 			}
 			status := domain.AFLStatusBye
 			newPlayers[i].AFLStatus = &status
