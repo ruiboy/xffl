@@ -239,12 +239,12 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 **Goal:** Replace synthetic seed data with a full current-season dataset, unlock ladder generation, and smoke-test the end-to-end data ops / team submission / substitution flow against real data.
 
 ### 6a — Backup / restore reliability
-- [ ] Verify `just backup-db` and `just restore-db` round-trip cleanly (no data loss, no schema drift)
-- [ ] Document any gaps; fix before pulling live data
+- [x] Verify `just backup-db` and `just restore-db` round-trip cleanly (no data loss, no schema drift)
+- [x] Document any gaps; fix before pulling live data
 
 ### 6b — Pull current-season AFL & team data
-- [ ] Import all 2025 AFL rounds played to date (teams, players, match stats) via existing import tooling
-- [ ] Import all 2025 FFL round teams to date
+- [ ] Import all 2026 AFL rounds played to date (teams, players, match stats) via existing import tooling
+- [ ] Import all 2026 FFL round teams to date
 - [ ] Verify ladder calculation produces correct standings
 - [ ] Smoke-test team submission and substitution flows against real round data; capture any edge cases / bugs found
 
@@ -255,7 +255,7 @@ Display mode: read `status` directly from each `playerMatch`; no heuristic infer
 
 ## Close out
 
-- [ ] Audit and remove `ffl.player.drv_name` — drop column from schema, domain, resolvers, frontend
-- [ ] Retire `parse_forum.py`
-- [ ] Move `afl.match.stats_import_status` + `stats_imported_at` out of core domain into `afl.dataops_match_source`
-- [ ] Share `dev/postgres/test-e2e` init files with `dev/postgres/init` rather than duplicating
+- [x] Audit and remove `ffl.player.drv_name` — drop column from schema, domain, resolvers, frontend
+- [x] Retire `parse_forum.py`
+- [x] Move `afl.match.stats_import_status` + `stats_imported_at` out of core domain into `afl.dataops_match_source`
+- [x] Share `dev/postgres/test-e2e` init files with `dev/postgres/init` rather than duplicating

@@ -93,7 +93,7 @@ func NewDataOpsCommands(
 }
 
 // ImportAFLStats scrapes match stats from FootyWire, resolves player names, and writes
-// afl.player_match records. Sets stats_import_status to "partial".
+// afl.player_match records. Sets data_status to "partial".
 func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (ImportAFLStatsResult, error) {
 	match, err := c.matches.FindByIDWithDetails(ctx, matchID)
 	if err != nil {
