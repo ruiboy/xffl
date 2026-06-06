@@ -12,9 +12,10 @@ xffl/
 │   └── prompts/           → Development workflow
 │
 ├── plans/                 → Project plans
-│   ├── roadmap.md         → Full project phases
+│   ├── ideas.md           → UX vision, parked designs, future ideas, revisit items
+│   ├── roadmap.md         → Active + upcoming phases
 │   ├── current-sprint.md  → Active sprint tasks
-│   └── revisit.md         → Ideas to reconsider later (not roadmap)
+│   └── history.md         → Completed phases (archive)
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)

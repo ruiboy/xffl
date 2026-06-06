@@ -87,7 +87,7 @@ Inferred from whether the player has match stats and whether the match is final.
 | `playing` | Player has stats; match not yet final. |
 | `played` | Player has stats; match is final. |
 
-Pre-match squad naming (`named`) is not tracked — see Parked Design in `plans/roadmap.md`.
+Pre-match squad naming (`named`) is not tracked — see Parked Design in `plans/ideas.md`.
 
 ### Bye
 
@@ -200,7 +200,7 @@ Two separate status concepts apply to an FFL PlayerMatch:
 TM declarations are always explicit — there is no automatic substitution heuristic. A DNP starter with no TM declaration scores zero.
 
 **AFL Status** — whether this AFL player participated in their AFL match this round. Derived from AFL data; never set by
-TM decisions. Pre-match `named` status is not tracked — see Parked Design in `plans/roadmap.md`.
+TM decisions. Pre-match `named` status is not tracked — see Parked Design in `plans/ideas.md`.
 
 | Value | Meaning |
 |-------|---------|
