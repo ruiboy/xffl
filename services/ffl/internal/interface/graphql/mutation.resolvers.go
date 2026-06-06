@@ -307,6 +307,30 @@ func (r *mutationResolver) MarkFFLTeamFinal(ctx context.Context, input MarkFFLTe
 	return true, nil
 }
 
+// MarkFFLTeamSubmitted is the resolver for the markFFLTeamSubmitted field.
+func (r *mutationResolver) MarkFFLTeamSubmitted(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error) {
+	clubMatchID, err := fromID(input.ClubMatchID)
+	if err != nil {
+		return false, err
+	}
+	matchID, err := fromID(input.MatchID)
+	if err != nil {
+		return false, err
+	}
+	roundID, err := fromID(input.RoundID)
+	if err != nil {
+		return false, err
+	}
+	if err := r.DataOps.MarkTeamSubmitted(ctx, application.MarkTeamFinalParams{
+		ClubMatchID: clubMatchID,
+		MatchID:     matchID,
+		RoundID:     roundID,
+	}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // RecalculateFFLLadder is the resolver for the recalculateFFLLadder field.
 func (r *mutationResolver) RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error) {
 	id, err := fromID(seasonID)
@@ -320,15 +344,16 @@ func (r *mutationResolver) RecalculateFFLLadder(ctx context.Context, seasonID st
 }
 
 // RecalculateFFLClubMatchScore is the resolver for the recalculateFFLClubMatchScore field.
-func (r *mutationResolver) RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (bool, error) {
+func (r *mutationResolver) RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (int, error) {
 	id, err := fromID(clubMatchID)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
-	if err := r.Commands.RecalculateScore(ctx, id); err != nil {
-		return false, err
+	score, err := r.Commands.RecalculateScore(ctx, id)
+	if err != nil {
+		return 0, err
 	}
-	return true, nil
+	return score, nil
 }
 
 // DeclareFFLSubstitutions is the resolver for the declareFFLSubstitutions field.

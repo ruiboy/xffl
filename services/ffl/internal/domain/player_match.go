@@ -82,6 +82,7 @@ type PlayerMatch struct {
 	BackupPositions     *string
 	InterchangePosition *string
 	DisplayOrder        int
+	Notes               *string
 	Score               int
 	AFLPlayerMatchID    *int
 }
@@ -209,5 +210,6 @@ type UpsertPlayerMatchParams struct {
 	BackupPositions     *string
 	InterchangePosition *string
 	DisplayOrder        int
+	Notes               *string
 	Score               *int
 }

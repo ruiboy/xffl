@@ -22,7 +22,7 @@ func (q *Queries) CountFinalClubMatchesByMatchID(ctx context.Context, matchID in
 }
 
 const findClubMatchByID = `-- name: FindClubMatchByID :one
-SELECT id, match_id, club_season_id, data_status, drv_score
+SELECT id, match_id, club_season_id, data_status, notes, drv_score
 FROM ffl.club_match
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -32,6 +32,7 @@ type FindClubMatchByIDRow struct {
 	MatchID      int32
 	ClubSeasonID int32
 	DataStatus   string
+	Notes        *string
 	DrvScore     *int32
 }
 
@@ -43,13 +44,14 @@ func (q *Queries) FindClubMatchByID(ctx context.Context, id int32) (FindClubMatc
 		&i.MatchID,
 		&i.ClubSeasonID,
 		&i.DataStatus,
+		&i.Notes,
 		&i.DrvScore,
 	)
 	return i, err
 }
 
 const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
-SELECT id, match_id, club_season_id, data_status, drv_score
+SELECT id, match_id, club_season_id, data_status, notes, drv_score
 FROM ffl.club_match
 WHERE match_id = $1 AND deleted_at IS NULL
 ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END
@@ -60,6 +62,7 @@ type FindClubMatchesByMatchIDRow struct {
 	MatchID      int32
 	ClubSeasonID int32
 	DataStatus   string
+	Notes        *string
 	DrvScore     *int32
 }
 
@@ -77,6 +80,7 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 			&i.MatchID,
 			&i.ClubSeasonID,
 			&i.DataStatus,
+			&i.Notes,
 			&i.DrvScore,
 		); err != nil {
 			return nil, err
@@ -103,6 +107,23 @@ type UpdateClubMatchDataStatusParams struct {
 
 func (q *Queries) UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error {
 	_, err := q.db.Exec(ctx, updateClubMatchDataStatus, arg.ID, arg.DataStatus)
+	return err
+}
+
+const updateClubMatchNotes = `-- name: UpdateClubMatchNotes :exec
+UPDATE ffl.club_match
+SET notes      = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchNotesParams struct {
+	ID    int32
+	Notes *string
+}
+
+func (q *Queries) UpdateClubMatchNotes(ctx context.Context, arg UpdateClubMatchNotesParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchNotes, arg.ID, arg.Notes)
 	return err
 }
 

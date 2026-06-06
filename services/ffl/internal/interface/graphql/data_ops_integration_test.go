@@ -308,6 +308,76 @@ func jsonString(s string) string {
 // MarkFFLTeamFinal integration test
 // ════════════════════════════════════════════════════════════════
 
+func TestMarkFFLTeamSubmitted(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+
+	// Pre-set the target club_match to final so we have something to revert.
+	_, err := pool.Exec(context.Background(),
+		"UPDATE ffl.club_match SET data_status = 'final' WHERE id = $1", ids.homeClubMatchID)
+	require.NoError(t, err)
+
+	db := pg.NewDB(pool)
+	q := sqlcgen.New(pool)
+	cmds := application.NewCommands(
+		db,
+		memevents.New(),
+		&stubPlayerLookup{pool: pool},
+		pg.NewMatchRepository(q),
+		pg.NewClubMatchRepository(q),
+		pg.NewClubSeasonRepository(q),
+		pg.NewRoundRepository(q),
+		pg.NewPlayerMatchRepository(q),
+		pg.NewPlayerSeasonRepository(q),
+	)
+	dataOps := application.NewDataOpsCommands(
+		db,
+		&stubPlayerLookup{pool: pool},
+		forum.NewLevenshteinResolver(),
+		forum.NewParser(),
+		memevents.New(),
+		cmds,
+	)
+	server := setupDataOpsServer(t, pool, dataOps)
+	defer server.Close()
+
+	mutation := fmt.Sprintf(`mutation {
+		markFFLTeamSubmitted(input: {
+			clubMatchId: "%d"
+			matchId: "%d"
+			roundId: "%d"
+		})
+	}`, ids.homeClubMatchID, ids.matchID, ids.roundID)
+
+	result := execQuery(t, server, mutation)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		MarkFFLTeamSubmitted bool `json:"markFFLTeamSubmitted"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("mutation returns true", func(t *testing.T) {
+		assert.True(t, data.MarkFFLTeamSubmitted)
+	})
+
+	t.Run("target club_match data_status is reverted to submitted", func(t *testing.T) {
+		var status string
+		require.NoError(t, pool.QueryRow(context.Background(),
+			"SELECT data_status FROM ffl.club_match WHERE id = $1",
+			ids.homeClubMatchID).Scan(&status))
+		assert.Equal(t, "submitted", status)
+	})
+
+	t.Run("other club_match data_status is unchanged", func(t *testing.T) {
+		var status string
+		require.NoError(t, pool.QueryRow(context.Background(),
+			"SELECT data_status FROM ffl.club_match WHERE id = $1",
+			ids.awayClubMatchID).Scan(&status))
+		assert.Equal(t, "no_data", status)
+	})
+}
+
 func TestMarkFFLTeamFinal(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)

@@ -142,9 +142,13 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 // ImportRoundTeams converts resolved players to team entries and delegates to teamSubmitter.SetTeam,
 // which handles validation, diff-based persistence, scoring, and event publishing.
 // display_order is auto-assigned: starters and bench are numbered within each position group by parse order.
+// When a player has a posted score, "posted:NN" is written to player_match.notes.
+// The sum of all posted player scores is written to club_match.notes as "posted:NN".
 func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRoundTeamsParams) ([]domain.PlayerMatch, error) {
 	positionCount := make(map[string]int)
 	entries := make([]SetTeamEntry, 0, len(params.ResolvedPlayers))
+	postedTotal := 0
+	anyPosted := false
 	for _, rp := range params.ResolvedPlayers {
 		if rp.PlayerSeasonID == 0 {
 			continue
@@ -160,6 +164,12 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 			DisplayOrder:   positionCount[groupKey],
 			Score:          rp.Parsed.Score,
 		}
+		if rp.Parsed.Score != nil {
+			note := fmt.Sprintf("posted:%d", *rp.Parsed.Score)
+			e.Notes = &note
+			postedTotal += *rp.Parsed.Score
+			anyPosted = true
+		}
 		if rp.Parsed.BackupPositions != "" {
 			e.BackupPositions = &rp.Parsed.BackupPositions
 		}
@@ -168,10 +178,44 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		}
 		entries = append(entries, e)
 	}
-	return c.commands.SetTeam(ctx, SetTeamParams{
+	sp := SetTeamParams{
 		ClubMatchID: params.ClubMatchID,
 		Entries:     entries,
+	}
+	if anyPosted {
+		note := fmt.Sprintf("posted:%d", postedTotal)
+		sp.ClubMatchNotes = &note
+	}
+	return c.commands.SetTeam(ctx, sp)
+}
+
+// MarkTeamSubmitted reverts the club_match data_status to 'submitted' and publishes FFL.ClubMatchUpdated(submitted).
+func (c *DataOpsCommands) MarkTeamSubmitted(ctx context.Context, params MarkTeamFinalParams) error {
+	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataSubmitted)
 	})
+	if err != nil {
+		return err
+	}
+
+	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	if err != nil {
+		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+	}
+
+	b, err := json.Marshal(events.FflClubMatchUpdatedPayload{
+		ClubMatchID:   params.ClubMatchID,
+		MatchID:       params.MatchID,
+		RoundID:       params.RoundID,
+		DataStatus:    string(domain.ClubMatchDataSubmitted),
+		PlayerMatches: buildPlayerMatchMap(pms),
+	})
+	if err == nil {
+		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
+			slog.WarnContext(ctx, "publish FflClubMatchUpdated(submitted) failed", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
+		}
+	}
+	return nil
 }
 
 // MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).

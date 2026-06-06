@@ -13,11 +13,13 @@ The primary audience is FFL club managers who use the app to track fantasy score
 
 | Page | Route |
 |------|-------|
-| Home | `/` |
-| Round | `/ffl/seasons/:seasonId/rounds/:roundId` |
-| Match | `/ffl/seasons/:seasonId/matches/:matchId` |
-| Team Builder | `/ffl/seasons/:seasonId/rounds/:roundId/team-builder` |
-| Players (admin) | `/ffl/players` |
+| Home | `/ffl` |
+| Round | `/ffl/rounds/:roundId` |
+| Match | `/ffl/matches/:matchId` |
+| Team Builder | `/ffl/club-matches/:clubMatchId/edit` |
+| Squad | `/ffl/club-seasons/:clubSeasonId` |
+| Player Season | `/ffl/afl/player-seasons/:aflPlayerSeasonId` |
+| Data Ops | `/ffl/data-ops` |
 
 **Money-shot views:** Match (head-to-head fantasy scores in real time) and Team Builder (weekly team selection).
 
@@ -26,16 +28,16 @@ The primary audience is FFL club managers who use the app to track fantasy score
 | Page | Route |
 |------|-------|
 | Home | `/afl` |
-| Round | `/afl/seasons/:seasonId/rounds/:roundId` |
-| Match | `/afl/seasons/:seasonId/matches/:matchId` |
-| Admin Match | `/admin/afl/seasons/:seasonId/matches/:matchId` |
+| Round | `/afl/rounds/:roundId` |
+| Match | `/afl/matches/:matchId` |
+| Admin Match | `/afl/matches/:matchId/edit` |
 
 AFL pages exist to enter real-world match stats, which feed into FFL scoring.
 
 ## Key Design Decisions
 
 - **FFL front door** — FFL managers are the primary users; AFL is a data-entry tool accessed via navbar.
-- **Apollo routing** — the Apollo Client uses regex to route FFL queries to `/ffl/graphql` and AFL queries to `/afl/graphql` on the gateway. This is acknowledged as fragile (see `plans/revisit.md`).
+- **Apollo routing** — the Apollo Client sends all queries to a single `/query` endpoint on the gateway. Apollo Router (Federation) handles cross-service composition.
 - **Club logos** — AFL logos at `public/images/clubs/`, FFL logos at `public/images/ffl-clubs/`. Each feature has a `utils/clubLogos.ts` that maps club names to file paths.
 - **No cross-feature imports** — `features/afl/` and `features/ffl/` are independent; shared UI lives in `components/`.
 

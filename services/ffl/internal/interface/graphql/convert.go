@@ -120,6 +120,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *FFLClubMatch {
 		ClubSeasonID: toID(cm.ClubSeasonID),
 		Club:         convertClub(club),
 		DataStatus:   string(cm.DataStatus),
+		Notes:        cm.Notes,
 		Score:        cm.StoredScore,
 	}
 }
@@ -132,6 +133,7 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *FFLPlayerM
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
 		DisplayOrder:        pm.DisplayOrder,
+		Notes:               pm.Notes,
 		Score:               pm.Score,
 	}
 	if pm.Position != nil {

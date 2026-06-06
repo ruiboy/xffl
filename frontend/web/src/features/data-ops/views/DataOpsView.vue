@@ -111,6 +111,7 @@
                         v-if="match.dataStatus !== 'no_data'"
                         @click="toggleFinal(match)"
                         :disabled="togglingFinal[match.id]"
+                        :title="match.dataStatus === 'final' ? 'Reverts match statuss from .' : 'Marks match stats as complete. Triggers AFL ladder recalculation.'"
                         class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
                       >{{ match.dataStatus === 'final' ? 'Mark Partial' : 'Mark Final' }}</button>
                       <button
@@ -271,9 +272,9 @@
             <thead>
               <tr class="border-b border-border">
                 <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Club</th>
-                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Status</th>
-                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Score</th>
-                <th class="pb-2 text-right text-xs font-medium text-text-faint"></th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint w-px whitespace-nowrap">Status</th>
+                <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint w-px whitespace-nowrap">Score</th>
+                <th class="pb-2 text-right text-xs font-medium text-text-faint w-[32rem]"></th>
               </tr>
             </thead>
             <tbody>
@@ -303,23 +304,33 @@
                     {{ row.dataStatus !== 'no_data' ? row.score : '—' }}
                   </td>
                   <td class="py-3 text-right whitespace-nowrap">
-                    <span v-if="importedResult[row.clubMatchId]" class="text-sm text-green-500">{{ importedResult[row.clubMatchId] }}</span>
-                    <div v-else-if="activeImportClubMatchId !== row.clubMatchId" class="flex items-center justify-end gap-2">
+                    <div v-if="activeImportClubMatchId !== row.clubMatchId" class="flex items-center justify-end gap-2">
+                      <span v-if="importedResult[row.clubMatchId]" class="text-xs text-green-500">{{ importedResult[row.clubMatchId] }}</span>
                       <span v-if="markFinalError[row.clubMatchId]" class="text-xs text-red-400">{{ markFinalError[row.clubMatchId] }}</span>
+                      <span v-if="markSubmittedError[row.clubMatchId]" class="text-xs text-red-400">{{ markSubmittedError[row.clubMatchId] }}</span>
                       <span v-if="recalcScoreError[row.clubMatchId]" class="text-xs text-red-400">{{ recalcScoreError[row.clubMatchId] }}</span>
                       <span v-if="recalcScoreDone[row.clubMatchId]" class="text-xs text-green-500">Recalculated</span>
                       <button
-                        v-if="row.dataStatus !== 'no_data'"
+                        v-if="row.dataStatus === 'submitted' || row.dataStatus === 'final'"
                         @click="recalculateScore(row)"
                         :disabled="recalcScoreLoading[row.clubMatchId]"
+                        title="Recalculates the club's FFL score from latest AFL stats."
                         class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
                       >{{ recalcScoreLoading[row.clubMatchId] ? 'Recalculating…' : 'Recalculate' }}</button>
                       <button
                         v-if="row.dataStatus === 'submitted'"
                         @click="markTeamFinal(row)"
                         :disabled="markingFinal[row.clubMatchId]"
+                        title="Locks this club's team submission as final for scoring."
                         class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
                       >{{ markingFinal[row.clubMatchId] ? 'Marking…' : 'Mark Final' }}</button>
+                      <button
+                        v-if="row.dataStatus === 'final'"
+                        @click="markTeamSubmitted(row)"
+                        :disabled="markingSubmitted[row.clubMatchId]"
+                        title="Reverts this club's team submission from final."
+                        class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+                      >{{ markingSubmitted[row.clubMatchId] ? 'Marking…' : 'Mark Submitted' }}</button>
                       <button
                         @click="toggleImportPanel(row.clubMatchId, row.clubSeasonId, row.clubName)"
                         class="rounded border border-border px-3 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
@@ -484,7 +495,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, RECALCULATE_FFL_CLUB_MATCH_SCORE } from '../api/mutations'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, RECALCULATE_FFL_CLUB_MATCH_SCORE } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -585,7 +596,6 @@ async function toggleFinal(match: any) {
       matchId: match.id,
       complete: match.dataStatus !== 'final',
     })
-    await refetchRoundStats()
   } catch (e: any) {
     scrapeError.value[match.id] = e.message ?? 'Update failed'
   } finally {
@@ -733,8 +743,23 @@ const fflClubRows = computed<FflClubRow[]>(() => {
       })
     }
   }
-  return rows
+  return rows.map(r => ({ ...r, ...(rowOverrides.value[r.clubMatchId] ?? {}) }))
 })
+
+// Local overrides to update individual rows without refetching the whole table.
+const rowOverrides = ref<Record<string, Partial<FflClubRow>>>({})
+
+function patchRow(clubMatchId: string, patch: Partial<FflClubRow>) {
+  rowOverrides.value[clubMatchId] = { ...(rowOverrides.value[clubMatchId] ?? {}), ...patch }
+}
+
+function clearRowStatus(clubMatchId: string) {
+  markFinalError.value[clubMatchId] = ''
+  markSubmittedError.value[clubMatchId] = ''
+  recalcScoreError.value[clubMatchId] = ''
+  recalcScoreDone.value[clubMatchId] = false
+  importedResult.value[clubMatchId] = ''
+}
 
 // ---- Import panel (inline, per-club-match) ----
 
@@ -874,19 +899,35 @@ async function onConfirm() {
 
 const markingFinal = ref<Record<string, boolean>>({})
 const markFinalError = ref<Record<string, string>>({})
+const markingSubmitted = ref<Record<string, boolean>>({})
+const markSubmittedError = ref<Record<string, string>>({})
 
 const { mutate: markFinalMutation } = useMutation(MARK_FFL_TEAM_FINAL)
+const { mutate: markSubmittedMutation } = useMutation(MARK_FFL_TEAM_SUBMITTED)
 
 async function markTeamFinal(row: FflClubRow) {
+  clearRowStatus(row.clubMatchId)
   markingFinal.value[row.clubMatchId] = true
-  markFinalError.value[row.clubMatchId] = ''
   try {
     await markFinalMutation({ input: { clubMatchId: row.clubMatchId, matchId: row.matchId, roundId: row.roundId } })
-    await refetchSeasonData()
+    patchRow(row.clubMatchId, { dataStatus: 'final' })
   } catch (e: any) {
     markFinalError.value[row.clubMatchId] = e.message ?? 'Failed to mark final'
   } finally {
     markingFinal.value[row.clubMatchId] = false
+  }
+}
+
+async function markTeamSubmitted(row: FflClubRow) {
+  clearRowStatus(row.clubMatchId)
+  markingSubmitted.value[row.clubMatchId] = true
+  try {
+    await markSubmittedMutation({ input: { clubMatchId: row.clubMatchId, matchId: row.matchId, roundId: row.roundId } })
+    patchRow(row.clubMatchId, { dataStatus: 'submitted' })
+  } catch (e: any) {
+    markSubmittedError.value[row.clubMatchId] = e.message ?? 'Failed to mark submitted'
+  } finally {
+    markingSubmitted.value[row.clubMatchId] = false
   }
 }
 
@@ -897,13 +938,13 @@ const recalcScoreDone = ref<Record<string, boolean>>({})
 const { mutate: recalcScoreMutation } = useMutation(RECALCULATE_FFL_CLUB_MATCH_SCORE)
 
 async function recalculateScore(row: FflClubRow) {
+  clearRowStatus(row.clubMatchId)
   recalcScoreLoading.value[row.clubMatchId] = true
-  recalcScoreError.value[row.clubMatchId] = ''
-  recalcScoreDone.value[row.clubMatchId] = false
   try {
-    await recalcScoreMutation({ clubMatchId: row.clubMatchId })
+    const res = await recalcScoreMutation({ clubMatchId: row.clubMatchId })
+    const newScore = res?.data?.recalculateFFLClubMatchScore
+    if (newScore != null) patchRow(row.clubMatchId, { score: newScore })
     recalcScoreDone.value[row.clubMatchId] = true
-    await refetchSeasonData()
   } catch (e: any) {
     recalcScoreError.value[row.clubMatchId] = e.message ?? 'Failed to recalculate'
   } finally {

@@ -25,6 +25,7 @@ type FflClubMatch struct {
 	ClubSeasonID         int32
 	Side                 string
 	DataStatus           string
+	Notes                *string
 	DrvScore             *int32
 	DrvPremiershipPoints *int32
 }
@@ -88,6 +89,7 @@ type FflPlayerMatch struct {
 	BackupPositions     *string
 	InterchangePosition *string
 	DisplayOrder        int32
+	Notes               *string
 	DrvScore            *int32
 }
 

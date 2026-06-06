@@ -214,9 +214,9 @@ Full stack rebuild (backend + frontend). Gateway introduced early so frontends a
 - [x] AFL stats import — FootyWire scraper, player source mapping, match status tracking
 - [x] Score and ladder calculation — AFL→FFL event chain, finalization flow, provisional/final tiers
 - [x] Schema health: replace circular match↔club_match FKs with role column; enforce AFL FK integrity
-- [ ] Score reconciliation — submitted vs. calculated diff with copy-pasteable forum summary output
+- [ ] Score reconciliation — submitted vs. calculated diff
 - [ ] Pluggable FFL scoring formula — strategy pattern keyed per season (prerequisite for Phase 23 backfill)
-- [ ] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table
+- [x] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table
 
 ## Phase 21: UX — Player & Club Pages
 

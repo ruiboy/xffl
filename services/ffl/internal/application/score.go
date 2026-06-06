@@ -17,10 +17,10 @@ import (
 //   - Linked: player_matches that already have afl_player_match_id → looked up by that ID.
 //   - Unlinked: freshly submitted rows with no afl_player_match_id yet → looked up by
 //     (afl_player_season_id, afl_round_id) and the link is established as a side effect.
-func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error {
+func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, error) {
 	pms, err := c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 	if err != nil {
-		return fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
+		return 0, fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
 	}
 
 	// Partition into linked (have AFL player_match_id) and unlinked.
@@ -39,7 +39,7 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 	if len(aflMatchIDs) > 0 {
 		linked, err := c.playerLookup.LookupPlayerMatch(ctx, aflMatchIDs)
 		if err != nil {
-			return fmt.Errorf("lookup player match stats: %w", err)
+			return 0, fmt.Errorf("lookup player match stats: %w", err)
 		}
 		for _, s := range linked {
 			statsByAFLMatchID[s.ID] = s
@@ -53,7 +53,7 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 		// Resolve AFL player_season_ids from ffl.player_season records.
 		playerSeasons, err := c.playerSeasons.FindByIDs(ctx, unlinkedPSIDs)
 		if err != nil {
-			return fmt.Errorf("load player_seasons for unlinked player_matches: %w", err)
+			return 0, fmt.Errorf("load player_seasons for unlinked player_matches: %w", err)
 		}
 		var aflPSIDs []int
 		for _, ps := range playerSeasons {
@@ -66,21 +66,21 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 			// Traverse clubMatchID → match → round to get the AFL round ID.
 			cm, err := c.clubMatches.FindByID(ctx, clubMatchID)
 			if err != nil {
-				return fmt.Errorf("load club_match %d: %w", clubMatchID, err)
+				return 0, fmt.Errorf("load club_match %d: %w", clubMatchID, err)
 			}
 			m, err := c.matches.FindByID(ctx, cm.MatchID)
 			if err != nil {
-				return fmt.Errorf("load match %d: %w", cm.MatchID, err)
+				return 0, fmt.Errorf("load match %d: %w", cm.MatchID, err)
 			}
 			r, err := c.rounds.FindByID(ctx, m.RoundID)
 			if err != nil {
-				return fmt.Errorf("load round %d: %w", m.RoundID, err)
+				return 0, fmt.Errorf("load round %d: %w", m.RoundID, err)
 			}
 
 			if r.AFLRoundID != 0 {
 				unlinked, err := c.playerLookup.LookupPlayerMatchBySeasonRound(ctx, aflPSIDs, r.AFLRoundID)
 				if err != nil {
-					return fmt.Errorf("lookup player match stats by season/round: %w", err)
+					return 0, fmt.Errorf("lookup player match stats by season/round: %w", err)
 				}
 				for _, s := range unlinked {
 					statsByAFLSeasonID[s.PlayerSeasonID] = s
@@ -90,7 +90,8 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 	}
 
 	// Apply stats and re-sum inside a transaction.
-	return c.tx.WithTx(ctx, func(repos WriteRepos) error {
+	var newScore int
+	err = c.tx.WithTx(ctx, func(repos WriteRepos) error {
 		pms, err := repos.PlayerMatches.FindByClubMatchID(ctx, clubMatchID)
 		if err != nil {
 			return err
@@ -155,8 +156,10 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) error 
 			return err
 		}
 		cm.PlayerMatches = updated
-		return repos.ClubMatches.UpdateScore(ctx, clubMatchID, cm.Score())
+		newScore = cm.Score()
+		return repos.ClubMatches.UpdateScore(ctx, clubMatchID, newScore)
 	})
+	return newScore, err
 }
 
 // CalculateFantasyScore calculates and stores the fantasy score for a player match
