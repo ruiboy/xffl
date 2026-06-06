@@ -59,6 +59,21 @@ Files to touch, in order:
 9. **Seed data** — `dev/postgres/seed/*.sql` — add values for the new column
 10. **Reset DB** — `just dev-reset && just dev-up && just dev-seed`
 
+## Schema migration strategy
+
+This project uses a single environment with no CI migration pipeline. The convention:
+
+1. **Backup first** — `just backup-db` before any schema change; the backup is the safety net
+2. **Apply to live DB manually** — `ALTER TABLE schema.table ADD COLUMN col_name TYPE;`
+3. **Update init SQL** — `dev/postgres/init/{01_afl,02_ffl}_schema.sql` — add the same column definition so a fresh `dev-reset` picks it up
+4. **Update test-e2e init SQL** — `dev/postgres/test-e2e/` shares init files with `dev/postgres/init/` via symlinks; verify no divergence
+5. **Commit together** — the `ALTER`, the init SQL change, and the domain/application code that uses the new column go in the same commit; integration tests stay in sync
+
+**Safe column additions** (no row rewrites, negligible lock on a small DB):
+- Nullable `TEXT`, `INTEGER`, `BIGINT` with no default → zero risk
+- `NOT NULL` with a constant `DEFAULT` → safe
+- `NOT NULL` without a default → fails on a non-empty table; add nullable first, backfill, then add constraint
+
 ## Recipe: Add a new GraphQL query
 
 1. **Schema** — add query to `api/graphql/query.graphqls` (and any new types)
