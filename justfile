@@ -29,8 +29,14 @@ dev-down:
 
 # Stop infrastructure and delete all data
 dev-reset:
+    #!/usr/bin/env bash
+    read -p "IMPORTANT!!! Do you need to back up the database first? [y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        echo "Aborting — run 'just backup-db' first, then re-run 'just dev-reset'."
+        exit 1
+    fi
     docker compose -f dev/docker-compose.yml down -v
-    @echo "Infrastructure stopped and volumes removed"
+    echo "Infrastructure stopped and volumes removed"
 
 # Tail infrastructure logs
 dev-logs:
