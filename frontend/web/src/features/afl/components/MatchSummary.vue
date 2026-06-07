@@ -5,12 +5,12 @@
   >
     <div class="flex items-center gap-3 font-medium">
       <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'font-bold': winner === 'home' }">
+      <span :class="{ 'underline decoration-dashed underline-offset-4 decoration-blue-500': winner === 'home' }">
         {{ match.homeClubMatch?.club.name ?? '—' }}
       </span>
       <span class="text-text-faint">v</span>
       <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'font-bold': winner === 'away' }">
+      <span :class="{ 'underline decoration-dashed underline-offset-4 decoration-blue-500': winner === 'away' }">
         {{ match.awayClubMatch?.club.name ?? '—' }}
       </span>
     </div>
