@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -123,6 +124,9 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 
 	mid, err := c.resolveMid(ctx, matchID, round.Name, homeClubName, awayClubName)
 	if err != nil {
+		if errors.Is(err, ErrFixtureNotFound) {
+			return ImportAFLStatsResult{}, fmt.Errorf("no stats found for %s v %s in %s — the match may not have been played yet", homeClubName, awayClubName, round.Name)
+		}
 		return ImportAFLStatsResult{}, fmt.Errorf("resolve footywire mid: %w", err)
 	}
 	slog.InfoContext(ctx, "footywire mid resolved", slog.String("mid", mid))

@@ -141,7 +141,7 @@ func ParseFixtureMid(ctx context.Context, r io.Reader, roundName, homeClub, away
 
 	mid := findMidInFixture(ctx, doc, roundName, homeClub, awayClub)
 	if mid == "" {
-		return "", fmt.Errorf("match not found: round=%q home=%q away=%q", roundName, homeClub, awayClub)
+		return "", fmt.Errorf("%w: round=%q home=%q away=%q", application.ErrFixtureNotFound, roundName, homeClub, awayClub)
 	}
 	return mid, nil
 }

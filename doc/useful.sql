@@ -120,7 +120,7 @@ with target_round as (
     join afl.league l on l.id = s.league_id
     where l.name = 'AFL'
       and s.name = 'AFL 2026'
-      and r.name = 'Round 1'
+      and r.name = 'Opening Round'
 ),
 player_totals as (
     select
