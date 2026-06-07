@@ -95,6 +95,26 @@ func TestParseFixtureMid_FindsCorrectMid(t *testing.T) {
 			wantMid: "11401",
 		},
 		{
+			name: "finds Sydney vs Carlton in Opening Round (FootyWire calls it Round 0)",
+			round: "Opening Round", homeClub: "Sydney Swans", awayClub: "Carlton",
+			wantMid: "11399",
+		},
+		{
+			name: "finds Geelong vs Carlton in Round 10 — reverse fixture of the Round 1 match, distinguished by home/away order",
+			round: "Round 10", homeClub: "Geelong", awayClub: "Carlton",
+			wantMid: "11410",
+		},
+		{
+			name: "does not match Round 1's Carlton vs Geelong when asked for the reverse order",
+			round: "Round 1", homeClub: "Geelong", awayClub: "Carlton",
+			wantError: true,
+		},
+		{
+			name: "does not match Round 10's fixture when asked for a different round",
+			round: "Round 9", homeClub: "Geelong", awayClub: "Carlton",
+			wantError: true,
+		},
+		{
 			name: "returns error when clubs not in fixture",
 			round: "Round 1", homeClub: "Nonexistent FC", awayClub: "Phantom United",
 			wantError: true,

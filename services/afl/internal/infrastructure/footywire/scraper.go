@@ -414,34 +414,42 @@ func matchesClub(rowText, normClub string) bool {
 	return false
 }
 
-// findMidInFixture walks the fixture DOM in document order. When a match link is
-// found it checks whether the surrounding row text contains both club names.
-//
-// Note: the FootyWire fixture page does not use h1–h3 headings to mark rounds, so
-// round-based disambiguation is not applied. Club-name matching is sufficient for
-// the regular season where each matchup occurs at most twice.
+// findMidInFixture walks the fixture DOM in document order, tracking which round
+// section it is currently in via the "tbtitle" row that precedes each round's
+// matches (e.g. "Round 14"). When a match link is found within the requested
+// round's section, it checks the matchup cell's two club links — rendered as
+// "<a href="th-...">Home</a> v <a href="th-...">Away</a>" — positionally against
+// homeClub and awayClub. Position matters: the same two clubs can meet twice in a
+// season with home/away reversed, and only the row text doesn't reveal which.
 func findMidInFixture(ctx context.Context, doc *html.Node, roundName, homeClub, awayClub string) string {
 	normHome := normStr(homeClub)
 	normAway := normStr(awayClub)
+	wantRound := footywireRoundLabel(roundName)
 
 	slog.DebugContext(ctx, "fixture discovery start",
-		slog.String("round", roundName),
+		slog.String("round", roundName), slog.String("wantRound", wantRound),
 		slog.String("home", homeClub), slog.String("normHome", normHome),
 		slog.String("away", awayClub), slog.String("normAway", normAway),
 	)
 
+	var currentRound string
+
 	var walk func(*html.Node) string
 	walk = func(n *html.Node) string {
 		if n.Type == html.ElementNode {
+			if n.Data == "td" && strings.Contains(attrVal(n, "class"), "tbtitle") {
+				currentRound = strings.TrimSpace(textContent(n))
+				slog.DebugContext(ctx, "fixture round section", slog.String("round", currentRound))
+			}
 			if n.Data == "a" {
 				href := attrVal(n, "href")
-				if strings.Contains(href, "ft_match_statistics?mid=") {
-					rowText := normStr(nearestRowText(n))
-					homeMatch := matchesClub(rowText, normHome)
-					awayMatch := matchesClub(rowText, normAway)
+				if strings.Contains(href, "ft_match_statistics?mid=") && currentRound == wantRound {
+					homeTok, awayTok := matchupClubTokens(nearestRow(n))
+					homeMatch := homeTok != "" && matchesClub(homeTok, normHome)
+					awayMatch := awayTok != "" && matchesClub(awayTok, normAway)
 					slog.DebugContext(ctx, "fixture link",
-						slog.String("href", href),
-						slog.String("rowText", rowText),
+						slog.String("href", href), slog.String("round", currentRound),
+						slog.String("homeTok", homeTok), slog.String("awayTok", awayTok),
 						slog.Bool("homeMatch", homeMatch),
 						slog.Bool("awayMatch", awayMatch),
 					)
@@ -465,18 +473,52 @@ func findMidInFixture(ctx context.Context, doc *html.Node, roundName, homeClub, 
 	return walk(doc)
 }
 
-// nearestRowText walks up from n to find the enclosing <tr> and returns its text.
-// Falls back to the parent element's text if no <tr> is found.
-func nearestRowText(n *html.Node) string {
+// footywireRoundLabel converts our round name to FootyWire's fixture-page label.
+// FootyWire calls the season-opening round "Round 0"; we call it "Opening Round".
+func footywireRoundLabel(roundName string) string {
+	if roundName == "Opening Round" {
+		return "Round 0"
+	}
+	return roundName
+}
+
+// nearestRow walks up from n to find the enclosing <tr>.
+func nearestRow(n *html.Node) *html.Node {
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Type == html.ElementNode && p.Data == "tr" {
-			return textContent(p)
+			return p
 		}
 	}
-	if n.Parent != nil {
-		return textContent(n.Parent)
+	return nil
+}
+
+// matchupClubTokens extracts the home and away club name tokens from a fixture
+// row's matchup cell, rendered by FootyWire as "<a href="th-...">Home</a> v
+// <a href="th-...">Away</a>" — team-home-page links in home-then-away order.
+// Returns empty strings if the row doesn't contain two such links.
+func matchupClubTokens(row *html.Node) (home, away string) {
+	if row == nil {
+		return "", ""
 	}
-	return ""
+	var tokens []string
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if len(tokens) >= 2 {
+			return
+		}
+		if n.Type == html.ElementNode && n.Data == "a" && strings.HasPrefix(attrVal(n, "href"), "th-") {
+			tokens = append(tokens, normStr(textContent(n)))
+			return
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(row)
+	if len(tokens) < 2 {
+		return "", ""
+	}
+	return tokens[0], tokens[1]
 }
 
 func normStr(s string) string {
