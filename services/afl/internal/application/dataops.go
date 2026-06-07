@@ -240,12 +240,6 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			if err != nil {
 				return fmt.Errorf("reload player matches: %w", err)
 			}
-			cm := w.cm
-			cm.PlayerMatches = allPlayerMatches
-			if err := repos.ClubMatches.UpdateScore(ctx, w.cm.ID, cm.Score()); err != nil {
-				return fmt.Errorf("update club score: %w", err)
-			}
-
 			// Rushed behinds = team total behinds − sum of all player behinds from the
 			// stats page. Using the full parsed total (not just matched players) keeps
 			// this accurate even when some players are not yet in the DB.
@@ -255,6 +249,13 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			}
 			if err := repos.ClubMatches.UpdateRushedBehinds(ctx, w.cm.ID, rushedBehinds); err != nil {
 				return fmt.Errorf("update rushed behinds: %w", err)
+			}
+
+			cm := w.cm
+			cm.RushedBehinds = rushedBehinds
+			cm.PlayerMatches = allPlayerMatches
+			if err := repos.ClubMatches.UpdateScore(ctx, w.cm.ID, cm.Score()); err != nil {
+				return fmt.Errorf("update club score: %w", err)
 			}
 
 			roundID, err = repos.ClubMatches.FindRoundID(ctx, w.cm.ID)

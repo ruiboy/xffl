@@ -109,3 +109,56 @@ SET status = 'named', drv_score = null
         AND fc.name = 'Ruiboys'
   );
 ROLLBACK;
+
+
+-- afl match scores per club for a round, with goals/behinds aggregated from player_match
+-- (one row per club; compares computed_score against the stored drv_score)
+with target_round as (
+    select r.id, r.name as round_name
+    from afl.round r
+    join afl.season s on s.id = r.season_id
+    join afl.league l on l.id = s.league_id
+    where l.name = 'AFL'
+      and s.name = 'AFL 2026'
+      and r.name = 'Round 1'
+),
+player_totals as (
+    select
+        pm.club_match_id,
+        sum(pm.goals)   as goals,
+        sum(pm.behinds) as behinds
+    from afl.player_match pm
+    group by pm.club_match_id
+),
+club_scores as (
+    select
+        cm.match_id,
+        cm.side,
+        c.name                    as club_name,
+        coalesce(pt.goals, 0)     as player_goals,
+        coalesce(pt.behinds, 0)   as player_behinds,
+        cm.rushed_behinds         as rushed_behinds,
+        coalesce(pt.goals, 0) * 6
+            + coalesce(pt.behinds, 0)
+            + cm.rushed_behinds   as computed_score,
+        cm.drv_score              as drv_score
+    from afl.club_match cm
+    join afl.club_season cs on cs.id = cm.club_season_id
+    join afl.club c         on c.id = cs.club_id
+    left join player_totals pt on pt.club_match_id = cm.id
+)
+select
+    tr.round_name,
+    m.id        as match_id,
+    cs.side,
+    cs.club_name,
+    cs.player_goals,
+    cs.player_behinds,
+    cs.rushed_behinds,
+    cs.computed_score,
+    cs.drv_score,
+    m.start_dt
+from afl.match m
+join target_round tr on tr.id = m.round_id
+join club_scores cs  on cs.match_id = m.id
+order by m.start_dt, cs.side desc;
