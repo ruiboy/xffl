@@ -18,41 +18,6 @@ test.describe('Navigation — Phase 21', () => {
     })
   })
 
-  test.describe('NAV-2: Cross-domain round pill in round header', () => {
-    test('FFL round view shows AFL cross-domain pill', async ({ page }) => {
-      await setupFflSession(page)
-      await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-      await page.waitForLoadState('networkidle')
-      const pill = page.getByRole('link', { name: /↔ AFL Round/ })
-      await expect(pill).toBeVisible()
-    })
-
-    test('AFL cross-domain pill navigates to the AFL round', async ({ page }) => {
-      await setupFflSession(page)
-      await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-      await page.waitForLoadState('networkidle')
-      await page.getByRole('link', { name: /↔ AFL Round/ }).click()
-      await expect(page).toHaveURL(/\/afl\/rounds\//)
-      await expect(page.getByRole('heading', { level: 1 })).toContainText('Round')
-    })
-
-    test('AFL round view shows FFL cross-domain pill', async ({ page }) => {
-      await setupAflSession(page)
-      await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-      await page.waitForLoadState('networkidle')
-      const pill = page.getByRole('link', { name: /↔ FFL Round/ })
-      await expect(pill).toBeVisible()
-    })
-
-    test('FFL cross-domain pill on AFL round navigates to FFL round', async ({ page }) => {
-      await setupAflSession(page)
-      await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-      await page.waitForLoadState('networkidle')
-      await page.getByRole('link', { name: /↔ FFL Round/ }).click()
-      await expect(page).toHaveURL(/\/ffl\/rounds\//)
-    })
-  })
-
   test.describe('NAV-3: Ladder pill in RoundNav', () => {
     test('FFL RoundNav has ladder pill as first item', async ({ page }) => {
       await setupFflSession(page)
@@ -66,7 +31,7 @@ test.describe('Navigation — Phase 21', () => {
       await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
       await page.waitForURL(/\/ffl\/rounds\//)
       await page.locator('main nav').last().getByTitle('Ladder').click()
-      await expect(page).toHaveURL('/ffl')
+      await expect(page).toHaveURL('/ffl/ladder')
     })
 
     test('AFL RoundNav has ladder pill as first item', async ({ page }) => {
@@ -80,7 +45,7 @@ test.describe('Navigation — Phase 21', () => {
       await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
       await page.waitForURL(/\/afl\/rounds\//)
       await page.locator('main nav').last().getByTitle('Ladder').click()
-      await expect(page).toHaveURL('/afl')
+      await expect(page).toHaveURL('/afl/ladder')
     })
   })
 

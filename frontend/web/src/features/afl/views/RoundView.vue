@@ -4,16 +4,9 @@
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="data">
       <Breadcrumb :items="[{ label: 'AFL' }, { label: data.season.name, to: { name: 'afl-home' } }]" />
-      <div class="flex items-center gap-3 mb-6">
-        <h1 class="text-2xl font-bold">
-          {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
-        </h1>
-        <router-link
-          v-if="fflRoundTo"
-          :to="fflRoundTo"
-          class="inline-flex items-center gap-1.5 rounded-full bg-control px-3 py-1 text-sm text-text-muted hover:bg-control-hover hover:text-text transition-colors"
-        >↔ FFL {{ data.round.name }}</router-link>
-      </div>
+      <h1 class="text-2xl font-bold mb-6">
+        {{ data.round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
+      </h1>
 
       <RoundNav
         class="mb-8"
@@ -62,11 +55,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_AFL_ROUND } from '../api/queries'
 import { GET_FFL_ROUND_ID_BY_AFL_ROUND } from '@/features/ffl/api/queries'
 import { useAflState } from '../composables/useAflState'
+import { useFflState } from '@/features/ffl/composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
@@ -75,7 +69,8 @@ import TopPlayers from '../components/TopPlayers.vue'
 
 const props = defineProps<{ roundId: string }>()
 
-const { liveRoundId, liveStartDate } = useAflState()
+const { liveRoundId, liveStartDate, setSelectedRound } = useAflState()
+const { setSelectedRound: setFflSelectedRound } = useFflState()
 const { result, loading, error } = useQuery(GET_AFL_ROUND, () => ({ roundId: props.roundId }))
 
 const { result: fflRoundResult } = useQuery(
@@ -83,10 +78,14 @@ const { result: fflRoundResult } = useQuery(
   () => ({ aflRoundId: props.roundId }),
 )
 
-const fflRoundTo = computed(() => {
-  const id = fflRoundResult.value?.fflRoundByAflRound?.id
-  if (!id) return null
-  return { name: 'ffl-round', params: { roundId: id } }
+// Visiting a round makes it "stick" for cross-domain navigation (header
+// links, DataOps) until the page is reloaded. The corresponding FFL round
+// sticks too, so switching domains lands on the matching round.
+watch(() => props.roundId, (id) => setSelectedRound(id), { immediate: true })
+
+watch(fflRoundResult, (r) => {
+  const id = r?.fflRoundByAflRound?.id
+  if (id) setFflSelectedRound(id)
 })
 
 const data = computed(() => {

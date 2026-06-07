@@ -7,11 +7,11 @@
           <img src="/images/ffl-eagle-logo.png" alt="FFL" class="h-10 w-auto transition-transform duration-200 hover:scale-[3] origin-top-left" />
         </router-link>
         <router-link
-          :to="fflLiveRoundId ? { name: 'ffl-round', params: { roundId: fflLiveRoundId } } : { name: 'home' }"
+          :to="fflSelectedRoundId ? { name: 'ffl-round', params: { roundId: fflSelectedRoundId } } : { name: 'home' }"
           class="text-sm text-text-muted hover:text-text transition-colors"
         >FFL</router-link>
         <router-link
-          :to="aflLiveRoundId ? { name: 'afl-round', params: { roundId: aflLiveRoundId } } : { name: 'afl-home' }"
+          :to="aflSelectedRoundId ? { name: 'afl-round', params: { roundId: aflSelectedRoundId } } : { name: 'afl-home' }"
           class="text-sm text-text-muted hover:text-text transition-colors"
         >AFL</router-link>
 
@@ -38,7 +38,7 @@
 
           <!-- DataOps link -->
           <router-link
-            :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflLiveRoundId || undefined } }"
+            :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
             class="text-text-muted hover:text-text transition-colors translate-y-0.5"
             title="Data Ops"
           >
@@ -99,8 +99,8 @@ import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
-const { selectedClubId, liveSeasonId, liveRoundId: fflLiveRoundId, setClub } = useFflState()
-const { liveRoundId: aflLiveRoundId } = useAflState()
+const { selectedClubId, liveSeasonId, selectedRoundId: fflSelectedRoundId, setClub } = useFflState()
+const { selectedRoundId: aflSelectedRoundId } = useAflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))

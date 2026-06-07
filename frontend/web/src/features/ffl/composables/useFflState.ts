@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+import { ref, readonly, computed } from 'vue'
 
 const FFL_COOKIE = 'xffl_ffl'
 
@@ -53,13 +53,24 @@ function setLiveRound(seasonId: string, roundId: string, startDate: string) {
   setCookie(FFL_COOKIE, JSON.stringify({ seasonId, roundId, startDate }))
 }
 
+// In-memory only (not persisted) — sticks to whichever round the user last
+// navigated to, falling back to the live round. Resets on page reload.
+const selectedRoundOverride = ref<string>('')
+const selectedRoundId = computed(() => selectedRoundOverride.value || liveRoundId.value)
+
+function setSelectedRound(roundId: string) {
+  selectedRoundOverride.value = roundId
+}
+
 export function useFflState() {
   return {
     selectedClubId: readonly(selectedClubId),
     liveSeasonId: readonly(liveSeasonId),
     liveRoundId: readonly(liveRoundId),
     liveStartDate: readonly(liveStartDate),
+    selectedRoundId,
     setClub,
     setLiveRound,
+    setSelectedRound,
   }
 }

@@ -24,7 +24,7 @@ test.describe('FFL Round', () => {
 
   test('FFL breadcrumb link navigates back to home', async ({ page }) => {
     await page.locator('main').getByRole('link', { name: 'FFL 2026' }).click()
-    await expect(page).toHaveURL('/ffl')
+    await expect(page).toHaveURL(/\/ffl\/rounds\//)
   })
 
   test('displays match summaries', async ({ page }) => {

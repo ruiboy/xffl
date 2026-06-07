@@ -72,7 +72,7 @@ test.describe('FFL Squad', () => {
   })
 
   test('Manage button hidden when viewing another club squad', async ({ page }) => {
-    await page.goto('/ffl')
+    await page.goto('/ffl/ladder')
     await page.locator('main').getByRole('link', { name: 'Ruiboys' }).first().click()
     await page.waitForURL(/\/ffl\/club-seasons\//)
     await page.waitForLoadState('networkidle')

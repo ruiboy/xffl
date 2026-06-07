@@ -2,7 +2,7 @@
   <nav class="flex flex-wrap gap-2">
     <!-- Ladder pill -->
     <router-link
-      :to="{ name: 'afl-home' }"
+      :to="{ name: 'afl-ladder' }"
       class="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-control text-text-muted hover:bg-control-hover hover:text-text"
       title="Ladder"
     >
@@ -18,6 +18,7 @@
       v-for="round in rounds"
       :key="round.id"
       :to="toRound ? toRound(round) : { name: 'afl-round', params: { roundId: round.id } }"
+      :title="round.name"
       class="relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
       :class="effectiveActiveId === round.id
         ? 'bg-active text-active-text'
