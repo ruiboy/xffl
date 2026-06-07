@@ -39,12 +39,11 @@ test.describe('FFL Data Ops', () => {
       await expect(page.getByRole('cell', { name: 'Ruiboys' })).toBeVisible()
     })
 
-    test('round selector defaults to the live round', async ({ page }) => {
-      // Clock override puts us in Round 3.
-      const roundSelect = page.locator('select').first()
-      await expect(roundSelect).toHaveValue(/\d+/)
-      const selectedText = await roundSelect.locator('option:checked').textContent()
-      expect(selectedText).toContain('Round 3')
+    test('round nav defaults to the live round (Round 3 selected)', async ({ page }) => {
+      // Clock override puts us in Round 3 — its pill should be the active selection.
+      const roundNav = page.locator('main nav').last()
+      const round3 = roundNav.getByRole('link', { name: '3', exact: true })
+      await expect(round3).toHaveClass(/bg-active/)
     })
 
     test('import panel opens inside a card with Cancel and Read Team buttons', async ({ page }) => {
@@ -76,7 +75,7 @@ test.describe('FFL Data Ops', () => {
       await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
 
       // Select team format
-      await page.locator('select').nth(1).selectOption('Ruiboys')
+      await page.locator('select').first().selectOption('Ruiboys')
 
       // Paste post
       await page.locator('textarea').fill(minimalRuiboysPost)
@@ -101,7 +100,7 @@ test.describe('FFL Data Ops', () => {
     test('back button returns to input phase', async ({ page }) => {
       // Open import panel for Ruiboys, select format, paste, read
       await page.getByRole('row').filter({ hasText: 'Ruiboys' }).first().getByRole('button', { name: 'Import Team' }).click()
-      await page.locator('select').nth(1).selectOption('Ruiboys')
+      await page.locator('select').first().selectOption('Ruiboys')
       await page.locator('textarea').fill(minimalRuiboysPost)
       await page.getByRole('button', { name: 'Read Team' }).click()
 

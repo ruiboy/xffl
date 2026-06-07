@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+import { ref, readonly, computed } from 'vue'
 
 interface AflState {
   seasonId: string
@@ -47,11 +47,22 @@ function setLiveRound(seasonId: string, roundId: string, startDate: string) {
   writeCookie({ seasonId, roundId, startDate })
 }
 
+// In-memory only (not persisted) — sticks to whichever round the user last
+// navigated to, falling back to the live round. Resets on page reload.
+const selectedRoundOverride = ref<string>('')
+const selectedRoundId = computed(() => selectedRoundOverride.value || liveRoundId.value)
+
+function setSelectedRound(roundId: string) {
+  selectedRoundOverride.value = roundId
+}
+
 export function useAflState() {
   return {
     liveSeasonId: readonly(liveSeasonId),
     liveRoundId: readonly(liveRoundId),
     liveStartDate: readonly(liveStartDate),
+    selectedRoundId,
     setLiveRound,
+    setSelectedRound,
   }
 }

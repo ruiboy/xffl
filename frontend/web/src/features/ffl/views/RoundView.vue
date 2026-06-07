@@ -13,6 +13,7 @@
         class="mb-8"
         :rounds="season?.rounds ?? []"
         :live-round-id="liveRoundId"
+        :live-start-date="liveStartDate"
       />
 
       <section class="mb-8">
@@ -57,43 +58,39 @@
 
       </section>
 
-      <div class="mt-8 flex items-center gap-6">
-        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
-          <IconAfl class="w-4 h-4" />
-          AFL Round
-        </router-link>
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: props.roundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
 
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
+import { useAflState } from '@/features/afl/composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
-import IconAfl from '../components/icons/IconAfl.vue'
 
 const props = defineProps<{ roundId: string }>()
 
-const { liveRoundId, selectedClubId } = useFflState()
+const { liveRoundId, liveStartDate, selectedClubId, setSelectedRound } = useFflState()
+const { setSelectedRound: setAflSelectedRound } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
 const round = computed(() => result.value?.fflRound ?? null)
 const season = computed(() => round.value?.season ?? null)
+
+// Visiting a round makes it "stick" for cross-domain navigation (header
+// links, DataOps) until the page is reloaded. The corresponding AFL round
+// sticks too, so switching domains lands on the matching round.
+watch(() => props.roundId, (id) => setSelectedRound(id), { immediate: true })
+
+watch(round, (r) => {
+  if (r?.aflRoundId) setAflSelectedRound(r.aflRoundId)
+})
 
 const roundStartDate = computed(() => {
   if (!round.value) return null
@@ -107,12 +104,6 @@ const roundStartDate = computed(() => {
   const month = earliest.toLocaleDateString('en-AU', { month: 'short' })
   const year = String(earliest.getFullYear()).slice(-2)
   return `${day} ${month} '${year}`
-})
-
-const aflRoundTo = computed(() => {
-  const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId) return null
-  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const breadcrumbs = computed(() => {

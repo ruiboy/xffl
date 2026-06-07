@@ -12,6 +12,7 @@
         class="mb-8"
         :rounds="data.season.rounds"
         :live-round-id="liveRoundId"
+        :live-start-date="liveStartDate"
       />
 
       <section class="mb-8">
@@ -48,36 +49,44 @@
         </div>
       </section>
 
-      <div class="mt-8">
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: props.roundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
 
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_AFL_ROUND } from '../api/queries'
+import { GET_FFL_ROUND_ID_BY_AFL_ROUND } from '@/features/ffl/api/queries'
 import { useAflState } from '../composables/useAflState'
+import { useFflState } from '@/features/ffl/composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ roundId: string }>()
 
-const { liveRoundId } = useAflState()
+const { liveRoundId, liveStartDate, setSelectedRound } = useAflState()
+const { setSelectedRound: setFflSelectedRound } = useFflState()
 const { result, loading, error } = useQuery(GET_AFL_ROUND, () => ({ roundId: props.roundId }))
+
+const { result: fflRoundResult } = useQuery(
+  GET_FFL_ROUND_ID_BY_AFL_ROUND,
+  () => ({ aflRoundId: props.roundId }),
+)
+
+// Visiting a round makes it "stick" for cross-domain navigation (header
+// links, DataOps) until the page is reloaded. The corresponding FFL round
+// sticks too, so switching domains lands on the matching round.
+watch(() => props.roundId, (id) => setSelectedRound(id), { immediate: true })
+
+watch(fflRoundResult, (r) => {
+  const id = r?.fflRoundByAflRound?.id
+  if (id) setFflSelectedRound(id)
+})
 
 const data = computed(() => {
   const round = result.value?.aflRound

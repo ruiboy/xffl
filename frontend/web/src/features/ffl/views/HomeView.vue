@@ -14,7 +14,7 @@
         class="mb-8"
         :rounds="fflRound.season.rounds"
         :live-round-id="liveRoundId"
-        :season-id="fflRound.season.id"
+        :live-start-date="liveStartDate"
       />
 
       <section>
@@ -34,7 +34,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
 
-const { liveRoundId, setLiveRound } = useFflState()
+const { liveRoundId, liveStartDate, setLiveRound } = useFflState()
 
 // Step 1: get the live AFL round
 const { result: aflResult, loading: aflLoading, error: aflError } = useQuery(GET_AFL_LIVE_ROUND)
