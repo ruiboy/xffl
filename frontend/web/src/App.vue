@@ -6,12 +6,14 @@
         <router-link to="/ffl" class="flex items-center">
           <img src="/images/ffl-eagle-logo.png" alt="FFL" class="h-10 w-auto transition-transform duration-200 hover:scale-[3] origin-top-left" />
         </router-link>
-        <router-link to="/ffl" class="text-sm text-text-muted hover:text-text transition-colors">
-          FFL
-        </router-link>
-        <router-link to="/afl" class="text-sm text-text-muted hover:text-text transition-colors">
-          AFL
-        </router-link>
+        <router-link
+          :to="fflLiveRoundId ? { name: 'ffl-round', params: { roundId: fflLiveRoundId } } : { name: 'home' }"
+          class="text-sm text-text-muted hover:text-text transition-colors"
+        >FFL</router-link>
+        <router-link
+          :to="aflLiveRoundId ? { name: 'afl-round', params: { roundId: aflLiveRoundId } } : { name: 'afl-home' }"
+          class="text-sm text-text-muted hover:text-text transition-colors"
+        >AFL</router-link>
 
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
@@ -33,6 +35,15 @@
               @update:model-value="setClub"
             />
           </template>
+
+          <!-- DataOps link -->
+          <router-link
+            :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflLiveRoundId || undefined } }"
+            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+            title="Data Ops"
+          >
+            <IconDataOps class="w-5 h-5" />
+          </router-link>
 
           <!-- Settings cog -->
           <div class="relative" ref="settingsContainer">
@@ -80,13 +91,16 @@ import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
+import { useAflState } from '@/features/afl/composables/useAflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
-const { selectedClubId, liveSeasonId, setClub } = useFflState()
+const { selectedClubId, liveSeasonId, liveRoundId: fflLiveRoundId, setClub } = useFflState()
+const { liveRoundId: aflLiveRoundId } = useAflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))

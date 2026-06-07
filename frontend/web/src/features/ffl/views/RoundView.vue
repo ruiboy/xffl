@@ -5,14 +5,22 @@
     <template v-else-if="round">
       <Breadcrumb :items="breadcrumbs" />
 
-      <h1 class="text-2xl font-bold mb-6">
-        {{ round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
-      </h1>
+      <div class="flex items-center gap-3 mb-6">
+        <h1 class="text-2xl font-bold">
+          {{ round.name }}<span v-if="roundStartDate" class="font-normal text-text-faint"> · {{ roundStartDate }}</span>
+        </h1>
+        <router-link
+          v-if="aflRoundTo"
+          :to="aflRoundTo"
+          class="inline-flex items-center gap-1.5 rounded-full bg-control px-3 py-1 text-sm text-text-muted hover:bg-control-hover hover:text-text transition-colors"
+        >↔ AFL {{ round.name }}</router-link>
+      </div>
 
       <RoundNav
         class="mb-8"
         :rounds="season?.rounds ?? []"
         :live-round-id="liveRoundId"
+        :live-start-date="liveStartDate"
       />
 
       <section class="mb-8">
@@ -57,19 +65,6 @@
 
       </section>
 
-      <div class="mt-8 flex items-center gap-6">
-        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
-          <IconAfl class="w-4 h-4" />
-          AFL Round
-        </router-link>
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: props.roundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
 
     </template>
   </div>
@@ -84,12 +79,10 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
-import IconAfl from '../components/icons/IconAfl.vue'
 
 const props = defineProps<{ roundId: string }>()
 
-const { liveRoundId, selectedClubId } = useFflState()
+const { liveRoundId, liveStartDate, selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
 const round = computed(() => result.value?.fflRound ?? null)

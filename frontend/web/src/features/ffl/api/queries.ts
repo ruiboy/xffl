@@ -90,6 +90,15 @@ export const GET_FFL_ROUND_IDS_BY_AFL_ROUND = gql`
   }
 `
 
+export const GET_FFL_ROUND_ID_BY_AFL_ROUND = gql`
+  query GetFFLRoundIdByAflRound($aflRoundId: ID!) {
+    fflRoundByAflRound(aflRoundId: $aflRoundId) {
+      id
+      name
+    }
+  }
+`
+
 export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
   query GetFFLRoundByAflRound($aflRoundId: ID!) {
     fflRoundByAflRound(aflRoundId: $aflRoundId) {

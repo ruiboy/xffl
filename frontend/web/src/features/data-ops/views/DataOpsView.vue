@@ -27,22 +27,13 @@
       <div v-else-if="liveRoundError" class="text-red-400">{{ liveRoundError.message }}</div>
       <template v-else>
         <!-- Round selector -->
-        <div class="mb-5 max-w-xs">
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-medium text-text-muted">Round</label>
-            <router-link
-              v-if="selectedAflRoundId"
-              :to="{ name: 'afl-round', params: { roundId: selectedAflRoundId } }"
-              class="text-xs text-text-faint hover:text-active transition-colors"
-            >View round →</router-link>
-          </div>
-          <select
-            v-model="selectedAflRoundId"
-            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-          >
-            <option v-for="r in aflRounds" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </div>
+        <AflRoundNav
+          class="mb-5"
+          :rounds="aflRounds"
+          :live-round-id="aflLiveRoundId"
+          :active-id="selectedAflRoundId"
+          :to-round="(r) => ({ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: r.id } })"
+        />
 
         <!-- Match list -->
         <div v-if="loadingRoundStats" class="text-text-faint text-sm">Loading matches…</div>
@@ -247,22 +238,13 @@
       <template v-else-if="season">
 
         <!-- Round selector -->
-        <div class="mb-5 max-w-xs">
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-medium text-text-muted">Round</label>
-            <router-link
-              v-if="liveSeasonId && selectedRoundId"
-              :to="{ name: 'ffl-round', params: { roundId: selectedRoundId } }"
-              class="text-xs text-text-faint hover:text-active transition-colors"
-            >View round →</router-link>
-          </div>
-          <select
-            v-model="selectedRoundId"
-            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
-          >
-            <option v-for="r in season.rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </div>
+        <FflRoundNav
+          class="mb-5"
+          :rounds="season.rounds"
+          :live-round-id="liveRoundId"
+          :active-id="selectedRoundId"
+          :to-round="(r) => ({ name: 'ffl-data-ops', query: { tab: 'team-submission', round: r.id } })"
+        />
 
         <!-- Club list for selected round -->
         <div v-if="!selectedRound" class="text-text-faint text-sm">Select a round.</div>
@@ -497,14 +479,18 @@ import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
 import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, RECALCULATE_FFL_CLUB_MATCH_SCORE } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
+import { useAflState } from '@/features/afl/composables/useAflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { clubLogoUrl as fflClubLogoUrl } from '@/features/ffl/utils/clubLogos'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
+import AflRoundNav from '@/features/afl/components/RoundNav.vue'
+import FflRoundNav from '@/features/ffl/components/RoundNav.vue'
 
 const { liveSeasonId, liveRoundId } = useFflState()
+const { liveRoundId: aflLiveRoundId } = useAflState()
 const route = useRoute()
 
 const initialTab = (route.query.tab as string) || 'team-submission'
@@ -701,6 +687,14 @@ const selectedRoundId = ref(initialTab === 'team-submission' && initialRound ? i
 watch(liveRoundId, (val) => {
   if (val && !selectedRoundId.value) selectedRoundId.value = val
 }, { immediate: true })
+
+// Sync tab + round from route query params when RoundNav navigates within DataOps
+watch(() => route.query.tab, (val) => { if (val) activeTab.value = val as string })
+watch(() => route.query.round, (val) => {
+  if (!val) return
+  if (activeTab.value === 'afl-stats') selectedAflRoundId.value = val as string
+  if (activeTab.value === 'team-submission') selectedRoundId.value = val as string
+})
 
 const selectedRound = computed(() =>
   season.value?.rounds.find((r: any) => r.id === selectedRoundId.value) ?? null,
