@@ -68,6 +68,8 @@ with afl_data as (
 select
     fr.name as ffl_round,
     fc.name as ffl_club,
+    fcm.id as ffl_club_match_id,
+    fpm.id as ffl_player_match_id,
     ad.afl_player_name as afl_player,
     ad.afl_club_name as afl_club,
     fpm.position as ffl_position,
