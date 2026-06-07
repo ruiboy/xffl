@@ -2,29 +2,7 @@
 
 ## Context
 
-Full stack rebuild (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests. See `plans/history.md` for completed phases 1–19.
-
-## Phase 20: Data Management — Import Infrastructure, Part II ✅
-
-- [x] FFL in-season player trades — squad management with AFL-backed player search
-- [x] AFL stats import — FootyWire scraper, player source mapping, match status tracking
-- [x] Score and ladder calculation — AFL→FFL event chain, finalization flow, provisional/final tiers
-- [x] Schema health: replace circular match↔club_match FKs with role column; enforce AFL FK integrity
-- *(deferred → Phase 23)* Score reconciliation — submitted vs. calculated diff
-- *(deferred → Phase 25)* Pluggable FFL scoring formula — strategy pattern keyed per season
-- [x] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table; add `notes` to `ffl.club_match` and `ffl.player_match`
-
-## Phase 21: UX — Navigation
-
-**Goal:** Consistent, round-aware navigation across AFL and FFL. See `plans/ideas.md` for full item descriptions.
-
-- [ ] NAV-1: Header links navigate to live round (`/afl/rounds/:liveRoundId`, `/ffl/rounds/:liveRoundId`)
-- [ ] NAV-2: Cross-domain round pill in round header — "↔ AFL/FFL Round N" navigates to corresponding round in the other domain
-- [ ] NAV-3: Ladder pill as first item in RoundNav — ladder icon + hover tooltip
-- [ ] NAV-4: DataOps icon link in header right-side nav (always visible; links to live round)
-- [ ] NAV-5: Replace DataOps round dropdown with RoundNav component (colour-coded data health deferred)
-- [ ] PAGE-7: Enhance current-round pill with pulsing indicator when `start_dt` = today
-- [ ] Playwright tests
+Full stack rebuild (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests. See `plans/history.md` for completed phases 1–21.
 
 ## Phase 22: Real Data Load & Seed Cleanup
 
