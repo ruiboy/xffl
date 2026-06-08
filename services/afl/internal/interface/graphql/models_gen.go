@@ -33,6 +33,7 @@ type AFLClubSeason struct {
 	Drawn             int        `json:"drawn"`
 	For               int        `json:"for"`
 	Against           int        `json:"against"`
+	Percentage        float64    `json:"percentage"`
 	PremiershipPoints int        `json:"premiershipPoints"`
 }
 

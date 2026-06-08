@@ -71,6 +71,7 @@ type ComplexityRoot struct {
 		For               func(childComplexity int) int
 		ID                func(childComplexity int) int
 		Lost              func(childComplexity int) int
+		Percentage        func(childComplexity int) int
 		Played            func(childComplexity int) int
 		PremiershipPoints func(childComplexity int) int
 		Season            func(childComplexity int) int
@@ -394,6 +395,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AFLClubSeason.Lost(childComplexity), true
+	case "AFLClubSeason.percentage":
+		if e.ComplexityRoot.AFLClubSeason.Percentage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AFLClubSeason.Percentage(childComplexity), true
 	case "AFLClubSeason.played":
 		if e.ComplexityRoot.AFLClubSeason.Played == nil {
 			break
@@ -1304,6 +1311,7 @@ type AFLClubSeason {
   drawn: Int!
   for: Int!
   against: Int!
+  percentage: Float!
   premiershipPoints: Int!
 }
 
@@ -2422,6 +2430,35 @@ func (ec *executionContext) fieldContext_AFLClubSeason_against(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _AFLClubSeason_percentage(ctx context.Context, field graphql.CollectedField, obj *AFLClubSeason) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AFLClubSeason_percentage,
+		func(ctx context.Context) (any, error) {
+			return obj.Percentage, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AFLClubSeason_percentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AFLClubSeason",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AFLClubSeason_premiershipPoints(ctx context.Context, field graphql.CollectedField, obj *AFLClubSeason) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3467,6 +3504,8 @@ func (ec *executionContext) fieldContext_AFLPlayerSeason_clubSeason(_ context.Co
 				return ec.fieldContext_AFLClubSeason_for(ctx, field)
 			case "against":
 				return ec.fieldContext_AFLClubSeason_against(ctx, field)
+			case "percentage":
+				return ec.fieldContext_AFLClubSeason_percentage(ctx, field)
 			case "premiershipPoints":
 				return ec.fieldContext_AFLClubSeason_premiershipPoints(ctx, field)
 			}
@@ -3894,6 +3933,8 @@ func (ec *executionContext) fieldContext_AFLSeason_ladder(_ context.Context, fie
 				return ec.fieldContext_AFLClubSeason_for(ctx, field)
 			case "against":
 				return ec.fieldContext_AFLClubSeason_against(ctx, field)
+			case "percentage":
+				return ec.fieldContext_AFLClubSeason_percentage(ctx, field)
 			case "premiershipPoints":
 				return ec.fieldContext_AFLClubSeason_premiershipPoints(ctx, field)
 			}
@@ -7991,6 +8032,11 @@ func (ec *executionContext) _AFLClubSeason(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "percentage":
+			out.Values[i] = ec._AFLClubSeason_percentage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "premiershipPoints":
 			out.Values[i] = ec._AFLClubSeason_premiershipPoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10298,6 +10344,22 @@ func (ec *executionContext) marshalNFieldSet2string(ctx context.Context, sel ast
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {

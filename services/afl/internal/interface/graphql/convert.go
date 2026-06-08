@@ -101,6 +101,7 @@ func convertClubSeason(cs domain.ClubSeason, club domain.Club) *AFLClubSeason {
 		Drawn:             cs.Drawn,
 		For:               cs.For,
 		Against:           cs.Against,
+		Percentage:        cs.Percentage(),
 		PremiershipPoints: cs.PremiershipPoints,
 	}
 }

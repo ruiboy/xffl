@@ -82,6 +82,7 @@ type AFLClubSeason
   drawn: Int!
   for: Int!
   against: Int!
+  percentage: Float!
   premiershipPoints: Int!
 }
 

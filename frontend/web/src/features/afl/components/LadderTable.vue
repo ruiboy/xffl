@@ -11,6 +11,7 @@
           <th class="py-2 px-2 font-medium text-right">D</th>
           <th class="py-2 px-2 font-medium text-right">F</th>
           <th class="py-2 px-2 font-medium text-right">A</th>
+          <th class="py-2 px-2 font-medium text-right">%</th>
           <th class="py-2 px-2 font-medium text-right">Pts</th>
         </tr>
       </thead>
@@ -33,6 +34,7 @@
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.drawn }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.for }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.against }}</td>
+          <td class="py-2 px-2 text-right tabular-nums">{{ entry.percentage.toFixed(1) }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.premiershipPoints }}</td>
         </tr>
       </tbody>
@@ -52,6 +54,7 @@ interface LadderEntry {
   drawn: number
   for: number
   against: number
+  percentage: number
   premiershipPoints: number
 }
 
