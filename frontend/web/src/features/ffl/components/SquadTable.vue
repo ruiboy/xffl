@@ -24,11 +24,13 @@
           >
             <td class="py-2 pr-4">
               <div>
-                <span class="font-medium">{{ pm.player.aflPlayer.name }}</span>
-                <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+                <span class="font-medium" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pm.player.aflPlayer.name }}</span>
+                <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pmAflClub(pm) }}</span>
               </div>
-              <div v-if="coveringMap.get(pm.id)" class="text-xs text-sky-400">
-                ↑ {{ coveringMap.get(pm.id)!.player.aflPlayer.name }}
+              <div v-if="coveringMap.get(pm.id)" class="text-sky-400">
+                <span class="text-xs mr-1">↑</span>
+                <span class="font-medium">{{ coveringMap.get(pm.id)!.player.aflPlayer.name }}</span>
+                <span v-if="pmAflClub(coveringMap.get(pm.id)!)" class="ml-2 text-xs">{{ pmAflClub(coveringMap.get(pm.id)!) }}</span>
               </div>
             </td>
             <td class="py-2 px-2"></td>
@@ -53,21 +55,26 @@
             class="border-b border-border-subtle hover:bg-surface-hover"
           >
             <td class="py-2 pr-4">
-              <div v-if="coveredStarterMap.get(pm.id)" class="text-xs text-sky-400">
-                ↑ {{ coveredStarterMap.get(pm.id)!.player.aflPlayer.name }}
-              </div>
-              <span class="font-medium text-text-muted">{{ pm.player.aflPlayer.name }}</span>
-              <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted">{{ pmAflClub(pm) }}</span>
+              <span v-if="coveredStarterMap.get(pm.id)" class="text-xs mr-1 text-sky-400">↑</span>
+              <span
+                class="font-medium"
+                :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'"
+              >{{ pm.player.aflPlayer.name }}</span>
+              <span
+                v-if="pmAflClub(pm)"
+                class="ml-2 text-xs"
+                :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'"
+              >{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2">
               <div class="flex items-center gap-1">
                 <span
                   v-for="pos in pmBackupPositions(pm)"
                   :key="pos"
-                  :class="pm.interchangePosition === pos
-                    ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400 underline'
-                    : coveredStarterMap.get(pm.id)?.position === pos
-                      ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60'
+                  :class="((pm.interchangePosition === pos && pm.status === 'interchanged_in') || coveredStarterMap.get(pm.id)?.position === pos)
+                    ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400'
+                    : pos === 'star'
+                      ? 'text-xs bg-control rounded px-1.5 py-0.5 text-yellow-400'
                       : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'"
                 >{{ positionShort(pos) }}</span>
               </div>
