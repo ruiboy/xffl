@@ -147,12 +147,15 @@
                           :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
                           :to="playerAflMatchRoute(slot.player) ?? undefined"
                           class="font-medium text-sm hover:text-active transition-colors"
+                          :class="{ 'line-through': effectiveCovering(slot.player.pmId) }"
                         >{{ slot.player.name }}</component>
-                        <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                        <span v-if="slot.player.club" class="text-xs text-text-muted" :class="{ 'line-through': effectiveCovering(slot.player.pmId) }">{{ slot.player.club }}</span>
                       </div>
-                      <span v-if="effectiveCovering(slot.player.pmId)" class="text-xs text-sky-400">
-                        ↑ {{ effectiveCovering(slot.player.pmId)!.name }}
-                      </span>
+                      <div v-if="effectiveCovering(slot.player.pmId)" class="text-sky-400">
+                        <span class="text-xs mr-1">↑</span>
+                        <span class="font-medium text-sm">{{ effectiveCovering(slot.player.pmId)!.name }}</span>
+                        <span v-if="effectiveCovering(slot.player.pmId)!.club" class="ml-2 text-xs">{{ effectiveCovering(slot.player.pmId)!.club }}</span>
+                      </div>
                     </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -224,16 +227,19 @@
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
                     <div v-if="slot.player">
-                      <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="block text-xs text-sky-400">
-                        ↑ {{ effectiveSubbedForStarter(slot.player.pmId)!.name }}
-                      </span>
                       <div class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
+                        <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="text-xs mr-1 text-sky-400">↑</span>
                         <component
                           :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
                           :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
-                          class="font-medium text-sm text-text-muted hover:text-active transition-colors"
+                          class="font-medium text-sm hover:text-active transition-colors"
+                          :class="!managing && effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
                         >{{ slot.player.name }}</component>
-                        <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                        <span
+                          v-if="slot.player.club"
+                          class="text-xs"
+                          :class="!managing && effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
+                        >{{ slot.player.club }}</span>
                       </div>
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -277,10 +283,10 @@
                     <template v-else-if="slot.player">
                       <div class="flex items-center gap-2 shrink-0">
                         <div class="w-28 flex items-center justify-end gap-1 shrink-0">
-                          <span v-if="slot.positions[0]" :class="interchangePosition === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[0] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                          <span v-if="slot.positions[0]" :class="effectiveCoveredPosition(slot.player?.pmId) === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : slot.positions[0] === 'star' ? 'text-xs bg-control rounded px-1.5 py-0.5 text-yellow-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
                             {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
                           </span>
-                          <span v-if="slot.positions[1]" :class="interchangePosition === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[1] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                          <span v-if="slot.positions[1]" :class="effectiveCoveredPosition(slot.player?.pmId) === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : slot.positions[1] === 'star' ? 'text-xs bg-control rounded px-1.5 py-0.5 text-yellow-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
                             {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                           </span>
                         </div>
