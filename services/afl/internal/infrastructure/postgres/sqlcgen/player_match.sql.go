@@ -371,10 +371,23 @@ SELECT
   AVG(pm.tackles)::float8   AS avg_tackles,
   AVG(pm.hitouts)::float8   AS avg_hitouts
 FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.player_season_id = ANY($1::int[])
   AND pm.deleted_at IS NULL
+  AND m.data_status = 'final'
+  AND m.start_dt < (
+    SELECT MIN(m2.start_dt)
+    FROM afl.match m2
+    WHERE m2.round_id = $2 AND m2.deleted_at IS NULL
+  )
 GROUP BY pm.player_season_id
 `
+
+type GetPlayerSeasonAveragesBatchParams struct {
+	PlayerSeasonIds []int32
+	RoundID         int32
+}
 
 type GetPlayerSeasonAveragesBatchRow struct {
 	PlayerSeasonID int32
@@ -386,9 +399,11 @@ type GetPlayerSeasonAveragesBatchRow struct {
 	AvgHitouts     float64
 }
 
-// Returns season-to-date average stats for each player_season, across all matches played.
-func (q *Queries) GetPlayerSeasonAveragesBatch(ctx context.Context, playerSeasonIds []int32) ([]GetPlayerSeasonAveragesBatchRow, error) {
-	rows, err := q.db.Query(ctx, getPlayerSeasonAveragesBatch, playerSeasonIds)
+// Returns average stats for each player_season across final matches that took place
+// before the given round (by start_dt, since round_id ordering is not guaranteed to be
+// chronological). Used to compute bye scores from season-to-date form.
+func (q *Queries) GetPlayerSeasonAveragesBatch(ctx context.Context, arg GetPlayerSeasonAveragesBatchParams) ([]GetPlayerSeasonAveragesBatchRow, error) {
+	rows, err := q.db.Query(ctx, getPlayerSeasonAveragesBatch, arg.PlayerSeasonIds, arg.RoundID)
 	if err != nil {
 		return nil, err
 	}

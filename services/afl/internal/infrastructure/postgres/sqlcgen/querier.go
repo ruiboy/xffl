@@ -48,8 +48,10 @@ type Querier interface {
 	FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
-	// Returns season-to-date average stats for each player_season, across all matches played.
-	GetPlayerSeasonAveragesBatch(ctx context.Context, playerSeasonIds []int32) ([]GetPlayerSeasonAveragesBatchRow, error)
+	// Returns average stats for each player_season across final matches that took place
+	// before the given round (by start_dt, since round_id ordering is not guaranteed to be
+	// chronological). Used to compute bye scores from season-to-date form.
+	GetPlayerSeasonAveragesBatch(ctx context.Context, arg GetPlayerSeasonAveragesBatchParams) ([]GetPlayerSeasonAveragesBatchRow, error)
 	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
 	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)

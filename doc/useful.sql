@@ -1,4 +1,4 @@
--- ffl player season w/ round in/out
+-- ffl player tenure for a season
 select ap.name, ac.name, fc.name, frfrom.name from_round, frto.name to_round
 from ffl.player_season fps
          left outer join ffl.club_season fcs on fcs.id = fps.club_season_id
@@ -96,8 +96,8 @@ where fr.name = 'Round 1'
 order by fc.name, fpm.position, fpm.display_order, ad.afl_player_name;
 
 
--- afl match scores per club for a round, with goals/behinds aggregated from player_match
--- (one row per club; compares computed_score against the stored drv_score)
+-- afl match scores per club for a round, one row per club;
+-- compares computed_score against the stored drv_score
 with target_round as (
     select r.id, r.name as round_name
     from afl.round r
@@ -147,3 +147,18 @@ from afl.match m
 join target_round tr on tr.id = m.round_id
 join club_scores cs  on cs.match_id = m.id
 order by m.start_dt, cs.side desc;
+
+
+-- afl match stats for a player
+SELECT pm.id, p.name, m.round_id, r.name,
+       pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals,
+       (pm.kicks + pm.handballs + 2*pm.marks + 4*pm.tackles + 5*pm.goals) as star,
+       pm.deleted_at, m.data_status
+FROM afl.player_match pm
+         JOIN afl.club_match cm ON cm.id = pm.club_match_id
+         JOIN afl.match m ON m.id = cm.match_id
+         JOIN afl.round r ON m.round_id = r.id
+         JOIN afl.player_season ps ON ps.id = pm.player_season_id
+         JOIN afl.player p ON p.id = ps.player_id
+WHERE p.name = 'Jeremy Cameron'
+ORDER BY m.round_id;
