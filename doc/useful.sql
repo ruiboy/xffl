@@ -1,5 +1,5 @@
 -- ffl player tenure for a season
-select ap.name, ac.name, fc.name, frfrom.name from_round, frto.name to_round
+select ap.name, ac.name, fc.name, frfrom.name from_round, frto.name to_round, aps.id, acs.season_id
 from ffl.player_season fps
          left outer join ffl.club_season fcs on fcs.id = fps.club_season_id
          left outer join ffl.club fc on fc.id = fcs.club_id
@@ -150,7 +150,7 @@ order by m.start_dt, cs.side desc;
 
 
 -- afl match stats for a player
-SELECT pm.id, p.name, m.round_id, r.name,
+SELECT pm.id, ps.id, m.round_id, p.name, s.name, r.name,
        pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals,
        (pm.kicks + pm.handballs + 2*pm.marks + 4*pm.tackles + 5*pm.goals) as star,
        pm.deleted_at, m.data_status
@@ -158,7 +158,8 @@ FROM afl.player_match pm
          JOIN afl.club_match cm ON cm.id = pm.club_match_id
          JOIN afl.match m ON m.id = cm.match_id
          JOIN afl.round r ON m.round_id = r.id
+         JOIN afl.season s on r.season_id = s.id
          JOIN afl.player_season ps ON ps.id = pm.player_season_id
          JOIN afl.player p ON p.id = ps.player_id
-WHERE p.name = 'Jeremy Cameron'
-ORDER BY m.round_id;
+WHERE p.name = 'Dan Houston'
+ORDER BY ps.id, m.round_id;

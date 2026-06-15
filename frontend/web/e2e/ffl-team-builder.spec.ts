@@ -353,8 +353,8 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
-      // Brock's bench row shows "↑ Hugh McCluggage"
-      await expect(benchSection(page).getByText(/↑.*Hugh McCluggage/)).toBeVisible()
+      // Brock's bench row shows "↑ Brock Thunder" (highlighted as covering)
+      await expect(benchSection(page).getByText(/↑.*Brock Thunder/)).toBeVisible()
     })
 
     test('after sub saved, starter row shows covering bench player', async ({ page }) => {
@@ -410,7 +410,7 @@ test.describe('FFL Team Builder', () => {
       await page.waitForLoadState('networkidle')
 
       // SquadTable: covering arrow visible for Brock's bench row
-      await expect(page.getByText(/↑.*Hugh McCluggage/).first()).toBeVisible()
+      await expect(page.getByText(/↑.*Brock Thunder/).first()).toBeVisible()
     })
   })
 
