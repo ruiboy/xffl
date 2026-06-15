@@ -578,6 +578,63 @@ func TestAflPlayerSearch(t *testing.T) {
 	})
 }
 
+// TestAflPlayerSearch_LatestPlayerSeasonByChronology verifies that
+// latestPlayerSeason picks the player_season for the chronologically most
+// recent season (by match start_dt), not the one with the highest
+// afl.season.id. Season ids do not necessarily reflect chronological order.
+func TestAflPlayerSearch_LatestPlayerSeasonByChronology(t *testing.T) {
+	pool := connectDB(t)
+	ctx := context.Background()
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Create a second season whose id is HIGHER than "Test 2025" but whose
+	// matches are chronologically EARLIER (2024).
+	var olderSeasonID, olderRoundID, olderClubSeaID, olderMatchID, olderClubMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.season (name, league_id) VALUES ('Test 2024', $1) RETURNING id",
+		ids.leagueID).Scan(&olderSeasonID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		olderSeasonID).Scan(&olderRoundID))
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO afl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0) RETURNING id`,
+		ids.homeClubID, olderSeasonID).Scan(&olderClubSeaID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.match (round_id, venue, start_dt, data_status) VALUES ($1, 'Old Ground', '2024-06-15 14:00:00', 'final') RETURNING id",
+		olderRoundID).Scan(&olderMatchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 50, 0, 'home') RETURNING id",
+		olderMatchID, olderClubSeaID).Scan(&olderClubMatchID))
+
+	var olderPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		ids.playerID, olderClubSeaID).Scan(&olderPlayerSeasonID))
+
+	require.Greater(t, olderSeasonID, ids.seasonID, "older season must have a higher id to exercise the bug")
+
+	result := execQuery(t, server, `{ aflPlayerSearch(query: "Test") { id name latestPlayerSeason { id } } }`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		AflPlayerSearch []struct {
+			ID                 string `json:"id"`
+			Name               string `json:"name"`
+			LatestPlayerSeason struct {
+				ID string `json:"id"`
+			} `json:"latestPlayerSeason"`
+		} `json:"aflPlayerSearch"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	if assert.Len(t, data.AflPlayerSearch, 1) {
+		assert.Equal(t, fmt.Sprintf("%d", ids.playerSeasonID), data.AflPlayerSearch[0].LatestPlayerSeason.ID,
+			"should pick the player_season from the chronologically later season (2025), not the one with the higher season id (2024)")
+	}
+}
+
 func TestUpdateAFLPlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)

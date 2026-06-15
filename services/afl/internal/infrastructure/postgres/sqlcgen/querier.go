@@ -27,6 +27,9 @@ type Querier interface {
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
 	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
 	FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalMatchesBySeasonIDRow, error)
+	// Picks the player_season belonging to the most chronologically recent AFL
+	// season the player has data for, based on the latest match start_dt within
+	// that season (afl.season.id ordering is not chronological).
 	FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)

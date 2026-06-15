@@ -404,6 +404,7 @@ export const GET_AFL_SEASON_CLUB_SEASONS = gql`
   query GetAFLSeasonClubSeasons($fflSeasonId: ID!) {
     fflSeason(id: $fflSeasonId) {
       aflSeason {
+        id
         ladder {
           id
           club { name }
@@ -484,7 +485,7 @@ export const SEARCH_AFL_PLAYERS = gql`
         clubSeason {
           id
           club { name }
-          season { name }
+          season { id name }
         }
       }
     }
