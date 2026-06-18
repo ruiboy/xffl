@@ -116,6 +116,7 @@ interface PlayerMatch {
   playerSeason?: {
     aflPlayerSeason?: {
       clubSeason?: { club?: { name: string } | null } | null
+      stats?: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number; games: number } | null
     } | null
   } | null
   aflPlayerMatch?: {
@@ -178,6 +179,7 @@ const coveredStarterMap = computed(() => {
 function coveringScoreForStarter(pm: PlayerMatch): number | null {
   const cp = coveringMap.value.get(pm.id)
   if (!cp || !pm.position) return null
+  if (cp.aflStatus === 'bye') return cp.playerSeason?.aflPlayerSeason?.stats ? benchPositionScore(cp, pm.position) : null
   return benchPositionScore(cp, pm.position)
 }
 
@@ -236,13 +238,13 @@ const POSITION_MULTIPLIERS: Record<string, number> = {
 }
 
 function benchPositionScore(pm: PlayerMatch, pos: string): number | null {
-  const s = pm.aflPlayerMatch
+  const s = pm.aflPlayerMatch ?? pm.playerSeason?.aflPlayerSeason?.stats ?? null
   if (!s) return null
   if (pos === 'star') {
-    return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
+    return Math.floor(s.goals) * 5 + Math.floor(s.kicks) + Math.floor(s.handballs) + Math.floor(s.marks) * 2 + Math.floor(s.tackles) * 4
   }
   const stat = ({ goals: s.goals, kicks: s.kicks, handballs: s.handballs, marks: s.marks, tackles: s.tackles, hitouts: s.hitouts } as Record<string, number>)[pos] ?? null
-  return stat !== null ? stat * (POSITION_MULTIPLIERS[pos] ?? 1) : null
+  return stat !== null ? Math.floor(stat) * (POSITION_MULTIPLIERS[pos] ?? 1) : null
 }
 
 function benchScoreDisplay(pm: PlayerMatch): string {

@@ -445,6 +445,10 @@ func (r *queryResolver) FflClubMatch(ctx context.Context, id string) (*FFLClubMa
 	seasonID := toID(round.SeasonID)
 	result.RoundID = &roundID
 	result.SeasonID = &seasonID
+	if round.AFLRoundID != 0 {
+		aflRoundID := toID(round.AFLRoundID)
+		result.AflRoundID = &aflRoundID
+	}
 	return result, nil
 }
 

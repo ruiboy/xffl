@@ -477,6 +477,7 @@ interface SquadPlayer {
   marks: number | null
   tackles: number | null
   hitouts: number | null
+  byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null
 }
 
 interface Slot {
@@ -499,6 +500,7 @@ const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
 )
 
 const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.roundId ?? '')
+const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
 const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
 const bootstrapClubSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.clubSeasonId ?? '')
 const bootstrapClubId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.club?.id ?? '')
@@ -509,7 +511,7 @@ watch(bootstrapClubId, (id) => {
 
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
   GET_FFL_ROUND,
-  () => ({ id: bootstrapRoundId.value }),
+  () => ({ id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value }),
   () => ({ enabled: !!bootstrapRoundId.value, errorPolicy: 'all' }),
 )
 const { result: seasonResult, loading: seasonLoading } = useQuery(
@@ -598,7 +600,7 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null }>()
+  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null; byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       pmId: pm.id,
@@ -613,6 +615,7 @@ const playerMatchBySeasonId = computed(() => {
       marks: pm.aflPlayerMatch?.marks ?? null,
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
+      byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
     })
   }
   return map
@@ -643,6 +646,7 @@ const squad = computed<SquadPlayer[]>(() => {
       marks: pm?.marks ?? null,
       tackles: pm?.tackles ?? null,
       hitouts: pm?.hitouts ?? null,
+      byeStats: pm?.byeStats ?? null,
     }
   })
 })
@@ -658,17 +662,19 @@ function playerShowScore(player: SquadPlayer): boolean {
 
 function benchPositionScore(player: SquadPlayer, pos: string): number | null {
   if (!playerShowScore(player)) return null
+  const s = player.goals !== null ? player : player.byeStats
+  if (!s) return null
   if (pos === 'star') {
-    if (player.goals === null) return null
-    return (player.goals ?? 0) * 5 + (player.kicks ?? 0) + (player.handballs ?? 0) + (player.marks ?? 0) * 2 + (player.tackles ?? 0) * 4
+    if (s.goals === null) return null
+    return Math.floor(s.goals ?? 0) * 5 + Math.floor(s.kicks ?? 0) + Math.floor(s.handballs ?? 0) + Math.floor(s.marks ?? 0) * 2 + Math.floor(s.tackles ?? 0) * 4
   }
   const statMap: Record<string, number | null> = {
-    goals: player.goals, kicks: player.kicks, handballs: player.handballs,
-    marks: player.marks, tackles: player.tackles, hitouts: player.hitouts,
+    goals: s.goals, kicks: s.kicks, handballs: s.handballs,
+    marks: s.marks, tackles: s.tackles, hitouts: s.hitouts,
   }
   const stat = statMap[pos] ?? null
   if (stat === null) return null
-  return stat * (POSITION_MULTIPLIERS[pos] ?? 1)
+  return Math.floor(stat) * (POSITION_MULTIPLIERS[pos] ?? 1)
 }
 
 function benchScoreDisplay(slot: BenchDualSlot): string {
@@ -760,6 +766,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       marks: pm.aflPlayerMatch?.marks ?? null,
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
+      byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
@@ -1206,7 +1213,7 @@ function starterDisplayScore(player: SquadPlayer, posKey: string): number | stri
 }
 
 const { mutate: declareSubs } = useMutation(DECLARE_FFL_SUBSTITUTIONS, () => ({
-  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } }],
   awaitRefetchQueries: true,
 }))
 
@@ -1254,7 +1261,7 @@ async function onSaveSubs() {
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
-  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } }],
   awaitRefetchQueries: true,
 }))
 const submitting = ref(false)

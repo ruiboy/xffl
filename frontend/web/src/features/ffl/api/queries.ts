@@ -75,6 +75,7 @@ export const GET_FFL_CLUB_MATCH = gql`
       id
       clubSeasonId
       roundId
+      aflRoundId
       seasonId
       club { id }
     }
@@ -137,7 +138,7 @@ export const GET_AFL_LIVE_ROUND = gql`
 `
 
 export const GET_FFL_ROUND = gql`
-  query GetFFLRound($id: ID!) {
+  query GetFFLRound($id: ID!, $aflRoundId: ID) {
     fflRound(id: $id) {
       id
       name
@@ -177,6 +178,7 @@ export const GET_FFL_ROUND = gql`
             playerSeason {
               aflPlayerSeason {
                 clubSeason { club { name } }
+                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
             }
             aflPlayerMatch {
@@ -202,6 +204,7 @@ export const GET_FFL_ROUND = gql`
             playerSeason {
               aflPlayerSeason {
                 clubSeason { club { name } }
+                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
             }
             aflPlayerMatch {
@@ -245,6 +248,7 @@ export const GET_FFL_MATCH = gql`
           playerSeason {
             aflPlayerSeason {
               clubSeason { club { name } }
+              stats { goals kicks handballs marks tackles hitouts games }
             }
           }
           aflPlayerMatch {
@@ -270,6 +274,7 @@ export const GET_FFL_MATCH = gql`
           playerSeason {
             aflPlayerSeason {
               clubSeason { club { name } }
+              stats { goals kicks handballs marks tackles hitouts games }
             }
           }
           aflPlayerMatch {

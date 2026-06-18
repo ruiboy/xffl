@@ -200,6 +200,53 @@ func (r *aFLPlayerSeasonResolver) Matches(ctx context.Context, obj *AFLPlayerSea
 	return result, nil
 }
 
+// Stats is the resolver for the stats field.
+func (r *aFLPlayerSeasonResolver) Stats(ctx context.Context, obj *AFLPlayerSeason, upToRoundID *string, lastN *int, method *AFLStatSummaryMethod) (*AFLStatSummary, error) {
+	psID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var upToRoundIDInt *int
+	if upToRoundID != nil {
+		v, err := fromID(*upToRoundID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid upToRoundId: %w", err)
+		}
+		upToRoundIDInt = &v
+	}
+
+	upTo := 0
+	if upToRoundIDInt != nil {
+		upTo = *upToRoundIDInt
+	}
+	lastNVal := 0
+	if lastN != nil {
+		lastNVal = *lastN
+	}
+
+	s, err := LoadersFromCtx(ctx).PlayerSeasonStats.Load(ctx, statsKey{
+		PlayerSeasonID: psID,
+		UpToRoundID:    upTo,
+		LastN:          lastNVal,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if s == nil {
+		return nil, nil
+	}
+	return &AFLStatSummary{
+		Goals:     s.Goals,
+		Kicks:     s.Kicks,
+		Handballs: s.Handballs,
+		Marks:     s.Marks,
+		Tackles:   s.Tackles,
+		Hitouts:   s.Hitouts,
+		Games:     s.Games,
+	}, nil
+}
+
 // Season is the resolver for the season field.
 func (r *aFLRoundResolver) Season(ctx context.Context, obj *AFLRound) (*AFLSeason, error) {
 	roundID, err := fromID(obj.ID)

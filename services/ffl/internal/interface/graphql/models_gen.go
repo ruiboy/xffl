@@ -84,6 +84,7 @@ type FFLClubMatch struct {
 	ID            string            `json:"id"`
 	ClubSeasonID  string            `json:"clubSeasonId"`
 	RoundID       *string           `json:"roundId,omitempty"`
+	AflRoundID    *string           `json:"aflRoundId,omitempty"`
 	SeasonID      *string           `json:"seasonId,omitempty"`
 	Club          *FFLClub          `json:"club"`
 	DataStatus    string            `json:"dataStatus"`

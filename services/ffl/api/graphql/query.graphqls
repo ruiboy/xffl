@@ -67,6 +67,7 @@ type FFLClubMatch {
   id: ID!
   clubSeasonId: ID!
   roundId: ID
+  aflRoundId: ID
   seasonId: ID
   club: FFLClub!
   dataStatus: String!
