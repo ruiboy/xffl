@@ -91,7 +91,7 @@ from ffl.round fr
          join ffl.player_match fpm on fpm.club_match_id = fcm.id
          join ffl.player_season fps on fps.id = fpm.player_season_id
          left join afl_data ad on ad.aps_id = fps.afl_player_season_id and ad.afl_round_id = fr.afl_round_id
-where fr.name = 'Round 1'
+where fr.name = 'Round 3'
   and fc.name = 'Ruiboys'
 order by fc.name, fpm.position, fpm.display_order, ad.afl_player_name;
 
