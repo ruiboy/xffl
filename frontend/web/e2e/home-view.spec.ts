@@ -40,8 +40,9 @@ test.describe('AFL Home view', () => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
 
-  test('round 3 has the open live-round ring indicator', async ({ page }) => {
+  test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {
     const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
-    await expect(round3).toHaveClass(/ring-active/)
+    await expect(round3.locator('.animate-pulse')).toBeVisible()
   })
+
 })

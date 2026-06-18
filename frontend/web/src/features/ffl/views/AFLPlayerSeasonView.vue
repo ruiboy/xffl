@@ -19,8 +19,8 @@
           <span class="text-lg font-semibold tabular-nums text-text">{{ avg(col.key) }}</span>
         </div>
         <div class="flex flex-col items-center gap-0.5">
-          <span class="text-[10px] uppercase tracking-wide text-text-faint font-medium">*</span>
-          <span class="text-lg font-semibold tabular-nums text-active">{{ avg('score') }}</span>
+          <span class="text-[10px] uppercase tracking-wide text-text-faint font-medium">★</span>
+          <span class="text-lg font-semibold tabular-nums text-active">{{ fflStarAvg() }}</span>
         </div>
         <div class="flex flex-col items-center gap-0.5 ml-2 pl-2 border-l border-border">
           <span class="text-[10px] uppercase tracking-wide text-text-faint font-medium">Games</span>
@@ -39,7 +39,7 @@
                 <th class="py-2 pr-3 font-medium">Round</th>
                 <th class="py-2 pr-4 font-medium">Vs</th>
                 <th v-for="col in statCols" :key="col.key" class="py-2 px-2 font-medium text-right w-10">{{ col.label }}</th>
-                <th class="py-2 px-2 font-medium text-right w-10">*</th>
+                <th class="py-2 px-2 font-medium text-right w-10">★</th>
               </tr>
             </thead>
             <tbody>
@@ -56,7 +56,7 @@
                   <span v-else class="text-text-faint">—</span>
                 </td>
                 <td class="py-2 px-2 text-right tabular-nums font-medium text-active">
-                  <span v-if="m.status !== 'dnp'">{{ m.score }}</span>
+                  <span v-if="m.status !== 'dnp'">{{ fflStar(m) }}</span>
                   <span v-else class="text-text-faint">—</span>
                 </td>
               </tr>
@@ -195,7 +195,7 @@ const statCols = [
   { key: 'behinds' as const,  label: 'B' },
 ]
 
-type StatKey = typeof statCols[number]['key'] | 'score'
+type StatKey = typeof statCols[number]['key']
 
 const sortedMatches = computed((): AFLPlayerMatch[] => {
   const ms = playerSeason.value?.matches ?? []
@@ -210,6 +210,17 @@ function avg(key: StatKey): string {
   const n = playedMatches.value.length
   if (n === 0) return '—'
   const sum = playedMatches.value.reduce((s, m) => s + m[key], 0)
+  return (sum / n).toFixed(1)
+}
+
+function fflStar(m: AFLPlayerMatch): number {
+  return m.goals * 5 + m.kicks + m.handballs + m.marks * 2 + m.tackles * 4
+}
+
+function fflStarAvg(): string {
+  const n = playedMatches.value.length
+  if (n === 0) return '—'
+  const sum = playedMatches.value.reduce((s, m) => s + fflStar(m), 0)
   return (sum / n).toFixed(1)
 }
 

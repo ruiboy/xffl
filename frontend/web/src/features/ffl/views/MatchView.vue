@@ -46,20 +46,6 @@
         </div>
       </div>
 
-      <div class="mt-8 flex items-center gap-6">
-        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
-          <IconAfl class="w-4 h-4" />
-          AFL Round
-        </router-link>
-        <router-link
-          v-if="round"
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: round.id } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
     </template>
   </div>
 </template>
@@ -73,8 +59,6 @@ import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
-import IconAfl from '../components/icons/IconAfl.vue'
 
 const props = defineProps<{ matchId: string }>()
 
@@ -99,12 +83,6 @@ const myClubMatchId = computed(() => {
   if (match.value.homeClubMatch?.club.id === clubId) return match.value.homeClubMatch.id
   if (match.value.awayClubMatch?.club.id === clubId) return match.value.awayClubMatch.id
   return null
-})
-
-const aflRoundTo = computed(() => {
-  const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId) return null
-  return { name: 'afl-round', params: { roundId: aflRoundId } }
 })
 
 const sides = computed(() => {
