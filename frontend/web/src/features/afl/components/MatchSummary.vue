@@ -5,18 +5,21 @@
   >
     <div class="flex items-center gap-3 font-medium">
       <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'underline decoration-dashed underline-offset-4 decoration-blue-500': winner === 'home' }">
+      <span :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'home' }">
         {{ match.homeClubMatch?.club.name ?? '—' }}
       </span>
+      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+        {{ match.homeClubMatch?.score }}
+      </span>
       <span class="text-text-faint">v</span>
+      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+        {{ match.awayClubMatch?.score }}
+      </span>
       <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'underline decoration-dashed underline-offset-4 decoration-blue-500': winner === 'away' }">
+      <span :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'away' }">
         {{ match.awayClubMatch?.club.name ?? '—' }}
       </span>
     </div>
-    <span v-if="match.result" class="text-sm tabular-nums text-text-muted font-semibold">
-      {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
-    </span>
   </router-link>
 </template>
 
@@ -45,8 +48,11 @@ const props = defineProps<{
 const homeLogo = computed(() => props.match.homeClubMatch ? clubLogoUrl(props.match.homeClubMatch.club.name) : '')
 const awayLogo = computed(() => props.match.awayClubMatch ? clubLogoUrl(props.match.awayClubMatch.club.name) : '')
 
+const hasScores = computed(() =>
+  props.match.result === 'home_win' || props.match.result === 'away_win' || props.match.result === 'draw'
+)
+
 const winner = computed(() => {
-  if (!props.match.result) return null
   if (props.match.result === 'home_win') return 'home'
   if (props.match.result === 'away_win') return 'away'
   return null
