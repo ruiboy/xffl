@@ -333,7 +333,7 @@ INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status,
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (player_season_id, club_match_id)
 DO UPDATE SET
-    position = COALESCE($3, ffl.player_match.position),
+    position = $3,
     status = COALESCE($4, ffl.player_match.status),
     drv_afl_status = COALESCE($5, ffl.player_match.drv_afl_status),
     backup_positions = $6,

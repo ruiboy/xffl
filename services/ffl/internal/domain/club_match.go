@@ -264,14 +264,19 @@ func (cm ClubMatch) DeclareSubs(subs []SubPairing, interchange *SubPairing) ([]P
 }
 
 // Score computes the total fantasy score for this club match.
-// A player contributes iff they have a position (are actively assigned to score)
-// and their status is named, subbed_in, or interchanged_in.
-// Inactive bench players (position nil) and excluded starters (subbed_out,
-// interchanged_out) are naturally filtered by these two conditions.
+// Bench players (BackupPositions set) only score when explicitly activated (subbed_in or
+// interchanged_in). Starters score when named or status is nil; excluded starters
+// (subbed_out, interchanged_out) do not score.
 func (cm ClubMatch) Score() int {
 	total := 0
 	for _, pm := range cm.PlayerMatches {
 		if pm.Position == nil {
+			continue
+		}
+		if pm.isBench() {
+			if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbedIn || *pm.Status == PlayerMatchStatusInterchangedIn) {
+				total += pm.Score
+			}
 			continue
 		}
 		if pm.Status == nil || *pm.Status == PlayerMatchStatusNamed ||

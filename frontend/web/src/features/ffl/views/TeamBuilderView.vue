@@ -413,15 +413,6 @@
       </template>
       <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
 
-      <div v-if="bootstrapRoundId" class="mt-8">
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: bootstrapRoundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
     </template>
   </div>
 </template>
@@ -440,7 +431,6 @@ import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
 
@@ -970,32 +960,6 @@ const aflMatchStarted = computed(() => {
   )
 })
 
-// Bench player with InterchangePosition set (at most one per team).
-const interchangeBenchPlayer = computed(() => {
-  const pms = clubMatch.value?.playerMatches ?? []
-  return pms.find((pm: { interchangePosition: string | null }) => pm.interchangePosition != null) ?? null
-})
-
-// Starter at the interchange position with the lowest score (the one that would be displaced).
-const interchangeTargetStarter = computed(() => {
-  const bench = interchangeBenchPlayer.value
-  if (!bench) return null
-  const pms = clubMatch.value?.playerMatches ?? []
-  const starters = pms.filter((pm: { backupPositions: string | null; interchangePosition: string | null; position: string | null }) =>
-    pm.backupPositions == null && pm.interchangePosition == null && pm.position === bench.interchangePosition
-  )
-  if (!starters.length) return null
-  return starters.reduce((lowest: typeof starters[0], pm: typeof starters[0]) => pm.score < lowest.score ? pm : lowest)
-})
-
-// Whether the interchange bench player currently outscores the target starter.
-const interchangeBeneficial = computed(() => {
-  const bench = interchangeBenchPlayer.value
-  const starter = interchangeTargetStarter.value
-  if (!bench || !starter) return false
-  return bench.score > starter.score
-})
-
 // Subs UI state.
 const subbedOutIds = ref<Set<string>>(new Set())
 const interchangeApplied = ref(false)
@@ -1010,12 +974,8 @@ function initSubsState() {
       .filter((pm: { status: string | null }) => pm.status === 'subbed_out')
       .map((pm: { id: string }) => pm.id)
   )
-  // Check if interchange is currently applied.
+  // Check if interchange is currently applied (saved server state only).
   interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
-  // Default interchange to checked if beneficial and no decision stored yet.
-  if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed_out' || pm.status === 'interchanged_out')) {
-    interchangeApplied.value = interchangeBeneficial.value
-  }
 }
 
 function isInterchangeSlot(slot: BenchDualSlot): boolean {

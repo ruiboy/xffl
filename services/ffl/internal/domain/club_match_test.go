@@ -103,6 +103,16 @@ func TestClubMatch_Score(t *testing.T) {
 			30, // interchanged_in bench (20) + goals starter (10)
 		},
 		{
+			"named bench player with stale position does not score",
+			ClubMatch{PlayerMatches: []PlayerMatch{
+				{Position: pos(PositionGoals), Status: pmSts(PlayerMatchStatusNamed), Score: 10},
+				// Bench player retains a stale position from a previous team submission where
+				// they were a starter — must not be counted.
+				{Position: pos(PositionGoals), BackupPositions: strPtr("goals,kicks"), Status: pmSts(PlayerMatchStatusNamed), Score: 5},
+			}},
+			10,
+		},
+		{
 			"sub and interchange both active",
 			ClubMatch{PlayerMatches: []PlayerMatch{
 				{Position: pos(PositionGoals), Status: pmSts(PlayerMatchStatusSubbedOut), Score: 0},
