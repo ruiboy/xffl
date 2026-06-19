@@ -54,7 +54,7 @@
               class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="subsSaving"
             >{{ subsSaving ? 'Saving...' : 'Save Subs' }}</button>
-            <span v-if="subsMessage" class="text-sm" :class="subsMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-500'">{{ subsMessage }}</span>
+            <span v-if="subsMessage" class="text-sm" :class="subsError ? 'text-red-400' : 'text-green-500'">{{ subsMessage }}</span>
           </template>
 
           <!-- Manage mode -->
@@ -200,7 +200,7 @@
                     <span class="w-16 shrink-0">
                       <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
-                    <span class="w-28 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, slot.player) ?? '') : '' }}</span>
+                    <span class="w-28 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, effectivePlayerStats(slot.player)) ?? '') : '' }}</span>
                     <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ starterDisplayScore(slot.player, pos.key) }}</span>
                   </div>
                 </div>
@@ -667,6 +667,16 @@ function benchPositionScore(player: SquadPlayer, pos: string): number | null {
   return Math.floor(stat) * (POSITION_MULTIPLIERS[pos] ?? 1)
 }
 
+function effectivePlayerStats(player: SquadPlayer) {
+  if (player.goals !== null) return player
+  const s = player.byeStats
+  if (!s) return player
+  return {
+    goals: Math.floor(s.goals), kicks: Math.floor(s.kicks), handballs: Math.floor(s.handballs),
+    marks: Math.floor(s.marks), tackles: Math.floor(s.tackles), hitouts: Math.floor(s.hitouts),
+  }
+}
+
 function benchScoreDisplay(slot: BenchDualSlot): string {
   if (!slot.player) return ''
   const parts: string[] = []
@@ -965,6 +975,7 @@ const subbedOutIds = ref<Set<string>>(new Set())
 const interchangeApplied = ref(false)
 const subsSaving = ref(false)
 const subsMessage = ref('')
+const subsError = ref(false)
 
 function initSubsState() {
   const pms = clubMatch.value?.playerMatches ?? []
@@ -991,6 +1002,7 @@ function enterSubsMode() {
 function exitSubsMode() {
   subsMode.value = false
   subsMessage.value = ''
+  subsError.value = false
 }
 
 function toggleSub(pmId: string) {
@@ -1181,6 +1193,7 @@ async function onSaveSubs() {
   if (!clubMatch.value) return
   subsSaving.value = true
   subsMessage.value = ''
+  subsError.value = false
   try {
     const subs = Array.from(subsMapping.value.entries()).map(([replacedPmId, benchPlayer]) => ({
       replacedPmId,
@@ -1211,8 +1224,10 @@ async function onSaveSubs() {
       initializedMatchId.value = clubMatch.value.id
     }
     exitSubsMode()
-  } catch {
-    subsMessage.value = 'Failed to save substitutions'
+  } catch (e: unknown) {
+    const gqlErr = (e as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]
+    subsMessage.value = gqlErr?.message ?? 'Failed to save substitutions'
+    subsError.value = true
   } finally {
     subsSaving.value = false
   }
