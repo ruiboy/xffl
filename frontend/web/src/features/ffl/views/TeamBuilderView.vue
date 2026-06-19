@@ -138,19 +138,23 @@
                   <div v-if="slot.player" class="flex items-center gap-3">
                     <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
                     <div v-if="managing">
-                      <div class="font-medium text-sm">{{ slot.player.name }}</div>
-                      <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
+                      <PlayerStatsCard :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                        <div class="font-medium text-sm">{{ slot.player.name }}</div>
+                        <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
+                      </PlayerStatsCard>
                     </div>
                     <div v-else class="flex flex-col">
-                      <div class="flex items-baseline gap-2">
-                        <component
-                          :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
-                          :to="playerAflMatchRoute(slot.player) ?? undefined"
-                          class="font-medium text-sm hover:text-active transition-colors"
-                          :class="{ 'line-through': effectiveCovering(slot.player.pmId) }"
-                        >{{ slot.player.name }}</component>
-                        <span v-if="slot.player.club" class="text-xs text-text-muted" :class="{ 'line-through': effectiveCovering(slot.player.pmId) }">{{ slot.player.club }}</span>
-                      </div>
+                      <PlayerStatsCard :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                        <div class="flex items-baseline gap-2">
+                          <component
+                            :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                            :to="playerAflMatchRoute(slot.player) ?? undefined"
+                            class="font-medium text-sm hover:text-active transition-colors"
+                            :class="{ 'line-through': effectiveCovering(slot.player.pmId) }"
+                          >{{ slot.player.name }}</component>
+                          <span v-if="slot.player.club" class="text-xs text-text-muted" :class="{ 'line-through': effectiveCovering(slot.player.pmId) }">{{ slot.player.club }}</span>
+                        </div>
+                      </PlayerStatsCard>
                       <div v-if="effectiveCovering(slot.player.pmId)" class="text-sky-400">
                         <span class="text-xs mr-1">↑</span>
                         <span class="font-medium text-sm">{{ effectiveCovering(slot.player.pmId)!.name }}</span>
@@ -229,12 +233,17 @@
                     <div v-if="slot.player">
                       <div class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
                         <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="text-xs mr-1 text-sky-400">↑</span>
-                        <component
-                          :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
-                          :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
-                          class="font-medium text-sm hover:text-active transition-colors"
-                          :class="!managing && effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
-                        >{{ slot.player.name }}</component>
+                        <PlayerStatsCard v-if="!managing" :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                          <component
+                            :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                            :to="playerAflMatchRoute(slot.player) ?? undefined"
+                            class="font-medium text-sm hover:text-active transition-colors"
+                            :class="effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
+                          >{{ slot.player.name }}</component>
+                        </PlayerStatsCard>
+                        <PlayerStatsCard v-else :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                          <span class="font-medium text-sm text-text-muted">{{ slot.player.name }}</span>
+                        </PlayerStatsCard>
                         <span
                           v-if="slot.player.club"
                           class="text-xs"
@@ -328,10 +337,12 @@
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
                 <div class="flex items-center gap-3 min-w-0">
-                  <div>
-                    <div class="font-medium text-sm">{{ player.name }}</div>
-                    <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
-                  </div>
+                  <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                    <div>
+                      <div class="font-medium text-sm">{{ player.name }}</div>
+                      <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                    </div>
+                  </PlayerStatsCard>
                   <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                 </div>
                 <div class="flex items-center gap-1">
@@ -379,10 +390,12 @@
                   class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 opacity-40"
                 >
                   <div class="flex items-center gap-3 min-w-0">
-                    <div>
-                      <div class="font-medium text-sm">{{ player.name }}</div>
-                      <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
-                    </div>
+                    <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                      <div>
+                        <div class="font-medium text-sm">{{ player.name }}</div>
+                        <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                      </div>
+                    </PlayerStatsCard>
                     <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                   </div>
                   <div class="flex items-center gap-1">
@@ -431,6 +444,7 @@ import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
+import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
 
@@ -467,7 +481,8 @@ interface SquadPlayer {
   marks: number | null
   tackles: number | null
   hitouts: number | null
-  byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null
+  byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number; games: number } | null
+  aflPlayerSeasonId: string | null
 }
 
 interface Slot {
@@ -590,7 +605,7 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null; byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null }>()
+  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null; byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null; aflPlayerSeasonId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       pmId: pm.id,
@@ -606,6 +621,7 @@ const playerMatchBySeasonId = computed(() => {
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
       byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
+      aflPlayerSeasonId: pm.playerSeason?.aflPlayerSeason?.id ?? null,
     })
   }
   return map
@@ -616,7 +632,7 @@ const squad = computed<SquadPlayer[]>(() => {
   return clubSeasonData.value.players.nodes.map((r: {
     id: string
     player: { aflPlayer: { name: string } }
-    aflPlayerSeason?: { clubSeason?: { club?: { name: string } | null } | null } | null
+    aflPlayerSeason?: { id?: string; clubSeason?: { club?: { name: string } | null } | null } | null
     toRoundId?: string | null
   }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
@@ -637,6 +653,7 @@ const squad = computed<SquadPlayer[]>(() => {
       tackles: pm?.tackles ?? null,
       hitouts: pm?.hitouts ?? null,
       byeStats: pm?.byeStats ?? null,
+      aflPlayerSeasonId: pm?.aflPlayerSeasonId ?? r.aflPlayerSeason?.id ?? null,
     }
   })
 })
@@ -767,6 +784,7 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
       byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
+      aflPlayerSeasonId: pm.playerSeason?.aflPlayerSeason?.id ?? squadEntry?.aflPlayerSeasonId ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 

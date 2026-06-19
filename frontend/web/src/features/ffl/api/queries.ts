@@ -177,6 +177,7 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
+                id
                 clubSeason { club { name } }
                 stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
@@ -203,6 +204,7 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
+                id
                 clubSeason { club { name } }
                 stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
@@ -493,6 +495,16 @@ export const SEARCH_AFL_PLAYERS = gql`
           season { id name }
         }
       }
+    }
+  }
+`
+
+export const GET_PLAYER_STATS_CARD = gql`
+  query GetPlayerStatsCard($id: ID!, $aflRoundId: ID) {
+    aflPlayerSeason(id: $id) {
+      id
+      seasonAvg: stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
+      last3: stats(upToRoundId: $aflRoundId, lastN: 3) { goals kicks handballs marks tackles hitouts games }
     }
   }
 `
