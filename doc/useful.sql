@@ -7,7 +7,7 @@ from ffl.player_season fps
          left outer join afl.player ap on ap.id = aps.player_id
          left outer join afl.club_season acs on acs.id = aps.club_season_id
          left outer join afl.club ac on ac.id = acs.club_id
-         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
+R         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
          left outer join ffl.round frto on frto.id = fps.to_round_id
 order by fc.name, ap.name;
 
@@ -91,8 +91,8 @@ from ffl.round fr
          join ffl.player_match fpm on fpm.club_match_id = fcm.id
          join ffl.player_season fps on fps.id = fpm.player_season_id
          left join afl_data ad on ad.aps_id = fps.afl_player_season_id and ad.afl_round_id = fr.afl_round_id
-where fr.name = 'Round 3'
-  and fc.name = 'Ruiboys'
+where fr.name = 'Round 12'
+  and fc.name = 'The Howling Cows'
 order by fc.name, fpm.position, fpm.display_order, ad.afl_player_name;
 
 
