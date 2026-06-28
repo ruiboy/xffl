@@ -41,7 +41,7 @@
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
-        <div class="mb-6 flex items-center gap-4">
+        <div class="mb-6 flex items-center gap-4 flex-wrap">
           <!-- Subs mode -->
           <template v-if="subsMode">
             <button
@@ -75,6 +75,22 @@
             </button>
             <span v-if="benchValidationError" class="text-sm text-red-400">{{ benchValidationError }}</span>
             <span v-else-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+            <span class="w-2 shrink-0" />
+            <button
+              v-if="prevClubMatchId && !clubMatchLocked"
+              @click="copyPreviousTeam"
+              :disabled="prevTeamLoading"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {{ prevTeamLoading ? 'Copying…' : `Copy ${prevRound?.name}` }}
+            </button>
+            <button
+              v-if="!clubMatchLocked"
+              @click="() => { resetTeamState(); markDirty() }"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              Clear
+            </button>
           </template>
 
           <!-- Default mode buttons -->
@@ -99,7 +115,21 @@
               </span>
             </button>
           </template>
+
+          <!-- Data status pill -->
+          <span
+            v-if="clubMatchDataStatus"
+            class="ml-auto shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+            :class="dataStatusClass[clubMatchDataStatus] ?? 'text-text-faint border-border-subtle bg-surface'"
+          >
+            {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
+          </span>
         </div>
+
+        <!-- Skipped players notice (copy from round) -->
+        <p v-if="skippedOnCopy.length > 0" class="mb-4 text-sm text-amber-400">
+          Skipped (no longer in squad): {{ skippedOnCopy.join(', ') }}
+        </p>
 
         <!-- Summary bar -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
@@ -432,8 +462,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH } from '../api/queries'
+import { useQuery, useMutation, useLazyQuery } from '@vue/apollo-composable'
+import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH, GET_FFL_CLUB_MATCH_TEAM } from '../api/queries'
 import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -843,6 +873,68 @@ const tradedPlayers = computed(() =>
 )
 
 const showTraded = ref(false)
+
+// ── Club match data status ───────────────────────────────────────────────────
+
+const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string | undefined ?? null)
+
+const clubMatchLocked = computed(() => clubMatchDataStatus.value === 'final')
+
+const dataStatusLabel: Record<string, string> = { no_data: 'Not submitted', submitted: 'Submitted', final: 'Final' }
+const dataStatusClass: Record<string, string> = {
+  no_data:   'text-text-faint border-border-subtle bg-surface',
+  submitted: 'text-sky-400 border-sky-500/30 bg-sky-500/5',
+  final:     'text-green-400 border-green-500/30 bg-green-500/5',
+}
+
+// ── Copy from previous round ─────────────────────────────────────────────────
+
+interface PrevPlayerMatch {
+  playerSeasonId: string
+  position: string
+  backupPositions: string | null
+  interchangePosition: string | null
+  player: { aflPlayer: { name: string } }
+}
+
+const skippedOnCopy = ref<string[]>([])
+
+const { load: loadPrevTeam, result: prevTeamResult, loading: prevTeamLoading } = useLazyQuery<{
+  fflClubMatch: { playerMatches: PrevPlayerMatch[] } | null
+}>(GET_FFL_CLUB_MATCH_TEAM)
+
+async function copyPreviousTeam() {
+  if (!prevClubMatchId.value) return
+  skippedOnCopy.value = []
+  await loadPrevTeam(GET_FFL_CLUB_MATCH_TEAM, { id: prevClubMatchId.value }, { fetchPolicy: 'network-only' })
+  const pms = prevTeamResult.value?.fflClubMatch?.playerMatches ?? []
+  resetTeamState()
+  const squadById = new Map(squad.value.map(p => [p.id, p]))
+  const skipped: string[] = []
+  let dualIndex = 0
+  for (const pm of pms) {
+    const player = squadById.get(pm.playerSeasonId)
+    if (!player || player.toRoundId) { skipped.push(pm.player.aflPlayer.name); continue }
+    const isBench = pm.backupPositions != null || pm.interchangePosition != null
+    if (!isBench) {
+      const slot = teamSlots.value[pm.position as PositionKey]?.find((s: Slot) => !s.player)
+      if (slot) slot.player = player
+    } else if (dualIndex < 4) {
+      if (pm.backupPositions === 'star') {
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = ['star', null]
+      } else if (pm.backupPositions) {
+        const parts = pm.backupPositions.split(',').map((p: string) => p.trim()) as NonStarPositionKey[]
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = [parts[0] ?? null, parts[1] ?? null]
+      }
+      if (pm.interchangePosition) interchangePosition.value = pm.interchangePosition
+      dualIndex++
+    }
+  }
+  skippedOnCopy.value = skipped
+  markDirty()
+}
 
 const starterCount = computed(() => {
   let count = 0
@@ -1262,12 +1354,13 @@ const submitMessage = ref('')
 
 async function onSaveTeam() {
   const ok = await submitTeam()
-  if (ok) managing.value = false
+  if (ok) { managing.value = false; skippedOnCopy.value = [] }
 }
 
 function cancelManage() {
   if (clubMatch.value) loadTeamFromMatch(clubMatch.value)
   managing.value = false
+  skippedOnCopy.value = []
 }
 
 async function submitTeam(): Promise<boolean> {

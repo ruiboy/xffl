@@ -82,6 +82,21 @@ export const GET_FFL_CLUB_MATCH = gql`
   }
 `
 
+export const GET_FFL_CLUB_MATCH_TEAM = gql`
+  query GetFFLClubMatchTeam($id: ID!) {
+    fflClubMatch(id: $id) {
+      id
+      playerMatches {
+        playerSeasonId
+        position
+        backupPositions
+        interchangePosition
+        player { aflPlayer { name } }
+      }
+    }
+  }
+`
+
 export const GET_FFL_ROUND_IDS_BY_AFL_ROUND = gql`
   query GetFFLRoundIdsByAflRound($aflRoundId: ID!) {
     fflRoundByAflRound(aflRoundId: $aflRoundId) {
@@ -165,6 +180,7 @@ export const GET_FFL_ROUND = gql`
           id
           club { id name }
           score
+          dataStatus
           playerMatches {
             id
             playerSeasonId
@@ -192,6 +208,7 @@ export const GET_FFL_ROUND = gql`
           id
           club { id name }
           score
+          dataStatus
           playerMatches {
             id
             playerSeasonId
