@@ -114,6 +114,7 @@
                 Substitutions
               </span>
             </button>
+            <span class="w-2 shrink-0" />
             <button
               v-if="starterCount > 0"
               @click="copyTeamToClipboard"
@@ -121,7 +122,7 @@
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
             >
               <span class="flex items-center gap-1.5">
-                <IconClipboard class="w-3.5 h-3.5" />
+                <IconCopy class="w-3.5 h-3.5" />
                 {{ copyToClipboardLabel }}
               </span>
             </button>
@@ -486,7 +487,7 @@ import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
-import IconClipboard from '../components/icons/IconClipboard.vue'
+import IconCopy from '../components/icons/IconCopy.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
@@ -889,7 +890,7 @@ const showTraded = ref(false)
 
 // ── Copy to clipboard ────────────────────────────────────────────────────────
 
-const copyToClipboardLabel = ref('Share')
+const copyToClipboardLabel = ref('Copy')
 
 const STATUS_TAG: Record<string, string> = {
   bye: 'Bye', dnp: 'DNP', subbed_out: 'Subbed', subbed_in: 'Sub In',
@@ -940,7 +941,7 @@ function formatTeamText(): string {
 async function copyTeamToClipboard() {
   await navigator.clipboard.writeText(formatTeamText())
   copyToClipboardLabel.value = 'Copied!'
-  setTimeout(() => { copyToClipboardLabel.value = 'Share' }, 2000)
+  setTimeout(() => { copyToClipboardLabel.value = 'Copy' }, 2000)
 }
 
 // ── Club match data status ───────────────────────────────────────────────────
