@@ -114,13 +114,24 @@
                 Substitutions
               </span>
             </button>
+            <button
+              v-if="starterCount > 0"
+              @click="copyTeamToClipboard"
+              title="Copy to Clipboard"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconClipboard class="w-3.5 h-3.5" />
+                {{ copyToClipboardLabel }}
+              </span>
+            </button>
           </template>
 
           <!-- Data status pill -->
           <span
             v-if="clubMatchDataStatus"
-            class="ml-auto shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium"
-            :class="dataStatusClass[clubMatchDataStatus] ?? 'text-text-faint border-border-subtle bg-surface'"
+            class="ml-auto shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+            :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
           >
             {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
           </span>
@@ -468,12 +479,14 @@ import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
 import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
+import IconClipboard from '../components/icons/IconClipboard.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
@@ -874,6 +887,62 @@ const tradedPlayers = computed(() =>
 
 const showTraded = ref(false)
 
+// ── Copy to clipboard ────────────────────────────────────────────────────────
+
+const copyToClipboardLabel = ref('Share')
+
+const STATUS_TAG: Record<string, string> = {
+  bye: 'Bye', dnp: 'DNP', subbed_out: 'Subbed', subbed_in: 'Sub In',
+  interchanged_out: "IC'd", interchanged_in: 'IC In',
+}
+
+function hasSubScore(player: SquadPlayer): boolean {
+  return player.status === 'subbed_out' || player.status === 'subbed_in' ||
+    player.status === 'interchanged_out' || player.status === 'interchanged_in'
+}
+
+function formatTeamText(): string {
+  const clubName = (selectedClubSeason.value?.club.name ?? 'TEAM').toUpperCase()
+  const lines: string[] = [`${clubName} ${grandTotal.value}`]
+
+  for (const pos of positions) {
+    const slots = teamSlots.value[pos.key].filter((s: Slot) => s.player)
+    if (!slots.length) continue
+    lines.push(pos.label.toUpperCase())
+    for (const slot of slots) {
+      const club = clubAbbrev(slot.player!.club)
+      const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
+      const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
+      const score = showScore ? ` ${starterDisplayScore(slot.player!, pos.key)}` : ''
+      lines.push(`${slot.player!.name}${club ? ` (${club})` : ''}${tag ? ` ${tag}` : ''}${score}`)
+    }
+    lines.push(String(positionTotal(pos.key)))
+  }
+
+  const benchSlots = benchDualSlots.value.filter((s: BenchDualSlot) => s.player)
+  if (benchSlots.length) {
+    lines.push('BENCH')
+    for (const slot of benchSlots) {
+      const club = clubAbbrev(slot.player!.club)
+      const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
+      const isIc = isInterchangeSlot(slot)
+      const posLabel = isIc ? '*' : slot.positions.filter(Boolean).map(positionShort).join('/')
+      const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
+      const score = showScore ? ` ${benchScoreDisplay(slot)}` : ''
+      lines.push(`${slot.player!.name}${club ? ` (${club})` : ''} ${posLabel}${tag ? ` ${tag}` : ''}${score}`)
+    }
+    if (interchangePosition.value) lines.push('Interchange = *')
+  }
+
+  return lines.join('\n')
+}
+
+async function copyTeamToClipboard() {
+  await navigator.clipboard.writeText(formatTeamText())
+  copyToClipboardLabel.value = 'Copied!'
+  setTimeout(() => { copyToClipboardLabel.value = 'Share' }, 2000)
+}
+
 // ── Club match data status ───────────────────────────────────────────────────
 
 const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string | undefined ?? null)
@@ -882,9 +951,9 @@ const clubMatchLocked = computed(() => clubMatchDataStatus.value === 'final')
 
 const dataStatusLabel: Record<string, string> = { no_data: 'Not submitted', submitted: 'Submitted', final: 'Final' }
 const dataStatusClass: Record<string, string> = {
-  no_data:   'text-text-faint border-border-subtle bg-surface',
-  submitted: 'text-sky-400 border-sky-500/30 bg-sky-500/5',
-  final:     'text-green-400 border-green-500/30 bg-green-500/5',
+  no_data:   'bg-surface-raised text-text-faint',
+  submitted: 'bg-yellow-500/15 text-yellow-500',
+  final:     'bg-green-500/15 text-green-500',
 }
 
 // ── Copy from previous round ─────────────────────────────────────────────────
