@@ -405,6 +405,14 @@ func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int
 	})
 }
 
+func (r *ClubMatchRepository) UpdatePremiershipPoints(ctx context.Context, id int, points int) error {
+	p := int32(points)
+	return r.q.UpdateClubMatchPremiershipPoints(ctx, sqlcgen.UpdateClubMatchPremiershipPointsParams{
+		ID:                   int32(id),
+		DrvPremiershipPoints: &p,
+	})
+}
+
 func (r *ClubMatchRepository) UpdateNotes(ctx context.Context, id int, notes string) error {
 	return r.q.UpdateClubMatchNotes(ctx, sqlcgen.UpdateClubMatchNotesParams{
 		ID:    int32(id),

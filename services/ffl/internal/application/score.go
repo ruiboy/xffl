@@ -215,7 +215,31 @@ func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error
 				slog.Int("club_season_id", cs.ID), slog.Any("error", err))
 		}
 	}
+	for _, m := range matches {
+		homePts, awayPts := matchPremiershipPoints(m)
+		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Home.ID, homePts); err != nil {
+			slog.WarnContext(ctx, "update club_match premiership_points failed",
+				slog.Int("club_match_id", m.Home.ID), slog.Any("error", err))
+		}
+		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Away.ID, awayPts); err != nil {
+			slog.WarnContext(ctx, "update club_match premiership_points failed",
+				slog.Int("club_match_id", m.Away.ID), slog.Any("error", err))
+		}
+	}
 	return nil
+}
+
+func matchPremiershipPoints(m domain.Match) (home, away int) {
+	switch m.DeriveResult() {
+	case domain.MatchResultHomeWin:
+		return domain.PremiershipPointsWin, 0
+	case domain.MatchResultAwayWin:
+		return 0, domain.PremiershipPointsWin
+	case domain.MatchResultDraw:
+		return domain.PremiershipPointsDraw, domain.PremiershipPointsDraw
+	default:
+		return 0, 0
+	}
 }
 
 // AllAFLStatusesFinal returns true when every player_match in the club_match has

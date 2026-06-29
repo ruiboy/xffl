@@ -172,45 +172,25 @@ SELECT
          THEN CASE WHEN home_c.name = 'Cheetahs' THEN home_cm.drv_score ELSE away_cm.drv_score END
     END                                                           AS cheetahs,
     CASE WHEN 'Cheetahs' IN (home_c.name, away_c.name)
-         THEN CASE
-             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
-             WHEN home_c.name = 'Cheetahs' AND home_cm.drv_score > away_cm.drv_score THEN 4
-             WHEN away_c.name = 'Cheetahs' AND away_cm.drv_score > home_cm.drv_score THEN 4
-             ELSE 0
-         END
+         THEN CASE WHEN home_c.name = 'Cheetahs' THEN home_cm.drv_premiership_points ELSE away_cm.drv_premiership_points END
     END                                                           AS cheetahs_pts,
     CASE WHEN 'Ruiboys' IN (home_c.name, away_c.name)
          THEN CASE WHEN home_c.name = 'Ruiboys' THEN home_cm.drv_score ELSE away_cm.drv_score END
     END                                                           AS ruiboys,
     CASE WHEN 'Ruiboys' IN (home_c.name, away_c.name)
-         THEN CASE
-             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
-             WHEN home_c.name = 'Ruiboys' AND home_cm.drv_score > away_cm.drv_score THEN 4
-             WHEN away_c.name = 'Ruiboys' AND away_cm.drv_score > home_cm.drv_score THEN 4
-             ELSE 0
-         END
+         THEN CASE WHEN home_c.name = 'Ruiboys' THEN home_cm.drv_premiership_points ELSE away_cm.drv_premiership_points END
     END                                                           AS ruiboys_pts,
     CASE WHEN 'Slashers' IN (home_c.name, away_c.name)
          THEN CASE WHEN home_c.name = 'Slashers' THEN home_cm.drv_score ELSE away_cm.drv_score END
     END                                                           AS slashers,
     CASE WHEN 'Slashers' IN (home_c.name, away_c.name)
-         THEN CASE
-             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
-             WHEN home_c.name = 'Slashers' AND home_cm.drv_score > away_cm.drv_score THEN 4
-             WHEN away_c.name = 'Slashers' AND away_cm.drv_score > home_cm.drv_score THEN 4
-             ELSE 0
-         END
+         THEN CASE WHEN home_c.name = 'Slashers' THEN home_cm.drv_premiership_points ELSE away_cm.drv_premiership_points END
     END                                                           AS slashers_pts,
     CASE WHEN 'The Howling Cows' IN (home_c.name, away_c.name)
          THEN CASE WHEN home_c.name = 'The Howling Cows' THEN home_cm.drv_score ELSE away_cm.drv_score END
     END                                                           AS thc,
     CASE WHEN 'The Howling Cows' IN (home_c.name, away_c.name)
-         THEN CASE
-             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
-             WHEN home_c.name = 'The Howling Cows' AND home_cm.drv_score > away_cm.drv_score THEN 4
-             WHEN away_c.name = 'The Howling Cows' AND away_cm.drv_score > home_cm.drv_score THEN 4
-             ELSE 0
-         END
+         THEN CASE WHEN home_c.name = 'The Howling Cows' THEN home_cm.drv_premiership_points ELSE away_cm.drv_premiership_points END
     END                                                           AS thc_pts
 FROM ffl.match m
     JOIN ffl.round r              ON r.id = m.round_id
