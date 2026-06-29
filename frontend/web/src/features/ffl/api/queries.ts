@@ -133,6 +133,7 @@ export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
           for
           against
           percentage
+          premiershipPoints
         }
         rounds {
           id
@@ -355,6 +356,7 @@ export const GET_FFL_SEASON = gql`
         for
         against
         percentage
+        premiershipPoints
       }
       rounds {
         id

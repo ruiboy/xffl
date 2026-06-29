@@ -163,3 +163,67 @@ FROM afl.player_match pm
          JOIN afl.player p ON p.id = ps.player_id
 WHERE p.name = 'Dan Houston'
 ORDER BY ps.id, m.round_id;
+
+
+-- FFL match results for a season (one row per match, one col per club)
+SELECT
+    r.name                                                        AS round,
+    CASE WHEN 'Cheetahs' IN (home_c.name, away_c.name)
+         THEN CASE WHEN home_c.name = 'Cheetahs' THEN home_cm.drv_score ELSE away_cm.drv_score END
+    END                                                           AS cheetahs,
+    CASE WHEN 'Cheetahs' IN (home_c.name, away_c.name)
+         THEN CASE
+             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
+             WHEN home_c.name = 'Cheetahs' AND home_cm.drv_score > away_cm.drv_score THEN 4
+             WHEN away_c.name = 'Cheetahs' AND away_cm.drv_score > home_cm.drv_score THEN 4
+             ELSE 0
+         END
+    END                                                           AS cheetahs_pts,
+    CASE WHEN 'Ruiboys' IN (home_c.name, away_c.name)
+         THEN CASE WHEN home_c.name = 'Ruiboys' THEN home_cm.drv_score ELSE away_cm.drv_score END
+    END                                                           AS ruiboys,
+    CASE WHEN 'Ruiboys' IN (home_c.name, away_c.name)
+         THEN CASE
+             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
+             WHEN home_c.name = 'Ruiboys' AND home_cm.drv_score > away_cm.drv_score THEN 4
+             WHEN away_c.name = 'Ruiboys' AND away_cm.drv_score > home_cm.drv_score THEN 4
+             ELSE 0
+         END
+    END                                                           AS ruiboys_pts,
+    CASE WHEN 'Slashers' IN (home_c.name, away_c.name)
+         THEN CASE WHEN home_c.name = 'Slashers' THEN home_cm.drv_score ELSE away_cm.drv_score END
+    END                                                           AS slashers,
+    CASE WHEN 'Slashers' IN (home_c.name, away_c.name)
+         THEN CASE
+             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
+             WHEN home_c.name = 'Slashers' AND home_cm.drv_score > away_cm.drv_score THEN 4
+             WHEN away_c.name = 'Slashers' AND away_cm.drv_score > home_cm.drv_score THEN 4
+             ELSE 0
+         END
+    END                                                           AS slashers_pts,
+    CASE WHEN 'The Howling Cows' IN (home_c.name, away_c.name)
+         THEN CASE WHEN home_c.name = 'The Howling Cows' THEN home_cm.drv_score ELSE away_cm.drv_score END
+    END                                                           AS thc,
+    CASE WHEN 'The Howling Cows' IN (home_c.name, away_c.name)
+         THEN CASE
+             WHEN home_cm.drv_score = away_cm.drv_score THEN 2
+             WHEN home_c.name = 'The Howling Cows' AND home_cm.drv_score > away_cm.drv_score THEN 4
+             WHEN away_c.name = 'The Howling Cows' AND away_cm.drv_score > home_cm.drv_score THEN 4
+             ELSE 0
+         END
+    END                                                           AS thc_pts
+FROM ffl.match m
+    JOIN ffl.round r              ON r.id = m.round_id
+    JOIN ffl.season s             ON s.id = r.season_id
+    JOIN afl.season afl_s         ON afl_s.id = s.afl_season_id
+    JOIN ffl.club_match home_cm   ON home_cm.match_id = m.id AND home_cm.side = 'home'
+    JOIN ffl.club_season home_cs  ON home_cs.id = home_cm.club_season_id
+    JOIN ffl.club home_c          ON home_c.id = home_cs.club_id
+    JOIN ffl.club_match away_cm   ON away_cm.match_id = m.id AND away_cm.side = 'away'
+    JOIN ffl.club_season away_cs  ON away_cs.id = away_cm.club_season_id
+    JOIN ffl.club away_c          ON away_c.id = away_cs.club_id
+WHERE afl_s.name = 'AFL 2026'
+  AND m.deleted_at IS NULL
+  AND r.deleted_at IS NULL
+ORDER BY r.afl_round_id, m.id;
+

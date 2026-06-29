@@ -94,17 +94,18 @@ type FFLClubMatch struct {
 }
 
 type FFLClubSeason struct {
-	ID         string                     `json:"id"`
-	Club       *FFLClub                   `json:"club"`
-	Season     *FFLSeason                 `json:"season"`
-	Played     int                        `json:"played"`
-	Won        int                        `json:"won"`
-	Lost       int                        `json:"lost"`
-	Drawn      int                        `json:"drawn"`
-	For        int                        `json:"for"`
-	Against    int                        `json:"against"`
-	Percentage float64                    `json:"percentage"`
-	Players    *FFLPlayerSeasonConnection `json:"players"`
+	ID                string                     `json:"id"`
+	Club              *FFLClub                   `json:"club"`
+	Season            *FFLSeason                 `json:"season"`
+	Played            int                        `json:"played"`
+	Won               int                        `json:"won"`
+	Lost              int                        `json:"lost"`
+	Drawn             int                        `json:"drawn"`
+	For               int                        `json:"for"`
+	Against           int                        `json:"against"`
+	Percentage        float64                    `json:"percentage"`
+	PremiershipPoints int                        `json:"premiershipPoints"`
+	Players           *FFLPlayerSeasonConnection `json:"players"`
 }
 
 type FFLMatch struct {

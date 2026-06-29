@@ -75,15 +75,15 @@ function formatLadderText(): string {
   if (!round) return ''
   const ladder = round.season.ladder as {
     club: { name: string }; played: number; won: number; lost: number
-    drawn: number; for: number; against: number; percentage: number
+    drawn: number; for: number; against: number; percentage: number; premiershipPoints: number
   }[]
   const header = `${round.season.name} LADDER — ${round.name}`
   const pad = (s: string, n: number) => s.padEnd(n)
   const rpad = (s: string, n: number) => s.padStart(n)
   const maxName = Math.max(...ladder.map(e => e.club.name.length), 4)
-  const cols = `${pad('', 4)}${pad('Club', maxName + 2)} ${rpad('P', 3)} ${rpad('W', 3)} ${rpad('L', 3)} ${rpad('D', 3)} ${rpad('F', 6)} ${rpad('A', 6)} ${rpad('%', 7)}`
+  const cols = `${pad('', 4)}${pad('Club', maxName + 2)} ${rpad('P', 3)} ${rpad('W', 3)} ${rpad('L', 3)} ${rpad('D', 3)} ${rpad('F', 6)} ${rpad('A', 6)} ${rpad('%', 7)} ${rpad('Pts', 4)}`
   const rows = ladder.map((e, i) =>
-    `${rpad(String(i + 1), 2)}.  ${pad(e.club.name, maxName + 2)}${rpad(String(e.played), 3)} ${rpad(String(e.won), 3)} ${rpad(String(e.lost), 3)} ${rpad(String(e.drawn), 3)} ${rpad(String(e.for), 6)} ${rpad(String(e.against), 6)} ${rpad(e.percentage.toFixed(1), 7)}`
+    `${rpad(String(i + 1), 2)}.  ${pad(e.club.name, maxName + 2)}${rpad(String(e.played), 3)} ${rpad(String(e.won), 3)} ${rpad(String(e.lost), 3)} ${rpad(String(e.drawn), 3)} ${rpad(String(e.for), 6)} ${rpad(String(e.against), 6)} ${rpad(e.percentage.toFixed(1), 7)} ${rpad(String(e.premiershipPoints), 4)}`
   )
   return [header, '', cols, ...rows].join('\n')
 }

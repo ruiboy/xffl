@@ -91,17 +91,18 @@ type ComplexityRoot struct {
 	}
 
 	FFLClubSeason struct {
-		Against    func(childComplexity int) int
-		Club       func(childComplexity int) int
-		Drawn      func(childComplexity int) int
-		For        func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Lost       func(childComplexity int) int
-		Percentage func(childComplexity int) int
-		Played     func(childComplexity int) int
-		Players    func(childComplexity int, first *int, after *string, filter *FFLPlayerSeasonFilter) int
-		Season     func(childComplexity int) int
-		Won        func(childComplexity int) int
+		Against           func(childComplexity int) int
+		Club              func(childComplexity int) int
+		Drawn             func(childComplexity int) int
+		For               func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Lost              func(childComplexity int) int
+		Percentage        func(childComplexity int) int
+		Played            func(childComplexity int) int
+		Players           func(childComplexity int, first *int, after *string, filter *FFLPlayerSeasonFilter) int
+		PremiershipPoints func(childComplexity int) int
+		Season            func(childComplexity int) int
+		Won               func(childComplexity int) int
 	}
 
 	FFLMatch struct {
@@ -547,6 +548,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubSeason.Players(childComplexity, args["first"].(*int), args["after"].(*string), args["filter"].(*FFLPlayerSeasonFilter)), true
+	case "FFLClubSeason.premiershipPoints":
+		if e.ComplexityRoot.FFLClubSeason.PremiershipPoints == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubSeason.PremiershipPoints(childComplexity), true
 	case "FFLClubSeason.season":
 		if e.ComplexityRoot.FFLClubSeason.Season == nil {
 			break
@@ -1551,6 +1558,7 @@ type FFLClubSeason {
   for: Int!
   against: Int!
   percentage: Float!
+  premiershipPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
@@ -3193,6 +3201,35 @@ func (ec *executionContext) fieldContext_FFLClubSeason_percentage(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLClubSeason_premiershipPoints(ctx context.Context, field graphql.CollectedField, obj *FFLClubSeason) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubSeason_premiershipPoints,
+		func(ctx context.Context) (any, error) {
+			return obj.PremiershipPoints, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubSeason_premiershipPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubSeason",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLClubSeason_players(ctx context.Context, field graphql.CollectedField, obj *FFLClubSeason) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4799,6 +4836,8 @@ func (ec *executionContext) fieldContext_FFLSeason_ladder(_ context.Context, fie
 				return ec.fieldContext_FFLClubSeason_against(ctx, field)
 			case "percentage":
 				return ec.fieldContext_FFLClubSeason_percentage(ctx, field)
+			case "premiershipPoints":
+				return ec.fieldContext_FFLClubSeason_premiershipPoints(ctx, field)
 			case "players":
 				return ec.fieldContext_FFLClubSeason_players(ctx, field)
 			}
@@ -6123,6 +6162,8 @@ func (ec *executionContext) fieldContext_Query_fflClubSeason(ctx context.Context
 				return ec.fieldContext_FFLClubSeason_against(ctx, field)
 			case "percentage":
 				return ec.fieldContext_FFLClubSeason_percentage(ctx, field)
+			case "premiershipPoints":
+				return ec.fieldContext_FFLClubSeason_premiershipPoints(ctx, field)
 			case "players":
 				return ec.fieldContext_FFLClubSeason_players(ctx, field)
 			}
@@ -9589,6 +9630,11 @@ func (ec *executionContext) _FFLClubSeason(ctx context.Context, sel ast.Selectio
 			}
 		case "percentage":
 			out.Values[i] = ec._FFLClubSeason_percentage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "premiershipPoints":
+			out.Values[i] = ec._FFLClubSeason_premiershipPoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

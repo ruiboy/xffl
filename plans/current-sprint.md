@@ -12,7 +12,7 @@ See `plans/ideas.md` for full item descriptions where relevant.
 - [x] Verify AFL ladder calculation produces correct standings
 - [x] Calculate score(s) for bye players on bench; currently shows as "?".  Fix FFL Team import in Rounds 3/4.
 - [x] Import all 2026 FFL round teams to date
-- [ ] Verify FFL ladder calculation produces correct standings
-- [ ] Smoke-test team submission and substitution flows against real data; capture edge cases
+- [x] Verify FFL ladder calculation produces correct standings
+- [x] Smoke-test team submission and substitution flows against real data; capture edge cases
 - [ ] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
 - [ ] Confirm e2e tests pass against slim seed

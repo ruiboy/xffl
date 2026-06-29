@@ -60,6 +60,7 @@ type FFLClubSeason {
   for: Int!
   against: Int!
   percentage: Float!
+  premiershipPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
