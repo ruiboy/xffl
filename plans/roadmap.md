@@ -4,17 +4,6 @@
 
 Full stack rebuild (backend + frontend). Gateway introduced early so frontends always connect through it. All frontend phases require Playwright tests. See `plans/history.md` for completed phases 1–21.
 
-## Phase 22: Real Data Load & Seed Cleanup
-
-**Goal:** Replace synthetic seed data with real 2026 AFL and FFL data, and slim the dev seed to a lean scaffold.
-
-- [ ] Import all 2026 AFL rounds played to date (teams, players, match stats) via existing import tooling
-- [ ] Import all 2026 FFL round teams to date
-- [ ] Verify ladder calculation produces correct standings
-- [ ] Smoke-test team submission and substitution flows against real data; capture edge cases
-- [ ] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
-- [ ] Confirm e2e tests pass against slim seed
-
 ## Phase 23: UX — Player Intelligence
 
 **Goal:** Richer player and club context for FFL decision-making. Candidate areas from `plans/ideas.md`: player season pages, free agents, club pages, Team Builder analytics, notes in the match view, score reconciliation. Scope confirmed at sprint start.
