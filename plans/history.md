@@ -207,3 +207,25 @@ Completed phases from the xffl rebuild. See `plans/roadmap.md` for active and up
 - [x] FFL subgraph — add `aflPlayerSeason` field on `FFLPlayerSeason`; add `aflPlayerMatch` field on `FFLPlayerMatch`; reference resolvers; mount federation-compatible handler
 - [x] Frontend — single Apollo client endpoint; remove operation-name routing link
 - [x] Tests + e2e verification
+
+## Phase 20: Data Management — Import Infrastructure, Part II ✅
+
+- [x] FFL in-season player trades — squad management with AFL-backed player search
+- [x] AFL stats import — FootyWire scraper, player source mapping, match status tracking
+- [x] Score and ladder calculation — AFL→FFL event chain, finalization flow, provisional/final tiers
+- [x] Schema health: replace circular match↔club_match FKs with role column; enforce AFL FK integrity
+- *(deferred → Phase 23)* Score reconciliation — submitted vs. calculated diff
+- *(deferred → Phase 25)* Pluggable FFL scoring formula — strategy pattern keyed per season
+- [x] Close out: drop `ffl.player.drv_name`, retire `parse_forum.py`, move stats import status to dataops table; add `notes` to `ffl.club_match` and `ffl.player_match`
+
+## Phase 21: UX — Navigation ✅
+
+**Goal:** Consistent, round-aware navigation across AFL and FFL — header links land on the live round, cross-domain switching is a first-class affordance, and DataOps is always reachable.
+
+- [x] NAV-1: Update header AFL/FFL links to navigate to live round (`/afl/rounds/:liveRoundId`, `/ffl/rounds/:liveRoundId`)
+- [x] NAV-2: Cross-domain round-aware navigation — header AFL/FFL/DataOps links follow a session-scoped "selected round" (defaults to live round, sticks to whichever round you're viewing, syncs the corresponding round across domains); replaces the originally-planned cross-domain pill, which was built then superseded by this approach
+- [x] NAV-3: Add Ladder pill as first item in RoundNav (ladder icon + hover tooltip)
+- [x] NAV-4: Add DataOps icon link to header right-side nav (always visible; links to live round)
+- [x] NAV-5: Replace DataOps round dropdown with RoundNav component
+- [x] PAGE-7: Enhance current-round pill with pulsing indicator when `start_dt` = today
+- [x] Playwright tests for new navigation elements

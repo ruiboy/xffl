@@ -69,6 +69,7 @@ type AFLClubSeason {
   drawn: Int!
   for: Int!
   against: Int!
+  percentage: Float!
   premiershipPoints: Int!
 }
 
@@ -89,11 +90,46 @@ type AFLPlayer @key(fields: "id") {
   latestPlayerSeason: AFLPlayerSeason
 }
 
+"""
+Aggregation method to apply over a set of matches.
+Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
+without a schema change.
+"""
+enum AFLStatSummaryMethod {
+  MEAN
+}
+
+"""
+Aggregated per-stat values over a set of matches. The same shape is returned
+regardless of aggregation method or the entity being aggregated (player season,
+club season, …), making it reusable wherever summary stats are needed.
+"""
+type AFLStatSummary {
+  goals:     Float!
+  kicks:     Float!
+  handballs: Float!
+  marks:     Float!
+  tackles:   Float!
+  hitouts:   Float!
+  "Number of matches included in the aggregation."
+  games:     Int!
+}
+
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!
   player: AFLPlayer!
   clubSeason: AFLClubSeason!
   matches: [AFLPlayerMatch!]!
+  """
+  Aggregated stats for this player season. Both parameters are optional:
+  - upToRoundId: only final matches whose start time is before the earliest
+    match in the given round. IDs are treated as opaque — the server resolves
+    ordering internally via match start times, never by ID arithmetic.
+  - lastN: restrict to the most recent N qualifying matches.
+  Combining both gives the last N matches up to a nominated round, useful for
+  a rolling form window. Returns null if the player has no qualifying matches.
+  """
+  stats(upToRoundId: ID, lastN: Int, method: AFLStatSummaryMethod): AFLStatSummary
 }
 
 type AFLPlayerMatch @key(fields: "id") {

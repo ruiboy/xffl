@@ -2,6 +2,13 @@
 
 package graphql
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type AFLBye struct {
 	ID   string   `json:"id"`
 	Club *AFLClub `json:"club"`
@@ -33,6 +40,7 @@ type AFLClubSeason struct {
 	Drawn             int        `json:"drawn"`
 	For               int        `json:"for"`
 	Against           int        `json:"against"`
+	Percentage        float64    `json:"percentage"`
 	PremiershipPoints int        `json:"premiershipPoints"`
 }
 
@@ -85,6 +93,14 @@ type AFLPlayerSeason struct {
 	Player     *AFLPlayer        `json:"player"`
 	ClubSeason *AFLClubSeason    `json:"clubSeason"`
 	Matches    []*AFLPlayerMatch `json:"matches"`
+	// Aggregated stats for this player season. Both parameters are optional:
+	// - upToRoundId: only final matches whose start time is before the earliest
+	//   match in the given round. IDs are treated as opaque — the server resolves
+	//   ordering internally via match start times, never by ID arithmetic.
+	// - lastN: restrict to the most recent N qualifying matches.
+	// Combining both gives the last N matches up to a nominated round, useful for
+	// a rolling form window. Returns null if the player has no qualifying matches.
+	Stats *AFLStatSummary `json:"stats,omitempty"`
 }
 
 func (AFLPlayerSeason) IsEntity() {}
@@ -117,6 +133,20 @@ type AFLSeason struct {
 }
 
 func (AFLSeason) IsEntity() {}
+
+// Aggregated per-stat values over a set of matches. The same shape is returned
+// regardless of aggregation method or the entity being aggregated (player season,
+// club season, …), making it reusable wherever summary stats are needed.
+type AFLStatSummary struct {
+	Goals     float64 `json:"goals"`
+	Kicks     float64 `json:"kicks"`
+	Handballs float64 `json:"handballs"`
+	Marks     float64 `json:"marks"`
+	Tackles   float64 `json:"tackles"`
+	Hitouts   float64 `json:"hitouts"`
+	// Number of matches included in the aggregation.
+	Games int `json:"games"`
+}
 
 type AddAFLPlayerInput struct {
 	Name         string `json:"name"`
@@ -185,4 +215,60 @@ type UpdateAFLPlayerMatchInput struct {
 	Tackles        *int   `json:"tackles,omitempty"`
 	Goals          *int   `json:"goals,omitempty"`
 	Behinds        *int   `json:"behinds,omitempty"`
+}
+
+// Aggregation method to apply over a set of matches.
+// Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
+// without a schema change.
+type AFLStatSummaryMethod string
+
+const (
+	AFLStatSummaryMethodMean AFLStatSummaryMethod = "MEAN"
+)
+
+var AllAFLStatSummaryMethod = []AFLStatSummaryMethod{
+	AFLStatSummaryMethodMean,
+}
+
+func (e AFLStatSummaryMethod) IsValid() bool {
+	switch e {
+	case AFLStatSummaryMethodMean:
+		return true
+	}
+	return false
+}
+
+func (e AFLStatSummaryMethod) String() string {
+	return string(e)
+}
+
+func (e *AFLStatSummaryMethod) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AFLStatSummaryMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AFLStatSummaryMethod", str)
+	}
+	return nil
+}
+
+func (e AFLStatSummaryMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AFLStatSummaryMethod) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AFLStatSummaryMethod) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

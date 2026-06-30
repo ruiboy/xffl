@@ -3,9 +3,11 @@ package application
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	"xffl/contracts/events"
 	"xffl/services/afl/internal/domain"
@@ -123,6 +125,9 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 
 	mid, err := c.resolveMid(ctx, matchID, round.Name, homeClubName, awayClubName)
 	if err != nil {
+		if errors.Is(err, ErrFixtureNotFound) {
+			return ImportAFLStatsResult{}, fmt.Errorf("no stats found for %s v %s in %s — the match may not have been played yet", homeClubName, awayClubName, round.Name)
+		}
 		return ImportAFLStatsResult{}, fmt.Errorf("resolve footywire mid: %w", err)
 	}
 	slog.InfoContext(ctx, "footywire mid resolved", slog.String("mid", mid))
@@ -240,12 +245,6 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			if err != nil {
 				return fmt.Errorf("reload player matches: %w", err)
 			}
-			cm := w.cm
-			cm.PlayerMatches = allPlayerMatches
-			if err := repos.ClubMatches.UpdateScore(ctx, w.cm.ID, cm.Score()); err != nil {
-				return fmt.Errorf("update club score: %w", err)
-			}
-
 			// Rushed behinds = team total behinds − sum of all player behinds from the
 			// stats page. Using the full parsed total (not just matched players) keeps
 			// this accurate even when some players are not yet in the DB.
@@ -255,6 +254,13 @@ func (c *DataOpsCommands) ImportAFLStats(ctx context.Context, matchID int) (Impo
 			}
 			if err := repos.ClubMatches.UpdateRushedBehinds(ctx, w.cm.ID, rushedBehinds); err != nil {
 				return fmt.Errorf("update rushed behinds: %w", err)
+			}
+
+			cm := w.cm
+			cm.RushedBehinds = rushedBehinds
+			cm.PlayerMatches = allPlayerMatches
+			if err := repos.ClubMatches.UpdateScore(ctx, w.cm.ID, cm.Score()); err != nil {
+				return fmt.Errorf("update club score: %w", err)
 			}
 
 			roundID, err = repos.ClubMatches.FindRoundID(ctx, w.cm.ID)
@@ -500,21 +506,34 @@ type ResolveAFLPlayerMatchParams struct {
 }
 
 // ResolveAFLPlayerMatch persists an optional source name mapping and upserts the player match record.
-// The source mapping (if provided) is written before the transaction so a retry will auto-resolve.
+// The source mapping is written before the transaction so a retry will auto-resolve, and only when
+// the footywire name actually differs from the matched player's name — an exact match needs no
+// mapping.
 func (c *DataOpsCommands) ResolveAFLPlayerMatch(ctx context.Context, params ResolveAFLPlayerMatchParams) (domain.PlayerMatch, error) {
 	if params.ParsedName != nil {
-		cm, err := c.clubMatches.FindByID(ctx, params.ClubMatchID)
+		players, err := c.playerSeasons.FindPlayersForPlayerSeasonIDs(ctx, []int{params.PlayerSeasonID})
 		if err != nil {
-			return domain.PlayerMatch{}, fmt.Errorf("load club match for source mapping: %w", err)
+			return domain.PlayerMatch{}, fmt.Errorf("load player for source mapping: %w", err)
 		}
-		cs, err := c.clubSeasons.FindByID(ctx, cm.ClubSeasonID)
-		if err != nil {
-			return domain.PlayerMatch{}, fmt.Errorf("load club season for source mapping: %w", err)
+		player, ok := players[params.PlayerSeasonID]
+		if !ok {
+			return domain.PlayerMatch{}, fmt.Errorf("no player found for player season %d", params.PlayerSeasonID)
 		}
-		seasonStr := strconv.Itoa(cs.SeasonID)
-		clubSeasonStr := strconv.Itoa(cm.ClubSeasonID)
-		if err := c.playerSourceMap.Store(ctx, footywireSource, seasonStr, clubSeasonStr, *params.ParsedName, params.PlayerSeasonID); err != nil {
-			return domain.PlayerMatch{}, fmt.Errorf("store player source mapping: %w", err)
+
+		if !strings.EqualFold(strings.TrimSpace(*params.ParsedName), player.Name) {
+			cm, err := c.clubMatches.FindByID(ctx, params.ClubMatchID)
+			if err != nil {
+				return domain.PlayerMatch{}, fmt.Errorf("load club match for source mapping: %w", err)
+			}
+			cs, err := c.clubSeasons.FindByID(ctx, cm.ClubSeasonID)
+			if err != nil {
+				return domain.PlayerMatch{}, fmt.Errorf("load club season for source mapping: %w", err)
+			}
+			seasonStr := strconv.Itoa(cs.SeasonID)
+			clubSeasonStr := strconv.Itoa(cm.ClubSeasonID)
+			if err := c.playerSourceMap.Store(ctx, footywireSource, seasonStr, clubSeasonStr, *params.ParsedName, params.PlayerSeasonID); err != nil {
+				return domain.PlayerMatch{}, fmt.Errorf("store player source mapping: %w", err)
+			}
 		}
 	}
 

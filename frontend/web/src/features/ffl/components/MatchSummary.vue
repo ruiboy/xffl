@@ -5,30 +5,37 @@
   >
     <div class="flex items-center gap-3 font-medium">
       <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
-      <span :class="{ 'font-bold': winner === 'home' }">{{ match.homeClubMatch?.club.name ?? '—' }}</span>
+      <span :class="winner === 'home' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
+        {{ match.homeClubMatch?.club.name ?? '—' }}
+      </span>
       <button
         v-if="buildTeamTo && myClubSide === 'home'"
         @click.stop="router.push(buildTeamTo)"
         title="Team Builder"
-        class="rounded p-1 text-active hover:bg-active/10 transition-colors"
+        class="rounded p-1 text-active hover:bg-active/10 transition-colors shrink-0"
       >
         <IconTeamBuilder class="w-4 h-4" />
       </button>
+      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+        {{ match.homeClubMatch?.score }}
+      </span>
       <span class="text-text-faint">v</span>
+      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+        {{ match.awayClubMatch?.score }}
+      </span>
       <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
-      <span :class="{ 'font-bold': winner === 'away' }">{{ match.awayClubMatch?.club.name ?? '—' }}</span>
+      <span :class="winner === 'away' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
+        {{ match.awayClubMatch?.club.name ?? '—' }}
+      </span>
       <button
         v-if="buildTeamTo && myClubSide === 'away'"
         @click.stop="router.push(buildTeamTo)"
         title="Team Builder"
-        class="rounded p-1 text-active hover:bg-active/10 transition-colors"
+        class="rounded p-1 text-active hover:bg-active/10 transition-colors shrink-0"
       >
         <IconTeamBuilder class="w-4 h-4" />
       </button>
     </div>
-    <span v-if="hasScores" class="text-sm tabular-nums text-text-muted font-semibold">
-      {{ match.homeClubMatch?.score }} – {{ match.awayClubMatch?.score }}
-    </span>
   </div>
 </template>
 

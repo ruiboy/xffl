@@ -263,15 +263,122 @@ func (cm ClubMatch) DeclareSubs(subs []SubPairing, interchange *SubPairing) ([]P
 	return updated, nil
 }
 
+// SubstitutionKind distinguishes an interchange suggestion from a substitution suggestion.
+type SubstitutionKind string
+
+const (
+	SubstitutionKindInterchange SubstitutionKind = "interchange"
+	SubstitutionKindSub         SubstitutionKind = "sub"
+)
+
+// SuggestedSubstitution is a recommended TM action: either an interchange (bench outscores
+// a starter at the interchange position) or a sub (starter is DNP and bench covers them).
+type SuggestedSubstitution struct {
+	Kind          SubstitutionKind
+	ReplacedPMID  int
+	ReplacingPMID int
+}
+
+// SuggestedSubstitutions returns all recommended TM actions for this club match.
+// Interchange: the interchange bench player strictly outscores the lowest-scoring active
+// starter at the interchange position and has not yet been activated.
+// Sub: a starter is DNP and a backup bench player covers their position, is not already
+// activated, and has not also missed their AFL match.
+// Both suggestions may be returned for the same bench player if applicable — the TM decides.
+func (cm ClubMatch) SuggestedSubstitutions() []SuggestedSubstitution {
+	var result []SuggestedSubstitution
+
+	// ── Interchange suggestion ───────────────────────────────────────────────
+	var icBench *PlayerMatch
+	for i := range cm.PlayerMatches {
+		pm := &cm.PlayerMatches[i]
+		if pm.isBench() && pm.InterchangePosition != nil {
+			icBench = pm
+			break
+		}
+	}
+	if icBench != nil && (icBench.Status == nil || *icBench.Status == PlayerMatchStatusNamed) {
+		icPos := Position(*icBench.InterchangePosition)
+		var lowestStarter *PlayerMatch
+		for i := range cm.PlayerMatches {
+			pm := &cm.PlayerMatches[i]
+			if pm.isBench() || pm.Position == nil || *pm.Position != icPos {
+				continue
+			}
+			if pm.Status != nil && *pm.Status == PlayerMatchStatusInterchangedOut {
+				continue
+			}
+			if lowestStarter == nil || pm.Score < lowestStarter.Score {
+				lowestStarter = pm
+			}
+		}
+		if lowestStarter != nil && icBench.Score > lowestStarter.Score {
+			result = append(result, SuggestedSubstitution{
+				Kind:          SubstitutionKindInterchange,
+				ReplacedPMID:  lowestStarter.ID,
+				ReplacingPMID: icBench.ID,
+			})
+		}
+	}
+
+	// ── Sub suggestions ──────────────────────────────────────────────────────
+	// Map each position to the backup bench player covering it (non-interchange, named, not DNP).
+	benchByPos := make(map[Position]*PlayerMatch)
+	for i := range cm.PlayerMatches {
+		pm := &cm.PlayerMatches[i]
+		if !pm.isBench() || pm.InterchangePosition != nil {
+			continue
+		}
+		if pm.Status != nil && *pm.Status != PlayerMatchStatusNamed {
+			continue
+		}
+		if pm.AFLStatus != nil && *pm.AFLStatus == AFLStatusDNP {
+			continue
+		}
+		if pm.BackupPositions == nil {
+			continue
+		}
+		for _, part := range strings.Split(*pm.BackupPositions, ",") {
+			benchByPos[Position(strings.TrimSpace(part))] = pm
+		}
+	}
+	for i := range cm.PlayerMatches {
+		pm := &cm.PlayerMatches[i]
+		if pm.isBench() || pm.Position == nil {
+			continue
+		}
+		if pm.AFLStatus == nil || *pm.AFLStatus != AFLStatusDNP {
+			continue
+		}
+		if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbedOut || *pm.Status == PlayerMatchStatusInterchangedOut) {
+			continue
+		}
+		if bench, ok := benchByPos[*pm.Position]; ok {
+			result = append(result, SuggestedSubstitution{
+				Kind:          SubstitutionKindSub,
+				ReplacedPMID:  pm.ID,
+				ReplacingPMID: bench.ID,
+			})
+		}
+	}
+
+	return result
+}
+
 // Score computes the total fantasy score for this club match.
-// A player contributes iff they have a position (are actively assigned to score)
-// and their status is named, subbed_in, or interchanged_in.
-// Inactive bench players (position nil) and excluded starters (subbed_out,
-// interchanged_out) are naturally filtered by these two conditions.
+// Bench players (BackupPositions set) only score when explicitly activated (subbed_in or
+// interchanged_in). Starters score when named or status is nil; excluded starters
+// (subbed_out, interchanged_out) do not score.
 func (cm ClubMatch) Score() int {
 	total := 0
 	for _, pm := range cm.PlayerMatches {
 		if pm.Position == nil {
+			continue
+		}
+		if pm.isBench() {
+			if pm.Status != nil && (*pm.Status == PlayerMatchStatusSubbedIn || *pm.Status == PlayerMatchStatusInterchangedIn) {
+				total += pm.Score
+			}
 			continue
 		}
 		if pm.Status == nil || *pm.Status == PlayerMatchStatusNamed ||
@@ -286,6 +393,7 @@ type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
 	UpdateScore(ctx context.Context, id int, score int) error
+	UpdatePremiershipPoints(ctx context.Context, id int, points int) error
 	UpdateNotes(ctx context.Context, id int, notes string) error
 	UpdateDataStatus(ctx context.Context, id int, status ClubMatchDataStatus) error
 	CountFinalByMatchID(ctx context.Context, matchID int) (int, error)

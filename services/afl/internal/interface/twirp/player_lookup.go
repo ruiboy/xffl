@@ -100,7 +100,7 @@ func (s *playerLookupServer) LookupByeInfo(ctx context.Context, req *aflv1.Looku
 
 	avgsByPS := make(map[int]domain.PlayerSeasonAverages)
 	if len(byePSIDs) > 0 {
-		avgs, err := s.playerMatches.GetSeasonAveragesBatch(ctx, byePSIDs)
+		avgs, err := s.playerMatches.GetSeasonAveragesBatch(ctx, byePSIDs, roundID)
 		if err != nil {
 			return nil, err
 		}

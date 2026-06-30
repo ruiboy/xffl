@@ -21,6 +21,14 @@ export const ADD_FFL_PLAYER_TO_SEASON = gql`
   }
 `
 
+export const ADD_AFL_PLAYER_SEASON = gql`
+  mutation AddAFLPlayerSeasonForFFL($input: AddAFLPlayerSeasonInput!) {
+    addAFLPlayerSeason(input: $input) {
+      id
+    }
+  }
+`
+
 export const REMOVE_FFL_PLAYER_FROM_SEASON = gql`
   mutation RemoveFFLPlayerFromSeason($input: RemoveFFLPlayerFromSeasonInput!) {
     removeFFLPlayerFromSeason(input: $input)

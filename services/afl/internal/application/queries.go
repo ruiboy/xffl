@@ -9,17 +9,18 @@ import (
 
 // Queries handles all read operations for the AFL service.
 type Queries struct {
-	clock         clock.Clock
-	clubs         domain.ClubRepository
-	seasons       domain.SeasonRepository
-	rounds        domain.RoundRepository
-	matches       domain.MatchRepository
-	clubSeasons   domain.ClubSeasonRepository
-	clubMatches   domain.ClubMatchRepository
-	players       domain.PlayerRepository
-	playerMatches domain.PlayerMatchRepository
-	playerSeasons domain.PlayerSeasonRepository
-	byes          domain.ByeRepository
+	clock              clock.Clock
+	clubs              domain.ClubRepository
+	seasons            domain.SeasonRepository
+	rounds             domain.RoundRepository
+	matches            domain.MatchRepository
+	clubSeasons        domain.ClubSeasonRepository
+	clubMatches        domain.ClubMatchRepository
+	players            domain.PlayerRepository
+	playerMatches      domain.PlayerMatchRepository
+	playerSeasons      domain.PlayerSeasonRepository
+	byes               domain.ByeRepository
+	playerSeasonStats  domain.PlayerSeasonStatsRepository
 }
 
 func NewQueries(
@@ -34,19 +35,21 @@ func NewQueries(
 	playerMatches domain.PlayerMatchRepository,
 	playerSeasons domain.PlayerSeasonRepository,
 	byes domain.ByeRepository,
+	playerSeasonStats domain.PlayerSeasonStatsRepository,
 ) *Queries {
 	return &Queries{
-		clock:         clk,
-		clubs:         clubs,
-		seasons:       seasons,
-		rounds:        rounds,
-		matches:       matches,
-		clubSeasons:   clubSeasons,
-		clubMatches:   clubMatches,
-		players:       players,
-		playerMatches: playerMatches,
-		playerSeasons: playerSeasons,
-		byes:          byes,
+		clock:             clk,
+		clubs:             clubs,
+		seasons:           seasons,
+		rounds:            rounds,
+		matches:           matches,
+		clubSeasons:       clubSeasons,
+		clubMatches:       clubMatches,
+		players:           players,
+		playerMatches:     playerMatches,
+		playerSeasons:     playerSeasons,
+		byes:              byes,
+		playerSeasonStats: playerSeasonStats,
 	}
 }
 
@@ -193,4 +196,8 @@ func (q *Queries) GetPlayerForPlayerSeason(ctx context.Context, playerSeasonID i
 
 func (q *Queries) GetByes(ctx context.Context, roundID int) ([]domain.ByeWithClub, error) {
 	return q.byes.FindByRoundIDWithClub(ctx, roundID)
+}
+
+func (q *Queries) GetPlayerSeasonStats(ctx context.Context, params domain.PlayerSeasonStatsParams) ([]domain.PlayerSeasonStats, error) {
+	return q.playerSeasonStats.GetSeasonStats(ctx, params)
 }

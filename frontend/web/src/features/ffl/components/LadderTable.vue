@@ -12,6 +12,7 @@
           <th class="py-2 px-2 font-medium text-right">F</th>
           <th class="py-2 px-2 font-medium text-right">A</th>
           <th class="py-2 px-2 font-medium text-right">%</th>
+          <th class="py-2 px-2 font-medium text-right">Pts</th>
         </tr>
       </thead>
       <tbody>
@@ -37,6 +38,7 @@
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.for }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.against }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.percentage.toFixed(1) }}</td>
+          <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.premiershipPoints }}</td>
         </tr>
       </tbody>
     </table>
@@ -56,6 +58,7 @@ interface LadderEntry {
   for: number
   against: number
   percentage: number
+  premiershipPoints: number
 }
 
 defineProps<{ ladder: LadderEntry[] }>()

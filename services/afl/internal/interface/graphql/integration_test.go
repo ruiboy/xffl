@@ -55,6 +55,7 @@ func setupTestServerWithClock(t *testing.T, pool *pgxpool.Pool, clk clock.Clock)
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewByeRepository(q),
+		pg.NewPlayerSeasonStatsRepository(pool),
 	)
 
 	db := pg.NewDB(pool)
@@ -578,6 +579,63 @@ func TestAflPlayerSearch(t *testing.T) {
 	})
 }
 
+// TestAflPlayerSearch_LatestPlayerSeasonByChronology verifies that
+// latestPlayerSeason picks the player_season for the chronologically most
+// recent season (by match start_dt), not the one with the highest
+// afl.season.id. Season ids do not necessarily reflect chronological order.
+func TestAflPlayerSearch_LatestPlayerSeasonByChronology(t *testing.T) {
+	pool := connectDB(t)
+	ctx := context.Background()
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	// Create a second season whose id is HIGHER than "Test 2025" but whose
+	// matches are chronologically EARLIER (2024).
+	var olderSeasonID, olderRoundID, olderClubSeaID, olderMatchID, olderClubMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.season (name, league_id) VALUES ('Test 2024', $1) RETURNING id",
+		ids.leagueID).Scan(&olderSeasonID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('Round 1', $1) RETURNING id",
+		olderSeasonID).Scan(&olderRoundID))
+	require.NoError(t, pool.QueryRow(ctx,
+		`INSERT INTO afl.club_season (club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_premiership_points)
+		 VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0) RETURNING id`,
+		ids.homeClubID, olderSeasonID).Scan(&olderClubSeaID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.match (round_id, venue, start_dt, data_status) VALUES ($1, 'Old Ground', '2024-06-15 14:00:00', 'final') RETURNING id",
+		olderRoundID).Scan(&olderMatchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 50, 0, 'home') RETURNING id",
+		olderMatchID, olderClubSeaID).Scan(&olderClubMatchID))
+
+	var olderPlayerSeasonID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.player_season (player_id, club_season_id) VALUES ($1, $2) RETURNING id",
+		ids.playerID, olderClubSeaID).Scan(&olderPlayerSeasonID))
+
+	require.Greater(t, olderSeasonID, ids.seasonID, "older season must have a higher id to exercise the bug")
+
+	result := execQuery(t, server, `{ aflPlayerSearch(query: "Test") { id name latestPlayerSeason { id } } }`)
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		AflPlayerSearch []struct {
+			ID                 string `json:"id"`
+			Name               string `json:"name"`
+			LatestPlayerSeason struct {
+				ID string `json:"id"`
+			} `json:"latestPlayerSeason"`
+		} `json:"aflPlayerSearch"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+	if assert.Len(t, data.AflPlayerSearch, 1) {
+		assert.Equal(t, fmt.Sprintf("%d", ids.playerSeasonID), data.AflPlayerSearch[0].LatestPlayerSeason.ID,
+			"should pick the player_season from the chronologically later season (2025), not the one with the higher season id (2024)")
+	}
+}
+
 func TestUpdateAFLPlayerMatch_InvalidPlayerSeasonID(t *testing.T) {
 	pool := connectDB(t)
 	ids := seedTestData(t, pool)
@@ -814,6 +872,113 @@ func TestAflLiveRound(t *testing.T) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// AFL player season stats integration tests
+// ════════════════════════════════════════════════════════════════
+
+func TestAFLPlayerSeason_Stats(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	seasonID := fmt.Sprintf("%d", ids.seasonID)
+	playerSeasonID := fmt.Sprintf("%d", ids.playerSeasonID)
+	roundID := fmt.Sprintf("%d", ids.roundID)
+
+	// Helper to unmarshal the playerSeasons nodes into a typed struct.
+	type statsSummary struct {
+		Games     int     `json:"games"`
+		Goals     float64 `json:"goals"`
+		Kicks     float64 `json:"kicks"`
+		Handballs float64 `json:"handballs"`
+		Marks     float64 `json:"marks"`
+		Tackles   float64 `json:"tackles"`
+		Hitouts   float64 `json:"hitouts"`
+	}
+	type node struct {
+		ID    string        `json:"id"`
+		Stats *statsSummary `json:"stats"`
+	}
+	type respData struct {
+		AflSeason struct {
+			PlayerSeasons struct {
+				Nodes []node `json:"nodes"`
+			} `json:"playerSeasons"`
+		} `json:"aflSeason"`
+	}
+
+	t.Run("no params returns season averages across all final matches", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons(filter: { query: "Test Player" }) {
+					nodes {
+						id
+						stats { games goals kicks handballs marks tackles hitouts }
+					}
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data respData
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		nodes := data.AflSeason.PlayerSeasons.Nodes
+		require.Len(t, nodes, 1)
+		assert.Equal(t, playerSeasonID, nodes[0].ID)
+		require.NotNil(t, nodes[0].Stats)
+		s := nodes[0].Stats
+		assert.Equal(t, 1, s.Games)
+		assert.InDelta(t, 2.0, s.Goals, 0.001)
+		assert.InDelta(t, 10.0, s.Kicks, 0.001)
+		assert.InDelta(t, 5.0, s.Handballs, 0.001)
+		assert.InDelta(t, 3.0, s.Marks, 0.001)
+		assert.InDelta(t, 2.0, s.Tackles, 0.001)
+		assert.InDelta(t, 0.0, s.Hitouts, 0.001)
+	})
+
+	t.Run("upToRoundId with no preceding matches returns null stats", func(t *testing.T) {
+		// Round 1 is the only round; there are no matches before it, so stats are null.
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons(filter: { query: "Test Player" }) {
+					nodes {
+						stats(upToRoundId: "`+roundID+`") { games goals }
+					}
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data respData
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.Len(t, data.AflSeason.PlayerSeasons.Nodes, 1)
+		assert.Nil(t, data.AflSeason.PlayerSeasons.Nodes[0].Stats)
+	})
+
+	t.Run("lastN=1 returns the single most recent match", func(t *testing.T) {
+		result := execQuery(t, server, `{
+			aflSeason(id: "`+seasonID+`") {
+				playerSeasons(filter: { query: "Test Player" }) {
+					nodes {
+						stats(lastN: 1) { games goals kicks }
+					}
+				}
+			}
+		}`)
+		require.Empty(t, result.Errors)
+
+		var data respData
+		require.NoError(t, json.Unmarshal(result.Data, &data))
+		require.Len(t, data.AflSeason.PlayerSeasons.Nodes, 1)
+		require.NotNil(t, data.AflSeason.PlayerSeasons.Nodes[0].Stats)
+		s := data.AflSeason.PlayerSeasons.Nodes[0].Stats
+		assert.Equal(t, 1, s.Games)
+		assert.InDelta(t, 2.0, s.Goals, 0.001)
+		assert.InDelta(t, 10.0, s.Kicks, 0.001)
+	})
+}
+
+// ════════════════════════════════════════════════════════════════
 // AFL Stats Import integration test
 // ════════════════════════════════════════════════════════════════
 
@@ -853,6 +1018,7 @@ func setupTestServerWithDataOps(t *testing.T, pool *pgxpool.Pool, parser applica
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewByeRepository(q),
+		pg.NewPlayerSeasonStatsRepository(pool),
 	)
 
 	db := pg.NewDB(pool)
@@ -1450,6 +1616,7 @@ func setupTestServerWithScoreCommands(t *testing.T, pool *pgxpool.Pool) *httptes
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewByeRepository(q),
+		pg.NewPlayerSeasonStatsRepository(pool),
 	)
 
 	db := pg.NewDB(pool)

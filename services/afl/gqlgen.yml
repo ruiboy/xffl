@@ -70,3 +70,5 @@ models:
         resolver: true
       matches:
         resolver: true
+      stats:
+        resolver: true

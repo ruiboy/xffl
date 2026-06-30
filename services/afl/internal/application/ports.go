@@ -1,6 +1,12 @@
 package application
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+// ErrFixtureNotFound indicates the external source has no record of a match yet
+var ErrFixtureNotFound = errors.New("fixture not found")
 
 // PlayerCandidate is a known AFL player available for fuzzy name matching.
 type PlayerCandidate struct {

@@ -30,6 +30,10 @@ test.describe('FFL Home', () => {
     await expect(page.getByRole('columnheader', { name: '%' })).toBeVisible()
   })
 
+  test('displays ladder with premiership points column', async ({ page }) => {
+    await expect(page.getByRole('columnheader', { name: 'Pts' })).toBeVisible()
+  })
+
   test('does not display matches section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Matches' })).not.toBeVisible()
   })
@@ -62,8 +66,19 @@ test.describe('FFL Home', () => {
     await expect(topNav.getByRole('link', { name: 'Squad' })).toBeVisible()
   })
 
-  test('round 3 has the open live-round ring indicator', async ({ page }) => {
+})
+
+// Separate describe so beforeEach can set the browser clock before navigation.
+// Mirror of the AFL home pulsing dot test: FFL round 3 maps to AFL round 3 (live).
+test.describe('FFL Home — live round pulsing dot', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupFflSession(page)
+    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
+    await page.goto('/ffl')
+  })
+
+  test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {
     const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
-    await expect(round3).toHaveClass(/ring-active/)
+    await expect(round3.locator('.animate-pulse')).toBeVisible()
   })
 })

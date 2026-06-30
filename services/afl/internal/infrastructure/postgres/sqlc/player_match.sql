@@ -92,7 +92,9 @@ WHERE ps.id = ANY(@player_season_ids::int[])
   AND ps.deleted_at IS NULL;
 
 -- name: GetPlayerSeasonAveragesBatch :many
--- Returns season-to-date average stats for each player_season, across all matches played.
+-- Returns average stats for each player_season across final matches that took place
+-- before the given round (by start_dt, since round_id ordering is not guaranteed to be
+-- chronological). Used to compute bye scores from season-to-date form.
 SELECT
   pm.player_season_id,
   AVG(pm.goals)::float8     AS avg_goals,
@@ -102,8 +104,16 @@ SELECT
   AVG(pm.tackles)::float8   AS avg_tackles,
   AVG(pm.hitouts)::float8   AS avg_hitouts
 FROM afl.player_match pm
+JOIN afl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 WHERE pm.player_season_id = ANY(@player_season_ids::int[])
   AND pm.deleted_at IS NULL
+  AND m.data_status = 'final'
+  AND m.start_dt < (
+    SELECT MIN(m2.start_dt)
+    FROM afl.match m2
+    WHERE m2.round_id = @round_id AND m2.deleted_at IS NULL
+  )
 GROUP BY pm.player_season_id;
 
 -- name: UpsertPlayerMatch :one

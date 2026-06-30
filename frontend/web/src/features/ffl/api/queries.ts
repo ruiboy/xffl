@@ -75,8 +75,24 @@ export const GET_FFL_CLUB_MATCH = gql`
       id
       clubSeasonId
       roundId
+      aflRoundId
       seasonId
       club { id }
+    }
+  }
+`
+
+export const GET_FFL_CLUB_MATCH_TEAM = gql`
+  query GetFFLClubMatchTeam($id: ID!) {
+    fflClubMatch(id: $id) {
+      id
+      playerMatches {
+        playerSeasonId
+        position
+        backupPositions
+        interchangePosition
+        player { aflPlayer { name } }
+      }
     }
   }
 `
@@ -117,6 +133,7 @@ export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
           for
           against
           percentage
+          premiershipPoints
         }
         rounds {
           id
@@ -137,7 +154,7 @@ export const GET_AFL_LIVE_ROUND = gql`
 `
 
 export const GET_FFL_ROUND = gql`
-  query GetFFLRound($id: ID!) {
+  query GetFFLRound($id: ID!, $aflRoundId: ID) {
     fflRound(id: $id) {
       id
       name
@@ -164,6 +181,8 @@ export const GET_FFL_ROUND = gql`
           id
           club { id name }
           score
+          dataStatus
+          suggestedSubstitutions { kind replacedPmId replacingPmId }
           playerMatches {
             id
             playerSeasonId
@@ -176,7 +195,9 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
+                id
                 clubSeason { club { name } }
+                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
             }
             aflPlayerMatch {
@@ -189,6 +210,8 @@ export const GET_FFL_ROUND = gql`
           id
           club { id name }
           score
+          dataStatus
+          suggestedSubstitutions { kind replacedPmId replacingPmId }
           playerMatches {
             id
             playerSeasonId
@@ -201,7 +224,9 @@ export const GET_FFL_ROUND = gql`
             score
             playerSeason {
               aflPlayerSeason {
+                id
                 clubSeason { club { name } }
+                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
               }
             }
             aflPlayerMatch {
@@ -232,6 +257,7 @@ export const GET_FFL_MATCH = gql`
         clubSeasonId
         club { id name }
         score
+        suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id
           playerSeasonId
@@ -245,6 +271,7 @@ export const GET_FFL_MATCH = gql`
           playerSeason {
             aflPlayerSeason {
               clubSeason { club { name } }
+              stats { goals kicks handballs marks tackles hitouts games }
             }
           }
           aflPlayerMatch {
@@ -257,6 +284,7 @@ export const GET_FFL_MATCH = gql`
         clubSeasonId
         club { id name }
         score
+        suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id
           playerSeasonId
@@ -270,6 +298,7 @@ export const GET_FFL_MATCH = gql`
           playerSeason {
             aflPlayerSeason {
               clubSeason { club { name } }
+              stats { goals kicks handballs marks tackles hitouts games }
             }
           }
           aflPlayerMatch {
@@ -331,6 +360,7 @@ export const GET_FFL_SEASON = gql`
         for
         against
         percentage
+        premiershipPoints
       }
       rounds {
         id
@@ -404,6 +434,7 @@ export const GET_AFL_SEASON_CLUB_SEASONS = gql`
   query GetAFLSeasonClubSeasons($fflSeasonId: ID!) {
     fflSeason(id: $fflSeasonId) {
       aflSeason {
+        id
         ladder {
           id
           club { name }
@@ -484,9 +515,19 @@ export const SEARCH_AFL_PLAYERS = gql`
         clubSeason {
           id
           club { name }
-          season { name }
+          season { id name }
         }
       }
+    }
+  }
+`
+
+export const GET_PLAYER_STATS_CARD = gql`
+  query GetPlayerStatsCard($id: ID!, $aflRoundId: ID) {
+    aflPlayerSeason(id: $id) {
+      id
+      seasonAvg: stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
+      last3: stats(upToRoundId: $aflRoundId, lastN: 3) { goals kicks handballs marks tackles hitouts games }
     }
   }
 `

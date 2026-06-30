@@ -72,3 +72,13 @@ func TestCalculateLadder(t *testing.T) {
 		assert.Empty(t, got)
 	})
 }
+
+func TestClubSeason_Percentage(t *testing.T) {
+	t.Run("computes points for as a percentage of points against", func(t *testing.T) {
+		assert.Equal(t, 125.0, ClubSeason{For: 500, Against: 400}.Percentage())
+	})
+
+	t.Run("reports zero when nothing has been conceded", func(t *testing.T) {
+		assert.Equal(t, 0.0, ClubSeason{For: 0, Against: 0}.Percentage())
+	})
+}

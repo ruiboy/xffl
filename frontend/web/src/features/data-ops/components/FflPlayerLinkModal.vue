@@ -111,7 +111,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useApolloClient } from '@vue/apollo-composable'
 import { SEARCH_AFL_PLAYERS, GET_AFL_SEASON_CLUB_SEASONS } from '../api/queries'
-import { ADD_AFL_PLAYER, ADD_FFL_PLAYER_TO_SEASON } from '../api/mutations'
+import { ADD_AFL_PLAYER, ADD_AFL_PLAYER_SEASON, ADD_FFL_PLAYER_TO_SEASON } from '../api/mutations'
 
 const props = defineProps<{
   show: boolean
@@ -142,7 +142,7 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const { result: clubSeasonsResult, loading: loadingClubSeasons } = useQuery(
   GET_AFL_SEASON_CLUB_SEASONS,
   () => ({ fflSeasonId: props.fflSeasonId }),
-  () => ({ enabled: addingNew.value && !!props.fflSeasonId }),
+  () => ({ enabled: !!props.fflSeasonId }),
 )
 
 const aflClubSeasons = computed(() => clubSeasonsResult.value?.fflSeason?.aflSeason?.ladder ?? [])
@@ -187,7 +187,7 @@ async function selectPlayer(p: any) {
   error.value = ''
   try {
     const client = resolveClient()
-    const aflPlayerSeasonId = p.latestPlayerSeason?.id ?? p.id
+    const aflPlayerSeasonId = await resolveAflPlayerSeasonId(p)
     const res = await client.mutate({
       mutation: ADD_FFL_PLAYER_TO_SEASON,
       variables: { input: { clubSeasonId: props.fflClubSeasonId, aflPlayerSeasonId } },
@@ -204,6 +204,42 @@ async function selectPlayer(p: any) {
   } finally {
     linking.value = false
   }
+}
+
+// Resolves the afl.player_season to link for the current FFL season. If the
+// player's latest known player_season is for a different AFL season (e.g. the
+// AFL side hasn't recorded them for the current season yet), create the
+// player_season for the current season at their most recently known club.
+async function resolveAflPlayerSeasonId(p: any): Promise<string> {
+  const latest = p.latestPlayerSeason
+  const client = resolveClient()
+  const res = await client.query({
+    query: GET_AFL_SEASON_CLUB_SEASONS,
+    variables: { fflSeasonId: props.fflSeasonId },
+    fetchPolicy: 'cache-first',
+  })
+  const aflSeason = res.data?.fflSeason?.aflSeason
+  if (latest && latest.clubSeason.season.id === aflSeason?.id) {
+    return latest.id
+  }
+
+  const clubName = latest?.clubSeason?.club?.name
+  const currentClubSeason = (aflSeason?.ladder ?? []).find((cs: any) => cs.club.name === clubName)
+  if (!currentClubSeason) {
+    throw new Error(
+      latest
+        ? `Could not find ${clubName} in the current AFL season to link this player.`
+        : 'This player has no AFL season data to link to.',
+    )
+  }
+
+  const addRes = await client.mutate({
+    mutation: ADD_AFL_PLAYER_SEASON,
+    variables: { input: { playerId: p.id, clubSeasonId: currentClubSeason.id } },
+  })
+  const id = addRes?.data?.addAFLPlayerSeason?.id
+  if (!id) throw new Error('Failed to create AFL player season for the current season')
+  return id
 }
 
 async function addAndLink() {

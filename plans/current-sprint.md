@@ -1,17 +1,19 @@
-# Current Sprint — Phase 21: UX Navigation
+# Current Sprint — Phase 22: Real Data Load & Seed Cleanup
 
-**Sprint goal:** Consistent, round-aware navigation across AFL and FFL — header links land on the live round, cross-domain switching is a first-class affordance, and DataOps is always reachable.
+**Sprint goal:** Replace synthetic seed data with real 2026 AFL and FFL data, and slim the dev seed to a lean scaffold.
 
-See `plans/ideas.md` for full descriptions of each item.
+See `plans/ideas.md` for full item descriptions where relevant.
 
 ---
 
 ## Tasks
 
-- [x] NAV-1: Update header AFL/FFL links to navigate to live round (`/afl/rounds/:liveRoundId`, `/ffl/rounds/:liveRoundId`)
-- [x] NAV-2: Cross-domain round-aware navigation — header AFL/FFL/DataOps links follow a session-scoped "selected round" (defaults to live round, sticks to whichever round you're viewing, syncs the corresponding round across domains); replaces the originally-planned cross-domain pill, which was built then superseded by this approach
-- [x] NAV-3: Add Ladder pill as first item in RoundNav (ladder icon + hover tooltip)
-- [x] NAV-4: Add DataOps icon link to header right-side nav (always visible; links to live round)
-- [x] NAV-5: Replace DataOps round dropdown with RoundNav component
-- [x] PAGE-7: Enhance current-round pill with pulsing indicator when `start_dt` = today
-- [x] Playwright tests for new navigation elements
+- [x] Import all 2026 AFL rounds played to date (teams, players, match stats) via existing import tooling
+- [x] Verify AFL ladder calculation produces correct standings
+- [x] Calculate score(s) for bye players on bench; currently shows as "?".  Fix FFL Team import in Rounds 3/4.
+- [x] Import all 2026 FFL round teams to date
+- [x] Verify FFL ladder calculation produces correct standings
+- [x] Smoke-test team submission and substitution flows against real data; capture edge cases
+- [x] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
+- [x] Confirm e2e tests pass against slim seed
+- [x] Add FFLSuggestedInterchange type to graph; show interchange hint on MatchView and TeamBuilderView

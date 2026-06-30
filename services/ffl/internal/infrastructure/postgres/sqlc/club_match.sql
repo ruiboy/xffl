@@ -27,6 +27,12 @@ SET data_status = $2,
     updated_at  = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdateClubMatchPremiershipPoints :exec
+UPDATE ffl.club_match
+SET drv_premiership_points = $2,
+    updated_at             = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: CountFinalClubMatchesByMatchID :one
 SELECT COUNT(*) FROM ffl.club_match
 WHERE match_id = $1 AND data_status = 'final' AND deleted_at IS NULL;

@@ -756,12 +756,15 @@ func (r *PlayerMatchRepository) FindByeStatusBatch(ctx context.Context, playerSe
 	return out, nil
 }
 
-func (r *PlayerMatchRepository) GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int) ([]domain.PlayerSeasonAverages, error) {
+func (r *PlayerMatchRepository) GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.PlayerSeasonAverages, error) {
 	int32IDs := make([]int32, len(playerSeasonIDs))
 	for i, id := range playerSeasonIDs {
 		int32IDs[i] = int32(id)
 	}
-	rows, err := r.q.GetPlayerSeasonAveragesBatch(ctx, int32IDs)
+	rows, err := r.q.GetPlayerSeasonAveragesBatch(ctx, sqlcgen.GetPlayerSeasonAveragesBatchParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
 	if err != nil {
 		return nil, err
 	}

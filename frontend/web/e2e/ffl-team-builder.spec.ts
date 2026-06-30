@@ -353,8 +353,8 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
-      // Brock's bench row shows "↑ Hugh McCluggage"
-      await expect(benchSection(page).getByText(/↑.*Hugh McCluggage/)).toBeVisible()
+      // Brock's bench row shows "↑ Brock Thunder" (highlighted as covering)
+      await expect(benchSection(page).getByText(/↑.*Brock Thunder/)).toBeVisible()
     })
 
     test('after sub saved, starter row shows covering bench player', async ({ page }) => {
@@ -410,7 +410,7 @@ test.describe('FFL Team Builder', () => {
       await page.waitForLoadState('networkidle')
 
       // SquadTable: covering arrow visible for Brock's bench row
-      await expect(page.getByText(/↑.*Hugh McCluggage/).first()).toBeVisible()
+      await expect(page.getByText(/↑.*Brock Thunder/).first()).toBeVisible()
     })
   })
 
@@ -617,6 +617,78 @@ test.describe('FFL Team Builder', () => {
       // Henry Smith now appears in the available pool's Traded section.
       const squadPanel = page.getByRole('heading', { name: /Squad \(/ }).locator('..')
       await expect(squadPanel.getByText('Henry Smith')).toBeVisible()
+    })
+  })
+
+  // ── Improve your score pill: interchange ─────────────────────────────────
+  //
+  // Round 4, The Howling Cows (club_match id=8):
+  //   Brock Thunder — interchange bench (position=NULL, backup_positions='goals',
+  //                   interchange_position='goals'), score=50
+  //   Hugh McCluggage — goals starter, played, score=30
+  //   → Brock outscores Hugh → interchange suggestion fires → pill visible
+
+  test.describe('improve your score pill', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/8/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+    })
+
+    test('pill visible in default mode when interchange suggestion exists', async ({ page }) => {
+      await expect(page.getByText('Improve your score:')).toBeVisible()
+    })
+
+    test('pill shows Interchange wording with player name', async ({ page }) => {
+      await expect(page.getByText(/Interchange:.*Brock Thunder/)).toBeVisible()
+    })
+
+    test('pill visible in subs mode', async ({ page }) => {
+      await page.getByRole('button', { name: 'Substitutions' }).click()
+      await expect(page.getByText('Improve your score:')).toBeVisible()
+    })
+
+    test('pill hidden in manage mode', async ({ page }) => {
+      await page.getByRole('button', { name: 'Manage' }).click()
+      await expect(page.getByText('Improve your score:')).not.toBeVisible()
+    })
+  })
+
+  // ── Improve your score pill: sub ─────────────────────────────────────────
+  //
+  // Round 2, The Howling Cows (club_match id=4):
+  //   Hugh McCluggage — kicks starter, DNP
+  //   Brock Thunder   — bench covering kicks, played, score=20
+  //   → Hugh is DNP + Brock covers kicks → sub suggestion fires → pill visible
+
+  test.describe('improve your score pill — sub suggestion', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/4/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+    })
+
+    test('pill shows Sub wording for DNP starter', async ({ page }) => {
+      await expect(page.getByText(/Sub:.*Brock Thunder/)).toBeVisible()
+    })
+  })
+
+  // ── Replicate and Clear buttons ───────────────────────────────────────────
+  //
+  // Round 2 (club_match id=4): prevRound is Round 1, which has Howling Cows
+  // data → Replicate Round 1 button visible in manage mode.
+
+  test.describe('replicate and clear buttons', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/ffl/club-matches/4/edit')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
+      await page.getByRole('button', { name: 'Manage' }).click()
+    })
+
+    test('Replicate Round button visible in manage mode when previous round exists', async ({ page }) => {
+      await expect(page.getByRole('button', { name: /Replicate Round/ })).toBeVisible()
+    })
+
+    test('Clear button visible in manage mode', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible()
     })
   })
 })

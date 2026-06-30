@@ -41,7 +41,7 @@
       </div>
 
       <template v-if="selectedClubSeason && clubMatch">
-        <div class="mb-6 flex items-center gap-4">
+        <div class="mb-6 flex items-center gap-4 flex-wrap">
           <!-- Subs mode -->
           <template v-if="subsMode">
             <button
@@ -54,7 +54,7 @@
               class="rounded-lg border border-active bg-active px-3 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="subsSaving"
             >{{ subsSaving ? 'Saving...' : 'Save Subs' }}</button>
-            <span v-if="subsMessage" class="text-sm" :class="subsMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-500'">{{ subsMessage }}</span>
+            <span v-if="subsMessage" class="text-sm" :class="subsError ? 'text-red-400' : 'text-green-500'">{{ subsMessage }}</span>
           </template>
 
           <!-- Manage mode -->
@@ -75,6 +75,22 @@
             </button>
             <span v-if="benchValidationError" class="text-sm text-red-400">{{ benchValidationError }}</span>
             <span v-else-if="submitMessage" class="text-sm text-green-500">{{ submitMessage }}</span>
+            <span class="w-2 shrink-0" />
+            <button
+              v-if="prevClubMatchId && !clubMatchLocked"
+              @click="copyPreviousTeam"
+              :disabled="prevTeamLoading"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {{ prevTeamLoading ? 'Replicating…' : `Replicate ${prevRound?.name}` }}
+            </button>
+            <button
+              v-if="!clubMatchLocked"
+              @click="() => { resetTeamState(); markDirty() }"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              Clear
+            </button>
           </template>
 
           <!-- Default mode buttons -->
@@ -98,8 +114,52 @@
                 Substitutions
               </span>
             </button>
+            <span class="w-2 shrink-0" />
+            <button
+              v-if="starterCount > 0"
+              @click="copyTeamToClipboard"
+              title="Copy to Clipboard"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconCopy class="w-3.5 h-3.5" />
+                {{ copyToClipboardLabel }}
+              </span>
+            </button>
           </template>
+
+          <!-- Data status pill -->
+          <span
+            v-if="clubMatchDataStatus"
+            class="ml-auto shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+            :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
+          >
+            {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
+          </span>
         </div>
+
+        <!-- Substitution suggestions -->
+        <div
+          v-if="!managing && suggestedSubstitutionHints.length > 0"
+          class="mb-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
+        >
+          <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
+          <ul class="space-y-0.5">
+            <li
+              v-for="hint in suggestedSubstitutionHints"
+              :key="hint"
+              class="flex items-start gap-1.5 text-sm text-sky-300"
+            >
+              <span class="mt-px">·</span>
+              <span>{{ hint }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Skipped players notice (copy from round) -->
+        <p v-if="skippedOnCopy.length > 0" class="mb-4 text-sm text-amber-400">
+          Skipped (no longer in squad): {{ skippedOnCopy.join(', ') }}
+        </p>
 
         <!-- Summary bar -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
@@ -138,21 +198,28 @@
                   <div v-if="slot.player" class="flex items-center gap-3">
                     <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
                     <div v-if="managing">
-                      <div class="font-medium text-sm">{{ slot.player.name }}</div>
-                      <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
+                      <PlayerStatsCard :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                        <div class="font-medium text-sm">{{ slot.player.name }}</div>
+                        <div v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</div>
+                      </PlayerStatsCard>
                     </div>
                     <div v-else class="flex flex-col">
-                      <div class="flex items-baseline gap-2">
-                        <component
-                          :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
-                          :to="playerAflMatchRoute(slot.player) ?? undefined"
-                          class="font-medium text-sm hover:text-active transition-colors"
-                        >{{ slot.player.name }}</component>
-                        <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                      <PlayerStatsCard :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                        <div class="flex items-baseline gap-2">
+                          <component
+                            :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                            :to="playerAflMatchRoute(slot.player) ?? undefined"
+                            class="font-medium text-sm hover:text-active transition-colors"
+                            :class="{ 'line-through': effectiveCovering(slot.player.pmId) }"
+                          >{{ slot.player.name }}</component>
+                          <span v-if="slot.player.club" class="text-xs text-text-muted" :class="{ 'line-through': effectiveCovering(slot.player.pmId) }">{{ slot.player.club }}</span>
+                        </div>
+                      </PlayerStatsCard>
+                      <div v-if="effectiveCovering(slot.player.pmId)" class="text-sky-400">
+                        <span class="text-xs mr-1">↑</span>
+                        <span class="font-medium text-sm">{{ effectiveCovering(slot.player.pmId)!.name }}</span>
+                        <span v-if="effectiveCovering(slot.player.pmId)!.club" class="ml-2 text-xs">{{ effectiveCovering(slot.player.pmId)!.club }}</span>
                       </div>
-                      <span v-if="effectiveCovering(slot.player.pmId)" class="text-xs text-sky-400">
-                        ↑ {{ effectiveCovering(slot.player.pmId)!.name }}
-                      </span>
                     </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -197,7 +264,7 @@
                     <span class="w-16 shrink-0">
                       <StatusBadge :status="playerStatus(slot.player)" />
                     </span>
-                    <span class="w-28 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, slot.player) ?? '') : '' }}</span>
+                    <span class="w-28 text-right text-xs tabular-nums text-text-faint shrink-0">{{ playerShowScore(slot.player) ? (positionFormula(pos.key, effectivePlayerStats(slot.player)) ?? '') : '' }}</span>
                     <span class="w-12 text-right text-sm tabular-nums text-text shrink-0">{{ starterDisplayScore(slot.player, pos.key) }}</span>
                   </div>
                 </div>
@@ -224,16 +291,24 @@
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
                     <div v-if="slot.player">
-                      <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="block text-xs text-sky-400">
-                        ↑ {{ effectiveSubbedForStarter(slot.player.pmId)!.name }}
-                      </span>
                       <div class="flex items-baseline gap-2" :class="managing ? 'flex-col gap-0' : ''">
-                        <component
-                          :is="!managing && playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
-                          :to="!managing && playerAflMatchRoute(slot.player) ? playerAflMatchRoute(slot.player) : undefined"
-                          class="font-medium text-sm text-text-muted hover:text-active transition-colors"
-                        >{{ slot.player.name }}</component>
-                        <span v-if="slot.player.club" class="text-xs text-text-muted">{{ slot.player.club }}</span>
+                        <span v-if="!managing && effectiveSubbedForStarter(slot.player.pmId)" class="text-xs mr-1 text-sky-400">↑</span>
+                        <PlayerStatsCard v-if="!managing" :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                          <component
+                            :is="playerAflMatchRoute(slot.player) ? 'router-link' : 'span'"
+                            :to="playerAflMatchRoute(slot.player) ?? undefined"
+                            class="font-medium text-sm hover:text-active transition-colors"
+                            :class="effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
+                          >{{ slot.player.name }}</component>
+                        </PlayerStatsCard>
+                        <PlayerStatsCard v-else :name="slot.player.name" :club="slot.player.club" :afl-status="slot.player.aflStatus" :afl-player-season-id="slot.player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                          <span class="font-medium text-sm text-text-muted">{{ slot.player.name }}</span>
+                        </PlayerStatsCard>
+                        <span
+                          v-if="slot.player.club"
+                          class="text-xs"
+                          :class="!managing && effectiveSubbedForStarter(slot.player.pmId) ? 'text-sky-400' : 'text-text-muted'"
+                        >{{ slot.player.club }}</span>
                       </div>
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
@@ -277,10 +352,10 @@
                     <template v-else-if="slot.player">
                       <div class="flex items-center gap-2 shrink-0">
                         <div class="w-28 flex items-center justify-end gap-1 shrink-0">
-                          <span v-if="slot.positions[0]" :class="interchangePosition === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[0] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                          <span v-if="slot.positions[0]" :class="effectiveCoveredPosition(slot.player?.pmId) === slot.positions[0] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : slot.positions[0] === 'star' ? 'text-xs bg-control rounded px-1.5 py-0.5 text-yellow-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
                             {{ positionShort(slot.positions[0]) }}<template v-if="interchangePosition === slot.positions[0]"> · Int</template>
                           </span>
-                          <span v-if="slot.positions[1]" :class="interchangePosition === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : effectiveCoveredPosition(slot.player?.pmId) === slot.positions[1] ? 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted ring-1 ring-sky-400/60' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
+                          <span v-if="slot.positions[1]" :class="effectiveCoveredPosition(slot.player?.pmId) === slot.positions[1] ? 'text-xs rounded px-1.5 py-0.5 bg-sky-500/10 text-sky-400' : slot.positions[1] === 'star' ? 'text-xs bg-control rounded px-1.5 py-0.5 text-yellow-400' : 'text-xs bg-control rounded px-1.5 py-0.5 text-text-muted'">
                             {{ positionShort(slot.positions[1]) }}<template v-if="interchangePosition === slot.positions[1]"> · Int</template>
                           </span>
                         </div>
@@ -322,10 +397,12 @@
                 class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
               >
                 <div class="flex items-center gap-3 min-w-0">
-                  <div>
-                    <div class="font-medium text-sm">{{ player.name }}</div>
-                    <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
-                  </div>
+                  <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                    <div>
+                      <div class="font-medium text-sm">{{ player.name }}</div>
+                      <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                    </div>
+                  </PlayerStatsCard>
                   <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                 </div>
                 <div class="flex items-center gap-1">
@@ -373,10 +450,12 @@
                   class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 opacity-40"
                 >
                   <div class="flex items-center gap-3 min-w-0">
-                    <div>
-                      <div class="font-medium text-sm">{{ player.name }}</div>
-                      <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
-                    </div>
+                    <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
+                      <div>
+                        <div class="font-medium text-sm">{{ player.name }}</div>
+                        <div v-if="player.club" class="text-xs text-text-muted">{{ player.club }}</div>
+                      </div>
+                    </PlayerStatsCard>
                     <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                   </div>
                   <div class="flex items-center gap-1">
@@ -407,34 +486,27 @@
       </template>
       <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
 
-      <div v-if="bootstrapRoundId" class="mt-8">
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: bootstrapRoundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH } from '../api/queries'
+import { useQuery, useMutation, useLazyQuery } from '@vue/apollo-composable'
+import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH, GET_FFL_CLUB_MATCH_TEAM } from '../api/queries'
 import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
 import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
+import IconCopy from '../components/icons/IconCopy.vue'
+import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
 
@@ -471,6 +543,8 @@ interface SquadPlayer {
   marks: number | null
   tackles: number | null
   hitouts: number | null
+  byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number; games: number } | null
+  aflPlayerSeasonId: string | null
 }
 
 interface Slot {
@@ -493,6 +567,7 @@ const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
 )
 
 const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.roundId ?? '')
+const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
 const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
 const bootstrapClubSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.clubSeasonId ?? '')
 const bootstrapClubId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.club?.id ?? '')
@@ -503,7 +578,7 @@ watch(bootstrapClubId, (id) => {
 
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
   GET_FFL_ROUND,
-  () => ({ id: bootstrapRoundId.value }),
+  () => ({ id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value }),
   () => ({ enabled: !!bootstrapRoundId.value, errorPolicy: 'all' }),
 )
 const { result: seasonResult, loading: seasonLoading } = useQuery(
@@ -592,7 +667,7 @@ const clubMatch = computed(() => {
 })
 
 const playerMatchBySeasonId = computed(() => {
-  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null }>()
+  const map = new Map<string, { pmId: string; score: number | null; club: string | null; status: string | null; aflStatus: string | null; aflMatchId: string | null; goals: number | null; kicks: number | null; handballs: number | null; marks: number | null; tackles: number | null; hitouts: number | null; byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number } | null; aflPlayerSeasonId: string | null }>()
   for (const pm of clubMatch.value?.playerMatches ?? []) {
     map.set(pm.playerSeasonId, {
       pmId: pm.id,
@@ -607,6 +682,8 @@ const playerMatchBySeasonId = computed(() => {
       marks: pm.aflPlayerMatch?.marks ?? null,
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
+      byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
+      aflPlayerSeasonId: pm.playerSeason?.aflPlayerSeason?.id ?? null,
     })
   }
   return map
@@ -617,7 +694,7 @@ const squad = computed<SquadPlayer[]>(() => {
   return clubSeasonData.value.players.nodes.map((r: {
     id: string
     player: { aflPlayer: { name: string } }
-    aflPlayerSeason?: { clubSeason?: { club?: { name: string } | null } | null } | null
+    aflPlayerSeason?: { id?: string; clubSeason?: { club?: { name: string } | null } | null } | null
     toRoundId?: string | null
   }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
@@ -637,6 +714,8 @@ const squad = computed<SquadPlayer[]>(() => {
       marks: pm?.marks ?? null,
       tackles: pm?.tackles ?? null,
       hitouts: pm?.hitouts ?? null,
+      byeStats: pm?.byeStats ?? null,
+      aflPlayerSeasonId: pm?.aflPlayerSeasonId ?? r.aflPlayerSeason?.id ?? null,
     }
   })
 })
@@ -652,17 +731,29 @@ function playerShowScore(player: SquadPlayer): boolean {
 
 function benchPositionScore(player: SquadPlayer, pos: string): number | null {
   if (!playerShowScore(player)) return null
+  const s = player.goals !== null ? player : player.byeStats
+  if (!s) return null
   if (pos === 'star') {
-    if (player.goals === null) return null
-    return (player.goals ?? 0) * 5 + (player.kicks ?? 0) + (player.handballs ?? 0) + (player.marks ?? 0) * 2 + (player.tackles ?? 0) * 4
+    if (s.goals === null) return null
+    return Math.floor(s.goals ?? 0) * 5 + Math.floor(s.kicks ?? 0) + Math.floor(s.handballs ?? 0) + Math.floor(s.marks ?? 0) * 2 + Math.floor(s.tackles ?? 0) * 4
   }
   const statMap: Record<string, number | null> = {
-    goals: player.goals, kicks: player.kicks, handballs: player.handballs,
-    marks: player.marks, tackles: player.tackles, hitouts: player.hitouts,
+    goals: s.goals, kicks: s.kicks, handballs: s.handballs,
+    marks: s.marks, tackles: s.tackles, hitouts: s.hitouts,
   }
   const stat = statMap[pos] ?? null
   if (stat === null) return null
-  return stat * (POSITION_MULTIPLIERS[pos] ?? 1)
+  return Math.floor(stat) * (POSITION_MULTIPLIERS[pos] ?? 1)
+}
+
+function effectivePlayerStats(player: SquadPlayer) {
+  if (player.goals !== null) return player
+  const s = player.byeStats
+  if (!s) return player
+  return {
+    goals: Math.floor(s.goals), kicks: Math.floor(s.kicks), handballs: Math.floor(s.handballs),
+    marks: Math.floor(s.marks), tackles: Math.floor(s.tackles), hitouts: Math.floor(s.hitouts),
+  }
 }
 
 function benchScoreDisplay(slot: BenchDualSlot): string {
@@ -754,6 +845,8 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       marks: pm.aflPlayerMatch?.marks ?? null,
       tackles: pm.aflPlayerMatch?.tackles ?? null,
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
+      byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
+      aflPlayerSeasonId: pm.playerSeason?.aflPlayerSeason?.id ?? squadEntry?.aflPlayerSeasonId ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
@@ -812,6 +905,136 @@ const tradedPlayers = computed(() =>
 )
 
 const showTraded = ref(false)
+
+// ── Copy to clipboard ────────────────────────────────────────────────────────
+
+const copyToClipboardLabel = ref('Copy')
+
+const STATUS_TAG: Record<string, string> = {
+  bye: 'Bye', dnp: 'DNP', subbed_out: 'Subbed', subbed_in: 'Sub In',
+  interchanged_out: "IC'd", interchanged_in: 'IC In',
+}
+
+function hasSubScore(player: SquadPlayer): boolean {
+  return player.status === 'subbed_out' || player.status === 'subbed_in' ||
+    player.status === 'interchanged_out' || player.status === 'interchanged_in'
+}
+
+function formatTeamText(): string {
+  const clubName = (selectedClubSeason.value?.club.name ?? 'TEAM').toUpperCase()
+  const lines: string[] = [`${clubName} ${grandTotal.value}`]
+
+  for (const pos of positions) {
+    const slots = teamSlots.value[pos.key].filter((s: Slot) => s.player)
+    if (!slots.length) continue
+    lines.push(pos.label.toUpperCase())
+    for (const slot of slots) {
+      const club = clubAbbrev(slot.player!.club)
+      const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
+      const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
+      const score = showScore ? ` ${starterDisplayScore(slot.player!, pos.key)}` : ''
+      lines.push(`${slot.player!.name}${club ? ` (${club})` : ''}${tag ? ` ${tag}` : ''}${score}`)
+    }
+    lines.push(String(positionTotal(pos.key)))
+  }
+
+  const benchSlots = benchDualSlots.value.filter((s: BenchDualSlot) => s.player)
+  if (benchSlots.length) {
+    lines.push('BENCH')
+    for (const slot of benchSlots) {
+      const club = clubAbbrev(slot.player!.club)
+      const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
+      const isIc = isInterchangeSlot(slot)
+      const posLabel = isIc ? '*' : slot.positions.filter(Boolean).map(positionShort).join('/')
+      const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
+      const score = showScore ? ` ${benchScoreDisplay(slot)}` : ''
+      lines.push(`${slot.player!.name}${club ? ` (${club})` : ''} ${posLabel}${tag ? ` ${tag}` : ''}${score}`)
+    }
+    if (interchangePosition.value) lines.push('Interchange = *')
+  }
+
+  return lines.join('\n')
+}
+
+async function copyTeamToClipboard() {
+  await navigator.clipboard.writeText(formatTeamText())
+  copyToClipboardLabel.value = 'Copied!'
+  setTimeout(() => { copyToClipboardLabel.value = 'Copy' }, 2000)
+}
+
+// ── Suggested substitutions ──────────────────────────────────────────────────
+
+const suggestedSubstitutionHints = computed(() => {
+  const subs = clubMatch.value?.suggestedSubstitutions ?? []
+  if (!subs.length) return []
+  const pms = clubMatch.value?.playerMatches ?? []
+  const find = (id: string) => pms.find((pm: { id: string }) => pm.id === id)?.player?.aflPlayer?.name ?? id
+  return subs.map((s: { kind: string; replacedPmId: string; replacingPmId: string }) =>
+    `${s.kind === 'interchange' ? 'Interchange' : 'Sub'}: ${find(s.replacingPmId)} in for ${find(s.replacedPmId)}`
+  )
+})
+
+// ── Club match data status ───────────────────────────────────────────────────
+
+const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string | undefined ?? null)
+
+const clubMatchLocked = computed(() => clubMatchDataStatus.value === 'final')
+
+const dataStatusLabel: Record<string, string> = { no_data: 'Not submitted', submitted: 'Submitted', final: 'Final' }
+const dataStatusClass: Record<string, string> = {
+  no_data:   'bg-surface-raised text-text-faint',
+  submitted: 'bg-yellow-500/15 text-yellow-500',
+  final:     'bg-green-500/15 text-green-500',
+}
+
+// ── Copy from previous round ─────────────────────────────────────────────────
+
+interface PrevPlayerMatch {
+  playerSeasonId: string
+  position: string
+  backupPositions: string | null
+  interchangePosition: string | null
+  player: { aflPlayer: { name: string } }
+}
+
+const skippedOnCopy = ref<string[]>([])
+
+const { load: loadPrevTeam, result: prevTeamResult, loading: prevTeamLoading } = useLazyQuery<{
+  fflClubMatch: { playerMatches: PrevPlayerMatch[] } | null
+}>(GET_FFL_CLUB_MATCH_TEAM)
+
+async function copyPreviousTeam() {
+  if (!prevClubMatchId.value) return
+  skippedOnCopy.value = []
+  await loadPrevTeam(GET_FFL_CLUB_MATCH_TEAM, { id: prevClubMatchId.value }, { fetchPolicy: 'network-only' })
+  const pms = prevTeamResult.value?.fflClubMatch?.playerMatches ?? []
+  resetTeamState()
+  const squadById = new Map(squad.value.map(p => [p.id, p]))
+  const skipped: string[] = []
+  let dualIndex = 0
+  for (const pm of pms) {
+    const player = squadById.get(pm.playerSeasonId)
+    if (!player || player.toRoundId) { skipped.push(pm.player.aflPlayer.name); continue }
+    const isBench = pm.backupPositions != null || pm.interchangePosition != null
+    if (!isBench) {
+      const slot = teamSlots.value[pm.position as PositionKey]?.find((s: Slot) => !s.player)
+      if (slot) slot.player = player
+    } else if (dualIndex < 4) {
+      if (pm.backupPositions === 'star') {
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = ['star', null]
+      } else if (pm.backupPositions) {
+        const parts = pm.backupPositions.split(',').map((p: string) => p.trim()) as NonStarPositionKey[]
+        benchDualSlots.value[dualIndex].player = player
+        benchDualSlots.value[dualIndex].positions = [parts[0] ?? null, parts[1] ?? null]
+      }
+      if (pm.interchangePosition) interchangePosition.value = pm.interchangePosition
+      dualIndex++
+    }
+  }
+  skippedOnCopy.value = skipped
+  markDirty()
+}
 
 const starterCount = computed(() => {
   let count = 0
@@ -957,37 +1180,12 @@ const aflMatchStarted = computed(() => {
   )
 })
 
-// Bench player with InterchangePosition set (at most one per team).
-const interchangeBenchPlayer = computed(() => {
-  const pms = clubMatch.value?.playerMatches ?? []
-  return pms.find((pm: { interchangePosition: string | null }) => pm.interchangePosition != null) ?? null
-})
-
-// Starter at the interchange position with the lowest score (the one that would be displaced).
-const interchangeTargetStarter = computed(() => {
-  const bench = interchangeBenchPlayer.value
-  if (!bench) return null
-  const pms = clubMatch.value?.playerMatches ?? []
-  const starters = pms.filter((pm: { backupPositions: string | null; interchangePosition: string | null; position: string | null }) =>
-    pm.backupPositions == null && pm.interchangePosition == null && pm.position === bench.interchangePosition
-  )
-  if (!starters.length) return null
-  return starters.reduce((lowest: typeof starters[0], pm: typeof starters[0]) => pm.score < lowest.score ? pm : lowest)
-})
-
-// Whether the interchange bench player currently outscores the target starter.
-const interchangeBeneficial = computed(() => {
-  const bench = interchangeBenchPlayer.value
-  const starter = interchangeTargetStarter.value
-  if (!bench || !starter) return false
-  return bench.score > starter.score
-})
-
 // Subs UI state.
 const subbedOutIds = ref<Set<string>>(new Set())
 const interchangeApplied = ref(false)
 const subsSaving = ref(false)
 const subsMessage = ref('')
+const subsError = ref(false)
 
 function initSubsState() {
   const pms = clubMatch.value?.playerMatches ?? []
@@ -997,12 +1195,11 @@ function initSubsState() {
       .filter((pm: { status: string | null }) => pm.status === 'subbed_out')
       .map((pm: { id: string }) => pm.id)
   )
-  // Check if interchange is currently applied.
-  interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
-  // Default interchange to checked if beneficial and no decision stored yet.
-  if (!pms.some((pm: { status: string | null }) => pm.status === 'subbed_out' || pm.status === 'interchanged_out')) {
-    interchangeApplied.value = interchangeBeneficial.value
-  }
+  const savedApplied = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
+  const suggestedIc = clubMatch.value?.suggestedSubstitutions?.some(
+    (s: { kind: string }) => s.kind === 'interchange'
+  ) ?? false
+  interchangeApplied.value = savedApplied || suggestedIc
 }
 
 function isInterchangeSlot(slot: BenchDualSlot): boolean {
@@ -1018,6 +1215,7 @@ function enterSubsMode() {
 function exitSubsMode() {
   subsMode.value = false
   subsMessage.value = ''
+  subsError.value = false
 }
 
 function toggleSub(pmId: string) {
@@ -1200,7 +1398,7 @@ function starterDisplayScore(player: SquadPlayer, posKey: string): number | stri
 }
 
 const { mutate: declareSubs } = useMutation(DECLARE_FFL_SUBSTITUTIONS, () => ({
-  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } }],
   awaitRefetchQueries: true,
 }))
 
@@ -1208,6 +1406,7 @@ async function onSaveSubs() {
   if (!clubMatch.value) return
   subsSaving.value = true
   subsMessage.value = ''
+  subsError.value = false
   try {
     const subs = Array.from(subsMapping.value.entries()).map(([replacedPmId, benchPlayer]) => ({
       replacedPmId,
@@ -1238,8 +1437,10 @@ async function onSaveSubs() {
       initializedMatchId.value = clubMatch.value.id
     }
     exitSubsMode()
-  } catch {
-    subsMessage.value = 'Failed to save substitutions'
+  } catch (e: unknown) {
+    const gqlErr = (e as { graphQLErrors?: { message: string }[] })?.graphQLErrors?.[0]
+    subsMessage.value = gqlErr?.message ?? 'Failed to save substitutions'
+    subsError.value = true
   } finally {
     subsSaving.value = false
   }
@@ -1248,7 +1449,7 @@ async function onSaveSubs() {
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 const { mutate: setTeam } = useMutation(SET_FFL_TEAM, () => ({
-  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value } }],
+  refetchQueries: [{ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } }],
   awaitRefetchQueries: true,
 }))
 const submitting = ref(false)
@@ -1256,12 +1457,13 @@ const submitMessage = ref('')
 
 async function onSaveTeam() {
   const ok = await submitTeam()
-  if (ok) managing.value = false
+  if (ok) { managing.value = false; skippedOnCopy.value = [] }
 }
 
 function cancelManage() {
   if (clubMatch.value) loadTeamFromMatch(clubMatch.value)
   managing.value = false
+  skippedOnCopy.value = []
 }
 
 async function submitTeam(): Promise<boolean> {

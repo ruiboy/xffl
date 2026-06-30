@@ -62,6 +62,7 @@ func main() {
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 		pg.NewByeRepository(q),
+		pg.NewPlayerSeasonStatsRepository(pool),
 	)
 
 	dispatcher := pgevents.New(pool, "xffl_events")

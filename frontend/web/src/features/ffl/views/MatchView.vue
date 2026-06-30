@@ -42,24 +42,26 @@
           <p class="text-sm text-text-muted mb-3">
             Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
+          <div
+            v-if="side.clubMatch?.club.id === selectedClubId && (side.clubMatch?.suggestedSubstitutions?.length ?? 0) > 0"
+            class="mb-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
+          >
+            <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
+            <ul class="space-y-0.5">
+              <li
+                v-for="s in side.clubMatch!.suggestedSubstitutions"
+                :key="s.replacingPmId"
+                class="flex items-start gap-1.5 text-sm text-sky-300"
+              >
+                <span class="mt-px">·</span>
+                <span>{{ s.kind === 'interchange' ? 'Interchange' : 'Sub' }}: {{ playerName(side.clubMatch!, s.replacingPmId) }} in for {{ playerName(side.clubMatch!, s.replacedPmId) }}</span>
+              </li>
+            </ul>
+          </div>
           <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
       </div>
 
-      <div class="mt-8 flex items-center gap-6">
-        <router-link v-if="aflRoundTo" :to="aflRoundTo" class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
-          <IconAfl class="w-4 h-4" />
-          AFL Round
-        </router-link>
-        <router-link
-          v-if="round"
-          :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: round.id } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
     </template>
   </div>
 </template>
@@ -73,8 +75,6 @@ import SquadTable from '../components/SquadTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
 import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
-import IconAfl from '../components/icons/IconAfl.vue'
 
 const props = defineProps<{ matchId: string }>()
 
@@ -101,12 +101,6 @@ const myClubMatchId = computed(() => {
   return null
 })
 
-const aflRoundTo = computed(() => {
-  const aflRoundId = round.value?.aflRoundId
-  if (!aflRoundId) return null
-  return { name: 'afl-round', params: { roundId: aflRoundId } }
-})
-
 const sides = computed(() => {
   if (!match.value) return []
   return [
@@ -114,4 +108,8 @@ const sides = computed(() => {
     { label: match.value.awayClubMatch?.club.name ?? 'Away', clubMatch: match.value.awayClubMatch },
   ]
 })
+
+function playerName(clubMatch: { playerMatches: { id: string; player: { aflPlayer: { name: string } } }[] }, pmId: string): string {
+  return clubMatch.playerMatches.find(pm => pm.id === pmId)?.player.aflPlayer.name ?? pmId
+}
 </script>

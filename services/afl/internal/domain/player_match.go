@@ -84,6 +84,6 @@ type PlayerMatchRepository interface {
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerMatch, error)
 	FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]ByeStatus, error)
-	GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int) ([]PlayerSeasonAverages, error)
+	GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerSeasonAverages, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)
 }

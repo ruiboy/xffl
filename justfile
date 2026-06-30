@@ -19,8 +19,8 @@ dev-seed:
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/02_ffl_seed.sql
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/03_afl_historical.sql
     docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/04_ffl_players.sql
-    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/05_ffl_trades.sql
-    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/06_ffl_round_data.sql
+    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/05_ffl_round_data.sql
+    docker exec -i xffl-postgres psql -U postgres -d xffl < dev/postgres/seed/06_seed_finalize.sql
     @echo "Test data loaded"
 
 # Stop local infrastructure
@@ -29,8 +29,14 @@ dev-down:
 
 # Stop infrastructure and delete all data
 dev-reset:
+    #!/usr/bin/env bash
+    read -p "IMPORTANT!!! Do you need to back up the database first? [y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        echo "Aborting — run 'just backup-db' first, then re-run 'just dev-reset'."
+        exit 1
+    fi
     docker compose -f dev/docker-compose.yml down -v
-    @echo "Infrastructure stopped and volumes removed"
+    echo "Infrastructure stopped and volumes removed"
 
 # Tail infrastructure logs
 dev-logs:

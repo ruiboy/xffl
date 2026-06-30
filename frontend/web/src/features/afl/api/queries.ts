@@ -27,6 +27,7 @@ export const GET_AFL_LIVE_ROUND = gql`
             drawn
             for
             against
+            percentage
             premiershipPoints
           }
           rounds {

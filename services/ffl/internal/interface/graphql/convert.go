@@ -110,7 +110,8 @@ func convertClubSeason(cs domain.ClubSeason, club domain.Club, season domain.Sea
 		Drawn:      cs.Drawn,
 		For:        cs.For,
 		Against:    cs.Against,
-		Percentage: cs.Percentage(),
+		Percentage:        cs.Percentage(),
+		PremiershipPoints: cs.PremiershipPoints,
 	}
 }
 

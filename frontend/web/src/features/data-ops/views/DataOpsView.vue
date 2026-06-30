@@ -482,6 +482,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
+import { clubAbbrev } from '@/features/afl/utils/clubAbbrev'
 import { clubLogoUrl as fflClubLogoUrl } from '@/features/ffl/utils/clubLogos'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
@@ -628,22 +629,9 @@ async function onPlayerResolved() {
   await refetchRoundStats()
 }
 
-const CLUB_ABBREV: Record<string, string> = {
-  'Adelaide Crows': 'Adelaide',
-  'Brisbane Lions': 'Brisbane',
-  'Gold Coast Suns': 'Gold Coast',
-  'Greater Western Sydney Giants': 'GWS',
-  'Greater Western Sydney': 'GWS',
-  'North Melbourne': 'North Melb.',
-  'Port Adelaide Power': 'Port Adelaide',
-  'Sydney Swans': 'Sydney',
-  'West Coast Eagles': 'West Coast',
-  'Western Bulldogs': 'W. Bulldogs',
-}
-
 function abbrevClub(name: string | undefined): string {
   if (!name) return '—'
-  return CLUB_ABBREV[name] ?? name
+  return clubAbbrev(name)
 }
 
 function statusLabel(status: string): string {

@@ -82,7 +82,9 @@ func seedBase(t *testing.T, ctx context.Context, pool *pgxpool.Pool) baseIDs {
 	return baseIDs{seasonID: seasonID, clubSeasonID: clubSeasonID, otherCSID: otherCSID}
 }
 
-// seedRounds creates round 1 (prev final) and round 2 (bye round).
+// seedRounds creates round 1 (prev final) and round 2 (bye round). Round 2 gets a
+// dateless fixture (start_dt after round 1's) so GetPlayerSeasonAveragesBatch has a
+// cutoff to compute, even though the bye club itself has no match that round.
 // Returns prevRoundID, byeRoundID.
 func seedRounds(t *testing.T, ctx context.Context, pool *pgxpool.Pool, seasonID int) (int, int) {
 	t.Helper()
@@ -93,6 +95,10 @@ func seedRounds(t *testing.T, ctx context.Context, pool *pgxpool.Pool, seasonID 
 	require.NoError(t, pool.QueryRow(ctx,
 		"INSERT INTO afl.round (name, season_id) VALUES ('R2', $1) RETURNING id",
 		seasonID).Scan(&byeRoundID))
+	_, err := pool.Exec(ctx,
+		"INSERT INTO afl.match (round_id, venue, start_dt, data_status) VALUES ($1, 'MCG', '2025-05-08 14:00:00', 'no_data')",
+		byeRoundID)
+	require.NoError(t, err)
 	return prevRoundID, byeRoundID
 }
 
@@ -249,6 +255,61 @@ func TestLookupByeInfo_NonByePlayer(t *testing.T) {
 	})
 	t.Run("no averages returned for non-bye player", func(t *testing.T) {
 		assert.Equal(t, 0.0, info.AvgKicks)
+	})
+}
+
+// ── Test 3b: averages only consider matches before the bye round's start_dt ───
+
+func TestLookupByeInfo_AveragesExcludeMatchesAfterByeRound(t *testing.T) {
+	pool := testPool
+	ctx := context.Background()
+	cleanupTestData(ctx, t, pool)
+	t.Cleanup(func() { cleanupTestData(context.Background(), t, pool) })
+
+	base := seedBase(t, ctx, pool)
+	prevRoundID, byeRoundID := seedRounds(t, ctx, pool, base.seasonID)
+
+	var futureRoundID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.round (name, season_id) VALUES ('R3', $1) RETURNING id",
+		base.seasonID).Scan(&futureRoundID))
+
+	// Previous round (R1, start_dt 2025-05-01): final match, player kicked 10.
+	clubMatchID := seedFinalMatch(t, ctx, pool, prevRoundID, base.clubSeasonID)
+	psID := seedPlayer(t, ctx, pool, "Bye Player", base.clubSeasonID)
+	_, err := pool.Exec(ctx,
+		"INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds) VALUES ($1, $2, 10, 0, 0, 0, 0, 0, 0)",
+		clubMatchID, psID)
+	require.NoError(t, err)
+
+	// Future round (R3, start_dt 2025-06-01): final match, player kicked 20.
+	var futureMatchID, futureClubMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.match (round_id, venue, start_dt, data_status) VALUES ($1, 'MCG', '2025-06-01 14:00:00', 'final') RETURNING id",
+		futureRoundID).Scan(&futureMatchID))
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO afl.club_match (match_id, club_season_id, drv_score, rushed_behinds, side) VALUES ($1, $2, 80, 0, 'home') RETURNING id",
+		futureMatchID, base.clubSeasonID).Scan(&futureClubMatchID))
+	_, err = pool.Exec(ctx,
+		"INSERT INTO afl.player_match (club_match_id, player_season_id, kicks, handballs, marks, hitouts, tackles, goals, behinds) VALUES ($1, $2, 20, 0, 0, 0, 0, 0, 0)",
+		futureClubMatchID, psID)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, "INSERT INTO afl.bye (round_id, club_season_id) VALUES ($1, $2)", byeRoundID, base.clubSeasonID)
+	require.NoError(t, err)
+
+	srv := newServer(pool)
+	resp, err := srv.LookupByeInfo(ctx, &aflv1.LookupByeInfoRequest{
+		PlayerSeasonIds: []int32{int32(psID)},
+		RoundId:         int32(byeRoundID),
+	})
+	require.NoError(t, err)
+	require.Len(t, resp.Players, 1)
+	info := resp.Players[0]
+
+	require.True(t, info.PlayedLast)
+	t.Run("averages only include the match before the bye round, not the later one", func(t *testing.T) {
+		assert.Equal(t, 10.0, info.AvgKicks)
 	})
 }
 
