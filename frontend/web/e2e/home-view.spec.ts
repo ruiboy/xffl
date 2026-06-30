@@ -49,8 +49,9 @@ test.describe('AFL Home view', () => {
 // must land on the same UTC calendar date as the match start time.
 test.describe('AFL Home view — live round pulsing dot', () => {
   test.beforeEach(async ({ page }) => {
-    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
     await setupAflSession(page)
+    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
+    await page.goto('/afl')
   })
 
   test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {

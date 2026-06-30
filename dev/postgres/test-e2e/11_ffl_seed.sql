@@ -225,7 +225,7 @@ WHERE c.name = 'The Howling Cows' AND ap.name = 'Hugh McCluggage' AND r.name = '
 
 -- Brock Thunder: bench covering goals with interchange slot, played, score 50 — will interchange in
 INSERT INTO ffl.player_match (club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, drv_score)
-SELECT cm.id, ps.id, 'goals', 'named', 'played', 'goals', 'goals', 50
+SELECT cm.id, ps.id, NULL, 'named', 'played', 'goals', 'goals', 50
 FROM ffl.player_season ps JOIN ffl.club_season cs ON ps.club_season_id = cs.id JOIN ffl.club c ON cs.club_id = c.id JOIN ffl.club_match cm ON cm.club_season_id = cs.id JOIN ffl.player p ON ps.player_id = p.id JOIN afl.player ap ON p.afl_player_id = ap.id JOIN ffl.match fm ON cm.match_id = fm.id JOIN ffl.round r ON fm.round_id = r.id
 WHERE c.name = 'The Howling Cows' AND ap.name = 'Brock Thunder' AND r.name = 'Round 4';
 

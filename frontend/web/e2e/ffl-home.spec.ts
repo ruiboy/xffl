@@ -30,6 +30,10 @@ test.describe('FFL Home', () => {
     await expect(page.getByRole('columnheader', { name: '%' })).toBeVisible()
   })
 
+  test('displays ladder with premiership points column', async ({ page }) => {
+    await expect(page.getByRole('columnheader', { name: 'Pts' })).toBeVisible()
+  })
+
   test('does not display matches section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Matches' })).not.toBeVisible()
   })
@@ -68,8 +72,9 @@ test.describe('FFL Home', () => {
 // Mirror of the AFL home pulsing dot test: FFL round 3 maps to AFL round 3 (live).
 test.describe('FFL Home — live round pulsing dot', () => {
   test.beforeEach(async ({ page }) => {
-    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
     await setupFflSession(page)
+    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
+    await page.goto('/ffl')
   })
 
   test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {
