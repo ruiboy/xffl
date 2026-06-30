@@ -51,6 +51,7 @@ models:
   FFLClubMatch:
     fields:
       playerMatches: { resolver: true }
+      suggestedSubstitutions: { resolver: true }
 
   FFLPlayer:
     fields:

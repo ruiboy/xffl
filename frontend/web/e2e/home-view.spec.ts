@@ -40,9 +40,21 @@ test.describe('AFL Home view', () => {
     await expect(page.getByTitle('Settings')).toBeVisible()
   })
 
+})
+
+// Separate describe so beforeEach can set the browser clock before navigation.
+// The AFL service uses CLOCK_OVERRIDE=2026-01-15T10:00:00+10:30 (set in playwright.config.ts),
+// which places the live round at Round 3 (first match 2026-01-15T03:40:00Z). isLiveToday in
+// RoundNav.vue compares liveStartDate against new Date() in the browser, so the browser clock
+// must land on the same UTC calendar date as the match start time.
+test.describe('AFL Home view — live round pulsing dot', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
+    await setupAflSession(page)
+  })
+
   test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {
     const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
     await expect(round3.locator('.animate-pulse')).toBeVisible()
   })
-
 })

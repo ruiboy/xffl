@@ -75,6 +75,18 @@ type FFLClubMatch {
   notes: String
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
+  suggestedSubstitutions: [FFLSuggestedSubstitution!]!
+}
+
+enum FFLSubstitutionKind {
+  interchange
+  sub
+}
+
+type FFLSuggestedSubstitution {
+  kind: FFLSubstitutionKind!
+  replacedPmId: ID!
+  replacingPmId: ID!
 }
 
 type FFLPlayer {

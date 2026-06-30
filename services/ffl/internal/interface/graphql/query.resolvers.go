@@ -33,6 +33,29 @@ func (r *fFLClubMatchResolver) PlayerMatches(ctx context.Context, obj *FFLClubMa
 	return result, nil
 }
 
+// SuggestedSubstitutions is the resolver for the suggestedSubstitutions field.
+func (r *fFLClubMatchResolver) SuggestedSubstitutions(ctx context.Context, obj *FFLClubMatch) ([]*FFLSuggestedSubstitution, error) {
+	cmID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	pms, err := r.Queries.GetPlayerMatches(ctx, cmID)
+	if err != nil {
+		return nil, err
+	}
+	suggestions := domain.ClubMatch{PlayerMatches: pms}.SuggestedSubstitutions()
+	result := make([]*FFLSuggestedSubstitution, len(suggestions))
+	for i, s := range suggestions {
+		kind := FFLSubstitutionKind(s.Kind)
+		result[i] = &FFLSuggestedSubstitution{
+			Kind:          kind,
+			ReplacedPmID:  toID(s.ReplacedPMID),
+			ReplacingPmID: toID(s.ReplacingPMID),
+		}
+	}
+	return result, nil
+}
+
 // Players is the resolver for the players field.
 func (r *fFLClubSeasonResolver) Players(ctx context.Context, obj *FFLClubSeason, first *int, after *string, filter *FFLPlayerSeasonFilter) (*FFLPlayerSeasonConnection, error) {
 	csID, err := fromID(obj.ID)
@@ -510,3 +533,30 @@ type fFLPlayerSeasonResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }
 type fFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *fFLClubMatchResolver) SuggestedInterchange(ctx context.Context, obj *FFLClubMatch) (*FFLSuggestedInterchange, error) {
+	cmID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	pms, err := r.Queries.GetPlayerMatches(ctx, cmID)
+	if err != nil {
+		return nil, err
+	}
+	pair := domain.ClubMatch{PlayerMatches: pms}.SuggestedInterchange()
+	if pair == nil {
+		return nil, nil
+	}
+	return &FFLSuggestedInterchange{
+		ReplacedPmID:  toID(pair.ReplacedPMID),
+		ReplacingPmID: toID(pair.ReplacingPMID),
+	}, nil
+}
+*/

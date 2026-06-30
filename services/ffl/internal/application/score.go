@@ -121,14 +121,25 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 				continue
 			}
 
-			score := pm.CalculateScore(domain.AFLStats{
+			aflStats := domain.AFLStats{
 				Goals:     s.Goals,
 				Kicks:     s.Kicks,
 				Handballs: s.Handballs,
 				Marks:     s.Marks,
 				Tackles:   s.Tackles,
 				Hitouts:   s.Hitouts,
-			})
+			}
+			// Interchange bench player (not yet activated): score at the interchange
+			// position so SuggestedInterchange() has a meaningful value to compare.
+			// After activation, pm.Position is set to the interchange position by
+			// DeclareSubs, so this branch is not taken and scoring is unchanged.
+			scorePM := pm
+			if pm.BackupPositions != nil && pm.InterchangePosition != nil &&
+				(pm.Status == nil || *pm.Status == domain.PlayerMatchStatusNamed) {
+				icPos := domain.Position(*pm.InterchangePosition)
+				scorePM.Position = &icPos
+			}
+			score := scorePM.CalculateScore(aflStats)
 			upsertParams := domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,

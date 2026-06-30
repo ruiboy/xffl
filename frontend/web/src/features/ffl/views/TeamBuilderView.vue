@@ -82,7 +82,7 @@
               :disabled="prevTeamLoading"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {{ prevTeamLoading ? 'Copying…' : `Copy ${prevRound?.name}` }}
+              {{ prevTeamLoading ? 'Replicating…' : `Replicate ${prevRound?.name}` }}
             </button>
             <button
               v-if="!clubMatchLocked"
@@ -136,6 +136,24 @@
           >
             {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
           </span>
+        </div>
+
+        <!-- Substitution suggestions -->
+        <div
+          v-if="!managing && suggestedSubstitutionHints.length > 0"
+          class="mb-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
+        >
+          <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
+          <ul class="space-y-0.5">
+            <li
+              v-for="hint in suggestedSubstitutionHints"
+              :key="hint"
+              class="flex items-start gap-1.5 text-sm text-sky-300"
+            >
+              <span class="mt-px">·</span>
+              <span>{{ hint }}</span>
+            </li>
+          </ul>
         </div>
 
         <!-- Skipped players notice (copy from round) -->
@@ -944,6 +962,18 @@ async function copyTeamToClipboard() {
   setTimeout(() => { copyToClipboardLabel.value = 'Copy' }, 2000)
 }
 
+// ── Suggested substitutions ──────────────────────────────────────────────────
+
+const suggestedSubstitutionHints = computed(() => {
+  const subs = clubMatch.value?.suggestedSubstitutions ?? []
+  if (!subs.length) return []
+  const pms = clubMatch.value?.playerMatches ?? []
+  const find = (id: string) => pms.find((pm: { id: string }) => pm.id === id)?.player?.aflPlayer?.name ?? id
+  return subs.map((s: { kind: string; replacedPmId: string; replacingPmId: string }) =>
+    `${s.kind === 'interchange' ? 'Interchange' : 'Sub'}: ${find(s.replacingPmId)} in for ${find(s.replacedPmId)}`
+  )
+})
+
 // ── Club match data status ───────────────────────────────────────────────────
 
 const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string | undefined ?? null)
@@ -1165,8 +1195,8 @@ function initSubsState() {
       .filter((pm: { status: string | null }) => pm.status === 'subbed_out')
       .map((pm: { id: string }) => pm.id)
   )
-  // Check if interchange is currently applied (saved server state only).
-  interchangeApplied.value = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
+  const savedApplied = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
+  interchangeApplied.value = savedApplied
 }
 
 function isInterchangeSlot(slot: BenchDualSlot): boolean {

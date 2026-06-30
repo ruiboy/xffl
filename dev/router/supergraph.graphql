@@ -289,6 +289,7 @@ type FFLClubMatch
   notes: String
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
+  suggestedSubstitutions: [FFLSuggestedSubstitution!]!
 }
 
 type FFLClubSeason
@@ -418,6 +419,21 @@ type FFLSeason
 input FFLSubPairing
   @join__type(graph: FFL)
 {
+  replacedPmId: ID!
+  replacingPmId: ID!
+}
+
+enum FFLSubstitutionKind
+  @join__type(graph: FFL)
+{
+  interchange @join__enumValue(graph: FFL)
+  sub @join__enumValue(graph: FFL)
+}
+
+type FFLSuggestedSubstitution
+  @join__type(graph: FFL)
+{
+  kind: FFLSubstitutionKind!
   replacedPmId: ID!
   replacingPmId: ID!
 }

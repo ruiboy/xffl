@@ -62,9 +62,18 @@ test.describe('FFL Home', () => {
     await expect(topNav.getByRole('link', { name: 'Squad' })).toBeVisible()
   })
 
+})
+
+// Separate describe so beforeEach can set the browser clock before navigation.
+// Mirror of the AFL home pulsing dot test: FFL round 3 maps to AFL round 3 (live).
+test.describe('FFL Home — live round pulsing dot', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime('2026-01-15T03:40:00Z')
+    await setupFflSession(page)
+  })
+
   test('round 3 has the live-round pulsing dot indicator', async ({ page }) => {
     const round3 = page.locator('main nav').last().getByRole('link', { name: '3', exact: true })
     await expect(round3.locator('.animate-pulse')).toBeVisible()
   })
-
 })

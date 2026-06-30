@@ -42,6 +42,22 @@
           <p class="text-sm text-text-muted mb-3">
             Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
           </p>
+          <div
+            v-if="side.clubMatch?.club.id === selectedClubId && (side.clubMatch?.suggestedSubstitutions?.length ?? 0) > 0"
+            class="mb-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
+          >
+            <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
+            <ul class="space-y-0.5">
+              <li
+                v-for="s in side.clubMatch!.suggestedSubstitutions"
+                :key="s.replacingPmId"
+                class="flex items-start gap-1.5 text-sm text-sky-300"
+              >
+                <span class="mt-px">·</span>
+                <span>{{ s.kind === 'interchange' ? 'Interchange' : 'Sub' }}: {{ playerName(side.clubMatch!, s.replacingPmId) }} in for {{ playerName(side.clubMatch!, s.replacedPmId) }}</span>
+              </li>
+            </ul>
+          </div>
           <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
       </div>
@@ -92,4 +108,8 @@ const sides = computed(() => {
     { label: match.value.awayClubMatch?.club.name ?? 'Away', clubMatch: match.value.awayClubMatch },
   ]
 })
+
+function playerName(clubMatch: { playerMatches: { id: string; player: { aflPlayer: { name: string } } }[] }, pmId: string): string {
+  return clubMatch.playerMatches.find(pm => pm.id === pmId)?.player.aflPlayer.name ?? pmId
+}
 </script>

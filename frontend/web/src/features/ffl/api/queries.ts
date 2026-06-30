@@ -182,6 +182,7 @@ export const GET_FFL_ROUND = gql`
           club { id name }
           score
           dataStatus
+          suggestedSubstitutions { kind replacedPmId replacingPmId }
           playerMatches {
             id
             playerSeasonId
@@ -210,6 +211,7 @@ export const GET_FFL_ROUND = gql`
           club { id name }
           score
           dataStatus
+          suggestedSubstitutions { kind replacedPmId replacingPmId }
           playerMatches {
             id
             playerSeasonId
@@ -255,6 +257,7 @@ export const GET_FFL_MATCH = gql`
         clubSeasonId
         club { id name }
         score
+        suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id
           playerSeasonId
@@ -281,6 +284,7 @@ export const GET_FFL_MATCH = gql`
         clubSeasonId
         club { id name }
         score
+        suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id
           playerSeasonId

@@ -16,3 +16,4 @@ See `plans/ideas.md` for full item descriptions where relevant.
 - [x] Smoke-test team submission and substitution flows against real data; capture edge cases
 - [x] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
 - [ ] Confirm e2e tests pass against slim seed
+- [x] Add FFLSuggestedInterchange type to graph; show interchange hint on MatchView and TeamBuilderView

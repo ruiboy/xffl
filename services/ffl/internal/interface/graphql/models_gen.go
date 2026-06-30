@@ -81,16 +81,17 @@ type FFLClub struct {
 }
 
 type FFLClubMatch struct {
-	ID            string            `json:"id"`
-	ClubSeasonID  string            `json:"clubSeasonId"`
-	RoundID       *string           `json:"roundId,omitempty"`
-	AflRoundID    *string           `json:"aflRoundId,omitempty"`
-	SeasonID      *string           `json:"seasonId,omitempty"`
-	Club          *FFLClub          `json:"club"`
-	DataStatus    string            `json:"dataStatus"`
-	Notes         *string           `json:"notes,omitempty"`
-	Score         int               `json:"score"`
-	PlayerMatches []*FFLPlayerMatch `json:"playerMatches"`
+	ID                     string                      `json:"id"`
+	ClubSeasonID           string                      `json:"clubSeasonId"`
+	RoundID                *string                     `json:"roundId,omitempty"`
+	AflRoundID             *string                     `json:"aflRoundId,omitempty"`
+	SeasonID               *string                     `json:"seasonId,omitempty"`
+	Club                   *FFLClub                    `json:"club"`
+	DataStatus             string                      `json:"dataStatus"`
+	Notes                  *string                     `json:"notes,omitempty"`
+	Score                  int                         `json:"score"`
+	PlayerMatches          []*FFLPlayerMatch           `json:"playerMatches"`
+	SuggestedSubstitutions []*FFLSuggestedSubstitution `json:"suggestedSubstitutions"`
 }
 
 type FFLClubSeason struct {
@@ -185,6 +186,12 @@ type FFLSeason struct {
 type FFLSubPairing struct {
 	ReplacedPmID  string `json:"replacedPmId"`
 	ReplacingPmID string `json:"replacingPmId"`
+}
+
+type FFLSuggestedSubstitution struct {
+	Kind          FFLSubstitutionKind `json:"kind"`
+	ReplacedPmID  string              `json:"replacedPmId"`
+	ReplacingPmID string              `json:"replacingPmId"`
 }
 
 type FFLTeamPlayerInput struct {
@@ -426,6 +433,61 @@ func (e *FFLReorderDirection) UnmarshalJSON(b []byte) error {
 }
 
 func (e FFLReorderDirection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type FFLSubstitutionKind string
+
+const (
+	FFLSubstitutionKindInterchange FFLSubstitutionKind = "interchange"
+	FFLSubstitutionKindSub         FFLSubstitutionKind = "sub"
+)
+
+var AllFFLSubstitutionKind = []FFLSubstitutionKind{
+	FFLSubstitutionKindInterchange,
+	FFLSubstitutionKindSub,
+}
+
+func (e FFLSubstitutionKind) IsValid() bool {
+	switch e {
+	case FFLSubstitutionKindInterchange, FFLSubstitutionKindSub:
+		return true
+	}
+	return false
+}
+
+func (e FFLSubstitutionKind) String() string {
+	return string(e)
+}
+
+func (e *FFLSubstitutionKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FFLSubstitutionKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FFLSubstitutionKind", str)
+	}
+	return nil
+}
+
+func (e FFLSubstitutionKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FFLSubstitutionKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FFLSubstitutionKind) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -78,16 +78,17 @@ type ComplexityRoot struct {
 	}
 
 	FFLClubMatch struct {
-		AflRoundID    func(childComplexity int) int
-		Club          func(childComplexity int) int
-		ClubSeasonID  func(childComplexity int) int
-		DataStatus    func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Notes         func(childComplexity int) int
-		PlayerMatches func(childComplexity int) int
-		RoundID       func(childComplexity int) int
-		Score         func(childComplexity int) int
-		SeasonID      func(childComplexity int) int
+		AflRoundID             func(childComplexity int) int
+		Club                   func(childComplexity int) int
+		ClubSeasonID           func(childComplexity int) int
+		DataStatus             func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		Notes                  func(childComplexity int) int
+		PlayerMatches          func(childComplexity int) int
+		RoundID                func(childComplexity int) int
+		Score                  func(childComplexity int) int
+		SeasonID               func(childComplexity int) int
+		SuggestedSubstitutions func(childComplexity int) int
 	}
 
 	FFLClubSeason struct {
@@ -174,6 +175,12 @@ type ComplexityRoot struct {
 		Rounds    func(childComplexity int) int
 	}
 
+	FFLSuggestedSubstitution struct {
+		Kind          func(childComplexity int) int
+		ReplacedPmID  func(childComplexity int) int
+		ReplacingPmID func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddFFLPlayerToSeason         func(childComplexity int, input AddFFLPlayerToSeasonInput) int
 		CalculateFFLFantasyScore     func(childComplexity int, input CalculateFFLFantasyScoreInput) int
@@ -246,6 +253,7 @@ type EntityResolver interface {
 }
 type FFLClubMatchResolver interface {
 	PlayerMatches(ctx context.Context, obj *FFLClubMatch) ([]*FFLPlayerMatch, error)
+	SuggestedSubstitutions(ctx context.Context, obj *FFLClubMatch) ([]*FFLSuggestedSubstitution, error)
 }
 type FFLClubSeasonResolver interface {
 	Players(ctx context.Context, obj *FFLClubSeason, first *int, after *string, filter *FFLPlayerSeasonFilter) (*FFLPlayerSeasonConnection, error)
@@ -488,6 +496,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubMatch.SeasonID(childComplexity), true
+	case "FFLClubMatch.suggestedSubstitutions":
+		if e.ComplexityRoot.FFLClubMatch.SuggestedSubstitutions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubMatch.SuggestedSubstitutions(childComplexity), true
 
 	case "FFLClubSeason.against":
 		if e.ComplexityRoot.FFLClubSeason.Against == nil {
@@ -861,6 +875,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLSeason.Rounds(childComplexity), true
+
+	case "FFLSuggestedSubstitution.kind":
+		if e.ComplexityRoot.FFLSuggestedSubstitution.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLSuggestedSubstitution.Kind(childComplexity), true
+	case "FFLSuggestedSubstitution.replacedPmId":
+		if e.ComplexityRoot.FFLSuggestedSubstitution.ReplacedPmID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLSuggestedSubstitution.ReplacedPmID(childComplexity), true
+	case "FFLSuggestedSubstitution.replacingPmId":
+		if e.ComplexityRoot.FFLSuggestedSubstitution.ReplacingPmID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLSuggestedSubstitution.ReplacingPmID(childComplexity), true
 
 	case "Mutation.addFFLPlayerToSeason":
 		if e.ComplexityRoot.Mutation.AddFFLPlayerToSeason == nil {
@@ -1573,6 +1606,18 @@ type FFLClubMatch {
   notes: String
   score: Int!
   playerMatches: [FFLPlayerMatch!]!
+  suggestedSubstitutions: [FFLSuggestedSubstitution!]!
+}
+
+enum FFLSubstitutionKind {
+  interchange
+  sub
+}
+
+type FFLSuggestedSubstitution {
+  kind: FFLSubstitutionKind!
+  replacedPmId: ID!
+  replacingPmId: ID!
 }
 
 type FFLPlayer {
@@ -2893,6 +2938,43 @@ func (ec *executionContext) fieldContext_FFLClubMatch_playerMatches(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLClubMatch_suggestedSubstitutions(ctx context.Context, field graphql.CollectedField, obj *FFLClubMatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubMatch_suggestedSubstitutions,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.FFLClubMatch().SuggestedSubstitutions(ctx, obj)
+		},
+		nil,
+		ec.marshalNFFLSuggestedSubstitution2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSuggestedSubstitutionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubMatch_suggestedSubstitutions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubMatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				return ec.fieldContext_FFLSuggestedSubstitution_kind(ctx, field)
+			case "replacedPmId":
+				return ec.fieldContext_FFLSuggestedSubstitution_replacedPmId(ctx, field)
+			case "replacingPmId":
+				return ec.fieldContext_FFLSuggestedSubstitution_replacingPmId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLSuggestedSubstitution", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLClubSeason_id(ctx context.Context, field graphql.CollectedField, obj *FFLClubSeason) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3480,6 +3562,8 @@ func (ec *executionContext) fieldContext_FFLMatch_homeClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
 				return ec.fieldContext_FFLClubMatch_playerMatches(ctx, field)
+			case "suggestedSubstitutions":
+				return ec.fieldContext_FFLClubMatch_suggestedSubstitutions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLClubMatch", field.Name)
 		},
@@ -3531,6 +3615,8 @@ func (ec *executionContext) fieldContext_FFLMatch_awayClubMatch(_ context.Contex
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
 				return ec.fieldContext_FFLClubMatch_playerMatches(ctx, field)
+			case "suggestedSubstitutions":
+				return ec.fieldContext_FFLClubMatch_suggestedSubstitutions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLClubMatch", field.Name)
 		},
@@ -4918,6 +5004,93 @@ func (ec *executionContext) fieldContext_FFLSeason_aflSeason(_ context.Context, 
 				return ec.fieldContext_AFLSeason_id(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AFLSeason", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLSuggestedSubstitution_kind(ctx context.Context, field graphql.CollectedField, obj *FFLSuggestedSubstitution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLSuggestedSubstitution_kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNFFLSubstitutionKind2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubstitutionKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLSuggestedSubstitution_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLSuggestedSubstitution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type FFLSubstitutionKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLSuggestedSubstitution_replacedPmId(ctx context.Context, field graphql.CollectedField, obj *FFLSuggestedSubstitution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLSuggestedSubstitution_replacedPmId,
+		func(ctx context.Context) (any, error) {
+			return obj.ReplacedPmID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLSuggestedSubstitution_replacedPmId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLSuggestedSubstitution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLSuggestedSubstitution_replacingPmId(ctx context.Context, field graphql.CollectedField, obj *FFLSuggestedSubstitution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLSuggestedSubstitution_replacingPmId,
+		func(ctx context.Context) (any, error) {
+			return obj.ReplacingPmID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLSuggestedSubstitution_replacingPmId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLSuggestedSubstitution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6370,6 +6543,8 @@ func (ec *executionContext) fieldContext_Query_fflClubMatch(ctx context.Context,
 				return ec.fieldContext_FFLClubMatch_score(ctx, field)
 			case "playerMatches":
 				return ec.fieldContext_FFLClubMatch_playerMatches(ctx, field)
+			case "suggestedSubstitutions":
+				return ec.fieldContext_FFLClubMatch_suggestedSubstitutions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLClubMatch", field.Name)
 		},
@@ -9549,6 +9724,42 @@ func (ec *executionContext) _FFLClubMatch(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "suggestedSubstitutions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FFLClubMatch_suggestedSubstitutions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10551,6 +10762,55 @@ func (ec *executionContext) _FFLSeason(ctx context.Context, sel ast.SelectionSet
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var fFLSuggestedSubstitutionImplementors = []string{"FFLSuggestedSubstitution"}
+
+func (ec *executionContext) _FFLSuggestedSubstitution(ctx context.Context, sel ast.SelectionSet, obj *FFLSuggestedSubstitution) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fFLSuggestedSubstitutionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FFLSuggestedSubstitution")
+		case "kind":
+			out.Values[i] = ec._FFLSuggestedSubstitution_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "replacedPmId":
+			out.Values[i] = ec._FFLSuggestedSubstitution_replacedPmId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "replacingPmId":
+			out.Values[i] = ec._FFLSuggestedSubstitution_replacingPmId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11981,6 +12241,42 @@ func (ec *executionContext) unmarshalNFFLSubPairing2ᚕᚖxfflᚋservicesᚋffl�
 func (ec *executionContext) unmarshalNFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx context.Context, v any) (*FFLSubPairing, error) {
 	res, err := ec.unmarshalInputFFLSubPairing(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFFLSubstitutionKind2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubstitutionKind(ctx context.Context, v any) (FFLSubstitutionKind, error) {
+	var res FFLSubstitutionKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFFLSubstitutionKind2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubstitutionKind(ctx context.Context, sel ast.SelectionSet, v FFLSubstitutionKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNFFLSuggestedSubstitution2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSuggestedSubstitutionᚄ(ctx context.Context, sel ast.SelectionSet, v []*FFLSuggestedSubstitution) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFFLSuggestedSubstitution2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSuggestedSubstitution(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFFLSuggestedSubstitution2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSuggestedSubstitution(ctx context.Context, sel ast.SelectionSet, v *FFLSuggestedSubstitution) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FFLSuggestedSubstitution(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFFLTeamPlayerInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLTeamPlayerInputᚄ(ctx context.Context, v any) ([]*FFLTeamPlayerInput, error) {
