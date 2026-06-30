@@ -14,5 +14,5 @@ See `plans/ideas.md` for full item descriptions where relevant.
 - [x] Import all 2026 FFL round teams to date
 - [x] Verify FFL ladder calculation produces correct standings
 - [x] Smoke-test team submission and substitution flows against real data; capture edge cases
-- [ ] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
+- [x] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
 - [ ] Confirm e2e tests pass against slim seed
