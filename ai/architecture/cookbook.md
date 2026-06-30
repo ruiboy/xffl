@@ -63,7 +63,7 @@ Files to touch, in order:
 
 This project uses a single environment with no CI migration pipeline. The convention:
 
-1. **Backup first** — `just backup-db` before any schema change; the backup is the safety net
+1. **Backup first** — `just db-backup` before any schema change; the backup is the safety net
 2. **Apply to live DB manually** — `ALTER TABLE schema.table ADD COLUMN col_name TYPE;`
 3. **Update init SQL** — `dev/postgres/init/{01_afl,02_ffl}_schema.sql` — add the same column definition so a fresh `dev-reset` picks it up
 4. **Update test-e2e init SQL** — `dev/postgres/test-e2e/` shares init files with `dev/postgres/init/` via symlinks; verify no divergence

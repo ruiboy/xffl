@@ -32,7 +32,7 @@ dev-reset:
     #!/usr/bin/env bash
     read -p "IMPORTANT!!! Do you need to back up the database first? [y/N] " answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
-        echo "Aborting — run 'just backup-db' first, then re-run 'just dev-reset'."
+        echo "Aborting — run 'just db-backup' first, then re-run 'just dev-reset'."
         exit 1
     fi
     docker compose -f dev/docker-compose.yml down -v
@@ -142,11 +142,11 @@ test-all:
     just test-e2e
 
 # Back up Postgres to backups/ (set BACKUP_REMOTE=rclone-remote:bucket/path to also upload)
-backup-db:
+db-backup:
     @bash dev/backup/backup.sh
 
 # Restore Postgres from a backup file (defaults to latest in backups/)
-restore-db file="":
+db-restore file="":
     #!/usr/bin/env bash
     bash dev/backup/restore.sh {{file}}
 
