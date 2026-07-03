@@ -16,8 +16,9 @@ type loadersKey struct{}
 // the query params that determine which matches are included.
 type statsKey struct {
 	PlayerSeasonID int
-	UpToRoundID    int // 0 = no filter
-	LastN          int // 0 = no filter
+	UpToRoundID    int              // 0 = no filter
+	LastN          int              // 0 = no filter
+	Method         domain.StatMethod // zero value = StatMethodMean
 }
 
 type Loaders struct {
@@ -53,20 +54,23 @@ func NewLoaders(q *application.Queries) *Loaders {
 }
 
 // batchPlayerSeasonStats groups keys by their params, makes one SQL call per
-// unique (UpToRoundID, LastN) combination, and returns results positionally.
+// unique (UpToRoundID, LastN, Median) combination, and returns results positionally.
 // Returns nil (not an error) for players with no qualifying matches.
 func batchPlayerSeasonStats(ctx context.Context, keys []statsKey, q *application.Queries) ([]*domain.PlayerSeasonStats, []error) {
-	type paramGroup struct{ upTo, lastN int }
+	type paramGroup struct {
+		upTo, lastN int
+		method      domain.StatMethod
+	}
 
 	groups := make(map[paramGroup][]int)
 	for _, k := range keys {
-		pg := paramGroup{k.UpToRoundID, k.LastN}
+		pg := paramGroup{k.UpToRoundID, k.LastN, k.Method}
 		groups[pg] = append(groups[pg], k.PlayerSeasonID)
 	}
 
 	resultMap := make(map[statsKey]*domain.PlayerSeasonStats, len(keys))
 	for pg, psIDs := range groups {
-		params := domain.PlayerSeasonStatsParams{PlayerSeasonIDs: psIDs}
+		params := domain.PlayerSeasonStatsParams{PlayerSeasonIDs: psIDs, Method: pg.method}
 		if pg.upTo != 0 {
 			v := pg.upTo
 			params.UpToRoundID = &v
@@ -80,7 +84,7 @@ func batchPlayerSeasonStats(ctx context.Context, keys []statsKey, q *application
 			// mark all keys in this group as errors
 			errs := make([]error, len(keys))
 			for i, k := range keys {
-				if (paramGroup{k.UpToRoundID, k.LastN}) == pg {
+				if (paramGroup{k.UpToRoundID, k.LastN, k.Method}) == pg {
 					errs[i] = err
 				}
 			}
@@ -88,7 +92,7 @@ func batchPlayerSeasonStats(ctx context.Context, keys []statsKey, q *application
 		}
 		for _, s := range rows {
 			cp := s
-			resultMap[statsKey{s.PlayerSeasonID, pg.upTo, pg.lastN}] = &cp
+			resultMap[statsKey{s.PlayerSeasonID, pg.upTo, pg.lastN, pg.method}] = &cp
 		}
 	}
 

@@ -8,6 +8,8 @@ package graphql
 import (
 	"context"
 	"fmt"
+
+	"xffl/services/afl/internal/domain"
 )
 
 // PlayerMatches is the resolver for the playerMatches field.
@@ -225,10 +227,15 @@ func (r *aFLPlayerSeasonResolver) Stats(ctx context.Context, obj *AFLPlayerSeaso
 		lastNVal = *lastN
 	}
 
+	statMethod := domain.StatMethodMean
+	if method != nil && *method == AFLStatSummaryMethodMedian {
+		statMethod = domain.StatMethodMedian
+	}
 	s, err := LoadersFromCtx(ctx).PlayerSeasonStats.Load(ctx, statsKey{
 		PlayerSeasonID: psID,
 		UpToRoundID:    upTo,
 		LastN:          lastNVal,
+		Method:         statMethod,
 	})
 	if err != nil {
 		return nil, err

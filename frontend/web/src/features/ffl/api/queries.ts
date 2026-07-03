@@ -453,6 +453,15 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
         club { id name }
         season { id name }
       }
+      statsAll: stats(method: MEAN) {
+        goals kicks handballs marks tackles hitouts games
+      }
+      statsLast3: stats(lastN: 3, method: MEAN) {
+        goals kicks handballs marks tackles hitouts
+      }
+      statsMedian: stats(method: MEDIAN) {
+        goals kicks handballs marks tackles hitouts
+      }
       matches {
         id
         status
@@ -487,6 +496,8 @@ export const GET_FFL_PLAYER_STINTS = gql`
       playerMatches {
         id
         position
+        backupPositions
+        interchangePosition
         status
         aflStatus
         score

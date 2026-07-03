@@ -17,13 +17,19 @@ func NewPlayerSeasonStatsRepository(pool *pgxpool.Pool) *PlayerSeasonStatsReposi
 	return &PlayerSeasonStatsRepository{pool: pool}
 }
 
-// getSeasonStatsMean aggregates stats for each player_season across final matches.
-// Both upToRoundId ($2) and lastN ($3) are optional (pass nil to omit).
-// upToRoundId filters to matches whose start_dt is before the earliest match in that round,
-// using start_dt ordering rather than round ID ordering so IDs remain opaque.
-// lastN is applied after the round filter, keeping only the most recent N matches per player.
-const getSeasonStatsMean = `
-WITH qualified AS (
+// playerSeasonStatsSQL builds the full query for aggregating player-season stats.
+//
+// Parameters passed to the query:
+//
+//	$1 int[]  — player_season_id list
+//	$2 int    — upToRoundID (NULL = no filter); restricts to final matches whose
+//	            start_dt is before the earliest start_dt in the given round, so
+//	            IDs remain opaque to callers
+//	$3 int    — lastN (NULL = no filter); keeps only the most recent N matches
+//	            per player after the round filter is applied
+func playerSeasonStatsSQL(method domain.StatMethod) string {
+	const cte = `
+WITH ranked AS (
   SELECT pm.player_season_id,
          pm.goals, pm.kicks, pm.handballs, pm.marks, pm.tackles, pm.hitouts,
          ROW_NUMBER() OVER (PARTITION BY pm.player_season_id ORDER BY m.start_dt DESC) AS rn
@@ -39,26 +45,47 @@ WITH qualified AS (
       WHERE m2.round_id = $2::int AND m2.deleted_at IS NULL
     ))
 )
+`
+	const meanSelect = `
 SELECT
   player_season_id,
   COUNT(*)::int          AS games,
-  AVG(goals)::float8     AS avg_goals,
-  AVG(kicks)::float8     AS avg_kicks,
-  AVG(handballs)::float8 AS avg_handballs,
-  AVG(marks)::float8     AS avg_marks,
-  AVG(tackles)::float8   AS avg_tackles,
-  AVG(hitouts)::float8   AS avg_hitouts
-FROM qualified
+  AVG(goals)::float8     AS goals,
+  AVG(kicks)::float8     AS kicks,
+  AVG(handballs)::float8 AS handballs,
+  AVG(marks)::float8     AS marks,
+  AVG(tackles)::float8   AS tackles,
+  AVG(hitouts)::float8   AS hitouts
+FROM ranked
 WHERE $3::int IS NULL OR rn <= $3::int
 GROUP BY player_season_id
 `
+	const medianSelect = `
+SELECT
+  player_season_id,
+  COUNT(*)::int AS games,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY goals)::float8     AS goals,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY kicks)::float8     AS kicks,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY handballs)::float8 AS handballs,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY marks)::float8     AS marks,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tackles)::float8   AS tackles,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hitouts)::float8   AS hitouts
+FROM ranked
+WHERE $3::int IS NULL OR rn <= $3::int
+GROUP BY player_season_id
+`
+	if method == domain.StatMethodMedian {
+		return cte + medianSelect
+	}
+	return cte + meanSelect
+}
 
 func (r *PlayerSeasonStatsRepository) GetSeasonStats(ctx context.Context, params domain.PlayerSeasonStatsParams) ([]domain.PlayerSeasonStats, error) {
 	int32IDs := make([]int32, len(params.PlayerSeasonIDs))
 	for i, id := range params.PlayerSeasonIDs {
 		int32IDs[i] = int32(id)
 	}
-	rows, err := r.pool.Query(ctx, getSeasonStatsMean, int32IDs, params.UpToRoundID, params.LastN)
+	rows, err := r.pool.Query(ctx, playerSeasonStatsSQL(params.Method), int32IDs, params.UpToRoundID, params.LastN)
 	if err != nil {
 		return nil, fmt.Errorf("get season stats: %w", err)
 	}

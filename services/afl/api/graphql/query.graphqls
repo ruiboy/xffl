@@ -92,11 +92,10 @@ type AFLPlayer @key(fields: "id") {
 
 """
 Aggregation method to apply over a set of matches.
-Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
-without a schema change.
 """
 enum AFLStatSummaryMethod {
   MEAN
+  MEDIAN
 }
 
 """

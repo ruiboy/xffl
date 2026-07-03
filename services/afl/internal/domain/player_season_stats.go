@@ -14,12 +14,22 @@ type PlayerSeasonStats struct {
 	Games          int
 }
 
+// StatMethod controls how per-stat values are aggregated across matches.
+// The zero value (StatMethodMean) is the default and requires no explicit initialisation.
+type StatMethod uint8
+
+const (
+	StatMethodMean   StatMethod = iota // arithmetic mean — default zero value
+	StatMethodMedian                   // 50th-percentile (PERCENTILE_CONT)
+)
+
 // PlayerSeasonStatsParams controls which matches are included in the aggregation.
 // UpToRoundID and LastN are both optional and may be combined.
 type PlayerSeasonStatsParams struct {
 	PlayerSeasonIDs []int
-	UpToRoundID     *int // only final matches before the earliest start_dt in this round
-	LastN           *int // restrict to the most recent N qualifying matches
+	UpToRoundID     *int       // only final matches before the earliest start_dt in this round
+	LastN           *int       // restrict to the most recent N qualifying matches
+	Method          StatMethod // aggregation method; defaults to StatMethodMean
 }
 
 // PlayerSeasonStatsRepository is a read-only repository for aggregated player stats queries.

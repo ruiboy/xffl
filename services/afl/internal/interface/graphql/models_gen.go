@@ -218,21 +218,21 @@ type UpdateAFLPlayerMatchInput struct {
 }
 
 // Aggregation method to apply over a set of matches.
-// Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
-// without a schema change.
 type AFLStatSummaryMethod string
 
 const (
-	AFLStatSummaryMethodMean AFLStatSummaryMethod = "MEAN"
+	AFLStatSummaryMethodMean   AFLStatSummaryMethod = "MEAN"
+	AFLStatSummaryMethodMedian AFLStatSummaryMethod = "MEDIAN"
 )
 
 var AllAFLStatSummaryMethod = []AFLStatSummaryMethod{
 	AFLStatSummaryMethodMean,
+	AFLStatSummaryMethodMedian,
 }
 
 func (e AFLStatSummaryMethod) IsValid() bool {
 	switch e {
-	case AFLStatSummaryMethodMean:
+	case AFLStatSummaryMethodMean, AFLStatSummaryMethodMedian:
 		return true
 	}
 	return false

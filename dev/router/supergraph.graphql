@@ -211,15 +211,12 @@ type AFLStatSummary
   games: Int!
 }
 
-"""
-Aggregation method to apply over a set of matches.
-Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
-without a schema change.
-"""
+"""Aggregation method to apply over a set of matches."""
 enum AFLStatSummaryMethod
   @join__type(graph: AFL)
 {
   MEAN @join__enumValue(graph: AFL)
+  MEDIAN @join__enumValue(graph: AFL)
 }
 
 input CalculateFFLFantasyScoreInput
