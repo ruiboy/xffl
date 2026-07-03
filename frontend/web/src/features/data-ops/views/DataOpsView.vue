@@ -56,16 +56,14 @@
                     <router-link
                       v-if="match.id"
                       :to="{ name: 'afl-match', params: { matchId: match.id } }"
-                      target="_blank" rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 text-text hover:text-active transition-colors"
+                                            class="inline-flex items-center gap-1.5 text-text hover:text-active transition-colors"
                     >
                       <img v-if="match.homeClubMatch?.club.name" :src="clubLogoUrl(match.homeClubMatch.club.name)" class="w-4 h-4 object-contain" />
                       {{ match.homeClubMatch?.club.name ?? '—' }}
                       <span class="font-normal text-text-faint text-xs mx-1">vs</span>
                       <img v-if="match.awayClubMatch?.club.name" :src="clubLogoUrl(match.awayClubMatch.club.name)" class="w-4 h-4 object-contain" />
                       {{ match.awayClubMatch?.club.name ?? '—' }}
-                      <svg class="w-3 h-3 opacity-40 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </router-link>
+                                          </router-link>
                     <template v-else>
                       <span class="inline-flex items-center gap-1.5">
                         <img v-if="match.homeClubMatch?.club.name" :src="clubLogoUrl(match.homeClubMatch.club.name)" class="w-4 h-4 object-contain" />
@@ -269,12 +267,10 @@
                   <td class="py-3 pr-4">
                     <router-link
                       :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: row.clubMatchId } }"
-                      target="_blank" rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 text-sm font-semibold text-text hover:text-active transition-colors"
+                                            class="inline-flex items-center gap-1.5 text-sm font-semibold text-text hover:text-active transition-colors"
                     >
                       <img v-if="fflClubLogoUrl(row.clubName)" :src="fflClubLogoUrl(row.clubName)" :alt="row.clubName" class="w-5 h-5 object-contain" />
-                      {{ row.clubName }}<svg class="w-3 h-3 opacity-40 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </router-link>
+                      {{ row.clubName }}                    </router-link>
                   </td>
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
