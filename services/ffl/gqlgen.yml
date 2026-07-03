@@ -66,5 +66,9 @@ models:
   FFLPlayerMatch:
     fields:
       playerSeason: { resolver: true }
+      matchId: { resolver: true }
       aflPlayerMatchId: { resolver: true }
       aflPlayerMatch: { resolver: true }
+    extraFields:
+      ClubMatchID:
+        type: int

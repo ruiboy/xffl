@@ -140,6 +140,7 @@ type FFLPlayerMatch {
   playerSeasonId: ID!
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
+  matchId: ID
   position: String
   status: FFLPlayerMatchStatus
   aflStatus: FFLAFLPlayerMatchStatus

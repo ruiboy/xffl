@@ -9,6 +9,11 @@ SELECT id, match_id, club_season_id, data_status, notes, drv_score
 FROM ffl.club_match
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: FindClubMatchesByIDs :many
+SELECT id, match_id, club_season_id, data_status, notes, drv_score
+FROM ffl.club_match
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL;
+
 -- name: UpdateClubMatchScore :exec
 UPDATE ffl.club_match
 SET drv_score = $2,

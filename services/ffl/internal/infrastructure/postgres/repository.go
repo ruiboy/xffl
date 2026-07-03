@@ -397,6 +397,29 @@ func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.Club
 	}, nil
 }
 
+func (r *ClubMatchRepository) FindByIDs(ctx context.Context, ids []int) (map[int]domain.ClubMatch, error) {
+	int32IDs := make([]int32, len(ids))
+	for i, id := range ids {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindClubMatchesByIDs(ctx, int32IDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]domain.ClubMatch, len(rows))
+	for _, row := range rows {
+		out[int(row.ID)] = domain.ClubMatch{
+			ID:           int(row.ID),
+			MatchID:      int(row.MatchID),
+			ClubSeasonID: int(row.ClubSeasonID),
+			DataStatus:   domain.ClubMatchDataStatus(row.DataStatus),
+			Notes:        row.Notes,
+			StoredScore:  derefOr(row.DrvScore),
+		}
+	}
+	return out, nil
+}
+
 func (r *ClubMatchRepository) UpdateScore(ctx context.Context, id int, score int) error {
 	s := int32(score)
 	return r.q.UpdateClubMatchScore(ctx, sqlcgen.UpdateClubMatchScoreParams{

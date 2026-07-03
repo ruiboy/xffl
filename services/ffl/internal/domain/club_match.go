@@ -392,6 +392,7 @@ func (cm ClubMatch) Score() int {
 type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)
+	FindByIDs(ctx context.Context, ids []int) (map[int]ClubMatch, error)
 	UpdateScore(ctx context.Context, id int, score int) error
 	UpdatePremiershipPoints(ctx context.Context, id int, points int) error
 	UpdateNotes(ctx context.Context, id int, notes string) error

@@ -476,6 +476,7 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
         clubMatch {
           club { id name }
           match {
+            id
             round { id name }
             homeClubMatch { club { id name } }
             awayClubMatch { club { id name } }
@@ -495,6 +496,7 @@ export const GET_FFL_PLAYER_STINTS = gql`
       toRoundId
       playerMatches {
         id
+        matchId
         position
         backupPositions
         interchangePosition
@@ -512,6 +514,14 @@ export const GET_FFL_PLAYER_STINTS = gql`
           }
         }
       }
+    }
+  }
+`
+
+export const GET_FFL_SEASON_ROUND_MAPPING = gql`
+  query GetFflSeasonRoundMapping($seasonId: ID!) {
+    fflSeason(id: $seasonId) {
+      rounds { id aflRoundId }
     }
   }
 `

@@ -50,6 +50,48 @@ func (q *Queries) FindClubMatchByID(ctx context.Context, id int32) (FindClubMatc
 	return i, err
 }
 
+const findClubMatchesByIDs = `-- name: FindClubMatchesByIDs :many
+SELECT id, match_id, club_season_id, data_status, notes, drv_score
+FROM ffl.club_match
+WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+`
+
+type FindClubMatchesByIDsRow struct {
+	ID           int32
+	MatchID      int32
+	ClubSeasonID int32
+	DataStatus   string
+	Notes        *string
+	DrvScore     *int32
+}
+
+func (q *Queries) FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([]FindClubMatchesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, findClubMatchesByIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindClubMatchesByIDsRow{}
+	for rows.Next() {
+		var i FindClubMatchesByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MatchID,
+			&i.ClubSeasonID,
+			&i.DataStatus,
+			&i.Notes,
+			&i.DrvScore,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
 SELECT id, match_id, club_season_id, data_status, notes, drv_score
 FROM ffl.club_match

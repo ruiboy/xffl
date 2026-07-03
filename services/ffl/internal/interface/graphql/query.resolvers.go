@@ -155,6 +155,20 @@ func (r *fFLPlayerMatchResolver) PlayerSeason(ctx context.Context, obj *FFLPlaye
 	return convertPlayerSeason(ps, *player), nil
 }
 
+// MatchID is the resolver for the matchId field.
+// Loads the FFL club match to retrieve the parent match ID.
+func (r *fFLPlayerMatchResolver) MatchID(ctx context.Context, obj *FFLPlayerMatch) (*string, error) {
+	if obj.ClubMatchID == 0 {
+		return nil, nil
+	}
+	cm, err := LoadersFromCtx(ctx).ClubMatchByID.Load(ctx, obj.ClubMatchID)
+	if err != nil {
+		return nil, err
+	}
+	id := toID(cm.MatchID)
+	return &id, nil
+}
+
 // AflPlayerMatchID is the resolver for the aflPlayerMatchId field.
 func (r *fFLPlayerMatchResolver) AflPlayerMatchID(ctx context.Context, obj *FFLPlayerMatch) (*string, error) {
 	return obj.AflPlayerMatchID, nil
@@ -533,30 +547,3 @@ type fFLPlayerSeasonResolver struct{ *Resolver }
 type fFLRoundResolver struct{ *Resolver }
 type fFLSeasonResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *fFLClubMatchResolver) SuggestedInterchange(ctx context.Context, obj *FFLClubMatch) (*FFLSuggestedInterchange, error) {
-	cmID, err := fromID(obj.ID)
-	if err != nil {
-		return nil, err
-	}
-	pms, err := r.Queries.GetPlayerMatches(ctx, cmID)
-	if err != nil {
-		return nil, err
-	}
-	pair := domain.ClubMatch{PlayerMatches: pms}.SuggestedInterchange()
-	if pair == nil {
-		return nil, nil
-	}
-	return &FFLSuggestedInterchange{
-		ReplacedPmID:  toID(pair.ReplacedPMID),
-		ReplacingPmID: toID(pair.ReplacingPMID),
-	}, nil
-}
-*/

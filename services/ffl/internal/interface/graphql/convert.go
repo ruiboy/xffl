@@ -131,6 +131,7 @@ func convertPlayerMatch(pm domain.PlayerMatch, player domain.Player) *FFLPlayerM
 		ID:                  toID(pm.ID),
 		PlayerSeasonID:      toID(pm.PlayerSeasonID),
 		Player:              convertPlayer(player),
+		ClubMatchID:         pm.ClubMatchID,
 		BackupPositions:     pm.BackupPositions,
 		InterchangePosition: pm.InterchangePosition,
 		DisplayOrder:        pm.DisplayOrder,

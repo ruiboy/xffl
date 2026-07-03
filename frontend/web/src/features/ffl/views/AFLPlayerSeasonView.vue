@@ -11,12 +11,12 @@
         <img :src="aflClubLogoUrl(playerSeason.clubSeason.club.name)" class="w-12 h-12 object-contain mt-0.5 flex-shrink-0" />
         <div>
           <h1 class="text-2xl font-bold text-text">{{ playerSeason.player.name }}</h1>
-          <p class="text-sm text-text-muted mt-0.5">{{ playerSeason.clubSeason.club.name }} · {{ playerSeason.clubSeason.season.name }}</p>
-          <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-4 mt-2">
-            <div v-for="(event, i) in stintEvents" :key="i" class="flex items-center gap-1.5">
-              <img :src="fflClubLogoUrl(event.clubName)" class="w-4 h-4 object-contain" />
-              <span class="text-sm text-text font-medium">{{ event.clubName }}</span>
-              <span v-if="event.from" class="text-xs text-text-faint">{{ event.from }} – {{ event.to }}</span>
+          <p class="text-sm text-text-muted mt-0.5">{{ playerSeason.clubSeason.club.name }}</p>
+          <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-5 mt-2">
+            <div v-for="(event, i) in stintEvents" :key="i" class="flex items-center gap-2">
+              <img :src="fflClubLogoUrl(event.clubName)" class="w-5 h-5 object-contain" />
+              <span class="text-base text-text font-semibold">{{ event.clubName }}</span>
+              <span v-if="event.from" class="text-sm text-text-faint">{{ event.from }} – {{ event.to }}</span>
             </div>
           </div>
         </div>
@@ -64,20 +64,22 @@
               <th class="py-2 pr-3 font-medium whitespace-nowrap">Round</th>
               <th class="py-2 pr-4 font-medium">Vs</th>
               <th v-for="col in statCols" :key="col.key" class="py-2 px-2 font-medium text-right w-10">{{ col.label }}</th>
-              <th class="py-2 pl-2 pr-5 font-medium text-right w-10 text-yellow-400">★</th>
+              <th class="py-2 pl-2 pr-3 font-medium text-right w-10 text-yellow-400">★</th>
+              <th class="py-2 w-5"></th>
               <th class="py-2 pl-5 pr-3 font-medium bg-white/[0.03] border-l border-border">FFL Club</th>
               <th class="py-2 px-2 font-medium bg-white/[0.03]">Position</th>
               <th class="py-2 px-2 font-medium bg-white/[0.03]">Bench</th>
               <th class="py-2 px-2 font-medium bg-white/[0.03]">IC</th>
               <th class="py-2 px-2 font-medium bg-white/[0.03]">Status</th>
-              <th class="py-2 pl-2 font-medium text-right bg-white/[0.03]">Score</th>
+              <th class="py-2 pl-2 pr-1 font-medium text-right bg-white/[0.03]">Score</th>
+              <th class="py-2 w-5 bg-white/[0.03]"></th>
             </tr>
           </thead>
           <tbody>
             <tr
               v-for="(row, i) in mergedRows"
               :key="row.id"
-              class="border-b border-border-subtle"
+              class="border-b border-border-subtle group"
               :class="row.status === 'dnp' ? 'opacity-40' : 'hover:bg-surface-hover'"
             >
               <td class="py-2 pr-3 tabular-nums text-text-muted text-xs whitespace-nowrap">{{ shortRound(row.clubMatch.match.round.name) }}</td>
@@ -91,9 +93,20 @@
                 <span v-if="row.status !== 'dnp'" :class="statColor(col.key, row.fflPosition)">{{ row[col.key] }}</span>
                 <span v-else class="text-text-faint">—</span>
               </td>
-              <td class="py-2 pl-2 pr-5 text-right tabular-nums font-medium">
-                <span v-if="row.status !== 'dnp'">{{ row.starScore }}</span>
+              <td class="py-2 pl-2 pr-3 text-right tabular-nums font-medium">
+                <span v-if="row.status !== 'dnp'" :class="row.fflPosition === 'star' ? 'text-yellow-400' : ''">{{ row.starScore }}</span>
                 <span v-else class="text-text-faint">—</span>
+              </td>
+              <td class="py-2 pr-2 w-5">
+                <router-link
+                  :to="{ name: 'afl-match', params: { matchId: row.aflMatchId } }"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity text-text-faint hover:text-text"
+                  title="View AFL match"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3M9 2h5m0 0v5m0-5L7 9"/>
+                  </svg>
+                </router-link>
               </td>
               <td class="py-2 pl-5 pr-3 whitespace-nowrap border-l border-border bg-white/[0.03]">
                 <span v-if="row.fflClubName" class="inline-flex items-center gap-1.5">
@@ -123,9 +136,21 @@
               <td class="py-2 px-2 bg-white/[0.03]">
                 <StatusBadge v-if="row.fflClubName" :status="row.fflAflStatus" />
               </td>
-              <td class="py-2 pl-2 text-right tabular-nums font-medium bg-white/[0.03]">
+              <td class="py-2 pl-2 pr-1 text-right tabular-nums font-medium bg-white/[0.03]">
                 <span v-if="row.fflScore !== null" class="text-active">{{ row.fflScore }}</span>
                 <span v-else class="text-text-faint">—</span>
+              </td>
+              <td class="py-2 pr-2 w-5 bg-white/[0.03]">
+                <router-link
+                  v-if="row.fflMatchId"
+                  :to="{ name: 'ffl-match', params: { matchId: row.fflMatchId } }"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity text-text-faint hover:text-text"
+                  title="View FFL match"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3M9 2h5m0 0v5m0-5L7 9"/>
+                  </svg>
+                </router-link>
               </td>
             </tr>
           </tbody>
@@ -199,6 +224,7 @@ interface AFLPlayerMatch {
   clubMatch: {
     club: { id: string; name: string }
     match: {
+      id: string
       round: { id: string; name: string }
       homeClubMatch: { club: { id: string; name: string } }
       awayClubMatch: { club: { id: string; name: string } }
@@ -214,6 +240,7 @@ interface AFLMatchRef {
 
 interface FFLPlayerMatchData {
   id: string
+  matchId: string | null
   position: string | null
   backupPositions: string | null
   interchangePosition: string | null
@@ -233,6 +260,8 @@ interface FFLStint {
 
 interface MergedRow extends AFLPlayerMatch {
   starScore: number
+  aflMatchId: string
+  fflMatchId: string | null
   fflClubName: string | null
   fflPosition: string | null
   fflScore: number | null
@@ -266,6 +295,7 @@ const playedMatches = computed(() =>
 // Build lookup: AFL player match ID → FFL data + club name
 const fflByAflMatchId = computed(() => {
   const map = new Map<string, {
+    matchId: string | null
     clubName: string
     position: string | null
     score: number
@@ -277,6 +307,7 @@ const fflByAflMatchId = computed(() => {
     for (const pm of stint.playerMatches) {
       if (pm.aflPlayerMatch) {
         map.set(pm.aflPlayerMatch.id, {
+          matchId: pm.matchId,
           clubName: stint.club.name,
           position: pm.position,
           score: pm.score,
@@ -296,6 +327,8 @@ const mergedRows = computed((): MergedRow[] =>
     return {
       ...m,
       starScore: fflStar(m),
+      aflMatchId: m.clubMatch.match.id,
+      fflMatchId: ffl?.matchId ?? null,
       fflClubName: ffl?.clubName ?? null,
       fflPosition: ffl?.position ?? null,
       fflScore: ffl !== null ? ffl.score : null,
