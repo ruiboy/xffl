@@ -23,6 +23,8 @@ func (AFLPlayerMatch) IsEntity() {}
 
 type AFLPlayerSeason struct {
 	ID string `json:"id"`
+	// All FFL player seasons linked to this AFL player season (across all FFL clubs/stints).
+	FflPlayerSeasons []*FFLPlayerSeason `json:"fflPlayerSeasons"`
 }
 
 func (AFLPlayerSeason) IsEntity() {}
@@ -126,11 +128,10 @@ type FFLPlayer struct {
 }
 
 type FFLPlayerMatch struct {
-	ID             string           `json:"id"`
-	PlayerSeasonID string           `json:"playerSeasonId"`
-	PlayerSeason   *FFLPlayerSeason `json:"playerSeason"`
-	Player         *FFLPlayer       `json:"player"`
-	// The FFL match this player match belongs to.
+	ID                  string                   `json:"id"`
+	PlayerSeasonID      string                   `json:"playerSeasonId"`
+	PlayerSeason        *FFLPlayerSeason         `json:"playerSeason"`
+	Player              *FFLPlayer               `json:"player"`
 	MatchID             *string                  `json:"matchId,omitempty"`
 	Position            *string                  `json:"position,omitempty"`
 	Status              *FFLPlayerMatchStatus    `json:"status,omitempty"`

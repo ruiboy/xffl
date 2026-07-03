@@ -169,6 +169,7 @@ type AFLPlayer @key(fields: "id") {
 
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!
+  fflPlayerSeasons: [FFLPlayerSeason!]!
 }
 
 type AFLPlayerMatch @key(fields: "id") {

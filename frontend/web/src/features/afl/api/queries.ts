@@ -138,6 +138,7 @@ export const GET_AFL_MATCH = gql`
       }
       homeClubMatch {
         id
+        clubSeasonId
         club { id name }
         rushedBehinds
         score
@@ -159,6 +160,7 @@ export const GET_AFL_MATCH = gql`
       }
       awayClubMatch {
         id
+        clubSeasonId
         club { id name }
         rushedBehinds
         score

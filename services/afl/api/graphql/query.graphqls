@@ -8,6 +8,7 @@ type Query {
   aflClub(id: ID!): AFLClub!
 
   aflPlayerSeason(id: ID!): AFLPlayerSeason
+  aflClubSeason(id: ID!): AFLClubSeason
 
   aflLiveRound: AFLLiveRound
   aflPlayerSearch(query: String!): [AFLPlayer!]!
@@ -71,6 +72,7 @@ type AFLClubSeason {
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+  playerSeasons: [AFLPlayerSeason!]!
 }
 
 type AFLClubMatch {

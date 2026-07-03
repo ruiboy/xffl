@@ -84,6 +84,7 @@ type AFLClubSeason
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+  playerSeasons: [AFLPlayerSeason!]!
 }
 
 type AFLLiveRound
@@ -155,6 +156,11 @@ type AFLPlayerSeason
   a rolling form window. Returns null if the player has no qualifying matches.
   """
   stats(upToRoundId: ID, lastN: Int, method: AFLStatSummaryMethod): AFLStatSummary @join__field(graph: AFL)
+
+  """
+  All FFL player seasons linked to this AFL player season (across all FFL clubs/stints).
+  """
+  fflPlayerSeasons: [FFLPlayerSeason!]! @join__field(graph: FFL)
 }
 
 type AFLPlayerSeasonConnection
@@ -333,8 +339,6 @@ type FFLPlayerMatch
   playerSeasonId: ID!
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
-
-  """The FFL match this player match belongs to."""
   matchId: ID
   position: String
   status: FFLPlayerMatchStatus
@@ -616,6 +620,7 @@ type Query
   aflClubs: [AFLClub!]! @join__field(graph: AFL)
   aflClub(id: ID!): AFLClub! @join__field(graph: AFL)
   aflPlayerSeason(id: ID!): AFLPlayerSeason @join__field(graph: AFL)
+  aflClubSeason(id: ID!): AFLClubSeason @join__field(graph: AFL)
   aflLiveRound: AFLLiveRound @join__field(graph: AFL)
   aflPlayerSearch(query: String!): [AFLPlayer!]! @join__field(graph: AFL)
   fflSeasons: [FFLSeason!]! @join__field(graph: FFL)

@@ -24,13 +24,17 @@
           >
             <td class="py-2 pr-4">
               <div>
-                <span class="font-medium" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pm.player.aflPlayer.name }}</span>
-                <span v-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pmAflClub(pm) }}</span>
+                <router-link v-if="pmAflPlayerSeasonId(pm)" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: pmAflPlayerSeasonId(pm) } }" class="font-medium hover:text-text-muted transition-colors" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pm.player.aflPlayer.name }}</router-link>
+                <span v-else class="font-medium" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pm.player.aflPlayer.name }}</span>
+                <router-link v-if="pmAflClub(pm) && pmAflClubSeasonId(pm)" :to="{ name: 'afl-club-season', params: { clubSeasonId: pmAflClubSeasonId(pm) } }" class="ml-2 text-xs text-text-muted hover:text-text transition-colors" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pmAflClub(pm) }}</router-link>
+                <span v-else-if="pmAflClub(pm)" class="ml-2 text-xs text-text-muted" :class="{ 'line-through': coveringMap.get(pm.id) }">{{ pmAflClub(pm) }}</span>
               </div>
               <div v-if="coveringMap.get(pm.id)" class="text-sky-400">
                 <span class="text-xs mr-1">↑</span>
-                <span class="font-medium">{{ coveringMap.get(pm.id)!.player.aflPlayer.name }}</span>
-                <span v-if="pmAflClub(coveringMap.get(pm.id)!)" class="ml-2 text-xs">{{ pmAflClub(coveringMap.get(pm.id)!) }}</span>
+                <router-link v-if="pmAflPlayerSeasonId(coveringMap.get(pm.id)!)" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: pmAflPlayerSeasonId(coveringMap.get(pm.id)!) } }" class="font-medium hover:opacity-75 transition-opacity">{{ coveringMap.get(pm.id)!.player.aflPlayer.name }}</router-link>
+                <span v-else class="font-medium">{{ coveringMap.get(pm.id)!.player.aflPlayer.name }}</span>
+                <router-link v-if="pmAflClub(coveringMap.get(pm.id)!) && pmAflClubSeasonId(coveringMap.get(pm.id)!)" :to="{ name: 'afl-club-season', params: { clubSeasonId: pmAflClubSeasonId(coveringMap.get(pm.id)!) } }" class="ml-2 text-xs hover:opacity-75 transition-opacity">{{ pmAflClub(coveringMap.get(pm.id)!) }}</router-link>
+                <span v-else-if="pmAflClub(coveringMap.get(pm.id)!)" class="ml-2 text-xs">{{ pmAflClub(coveringMap.get(pm.id)!) }}</span>
               </div>
             </td>
             <td class="py-2 px-2"></td>
@@ -56,15 +60,10 @@
           >
             <td class="py-2 pr-4">
               <span v-if="coveredStarterMap.get(pm.id)" class="text-xs mr-1 text-sky-400">↑</span>
-              <span
-                class="font-medium"
-                :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'"
-              >{{ pm.player.aflPlayer.name }}</span>
-              <span
-                v-if="pmAflClub(pm)"
-                class="ml-2 text-xs"
-                :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'"
-              >{{ pmAflClub(pm) }}</span>
+              <router-link v-if="pmAflPlayerSeasonId(pm)" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: pmAflPlayerSeasonId(pm) } }" class="font-medium hover:opacity-75 transition-opacity" :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'">{{ pm.player.aflPlayer.name }}</router-link>
+              <span v-else class="font-medium" :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'">{{ pm.player.aflPlayer.name }}</span>
+              <router-link v-if="pmAflClub(pm) && pmAflClubSeasonId(pm)" :to="{ name: 'afl-club-season', params: { clubSeasonId: pmAflClubSeasonId(pm) } }" class="ml-2 text-xs hover:opacity-75 transition-opacity" :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'">{{ pmAflClub(pm) }}</router-link>
+              <span v-else-if="pmAflClub(pm)" class="ml-2 text-xs" :class="coveredStarterMap.get(pm.id) ? 'text-sky-400' : 'text-text-muted'">{{ pmAflClub(pm) }}</span>
             </td>
             <td class="py-2 px-2">
               <div class="flex items-center gap-1">
@@ -115,7 +114,8 @@ interface PlayerMatch {
   score: number
   playerSeason?: {
     aflPlayerSeason?: {
-      clubSeason?: { club?: { name: string } | null } | null
+      id?: string | null
+      clubSeason?: { id?: string | null; club?: { name: string } | null } | null
       stats?: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number; games: number } | null
     } | null
   } | null
@@ -193,6 +193,14 @@ function starterFormula(pm: PlayerMatch): string | null {
 
 function pmAflClub(pm: PlayerMatch): string | null {
   return pm.playerSeason?.aflPlayerSeason?.clubSeason?.club?.name ?? null
+}
+
+function pmAflPlayerSeasonId(pm: PlayerMatch): string | null {
+  return pm.playerSeason?.aflPlayerSeason?.id ?? null
+}
+
+function pmAflClubSeasonId(pm: PlayerMatch): string | null {
+  return pm.playerSeason?.aflPlayerSeason?.clubSeason?.id ?? null
 }
 
 function pmStatus(pm: PlayerMatch): string | null {

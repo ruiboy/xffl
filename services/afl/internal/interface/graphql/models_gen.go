@@ -31,17 +31,18 @@ type AFLClubMatch struct {
 }
 
 type AFLClubSeason struct {
-	ID                string     `json:"id"`
-	Club              *AFLClub   `json:"club"`
-	Season            *AFLSeason `json:"season"`
-	Played            int        `json:"played"`
-	Won               int        `json:"won"`
-	Lost              int        `json:"lost"`
-	Drawn             int        `json:"drawn"`
-	For               int        `json:"for"`
-	Against           int        `json:"against"`
-	Percentage        float64    `json:"percentage"`
-	PremiershipPoints int        `json:"premiershipPoints"`
+	ID                string             `json:"id"`
+	Club              *AFLClub           `json:"club"`
+	Season            *AFLSeason         `json:"season"`
+	Played            int                `json:"played"`
+	Won               int                `json:"won"`
+	Lost              int                `json:"lost"`
+	Drawn             int                `json:"drawn"`
+	For               int                `json:"for"`
+	Against           int                `json:"against"`
+	Percentage        float64            `json:"percentage"`
+	PremiershipPoints int                `json:"premiershipPoints"`
+	PlayerSeasons     []*AFLPlayerSeason `json:"playerSeasons"`
 }
 
 type AFLLiveRound struct {

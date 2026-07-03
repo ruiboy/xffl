@@ -81,7 +81,10 @@
                     >{{ row.player.aflPlayer.name }}</router-link>
                     <span v-else>{{ row.player.aflPlayer.name }}</span>
                   </td>
-                  <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
+                  <td class="py-2 pr-4 text-xs text-text-muted">
+                    <router-link v-if="row.aflPlayerSeason?.clubSeason?.id" :to="{ name: 'afl-club-season', params: { clubSeasonId: row.aflPlayerSeason.clubSeason.id } }" class="hover:text-text transition-colors" @click.stop>{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</router-link>
+                    <span v-else>{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</span>
+                  </td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
                       <span
@@ -159,7 +162,10 @@
                     >{{ row.player.aflPlayer.name }}</router-link>
                     <span v-else>{{ row.player.aflPlayer.name }}</span>
                   </td>
-                  <td class="py-2 pr-4 text-xs text-text-muted">{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</td>
+                  <td class="py-2 pr-4 text-xs text-text-muted">
+                    <router-link v-if="row.aflPlayerSeason?.clubSeason?.id" :to="{ name: 'afl-club-season', params: { clubSeasonId: row.aflPlayerSeason.clubSeason.id } }" class="hover:text-text transition-colors" @click.stop>{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</router-link>
+                    <span v-else>{{ row.aflPlayerSeason?.clubSeason?.club?.name ?? '—' }}</span>
+                  </td>
                   <td class="py-2">
                     <div class="flex gap-0.5">
                       <span
