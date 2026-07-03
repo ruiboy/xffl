@@ -97,6 +97,12 @@ const router = createRouter({
       component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
     },
+    {
+      path: '/afl/club-seasons/:clubSeasonId',
+      name: 'afl-club-season',
+      component: () => import('@/features/afl/views/ClubSeasonView.vue'),
+      props: true,
+    },
   ],
 })
 

@@ -11,11 +11,17 @@
         <img :src="aflClubLogoUrl(playerSeason.clubSeason.club.name)" class="w-12 h-12 object-contain mt-0.5 flex-shrink-0" />
         <div>
           <h1 class="text-2xl font-bold text-text">{{ playerSeason.player.name }}</h1>
-          <p class="text-sm text-text-muted mt-0.5">{{ playerSeason.clubSeason.club.name }}</p>
+          <router-link
+            :to="{ name: 'afl-club-season', params: { clubSeasonId: playerSeason.clubSeason.id } }"
+            class="text-sm text-text-muted mt-0.5 hover:text-text transition-colors"
+          >{{ playerSeason.clubSeason.club.name }}</router-link>
           <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-5 mt-2">
             <div v-for="(event, i) in stintEvents" :key="i" class="flex items-center gap-2">
               <img :src="fflClubLogoUrl(event.clubName)" class="w-5 h-5 object-contain" />
-              <span class="text-base text-text font-semibold">{{ event.clubName }}</span>
+              <router-link
+                :to="{ name: 'ffl-club-season', params: { clubSeasonId: event.clubSeasonId } }"
+                class="text-base text-text font-semibold hover:text-text-muted transition-colors"
+              >{{ event.clubName }}</router-link>
               <span v-if="event.from" class="text-sm text-text-faint">{{ event.from }} – {{ event.to }}</span>
             </div>
           </div>
@@ -187,7 +193,7 @@ const { result: fflResult } = useQuery(
 const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   id: string
   player: { id: string; name: string }
-  clubSeason: { club: { id: string; name: string }; season: { id: string; name: string } }
+  clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
   matches: AFLPlayerMatch[]
   statsAll: AFLStatSummary | null
   statsLast3: AFLStatSummary | null
@@ -199,7 +205,7 @@ const breadcrumbs = computed(() => {
   if (!playerSeason.value) return []
   return [
     { label: 'FFL', to: { name: 'home' } },
-    { label: playerSeason.value.clubSeason.season.name },
+    { label: playerSeason.value.clubSeason.season.name, to: { name: 'afl-home' } },
     { label: playerSeason.value.player.name },
   ]
 })
@@ -253,6 +259,7 @@ interface FFLPlayerMatchData {
 interface FFLStint {
   id: string
   club: { id: string; name: string }
+  clubSeasonId: string
   fromRoundId: string | null
   toRoundId: string | null
   playerMatches: FFLPlayerMatchData[]
@@ -274,9 +281,9 @@ interface MergedRow extends AFLPlayerMatch {
 
 const statCols = [
   { key: 'kicks' as const,     label: 'K'  },
-  { key: 'handballs' as const, label: 'HB' },
+  { key: 'handballs' as const, label: 'H'  },
   { key: 'marks' as const,     label: 'M'  },
-  { key: 'hitouts' as const,   label: 'HO' },
+  { key: 'hitouts' as const,   label: 'R'  },
   { key: 'tackles' as const,   label: 'T'  },
   { key: 'goals' as const,     label: 'G'  },
 ]
@@ -425,6 +432,7 @@ const stintEvents = computed(() =>
     const last = sorted[sorted.length - 1]?.aflPlayerMatch?.clubMatch?.match?.round
     return {
       clubName: stint.club.name,
+      clubSeasonId: stint.clubSeasonId,
       from: first ? shortRound(first.name) : null,
       to: stint.toRoundId === null ? 'present' : (last ? shortRound(last.name) : null),
     }

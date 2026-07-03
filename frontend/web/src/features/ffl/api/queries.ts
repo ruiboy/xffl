@@ -450,6 +450,7 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
       id
       player { id name }
       clubSeason {
+        id
         club { id name }
         season { id name }
       }
@@ -492,6 +493,7 @@ export const GET_FFL_PLAYER_STINTS = gql`
     fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: $aflPlayerSeasonId) {
       id
       club { id name }
+      clubSeasonId
       fromRoundId
       toRoundId
       playerMatches {

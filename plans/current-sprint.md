@@ -8,4 +8,4 @@ See `plans/ideas.md` for full item descriptions where relevant.
 
 ## Tasks
 
-Phase 23 has no task list yet — refer to `plans/ideas.md` and confirm scope before starting work.
+- [x] PAGE-1: AFL player season view (`/ffl/afl/player-seasons/:id`) — MEDIAN backend, status pills, season stats table, row-level match links, header breadcrumb links, stat label fixes
