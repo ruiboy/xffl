@@ -18,7 +18,7 @@
               <th class="py-2 pr-4 font-medium">Player</th>
               <th v-for="col in statCols" :key="col.key" class="py-2 px-2 font-medium text-right">{{ col.label }}</th>
               <th class="py-2 pl-2 pr-3 font-medium text-right text-yellow-400">★</th>
-              <th class="py-2 pl-3 pr-3 font-medium bg-white/[0.03] border-l border-border whitespace-nowrap w-px">FFL Club</th>
+              <th class="py-2 pl-3 pr-3 font-medium bg-white/[0.03] border-l border-border whitespace-nowrap">FFL Club</th>
             </tr>
           </thead>
           <tbody>
@@ -33,11 +33,11 @@
                   class="hover:text-text-muted transition-colors"
                 >{{ row.playerName }}</router-link>
               </td>
-              <td v-for="col in statCols" :key="col.key" class="py-2 px-2 text-right tabular-nums text-text-muted">
+              <td v-for="col in statCols" :key="col.key" class="py-2 px-2 text-right tabular-nums" :style="statHeat(row.stats?.[col.key], col.key)">
                 {{ fmtStat(row.stats?.[col.key]) }}
               </td>
-              <td class="py-2 pl-2 pr-3 text-right tabular-nums text-yellow-400">{{ starStr(row.stats) }}</td>
-              <td class="py-2 pl-3 pr-3 bg-white/[0.03] border-l border-border w-px whitespace-nowrap">
+              <td class="py-2 pl-2 pr-3 text-right tabular-nums" :style="statHeat(row.stats ? starScore(row.stats) : null, 'star')">{{ starStr(row.stats) }}</td>
+              <td class="py-2 pl-3 pr-3 bg-white/[0.03] border-l border-border whitespace-nowrap">
                 <router-link
                   v-if="row.fflClubSeasonId"
                   :to="{ name: 'ffl-club-season', params: { clubSeasonId: row.fflClubSeasonId } }"
@@ -68,6 +68,8 @@ import { GET_AFL_CLUB_SEASON } from '@/features/ffl/api/queries'
 import Breadcrumb from '@/features/ffl/components/Breadcrumb.vue'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { clubLogoUrl as fflClubLogoUrl } from '@/features/ffl/utils/clubLogos'
+import { useTheme } from '@/composables/useTheme'
+import { heatStyle } from '@/utils/heatmap'
 
 const props = defineProps<{ clubSeasonId: string }>()
 
@@ -112,6 +114,26 @@ const statCols = [
 
 type StatKey = typeof statCols[number]['key']
 
+const { isDark } = useTheme()
+
+const columnRange = computed(() => {
+  const range = {} as Record<StatKey | 'star', { min: number; max: number }>
+  for (const col of statCols) {
+    const vals = rows.value.map(r => r.stats?.[col.key]).filter((v): v is number => v != null)
+    if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  const starVals = rows.value.map(r => r.stats ? starScore(r.stats) : null).filter((v): v is number => v != null)
+  if (starVals.length) range['star'] = { min: Math.min(...starVals), max: Math.max(...starVals) }
+  return range
+})
+
+function statHeat(value: number | null | undefined, key: StatKey | 'star'): Record<string, string> {
+  if (value == null) return {}
+  const r = columnRange.value[key]
+  if (!r) return {}
+  return heatStyle(value, r.min, r.max, isDark.value)
+}
+
 const breadcrumbs = computed(() => {
   if (!clubSeason.value) return []
   return [
@@ -140,8 +162,12 @@ function fmtStat(val: number | null | undefined): string {
   return val.toFixed(1)
 }
 
+function starScore(s: StatSummary): number {
+  return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
+}
+
 function starStr(s: StatSummary | null | undefined): string {
   if (!s) return '—'
-  return (s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4).toFixed(1)
+  return starScore(s).toFixed(1)
 }
 </script>

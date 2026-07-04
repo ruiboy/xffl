@@ -88,6 +88,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useTheme, initTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
@@ -146,32 +147,6 @@ onMounted(() => document.addEventListener('mousedown', onClickOutside))
 onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 
 // Theme
-const isDark = ref(false)
-
-function getThemeCookie(): string {
-  const match = document.cookie.match(/(^| )xffl_dark_mode=([^;]+)/)
-  return match ? match[2] : ''
-}
-
-function setThemeCookie(dark: boolean) {
-  const expires = new Date()
-  expires.setFullYear(expires.getFullYear() + 10)
-  document.cookie = `xffl_dark_mode=${dark ? '1' : '0'};expires=${expires.toUTCString()};path=/`
-}
-
-function applyTheme(dark: boolean) {
-  document.documentElement.classList.toggle('dark', dark)
-  setThemeCookie(dark)
-  isDark.value = dark
-}
-
-function toggleTheme() {
-  applyTheme(!isDark.value)
-}
-
-onMounted(() => {
-  const saved = getThemeCookie()
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  applyTheme(saved !== '' ? saved === '1' : prefersDark)
-})
+const { isDark, toggleTheme } = useTheme()
+onMounted(() => initTheme())
 </script>

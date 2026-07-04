@@ -37,7 +37,7 @@
               class="w-14 rounded bg-transparent px-1 py-1 text-right text-text tabular-nums hover:bg-control focus:bg-control focus:outline-none focus:ring-1 focus:ring-control-ring"
               @change="onStatChange(pm, col.key, $event)"
             />
-            <span v-else class="tabular-nums text-text px-1">{{ pm[col.key] }}</span>
+            <span v-else class="tabular-nums px-1" :style="heatColor(pm[col.key], col.key)">{{ pm[col.key] }}</span>
           </td>
           <td class="py-2 px-2 text-right tabular-nums text-text-muted">{{ pm.disposals }}</td>
           <td v-for="col in postDisposalCols" :key="col.key" class="py-1 px-1 text-right">
@@ -49,7 +49,7 @@
               class="w-14 rounded bg-transparent px-1 py-1 text-right text-text tabular-nums hover:bg-control focus:bg-control focus:outline-none focus:ring-1 focus:ring-control-ring"
               @change="onStatChange(pm, col.key, $event)"
             />
-            <span v-else class="tabular-nums text-text px-1">{{ pm[col.key] }}</span>
+            <span v-else class="tabular-nums px-1" :style="heatColor(pm[col.key], col.key)">{{ pm[col.key] }}</span>
           </td>
           <td class="py-2 px-2 text-right tabular-nums text-text-muted">{{ pm.score }}</td>
         </tr>
@@ -73,6 +73,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useTheme } from '@/composables/useTheme'
+import { heatStyle } from '@/utils/heatmap'
 
 interface PlayerMatch {
   id: string
@@ -95,6 +97,8 @@ interface ClubMatch {
   club: { id: string; name: string }
   playerMatches: PlayerMatch[]
 }
+
+const { isDark } = useTheme()
 
 const props = withDefaults(defineProps<{
   clubMatch: ClubMatch
@@ -125,6 +129,24 @@ const postDisposalCols = [
 const statColumns = [...preDisposalCols, ...postDisposalCols]
 
 type StatKey = typeof statColumns[number]['key']
+
+const heatKeys = ['kicks', 'handballs', 'marks', 'hitouts', 'tackles', 'goals', 'behinds', 'disposals', 'score'] as const
+type HeatKey = typeof heatKeys[number]
+
+const columnRange = computed(() => {
+  const range = {} as Record<HeatKey, { min: number; max: number }>
+  for (const key of heatKeys) {
+    const vals = props.clubMatch.playerMatches.map(pm => pm[key])
+    range[key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  return range
+})
+
+function heatColor(value: number, key: HeatKey): Record<string, string> {
+  const r = columnRange.value[key]
+  if (!r) return {}
+  return heatStyle(value, r.min, r.max, isDark.value)
+}
 
 const totals = computed(() => {
   const keys = [...statColumns.map(c => c.key), 'disposals' as const, 'score' as const]
