@@ -4,11 +4,14 @@
       <thead>
         <tr class="border-b border-border text-left text-text-muted">
           <th class="py-2 pr-4 font-medium">Player</th>
-          <th v-for="col in statColumns" :key="col.key" class="py-2 px-2 font-medium text-right w-16">
+          <th v-for="col in preDisposalCols" :key="col.key" class="py-2 px-2 font-medium text-right w-16">
             {{ col.label }}
           </th>
           <th class="py-2 px-2 font-medium text-right w-16">D</th>
-          <th class="py-2 px-2 font-medium text-right w-16">SC</th>
+          <th v-for="col in postDisposalCols" :key="col.key" class="py-2 px-2 font-medium text-right w-16">
+            {{ col.label }}
+          </th>
+          <th class="py-2 px-2 font-medium text-right w-16">Pts</th>
         </tr>
       </thead>
       <tbody>
@@ -20,10 +23,10 @@
           <td class="py-2 pr-4 font-medium">
             <router-link
               :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: pm.playerSeasonId } }"
-              class="hover:underline hover:text-active transition-colors"
+              class="hover:text-active transition-colors"
             >{{ pm.player.name }}</router-link>
           </td>
-          <td v-for="col in statColumns" :key="col.key" class="py-1 px-1 text-right">
+          <td v-for="col in preDisposalCols" :key="col.key" class="py-1 px-1 text-right">
             <input
               v-if="!readonly"
               type="number"
@@ -35,16 +38,30 @@
             <span v-else class="tabular-nums text-text px-1">{{ pm[col.key] }}</span>
           </td>
           <td class="py-2 px-2 text-right tabular-nums text-text-muted">{{ pm.disposals }}</td>
+          <td v-for="col in postDisposalCols" :key="col.key" class="py-1 px-1 text-right">
+            <input
+              v-if="!readonly"
+              type="number"
+              :value="pm[col.key]"
+              min="0"
+              class="w-14 rounded bg-transparent px-1 py-1 text-right text-text tabular-nums hover:bg-control focus:bg-control focus:outline-none focus:ring-1 focus:ring-control-ring"
+              @change="onStatChange(pm, col.key, $event)"
+            />
+            <span v-else class="tabular-nums text-text px-1">{{ pm[col.key] }}</span>
+          </td>
           <td class="py-2 px-2 text-right tabular-nums text-text-muted">{{ pm.score }}</td>
         </tr>
       </tbody>
       <tfoot>
         <tr class="border-t border-border-strong font-semibold text-text-heading">
           <td class="py-2 pr-4">Totals</td>
-          <td v-for="col in statColumns" :key="col.key" class="py-2 px-2 text-right tabular-nums">
+          <td v-for="col in preDisposalCols" :key="col.key" class="py-2 px-2 text-right tabular-nums">
             {{ totals[col.key] }}
           </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ totals.disposals }}</td>
+          <td v-for="col in postDisposalCols" :key="col.key" class="py-2 px-2 text-right tabular-nums">
+            {{ totals[col.key] }}
+          </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ totals.score }}</td>
         </tr>
       </tfoot>
@@ -88,15 +105,20 @@ const emit = defineEmits<{
   update: [input: { playerSeasonId: string; clubMatchId: string; [key: string]: unknown }]
 }>()
 
-const statColumns = [
+const preDisposalCols = [
   { key: 'kicks' as const, label: 'K' },
-  { key: 'handballs' as const, label: 'HB' },
+  { key: 'handballs' as const, label: 'H' },
+]
+
+const postDisposalCols = [
   { key: 'marks' as const, label: 'M' },
-  { key: 'hitouts' as const, label: 'HO' },
+  { key: 'hitouts' as const, label: 'R' },
   { key: 'tackles' as const, label: 'T' },
   { key: 'goals' as const, label: 'G' },
   { key: 'behinds' as const, label: 'B' },
 ]
+
+const statColumns = [...preDisposalCols, ...postDisposalCols]
 
 type StatKey = typeof statColumns[number]['key']
 

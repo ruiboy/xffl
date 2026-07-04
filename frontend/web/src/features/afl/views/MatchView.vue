@@ -48,15 +48,6 @@
         </p>
       </div>
 
-      <div v-if="matchData" class="mt-8">
-        <router-link
-          :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: matchData.roundId } }"
-          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
-          <IconDataOps class="w-4 h-4" />
-          Data Ops
-        </router-link>
-      </div>
     </template>
   </div>
 </template>
@@ -69,7 +60,6 @@ import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import PlayerStatsTable from '../components/PlayerStatsTable.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ matchId: string }>()
 

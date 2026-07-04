@@ -1267,10 +1267,7 @@ function initSubsState() {
       .map((pm: { id: string }) => pm.id)
   )
   const savedApplied = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
-  const suggestedIc = clubMatch.value?.suggestedSubstitutions?.some(
-    (s: { kind: string }) => s.kind === 'interchange'
-  ) ?? false
-  interchangeApplied.value = savedApplied || suggestedIc
+  interchangeApplied.value = savedApplied
 }
 
 function isInterchangeSlot(slot: BenchDualSlot): boolean {

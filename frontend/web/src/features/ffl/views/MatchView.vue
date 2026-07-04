@@ -7,10 +7,12 @@
         <Breadcrumb v-if="round" :items="breadcrumbs" />
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
-          {{ match.homeClubMatch?.club.name ?? '—' }}
+          <router-link v-if="match.homeClubMatch" :to="{ name: 'ffl-club-season', params: { clubSeasonId: match.homeClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.homeClubMatch.club.name }}</router-link>
+          <span v-else>—</span>
           <span class="text-text-faint mx-1">v</span>
           <img v-if="match.awayClubMatch" :src="clubLogoUrl(match.awayClubMatch.club.name)" :alt="match.awayClubMatch.club.name" class="w-10 h-10 object-contain" />
-          {{ match.awayClubMatch?.club.name ?? '—' }}
+          <router-link v-if="match.awayClubMatch" :to="{ name: 'ffl-club-season', params: { clubSeasonId: match.awayClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.awayClubMatch.club.name }}</router-link>
+          <span v-else>—</span>
         </h1>
         <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
         <p v-if="match.result" class="text-lg font-semibold mt-2">
@@ -18,8 +20,9 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div v-for="side in sides" :key="side.label">
+      <!-- Headers row: both cells share the same row height, so SquadTables below always align -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 mb-0">
+        <div v-for="side in sides" :key="side.label + '-hd'" class="mb-3">
           <div class="flex items-center gap-2 mb-1">
             <img v-if="side.clubMatch" :src="clubLogoUrl(side.clubMatch.club.name)" :alt="side.clubMatch.club.name" class="w-8 h-8 object-contain" />
             <h2 class="text-lg font-semibold">
@@ -39,7 +42,7 @@
           </p>
           <div
             v-if="side.clubMatch?.club.id === selectedClubId && (side.clubMatch?.suggestedSubstitutions?.length ?? 0) > 0"
-            class="mb-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
+            class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
           >
             <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
             <ul class="space-y-0.5">
@@ -53,6 +56,12 @@
               </li>
             </ul>
           </div>
+        </div>
+      </div>
+
+      <!-- Tables row: starts at the same Y for both columns -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8">
+        <div v-for="side in sides" :key="side.label + '-tbl'">
           <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
         </div>
       </div>

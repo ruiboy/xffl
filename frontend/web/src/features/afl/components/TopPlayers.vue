@@ -5,23 +5,31 @@
       <li
         v-for="(entry, index) in players"
         :key="index"
-        class="flex items-center justify-between text-sm"
+        class="flex items-center justify-between text-sm gap-2"
       >
-        <span>
-          <span class="font-medium">{{ entry.name }}</span>
-          <span class="text-text-muted ml-1">({{ entry.club }})</span>
+        <span class="flex items-center gap-1.5 min-w-0">
+          <img :src="clubLogoUrl(entry.club)" :alt="entry.club" class="w-4 h-4 object-contain shrink-0" />
+          <router-link
+            v-if="entry.matchId"
+            :to="{ name: 'afl-match', params: { matchId: entry.matchId } }"
+            class="font-medium hover:text-text-muted transition-colors truncate"
+          >{{ entry.name }}</router-link>
+          <span v-else class="font-medium truncate">{{ entry.name }}</span>
         </span>
-        <span class="tabular-nums font-semibold">{{ entry.value }}</span>
+        <span class="tabular-nums font-semibold shrink-0">{{ entry.value }}</span>
       </li>
     </ol>
   </div>
 </template>
 
 <script setup lang="ts">
+import { clubLogoUrl } from '../utils/clubLogos'
+
 interface PlayerEntry {
   name: string
   club: string
   value: number
+  matchId?: string
 }
 
 defineProps<{
