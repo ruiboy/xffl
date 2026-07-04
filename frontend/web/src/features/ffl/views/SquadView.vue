@@ -16,35 +16,34 @@
       </router-link>
     </div>
 
-    <!-- Manage toolbar — only for the selected club -->
-    <div v-if="isMyClub" class="mb-6 flex items-center gap-3">
-      <button
-        @click="managing = !managing"
-        class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
-        :class="managing
-          ? 'border-active bg-active text-active-text'
-          : 'border-border bg-surface text-text hover:bg-surface-hover'"
-      >
-        <span class="flex items-center gap-1.5">
-          <IconManage v-if="!managing" class="w-3.5 h-3.5" />
-          {{ managing ? 'Done' : 'Manage' }}
-        </span>
-      </button>
-      <button
-        v-if="managing"
-        @click="openAddSearch"
-        class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
-      >
-        + Add Player
-      </button>
-      <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
-    </div>
-
     <div v-if="squadLoading" class="text-text-faint">Loading...</div>
     <div v-else-if="squadError" class="text-red-400">{{ squadError.message }}</div>
     <template v-else>
       <div v-if="players.length > 0">
-        <div class="mb-4 flex items-center gap-6">
+        <div class="mb-4 flex items-center gap-4">
+          <template v-if="isMyClub">
+            <button
+              @click="managing = !managing"
+              class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+              :class="managing
+                ? 'border-active bg-active text-active-text'
+                : 'border-border bg-surface text-text hover:bg-surface-hover'"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconManage v-if="!managing" class="w-3.5 h-3.5" />
+                {{ managing ? 'Done' : 'Manage' }}
+              </span>
+            </button>
+            <button
+              v-if="managing"
+              @click="openAddSearch"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >
+              + Add Player
+            </button>
+            <span v-if="saveMessage" class="text-sm text-green-500">{{ saveMessage }}</span>
+            <span class="w-px h-5 bg-border"></span>
+          </template>
           <div class="flex">
             <button
               v-for="seg in segments"
@@ -56,7 +55,7 @@
                 : 'border-transparent text-text-muted hover:text-text hover:border-border'"
             >{{ seg.label }}</button>
           </div>
-          <p v-show="statsView === 'stats'" class="text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> L3 avg — heatmap on L3</p>
+          <p v-show="statsView === 'stats'" class="text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> Last 3 avg</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -64,7 +63,7 @@
           <thead>
             <tr class="border-b border-border text-left text-text-muted">
               <th class="sticky left-0 z-20 bg-surface py-2 pr-3 font-medium w-36">Player</th>
-              <th class="sticky left-36 z-20 bg-surface py-2 pr-3 font-medium whitespace-nowrap">AFL Club</th>
+              <th class="sticky left-36 z-20 bg-surface py-2 pr-3 font-medium whitespace-nowrap">Club</th>
               <!-- Squad headers -->
               <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full">
                 <div class="flex">
