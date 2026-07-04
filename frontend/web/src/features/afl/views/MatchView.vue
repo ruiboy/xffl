@@ -7,11 +7,11 @@
         <Breadcrumb v-if="matchData" :items="breadcrumbs" />
         <h1 class="text-2xl font-bold flex items-center gap-3">
           <img v-if="match.homeClubMatch" :src="clubLogoUrl(match.homeClubMatch.club.name)" :alt="match.homeClubMatch.club.name" class="w-10 h-10 object-contain" />
-          <router-link v-if="match.homeClubMatch" :to="{ name: 'afl-club-season', params: { clubSeasonId: match.homeClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.homeClubMatch.club.name }}</router-link>
+          <router-link v-if="match.homeClubMatch" :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: match.homeClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.homeClubMatch.club.name }}</router-link>
           <span v-else>—</span>
           <span class="text-text-faint mx-1">v</span>
           <img v-if="match.awayClubMatch" :src="clubLogoUrl(match.awayClubMatch.club.name)" :alt="match.awayClubMatch.club.name" class="w-10 h-10 object-contain" />
-          <router-link v-if="match.awayClubMatch" :to="{ name: 'afl-club-season', params: { clubSeasonId: match.awayClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.awayClubMatch.club.name }}</router-link>
+          <router-link v-if="match.awayClubMatch" :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: match.awayClubMatch.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ match.awayClubMatch.club.name }}</router-link>
           <span v-else>—</span>
         </h1>
         <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
@@ -34,7 +34,7 @@
 
       <div v-for="side in sides" :key="side.label" class="mb-10">
         <h2 class="text-lg font-semibold mb-3">
-          <router-link v-if="side.clubSeasonId" :to="{ name: 'afl-club-season', params: { clubSeasonId: side.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ side.label }}</router-link>
+          <router-link v-if="side.clubSeasonId" :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: side.clubSeasonId } }" class="hover:text-text-muted transition-colors">{{ side.label }}</router-link>
           <span v-else>{{ side.label }}</span>
         </h2>
         <PlayerStatsTable

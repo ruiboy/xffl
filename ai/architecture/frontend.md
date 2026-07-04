@@ -9,30 +9,43 @@ The primary audience is FFL club managers who use the app to track fantasy score
 
 ## Page Hierarchy
 
-### FFL (primary)
+There are three namespaces, each with a distinct purpose:
+
+### FFL
+
+Pure FFL-domain views. Primary audience: FFL club managers.
 
 | Page | Route |
 |------|-------|
 | Home | `/ffl` |
 | Round | `/ffl/rounds/:roundId` |
 | Match | `/ffl/matches/:matchId` |
-| Team Builder | `/ffl/club-matches/:clubMatchId/edit` |
-| Squad | `/ffl/club-seasons/:clubSeasonId` |
-| Player Season | `/ffl/afl/player-seasons/:aflPlayerSeasonId` |
+| Club Season | `/ffl/club-seasons/:clubSeasonId` |
+| Club Match | `/ffl/club-matches/:clubMatchId` |
+| Team Builder | `/ffl/club-matches/:clubMatchId/edit` — edit-mode overlay on Club Match; only for the selected club |
 | Data Ops | `/ffl/data-ops` |
 
 **Money-shot views:** Match (head-to-head fantasy scores in real time) and Team Builder (weekly team selection).
 
-### AFL (supporting)
+### AFL
+
+Pure AFL-domain views. Used for real-world stat entry, which feeds FFL scoring.
 
 | Page | Route |
 |------|-------|
 | Home | `/afl` |
 | Round | `/afl/rounds/:roundId` |
 | Match | `/afl/matches/:matchId` |
-| Admin Match | `/afl/matches/:matchId/edit` |
+| Match Edit | `/afl/matches/:matchId/edit` |
 
-AFL pages exist to enter real-world match stats, which feed into FFL scoring.
+### AFL Lens (`/ffl/afl/`)
+
+FFL's view of AFL entities — the bridge between AFL data and FFL decision-making. No pure AFL player or club pages exist; these are the FFL-intelligence equivalents.
+
+| Page | Route |
+|------|-------|
+| Player Season | `/ffl/afl/player-seasons/:aflPlayerSeasonId` |
+| Club Season | `/ffl/afl/club-seasons/:clubSeasonId` |
 
 ## Key Design Decisions
 
@@ -50,12 +63,12 @@ frontend/web/src/
       api/          — GraphQL queries + mutations
       components/   — MatchSummary, LadderTable, PlayerStatsTable, TopPlayers, RoundNav
       utils/        — clubLogos.ts
-      views/        — HomeView, RoundView, MatchView, AdminMatchView
+      views/        — HomeView, RoundView, MatchView, AdminMatchView, ClubSeasonView
     ffl/
       api/          — GraphQL queries + mutations
       components/   — MatchSummary, LadderTable, SquadTable, RoundNav, StatusBadge
       utils/        — clubLogos.ts
-      views/        — HomeView, RoundView, MatchView, TeamBuilderView, PlayersView
+      views/        — HomeView, RoundView, MatchView, SquadView, TeamBuilderView, AFLPlayerSeasonView
   components/       — NavBar (shared)
-  router/           — Vue Router config
+  app/              — router.ts
 ```

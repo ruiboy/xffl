@@ -25,19 +25,14 @@
             <h2 class="text-lg font-semibold">
               <router-link
                 v-if="side.clubMatch"
-                :to="{ name: 'ffl-club-season', params: { clubSeasonId: side.clubMatch.clubSeasonId } }"
-                class="hover:text-active transition-colors"
-              >{{ side.label }}</router-link>
+                :to="{ name: side.clubMatch.club.id === selectedClubId ? 'ffl-club-match-edit' : 'ffl-club-match', params: { clubMatchId: side.clubMatch.id } }"
+                class="inline-flex items-center gap-1.5 hover:text-active transition-colors"
+              >
+                {{ side.label }}
+                <IconTeamBuilder v-if="side.clubMatch.club.id === selectedClubId" class="w-4 h-4" />
+              </router-link>
               <span v-else>{{ side.label }}</span>
             </h2>
-            <router-link
-              v-if="myClubMatchId && side.clubMatch?.club.id === selectedClubId"
-              :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: myClubMatchId } }"
-              title="Team Builder"
-              class="rounded p-1 text-active hover:bg-active/10 transition-colors"
-            >
-              <IconTeamBuilder class="w-4 h-4" />
-            </router-link>
           </div>
           <p class="text-sm text-text-muted mb-3">
             Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
@@ -91,14 +86,6 @@ const breadcrumbs = computed(() => {
     { label: round.value.season.name, to: { name: 'home' } },
     { label: round.value.name, to: { name: 'ffl-round', params: { roundId: round.value.id } } },
   ]
-})
-
-const myClubMatchId = computed(() => {
-  if (!match.value || !selectedClubId.value) return null
-  const clubId = selectedClubId.value
-  if (match.value.homeClubMatch?.club.id === clubId) return match.value.homeClubMatch.id
-  if (match.value.awayClubMatch?.club.id === clubId) return match.value.awayClubMatch.id
-  return null
 })
 
 const sides = computed(() => {

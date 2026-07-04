@@ -8,13 +8,13 @@
         <div class="flex items-center">
           <h1 class="text-2xl font-bold flex items-center gap-3">
             <img v-if="selectedClubSeason" :src="clubLogoUrl(selectedClubSeason.club.name)" :alt="selectedClubSeason.club.name" class="w-10 h-10 object-contain" />
-            {{ selectedClubSeason?.club.name ?? '' }}<span class="font-normal text-text-muted"> · Team Builder</span>
+            {{ selectedClubSeason?.club.name ?? '' }}<span v-if="!readonly" class="font-normal text-text-muted"> · Team Builder</span>
           </h1>
           <div class="flex items-center gap-3 ml-auto">
             <div class="flex items-center gap-1 rounded-lg border border-border px-1">
               <router-link
                 v-if="prevClubMatchId"
-                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: prevClubMatchId } }"
+                :to="{ name: readonly ? 'ffl-club-match' : 'ffl-club-match-edit', params: { clubMatchId: prevClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Previous round"
               >‹</router-link>
@@ -22,7 +22,7 @@
               <span class="text-sm text-text-muted tabular-nums">{{ currentRound?.name }}</span>
               <router-link
                 v-if="nextClubMatchId"
-                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: nextClubMatchId } }"
+                :to="{ name: readonly ? 'ffl-club-match' : 'ffl-club-match-edit', params: { clubMatchId: nextClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Next round"
               >›</router-link>
@@ -36,6 +36,14 @@
               <IconSquad class="w-4 h-4" />
               Squad
             </router-link>
+            <router-link
+              v-if="readonly && isMyClub && bootstrapClubMatchId"
+              :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: bootstrapClubMatchId } }"
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+            >
+              <IconTeamBuilder class="w-4 h-4" />
+              Team Builder
+            </router-link>
           </div>
         </div>
       </div>
@@ -43,7 +51,7 @@
       <template v-if="selectedClubSeason && clubMatch">
         <div class="mb-6 flex items-center gap-4 flex-wrap">
           <!-- Subs mode -->
-          <template v-if="subsMode">
+          <template v-if="!readonly && subsMode">
             <button
               @click="exitSubsMode"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -58,7 +66,7 @@
           </template>
 
           <!-- Manage mode -->
-          <template v-else-if="managing">
+          <template v-else-if="!readonly && managing">
             <button
               @click="cancelManage"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -94,14 +102,14 @@
           </template>
 
           <!-- Default mode buttons -->
-          <template v-else>
+          <template v-else-if="!readonly">
             <button
               @click="managing = true"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
             >
               <span class="flex items-center gap-1.5">
                 <IconManage class="w-3.5 h-3.5" />
-                Manage
+                Build Team
               </span>
             </button>
             <button
@@ -112,6 +120,28 @@
               <span class="flex items-center gap-1.5">
                 <IconSubs class="w-3.5 h-3.5" />
                 Substitutions
+              </span>
+            </button>
+            <button
+              v-if="clubMatchDataStatus === 'no_data' || clubMatchDataStatus === 'submitted'"
+              @click="markFinal"
+              :disabled="markingFinal"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconLock class="w-3.5 h-3.5" />
+                {{ markingFinal ? 'Marking…' : 'Mark Final' }}
+              </span>
+            </button>
+            <button
+              v-if="clubMatchDataStatus === 'final'"
+              @click="markSubmitted"
+              :disabled="markingSubmitted"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconLock :open="true" class="w-3.5 h-3.5" />
+                {{ markingSubmitted ? 'Marking…' : 'Mark Submitted' }}
               </span>
             </button>
             <span class="w-2 shrink-0" />
@@ -129,18 +159,19 @@
           </template>
 
           <!-- Data status pill -->
-          <span
-            v-if="clubMatchDataStatus"
-            class="ml-auto shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
-          >
-            {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
-          </span>
+          <div class="ml-auto flex items-center gap-2 shrink-0">
+            <span v-if="markStatusError" class="text-xs text-red-400">{{ markStatusError }}</span>
+            <span
+              v-if="clubMatchDataStatus"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+              :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
+            >{{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}</span>
+          </div>
         </div>
 
         <!-- Substitution suggestions -->
         <div
-          v-if="!managing && suggestedSubstitutionHints.length > 0"
+          v-if="!readonly && !managing && suggestedSubstitutionHints.length > 0"
           class="mb-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
         >
           <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
@@ -484,7 +515,7 @@
           </div>
         </div>
       </template>
-      <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
+      <p v-else class="text-text-faint">{{ readonly ? 'No data.' : 'No club selected. Choose a club in the nav bar.' }}</p>
 
     </template>
   </div>
@@ -495,6 +526,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useQuery, useMutation, useLazyQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH, GET_FFL_CLUB_MATCH_TEAM } from '../api/queries'
 import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
+import { MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED } from '../../data-ops/api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
@@ -502,6 +534,8 @@ import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
 import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
+import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
+import IconLock from '../components/icons/IconLock.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
@@ -510,7 +544,7 @@ import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
 
-const props = defineProps<{ clubMatchId: string }>()
+const props = defineProps<{ clubMatchId: string; readonly?: boolean }>()
 
 const positions = [
   { key: 'goals',     label: 'Goals',     short: 'G',  count: 3 },
@@ -570,10 +604,12 @@ const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.
 const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
 const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
 const bootstrapClubSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.clubSeasonId ?? '')
+const bootstrapClubMatchId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.id ?? '')
 const bootstrapClubId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.club?.id ?? '')
+const isMyClub = computed(() => !!bootstrapClubId.value && bootstrapClubId.value === selectedClubId.value)
 
 watch(bootstrapClubId, (id) => {
-  if (id) setClub(id)
+  if (id && !props.readonly) setClub(id)
 }, { immediate: true })
 
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
@@ -981,6 +1017,41 @@ const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string
 const clubMatchLocked = computed(() => clubMatchDataStatus.value === 'final')
 
 const dataStatusLabel: Record<string, string> = { no_data: 'Not submitted', submitted: 'Submitted', final: 'Final' }
+
+const markingFinal = ref(false)
+const markingSubmitted = ref(false)
+const markStatusError = ref('')
+
+const roundRefetchVars = () => ({ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } })
+
+const { mutate: markFinalMutation } = useMutation(MARK_FFL_TEAM_FINAL, () => ({ refetchQueries: [roundRefetchVars()], awaitRefetchQueries: true }))
+const { mutate: markSubmittedMutation } = useMutation(MARK_FFL_TEAM_SUBMITTED, () => ({ refetchQueries: [roundRefetchVars()], awaitRefetchQueries: true }))
+
+async function markFinal() {
+  if (!currentMatch.value) return
+  markStatusError.value = ''
+  markingFinal.value = true
+  try {
+    await markFinalMutation({ input: { clubMatchId: props.clubMatchId, matchId: currentMatch.value.id, roundId: bootstrapRoundId.value } })
+  } catch (e: any) {
+    markStatusError.value = e.message ?? 'Failed'
+  } finally {
+    markingFinal.value = false
+  }
+}
+
+async function markSubmitted() {
+  if (!currentMatch.value) return
+  markStatusError.value = ''
+  markingSubmitted.value = true
+  try {
+    await markSubmittedMutation({ input: { clubMatchId: props.clubMatchId, matchId: currentMatch.value.id, roundId: bootstrapRoundId.value } })
+  } catch (e: any) {
+    markStatusError.value = e.message ?? 'Failed'
+  } finally {
+    markingSubmitted.value = false
+  }
+}
 const dataStatusClass: Record<string, string> = {
   no_data:   'bg-surface-raised text-text-faint',
   submitted: 'bg-yellow-500/15 text-yellow-500',

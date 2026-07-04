@@ -38,7 +38,7 @@
                 <router-link
                   :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.id } }"
                   class="opacity-0 group-hover:opacity-100 transition-opacity text-text-faint hover:text-text"
-                  title="View player season"
+                  title="View AFL player"
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3M9 2h5m0 0v5m0-5L7 9"/>

@@ -12,7 +12,7 @@
         <div>
           <h1 class="text-2xl font-bold text-text">{{ playerSeason.player.name }}</h1>
           <router-link
-            :to="{ name: 'afl-club-season', params: { clubSeasonId: playerSeason.clubSeason.id } }"
+            :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: playerSeason.clubSeason.id } }"
             class="text-sm text-text-muted mt-0.5 hover:text-text transition-colors"
           >{{ playerSeason.clubSeason.club.name }}</router-link>
           <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-5 mt-2">

@@ -8,25 +8,18 @@ Aspirational ideas, designs, and things to revisit. Not commitments. Some items 
 
 ### Navigation
 
-| ID | Title | Summary | Effort |
-|---|---|---|---|
-| NAV-1 | Header links → live round | AFL and FFL header links navigate to `/afl/rounds/:liveRoundId` and `/ffl/rounds/:liveRoundId` instead of the ladder home. `liveRoundId` is already in state from boot. | XS |
-| NAV-2 | Cross-domain round link | Contextual pill near the round title: "↔ AFL Round 16" / "↔ FFL Round 16". Replaces the buried bottom-of-page AFL Round link on FFL round view. Uses `round.aflRoundId` for FFL→AFL; needs `fflRoundByAflRound` for AFL→FFL (already wired in bootstrap). | S |
-| NAV-3 | Ladder pill in RoundNav | First item in RoundNav before round number pills — ladder icon + hover tooltip "Ladder". Links to the season home/ladder view. | XS |
-| NAV-4 | DataOps in header | DataOps icon link always visible in header right-side nav. Links to `/ffl/data-ops` with the live round pre-selected via query param. | XS |
-| NAV-5 | DataOps RoundNav | Replace round dropdown inside DataOps with a RoundNav component (same as AFL/FFL round pages). Eventually: pill colours reflect data health — green = all data final, orange = in progress, red = past round with missing data. Colour-coding deferred until query cost is assessed. | M |
+(No outstanding navigation items.)
 
 ### Pages
 
 | ID | Route | Status | What it shows | Effort |
 |---|---|---|---|---|
-| PAGE-1 | `/ffl/afl/player-seasons/:aflPlayerSeasonId` | Partially built | FFL league view of one AFL player's season: all FFL ownership stints + unowned gaps, per-round k/h/m/t/r/g + * score + FFL position + FFL club. Most valuable page in the system. | M |
+| PAGE-1 | `/ffl/afl/player-seasons/:aflPlayerSeasonId` | Built | FFL league view of one AFL player's season: all FFL ownership stints + unowned gaps, per-round k/h/m/t/r/g + * score + FFL position + FFL club. Most valuable page in the system. | M |
 | PAGE-2 | `/ffl/player-seasons/:fflPlayerSeasonId` | Expand-row in SquadView; not a full page | One club's ownership of a player: club-specific notes, averages scoped to "while they were mine", per-round breakdown. | S |
-| PAGE-3 | `/ffl/afl/club-seasons/:aflClubSeasonId` | Not built | All players at an AFL club this season: name / FFL club / position / k/h/m/t/r/g / * avg. Sections: FFL ownership summary ("6 Ruiboys, 4 Cheetahs, 3 unowned") + best unowned sublist. Entry from AFL ladder club names. | M |
+| PAGE-3 | `/ffl/afl/club-seasons/:clubSeasonId` | Built | All players at an AFL club this season: name / FFL club / k/h/m/t/r/g / * avg. Entry from AFL ladder club names. | M |
 | PAGE-4 | `/ffl/free-agents` | Not built | All unowned AFL players, sorted by * avg desc. Filterable by position. Columns: name / AFL club / position / * avg / last round score. Primary trade-target intelligence tool. | M |
 | PAGE-5 | `/ffl/club-seasons/:id` (expand) | SquadView exists; dashboard additions not built | Add to top of SquadView: total * scored this season, points by round (sparkline or table), top scorer, W/L/D record. Squad list below unchanged. | S |
 | PAGE-6 | `/ffl` and `/afl` (expand) | Ladder exists; results matrix not built | Add round-by-round W/L/D grid alongside the standard ladder — traditional FFL results page format. Entry point: NAV-3 Ladder pill. | S |
-| PAGE-7 | RoundNav live indicator | Basic version exists (ring on current round) | Enhance current-round pill with pulsing dot or "LIVE" badge when `start_dt` = today. Frontend only — `start_dt` already in round data. | XS |
 | PAGE-8 | `/ffl/compare` | Not built | Pick 2–3 AFL players via search, compare stats/FFL scores side-by-side. Shareable URL (player IDs in query params). | L |
 | PAGE-9 | `/ffl/afl/clubs/:aflClubId` | Future — needs 2+ seasons | All-time FFL history of an AFL club across seasons: players drafted, aggregate scoring, per-season breakdown. | — |
 | PAGE-10 | `/ffl/afl/players/:aflPlayerId` | Future — needs 2+ seasons | All-time FFL career of an AFL player across seasons: FFL clubs, total * points, FFL games played. | — |
@@ -59,7 +52,7 @@ Fields in the schema, populated by backend processes, not yet rendered in the UI
 |---|---|
 | PAGE-1 | FFL query by AFL player season ID; return all FFL stints + unowned rounds; cross-subgraph via federation |
 | PAGE-2 | Likely exists; may need a dedicated `fflPlayerSeason(id)` resolver with more detail than SquadView currently fetches |
-| PAGE-3 | New resolver: `aflClubSeason(id)` returning all players with FFL ownership joined via federation |
+| PAGE-3 | Built — `aflClubSeason(id)` resolver with FFL ownership via federation |
 | PAGE-4 | New resolver or filter on existing player queries: unowned players cross-joined with season averages |
 | PAGE-8 | No new backend; reuses existing player season queries |
 | PAGE-11 | No new backend; reuses existing player season stat queries already available for SquadView |
@@ -105,12 +98,11 @@ package "FFL — AFL lens" {
 }
 
 package "Admin" {
-  rectangle "/ffl/data-ops\nData Ops (NAV-5)" as DataOps
+  rectangle "/ffl/data-ops\nData Ops" as DataOps
 }
 
-AFL_Home  --> AFL_Round    : RoundNav (NAV-3 Ladder pill back to AFL_Home)
-FFL_Home  --> FFL_Round    : RoundNav (NAV-3 Ladder pill back to FFL_Home)
-AFL_Round <--> FFL_Round   : NAV-2 cross-domain pill
+AFL_Home  --> AFL_Round    : RoundNav
+FFL_Home  --> FFL_Round    : RoundNav
 AFL_Round --> AFL_Match    : match row
 AFL_Round --> AFL_Admin    : edit icon
 AFL_Match --> P1           : player name
