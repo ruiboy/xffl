@@ -55,7 +55,7 @@
                 : 'border-transparent text-text-muted hover:text-text hover:border-border'"
             >{{ seg.label }}</button>
           </div>
-          <p v-show="statsView === 'stats'" class="text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> Last 3 avg</p>
+          <p v-show="statsView === 'stats'" class="text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> Last {{ LAST_N }} avg</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -115,23 +115,21 @@
                   <!-- Stats cells -->
                   <template v-for="col in statCols" :key="col.key">
                   <td v-show="statsView === 'stats'" class="py-2 px-2 tabular-nums">
-                    <div class="flex items-end justify-end gap-1">
-                      <span class="text-xs" :style="statHeat(row.aflPlayerSeason?.statsAll?.[col.key], col.key)">{{ fmtStat(row.aflPlayerSeason?.statsAll?.[col.key]) }}</span>
-                      <template v-if="row.aflPlayerSeason?.statsLast3?.[col.key] != null">
-                        <span v-if="trend(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key])" class="text-[10px]" :class="trendCls(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key])">{{ trend(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key]) }}</span>
-                        <span :style="statHeat(row.aflPlayerSeason.statsLast3[col.key], col.key)">{{ fmtStat(row.aflPlayerSeason.statsLast3[col.key]) }}</span>
-                      </template>
-                    </div>
+                    <StatCell
+                      :avg="row.aflPlayerSeason?.statsAll?.[col.key]"
+                      :last3="row.aflPlayerSeason?.statsLastN?.[col.key]"
+                      :avg-style="statHeat(row.aflPlayerSeason?.statsAll?.[col.key], col.key)"
+                      :last3-style="statHeat(row.aflPlayerSeason?.statsLastN?.[col.key], col.key)"
+                    />
                   </td>
                   </template>
                   <td v-show="statsView === 'stats'" class="py-2 pl-2 pr-3 tabular-nums">
-                    <div class="flex items-end justify-end gap-1">
-                      <span class="text-xs" :style="statHeat(row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null, 'star')">{{ row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll).toFixed(1) : '—' }}</span>
-                      <template v-if="row.aflPlayerSeason?.statsLast3">
-                        <span v-if="trend(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null)" class="text-[10px]" :class="trendCls(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null)">{{ trend(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null) }}</span>
-                        <span :style="statHeat(starScore(row.aflPlayerSeason.statsLast3), 'star')">{{ starScore(row.aflPlayerSeason.statsLast3).toFixed(1) }}</span>
-                      </template>
-                    </div>
+                    <StatCell
+                      :avg="row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null"
+                      :last3="row.aflPlayerSeason?.statsLastN ? starScore(row.aflPlayerSeason.statsLastN) : null"
+                      :avg-style="statHeat(row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null, 'star')"
+                      :last3-style="statHeat(row.aflPlayerSeason?.statsLastN ? starScore(row.aflPlayerSeason.statsLastN) : null, 'star')"
+                    />
                   </td>
                 </tr>
                 <tr v-if="expandedId === row.id && statsView === 'squad'" class="border-b border-border-subtle">
@@ -188,23 +186,21 @@
                   <td v-show="statsView === 'squad' && isMyClub && managing" class="py-2 px-2"></td>
                   <template v-for="col in statCols" :key="col.key">
                   <td v-show="statsView === 'stats'" class="py-2 px-2 tabular-nums">
-                    <div class="flex items-end justify-end gap-1">
-                      <span class="text-xs" :style="statHeat(row.aflPlayerSeason?.statsAll?.[col.key], col.key)">{{ fmtStat(row.aflPlayerSeason?.statsAll?.[col.key]) }}</span>
-                      <template v-if="row.aflPlayerSeason?.statsLast3?.[col.key] != null">
-                        <span v-if="trend(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key])" class="text-[10px]" :class="trendCls(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key])">{{ trend(row.aflPlayerSeason.statsLast3[col.key], row.aflPlayerSeason?.statsAll?.[col.key]) }}</span>
-                        <span :style="statHeat(row.aflPlayerSeason.statsLast3[col.key], col.key)">{{ fmtStat(row.aflPlayerSeason.statsLast3[col.key]) }}</span>
-                      </template>
-                    </div>
+                    <StatCell
+                      :avg="row.aflPlayerSeason?.statsAll?.[col.key]"
+                      :last3="row.aflPlayerSeason?.statsLastN?.[col.key]"
+                      :avg-style="statHeat(row.aflPlayerSeason?.statsAll?.[col.key], col.key)"
+                      :last3-style="statHeat(row.aflPlayerSeason?.statsLastN?.[col.key], col.key)"
+                    />
                   </td>
                   </template>
                   <td v-show="statsView === 'stats'" class="py-2 pl-2 pr-3 tabular-nums">
-                    <div class="flex items-end justify-end gap-1">
-                      <span class="text-xs" :style="statHeat(row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null, 'star')">{{ row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll).toFixed(1) : '—' }}</span>
-                      <template v-if="row.aflPlayerSeason?.statsLast3">
-                        <span v-if="trend(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null)" class="text-[10px]" :class="trendCls(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null)">{{ trend(starScore(row.aflPlayerSeason.statsLast3), row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null) }}</span>
-                        <span :style="statHeat(starScore(row.aflPlayerSeason.statsLast3), 'star')">{{ starScore(row.aflPlayerSeason.statsLast3).toFixed(1) }}</span>
-                      </template>
-                    </div>
+                    <StatCell
+                      :avg="row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null"
+                      :last3="row.aflPlayerSeason?.statsLastN ? starScore(row.aflPlayerSeason.statsLastN) : null"
+                      :avg-style="statHeat(row.aflPlayerSeason?.statsAll ? starScore(row.aflPlayerSeason.statsAll) : null, 'star')"
+                      :last3-style="statHeat(row.aflPlayerSeason?.statsLastN ? starScore(row.aflPlayerSeason.statsLastN) : null, 'star')"
+                    />
                   </td>
                 </tr>
                 <tr v-if="expandedId === row.id && statsView === 'squad'" class="border-b border-border-subtle opacity-40">
@@ -280,6 +276,8 @@ import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { useTheme } from '@/composables/useTheme'
 import { heatStyle } from '@/utils/heatmap'
+import { statCols, starScore, type StatSummary, type StatKey, LAST_N } from '../utils/playerStats'
+import StatCell from '../components/StatCell.vue'
 import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS, GET_FFL_ROUND_CLUB_MATCHES } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
@@ -481,10 +479,6 @@ async function onPlayerAdded() {
 }
 
 // Inline row expansion
-interface StatSummary {
-  goals: number; kicks: number; handballs: number
-  marks: number; tackles: number; hitouts: number
-}
 
 interface PlayerSeasonRow {
   id: string
@@ -493,46 +487,12 @@ interface PlayerSeasonRow {
     id: string
     clubSeason?: { id: string; club?: { name: string } } | null
     statsAll?: StatSummary | null
-    statsLast3?: StatSummary | null
+    statsLastN?: StatSummary | null
   } | null
   fromRoundId?: string | null
   toRoundId?: string | null
   notes?: string | null
   costCents?: number | null
-}
-
-// --- Stats view ---
-
-const statCols = [
-  { key: 'kicks'     as const, label: 'K' },
-  { key: 'handballs' as const, label: 'H' },
-  { key: 'marks'     as const, label: 'M' },
-  { key: 'tackles'   as const, label: 'T' },
-  { key: 'hitouts'   as const, label: 'R' },
-  { key: 'goals'     as const, label: 'G' },
-]
-
-type StatKey = typeof statCols[number]['key']
-
-function starScore(s: StatSummary): number {
-  return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
-}
-
-function fmtStat(val: number | null | undefined): string {
-  if (val == null) return '—'
-  return val.toFixed(1)
-}
-
-function trend(l3: number | null | undefined, avg: number | null | undefined): string {
-  if (l3 == null || avg == null) return ''
-  if (l3 === avg) return '='
-  return l3 > avg ? '↑' : '↓'
-}
-
-function trendCls(l3: number | null | undefined, avg: number | null | undefined): string {
-  if (l3 == null || avg == null) return ''
-  if (l3 === avg) return 'text-blue-400'
-  return l3 > avg ? 'text-green-400' : 'text-red-400'
 }
 
 const columnRange = computed(() => {
@@ -542,11 +502,11 @@ const columnRange = computed(() => {
   ] as PlayerSeasonRow[]
   const range = {} as Record<StatKey | 'star', { min: number; max: number }>
   for (const col of statCols) {
-    const vals = allRows.map(r => r.aflPlayerSeason?.statsLast3?.[col.key]).filter((v): v is number => v != null)
+    const vals = allRows.map(r => r.aflPlayerSeason?.statsLastN?.[col.key]).filter((v): v is number => v != null)
     if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
   }
   const starVals = allRows
-    .map(r => r.aflPlayerSeason?.statsLast3 ? starScore(r.aflPlayerSeason.statsLast3) : null)
+    .map(r => r.aflPlayerSeason?.statsLastN ? starScore(r.aflPlayerSeason.statsLastN) : null)
     .filter((v): v is number => v != null)
   if (starVals.length) range['star'] = { min: Math.min(...starVals), max: Math.max(...starVals) }
   return range

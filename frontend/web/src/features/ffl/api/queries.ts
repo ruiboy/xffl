@@ -1,4 +1,5 @@
 import gql from 'graphql-tag'
+import { LAST_N } from '../utils/playerStats'
 
 
 export const GET_FFL_SEASON_CLUBS = gql`
@@ -32,7 +33,7 @@ export const GET_FFL_CLUB_SEASON = gql`
             statsAll: stats(method: MEAN) {
               goals kicks handballs marks tackles hitouts
             }
-            statsLast3: stats(lastN: 3, method: MEAN) {
+            statsLastN: stats(lastN: ${LAST_N}, method: MEAN) {
               goals kicks handballs marks tackles hitouts
             }
           }
@@ -466,7 +467,7 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
       statsAll: stats(method: MEAN) {
         goals kicks handballs marks tackles hitouts games
       }
-      statsLast3: stats(lastN: 3, method: MEAN) {
+      statsLastN: stats(lastN: ${LAST_N}, method: MEAN) {
         goals kicks handballs marks tackles hitouts
       }
       statsMedian: stats(method: MEDIAN) {
@@ -577,12 +578,35 @@ export const SEARCH_AFL_PLAYERS = gql`
   }
 `
 
+export const GET_FREE_AGENTS = gql`
+  query GetFreeAgents($fflSeasonId: ID!) {
+    fflSeason(id: $fflSeasonId) {
+      aflSeason {
+        playerSeasons {
+          nodes {
+            id
+            player { id name }
+            clubSeason { id club { id name } }
+            statsAll: stats(method: MEAN) {
+              goals kicks handballs marks tackles hitouts games
+            }
+            statsLastN: stats(lastN: ${LAST_N}, method: MEAN) {
+              goals kicks handballs marks tackles hitouts
+            }
+            fflPlayerSeasons { toRoundId }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const GET_PLAYER_STATS_CARD = gql`
   query GetPlayerStatsCard($id: ID!, $aflRoundId: ID) {
     aflPlayerSeason(id: $id) {
       id
       seasonAvg: stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
-      last3: stats(upToRoundId: $aflRoundId, lastN: 3) { goals kicks handballs marks tackles hitouts games }
+      lastN: stats(upToRoundId: $aflRoundId, lastN: ${LAST_N}) { goals kicks handballs marks tackles hitouts games }
     }
   }
 `

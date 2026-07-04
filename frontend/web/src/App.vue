@@ -36,7 +36,15 @@
             />
           </template>
 
-          <!-- DataOps link -->
+          <!-- Free Agents + DataOps -->
+          <router-link
+            v-if="isFfl"
+            :to="{ name: 'ffl-free-agents' }"
+            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+            title="Free Agents"
+          >
+            <IconFreeAgents class="w-5 h-5" />
+          </router-link>
           <router-link
             :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
             class="text-text-muted hover:text-text transition-colors translate-y-0.5"
@@ -96,6 +104,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
+import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'

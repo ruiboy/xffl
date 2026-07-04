@@ -37,15 +37,15 @@
                   <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.hitouts) }}</td>
                   <td class="text-right py-1.5 pl-4 text-yellow-400/70">{{ fmt(starScore(data.aflPlayerSeason.seasonAvg)) }}</td>
                 </tr>
-                <tr v-if="data.aflPlayerSeason?.last3" class="text-text font-medium">
-                  <td class="text-text-faint font-normal py-1.5 pr-4">Last 3</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.goals, data.aflPlayerSeason.seasonAvg?.goals)">{{ fmt(data.aflPlayerSeason.last3.goals) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.kicks, data.aflPlayerSeason.seasonAvg?.kicks)">{{ fmt(data.aflPlayerSeason.last3.kicks) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.handballs, data.aflPlayerSeason.seasonAvg?.handballs)">{{ fmt(data.aflPlayerSeason.last3.handballs) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.marks, data.aflPlayerSeason.seasonAvg?.marks)">{{ fmt(data.aflPlayerSeason.last3.marks) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.tackles, data.aflPlayerSeason.seasonAvg?.tackles)">{{ fmt(data.aflPlayerSeason.last3.tackles) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.last3.hitouts, data.aflPlayerSeason.seasonAvg?.hitouts)">{{ fmt(data.aflPlayerSeason.last3.hitouts) }}</td>
-                  <td class="text-right py-1.5 pl-4" :class="up(starScore(data.aflPlayerSeason.last3), data.aflPlayerSeason.seasonAvg ? starScore(data.aflPlayerSeason.seasonAvg) : undefined) || 'text-yellow-400'">{{ fmt(starScore(data.aflPlayerSeason.last3)) }}</td>
+                <tr v-if="data.aflPlayerSeason?.lastN" class="text-text font-medium">
+                  <td class="text-text-faint font-normal py-1.5 pr-4">Last {{ LAST_N }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.goals, data.aflPlayerSeason.seasonAvg?.goals)">{{ fmt(data.aflPlayerSeason.lastN.goals) }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.kicks, data.aflPlayerSeason.seasonAvg?.kicks)">{{ fmt(data.aflPlayerSeason.lastN.kicks) }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.handballs, data.aflPlayerSeason.seasonAvg?.handballs)">{{ fmt(data.aflPlayerSeason.lastN.handballs) }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.marks, data.aflPlayerSeason.seasonAvg?.marks)">{{ fmt(data.aflPlayerSeason.lastN.marks) }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.tackles, data.aflPlayerSeason.seasonAvg?.tackles)">{{ fmt(data.aflPlayerSeason.lastN.tackles) }}</td>
+                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.hitouts, data.aflPlayerSeason.seasonAvg?.hitouts)">{{ fmt(data.aflPlayerSeason.lastN.hitouts) }}</td>
+                  <td class="text-right py-1.5 pl-4" :class="up(starScore(data.aflPlayerSeason.lastN), data.aflPlayerSeason.seasonAvg ? starScore(data.aflPlayerSeason.seasonAvg) : undefined) || 'text-yellow-400'">{{ fmt(starScore(data.aflPlayerSeason.lastN)) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -60,6 +60,7 @@
 import { ref } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_PLAYER_STATS_CARD } from '../api/queries'
+import { starScore, LAST_N } from '../utils/playerStats'
 
 const props = defineProps<{
   name: string
@@ -82,11 +83,6 @@ function onEnter() {
 }
 
 
-interface StatRow { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number }
-
-function starScore(s: StatRow): number {
-  return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
-}
 
 function fmt(v: number): string {
   return v % 1 === 0 ? String(v) : v.toFixed(1)

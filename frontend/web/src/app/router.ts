@@ -70,6 +70,11 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/ffl/free-agents',
+      name: 'ffl-free-agents',
+      component: () => import('@/features/ffl/views/FreeAgentsView.vue'),
+    },
+    {
       path: '/ffl/data-ops',
       name: 'ffl-data-ops',
       component: () => import('@/features/data-ops/views/DataOpsView.vue'),

@@ -23,6 +23,7 @@ Pure FFL-domain views. Primary audience: FFL club managers.
 | Club Season | `/ffl/club-seasons/:clubSeasonId` |
 | Club Match | `/ffl/club-matches/:clubMatchId` |
 | Team Builder | `/ffl/club-matches/:clubMatchId/edit` — edit-mode overlay on Club Match; only for the selected club |
+| Free Agents | `/ffl/free-agents` — unowned AFL players |
 | Data Ops | `/ffl/data-ops` |
 
 **Money-shot views:** Match (head-to-head fantasy scores in real time) and Team Builder (weekly team selection).
@@ -61,14 +62,16 @@ frontend/web/src/
   features/
     afl/
       api/          — GraphQL queries + mutations
-      components/   — MatchSummary, LadderTable, PlayerStatsTable, TopPlayers, RoundNav
-      utils/        — clubLogos.ts
-      views/        — HomeView, RoundView, MatchView, AdminMatchView, ClubSeasonView
+      components/   — reusable AFL UI components
+      utils/        — AFL-specific utilities (club logos, abbreviations)
+      views/        — AFL page components
     ffl/
       api/          — GraphQL queries + mutations
-      components/   — MatchSummary, LadderTable, SquadTable, RoundNav, StatusBadge
-      utils/        — clubLogos.ts
-      views/        — HomeView, RoundView, MatchView, SquadView, TeamBuilderView, AFLPlayerSeasonView
-  components/       — NavBar (shared)
-  app/              — router.ts
+      components/   — reusable FFL UI components (stat display, squad management, icons)
+      utils/        — FFL-specific utilities (player stats, scoring, position logic, club logos)
+      views/        — FFL page components
+  composables/      — shared Vue composables (theme)
+  utils/            — shared utilities used by both features (heatmap, cookie)
+  components/       — shared UI components
+  app/              — router and app bootstrap
 ```

@@ -174,6 +174,7 @@ import { GET_AFL_PLAYER_SEASON_STATS, GET_FFL_PLAYER_STINTS } from '../api/queri
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { POSITION_LETTERS, POSITION_COLORS } from '../utils/position'
+import { fmtStat } from '../utils/playerStats'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { clubAbbrev as aflClubAbbrev } from '@/features/afl/utils/clubAbbrev'
 import { clubLogoUrl as fflClubLogoUrl } from '../utils/clubLogos'
@@ -196,7 +197,7 @@ const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
   matches: AFLPlayerMatch[]
   statsAll: AFLStatSummary | null
-  statsLast3: AFLStatSummary | null
+  statsLastN: AFLStatSummary | null
   statsMedian: AFLStatSummary | null
 } | null)
 const stints = computed(() => fflResult.value?.fflPlayerSeasonsByAflPlayerSeason ?? [])
@@ -357,27 +358,23 @@ function starFromSummary(s: AFLStatSummary | null): string {
   return (s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4).toFixed(1)
 }
 
-function fmtStat(val: number | null | undefined): string {
-  if (val == null) return '—'
-  return val.toFixed(1)
-}
 
 function statAvg(key: StatKey): string {
   return fmtStat(playerSeason.value?.statsAll?.[key])
 }
 
 function statLast3Avg(key: StatKey): string {
-  return fmtStat(playerSeason.value?.statsLast3?.[key])
+  return fmtStat(playerSeason.value?.statsLastN?.[key])
 }
 
 function statLast3Up(key: StatKey): string {
   const all = playerSeason.value?.statsAll?.[key]
-  const l3  = playerSeason.value?.statsLast3?.[key]
-  return all != null && l3 != null && l3 > all ? 'text-green-400' : ''
+  const lastN  = playerSeason.value?.statsLastN?.[key]
+  return all != null && lastN != null && lastN > all ? 'text-green-400' : ''
 }
 
 const starSeasonAvg = computed(() => starFromSummary(playerSeason.value?.statsAll ?? null))
-const starLast3Avg  = computed(() => starFromSummary(playerSeason.value?.statsLast3 ?? null))
+const starLast3Avg  = computed(() => starFromSummary(playerSeason.value?.statsLastN ?? null))
 
 function starFromSummaryNum(s: AFLStatSummary | null | undefined): number | null {
   if (!s) return null
@@ -385,13 +382,10 @@ function starFromSummaryNum(s: AFLStatSummary | null | undefined): number | null
 }
 const starLast3Up = computed(() => {
   const all = starFromSummaryNum(playerSeason.value?.statsAll)
-  const l3  = starFromSummaryNum(playerSeason.value?.statsLast3)
-  return all != null && l3 != null && l3 > all ? 'text-green-400' : 'text-yellow-400'
+  const lastN  = starFromSummaryNum(playerSeason.value?.statsLastN)
+  return all != null && lastN != null && lastN > all ? 'text-green-400' : 'text-yellow-400'
 })
 
-const starScores = computed(() =>
-  playedMatches.value.map(m => fflStar(m)),
-)
 
 const starMedian = computed(() => starFromSummary(playerSeason.value?.statsMedian ?? null))
 
