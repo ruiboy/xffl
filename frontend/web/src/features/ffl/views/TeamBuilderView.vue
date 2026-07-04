@@ -119,7 +119,7 @@
             >
               <span class="flex items-center gap-1.5">
                 <IconSubs class="w-3.5 h-3.5" />
-                Substitutions
+                Make Substitutions
               </span>
             </button>
             <button
