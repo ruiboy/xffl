@@ -18,7 +18,9 @@
         <tr
           v-for="pm in clubMatch.playerMatches"
           :key="pm.id"
+          :id="`pm-${pm.id}`"
           class="border-b border-border-subtle hover:bg-surface-hover"
+          :class="{ 'highlight-pulse': pm.id === props.highlightPmId }"
         >
           <td class="py-2 pr-4 font-medium">
             <router-link
@@ -97,8 +99,10 @@ interface ClubMatch {
 const props = withDefaults(defineProps<{
   clubMatch: ClubMatch
   readonly?: boolean
+  highlightPmId?: string | null
 }>(), {
   readonly: false,
+  highlightPmId: null,
 })
 
 const emit = defineEmits<{
@@ -144,3 +148,13 @@ function onStatChange(pm: PlayerMatch, key: StatKey, event: Event) {
   })
 }
 </script>
+
+<style scoped>
+@keyframes highlight-pulse {
+  0%, 30% { background-color: rgb(34 197 94 / 0.3); }
+  100% { background-color: transparent; }
+}
+.highlight-pulse {
+  animation: highlight-pulse 7.3s ease-out forwards;
+}
+</style>

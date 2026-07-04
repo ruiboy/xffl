@@ -11,7 +11,7 @@
           <img :src="clubLogoUrl(entry.club)" :alt="entry.club" class="w-4 h-4 object-contain shrink-0" />
           <router-link
             v-if="entry.matchId"
-            :to="{ name: 'afl-match', params: { matchId: entry.matchId } }"
+            :to="{ name: 'afl-match', params: { matchId: entry.matchId }, query: entry.pmId ? { highlight: entry.pmId } : undefined }"
             class="font-medium hover:text-text-muted transition-colors truncate"
           >{{ entry.name }}</router-link>
           <span v-else class="font-medium truncate">{{ entry.name }}</span>
@@ -30,6 +30,7 @@ interface PlayerEntry {
   club: string
   value: number
   matchId?: string
+  pmId?: string
 }
 
 defineProps<{

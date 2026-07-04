@@ -20,7 +20,9 @@
           <tr
             v-for="pm in group.players"
             :key="pm.id"
+            :id="`pm-${pm.id}`"
             class="border-b border-border-subtle hover:bg-surface-hover"
+            :class="{ 'highlight-pulse': pm.id === props.highlightPmId }"
           >
             <td class="py-2 pr-4">
               <div>
@@ -56,7 +58,9 @@
           <tr
             v-for="pm in bench"
             :key="pm.id"
+            :id="`pm-${pm.id}`"
             class="border-b border-border-subtle hover:bg-surface-hover"
+            :class="{ 'highlight-pulse': pm.id === props.highlightPmId }"
           >
             <td class="py-2 pr-4">
               <span v-if="coveredStarterMap.get(pm.id)" class="text-xs mr-1 text-sky-400">↑</span>
@@ -127,6 +131,7 @@ interface PlayerMatch {
 
 const props = defineProps<{
   playerMatches: PlayerMatch[]
+  highlightPmId?: string | null
 }>()
 
 const POSITION_ORDER = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
@@ -265,3 +270,13 @@ const total = computed(() =>
   props.playerMatches.reduce((sum, pm) => sum + (pmShowScore(pm) ? pm.score : 0), 0)
 )
 </script>
+
+<style scoped>
+@keyframes highlight-pulse {
+  0%, 30% { background-color: rgb(34 197 94 / 0.3); }
+  100% { background-color: transparent; }
+}
+.highlight-pulse {
+  animation: highlight-pulse 7.3s ease-out forwards;
+}
+</style>

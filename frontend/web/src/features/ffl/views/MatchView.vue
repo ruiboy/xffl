@@ -62,7 +62,7 @@
       <!-- Tables row: starts at the same Y for both columns -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8">
         <div v-for="side in sides" :key="side.label + '-tbl'">
-          <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" />
+          <SquadTable v-if="side.clubMatch" :player-matches="side.clubMatch.playerMatches" :highlight-pm-id="highlightPmId" />
         </div>
       </div>
 
@@ -71,7 +71,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_MATCH } from '../api/queries'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -82,11 +83,25 @@ import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
 
 const props = defineProps<{ matchId: string }>()
 
+const route = useRoute()
 const { selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_MATCH, () => ({ id: props.matchId }))
 
 const match = computed(() => result.value?.fflMatch ?? null)
 const round = computed(() => match.value?.round ?? null)
+
+const highlightPmId = computed(() => (route.query.highlight as string) || null)
+
+let scrolledToHighlight = false
+watch(match, (m) => {
+  if (!m || !highlightPmId.value || scrolledToHighlight) return
+  scrolledToHighlight = true
+  const id = highlightPmId.value
+  setTimeout(() => {
+    const el = document.getElementById(`pm-${id}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, 300)
+}, { immediate: true })
 
 const breadcrumbs = computed(() => {
   if (!match.value || !round.value) return []

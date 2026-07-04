@@ -41,6 +41,7 @@
           v-if="side.clubMatch"
           :club-match="side.clubMatch"
           :readonly="!managing"
+          :highlight-pm-id="highlightPmId"
           @update="handleUpdate"
         />
         <p v-if="side.clubMatch" class="text-sm text-text-muted mt-2">
@@ -53,7 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_AFL_MATCH } from '../api/queries'
 import { UPDATE_PLAYER_MATCH } from '../api/mutations'
@@ -63,6 +65,7 @@ import { clubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ matchId: string }>()
 
+const route = useRoute()
 const managing = ref(false)
 
 const { result, loading, error } = useQuery(GET_AFL_MATCH, () => ({ matchId: props.matchId }))
@@ -88,6 +91,19 @@ const breadcrumbs = computed(() => {
 })
 
 const match = computed(() => matchData.value?.match ?? null)
+
+const highlightPmId = computed(() => (route.query.highlight as string) || null)
+
+let scrolledToHighlight = false
+watch(match, (m) => {
+  if (!m || !highlightPmId.value || scrolledToHighlight) return
+  scrolledToHighlight = true
+  const id = highlightPmId.value
+  setTimeout(() => {
+    const el = document.getElementById(`pm-${id}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, 300)
+}, { immediate: true })
 
 const sides = computed(() => {
   if (!match.value) return []

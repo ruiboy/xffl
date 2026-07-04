@@ -104,6 +104,7 @@ const statCategories = [
 ] as const
 
 interface PlayerMatch {
+  id: string
   player: { name: string }
   kicks: number
   handballs: number
@@ -142,12 +143,12 @@ const roundStartDate = computed(() => {
 const topPlayerStats = computed(() => {
   if (!data.value) return []
 
-  const allPlayers: { name: string; club: string; matchId: string; stats: PlayerMatch }[] = []
+  const allPlayers: { name: string; club: string; matchId: string; pmId: string; stats: PlayerMatch }[] = []
   for (const match of data.value.round.matches as Match[]) {
     for (const side of [match.homeClubMatch, match.awayClubMatch]) {
       if (!side) continue
       for (const pm of side.playerMatches) {
-        allPlayers.push({ name: pm.player.name, club: side.club.name, matchId: match.id, stats: pm })
+        allPlayers.push({ name: pm.player.name, club: side.club.name, matchId: match.id, pmId: pm.id, stats: pm })
       }
     }
   }
@@ -163,6 +164,7 @@ const topPlayerStats = computed(() => {
         name: p.name,
         club: p.club,
         matchId: p.matchId,
+        pmId: p.pmId,
         value: p.stats[cat.key] as number,
       })),
     }
