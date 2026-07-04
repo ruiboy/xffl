@@ -29,6 +29,12 @@ export const GET_FFL_CLUB_SEASON = gql`
               id
               club { id name }
             }
+            statsAll: stats(method: MEAN) {
+              goals kicks handballs marks tackles hitouts
+            }
+            statsLast3: stats(lastN: 3, method: MEAN) {
+              goals kicks handballs marks tackles hitouts
+            }
           }
           fromRoundId
           toRoundId
