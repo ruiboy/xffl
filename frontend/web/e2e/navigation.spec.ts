@@ -60,8 +60,7 @@ test.describe('Navigation — Phase 21', () => {
       await expect(page.getByTitle('Data Ops')).toBeVisible()
     })
 
-    // DataOps link opens in a new tab (target="_blank") — check href, not navigation
-    test('DataOps icon href points to data-ops page', async ({ page }) => {
+    test('DataOps icon navigates to data-ops page', async ({ page }) => {
       await setupFflSession(page)
       await expect(page.getByTitle('Data Ops')).toHaveAttribute('href', /\/ffl\/data-ops/)
     })

@@ -49,7 +49,6 @@
             :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
             class="text-text-muted hover:text-text transition-colors translate-y-0.5"
             title="Data Ops"
-            target="_blank" rel="noopener noreferrer"
           >
             <IconDataOps class="w-5 h-5" />
           </router-link>
