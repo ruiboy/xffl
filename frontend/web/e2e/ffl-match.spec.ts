@@ -46,13 +46,14 @@ test.describe('FFL Match', () => {
     await expect(page.getByText('Total').first()).toBeVisible()
   })
 
-  test('shows Team Builder button in selected club column only', async ({ page }) => {
-    // Selected club is The Howling Cows — button should appear once (in their column)
-    await expect(page.getByTitle('Team Builder')).toHaveCount(1)
+  test('shows Team Builder link in selected club column only', async ({ page }) => {
+    // The selected club's h2 link navigates to /edit; the other club's h2 link does not.
+    // The Team Builder icon was merged into the club-name link in this branch (no separate title attr).
+    await expect(page.locator('h2 a[href$="/edit"]')).toHaveCount(1)
   })
 
-  test('Team Builder button navigates to team builder', async ({ page }) => {
-    await page.getByTitle('Team Builder').click()
+  test('Team Builder link navigates to team builder', async ({ page }) => {
+    await page.locator('h2 a[href$="/edit"]').click()
     await expect(page).toHaveURL(/\/ffl\/club-matches\/.*\/edit/)
   })
 

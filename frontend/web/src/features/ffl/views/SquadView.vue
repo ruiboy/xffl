@@ -273,7 +273,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useQuery, useMutation } from '@vue/apollo-composable'
+import { useQuery, useMutation, useApolloClient } from '@vue/apollo-composable'
 import { useTheme } from '@/composables/useTheme'
 import { heatStyle } from '@/utils/heatmap'
 import { statCols, starScore, type StatSummary, type StatKey, LAST_N } from '../utils/playerStats'
@@ -293,6 +293,7 @@ import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 const props = defineProps<{ clubSeasonId: string }>()
 
 const { selectedClubId, liveRoundId } = useFflState()
+const { client } = useApolloClient()
 const managing = ref(false)
 const showTraded = ref(false)
 
@@ -474,6 +475,13 @@ function cancelAddSearch() {
 
 async function onPlayerAdded() {
   addModalOpen.value = false
+  // The federation fields added to GET_FFL_CLUB_SEASON (~300ms) can cause a pre-mutation
+  // in-flight request to still be running when the mutation completes. Apollo deduplicates
+  // refetchSquad() against that stale in-flight and returns pre-mutation data.
+  // Fix: client.query with network-only creates an independent request that bypasses
+  // deduplication and waits past the stale in-flight. Once it resolves, there is no
+  // competing in-flight so the subsequent refetchSquad() fires cleanly.
+  await client.query({ query: GET_FFL_CLUB_SEASON, variables: { id: props.clubSeasonId }, fetchPolicy: 'network-only' })
   await refetchSquad()
   flashSaved()
 }

@@ -35,8 +35,8 @@ test.describe('FFL Team Builder', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('The Howling Cows')
     })
 
-    test('Manage button visible; Save Team not visible', async ({ page }) => {
-      await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+    test('Build Team button visible; Save Team not visible', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Build Team' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Save Team' })).not.toBeVisible()
     })
 
@@ -83,13 +83,13 @@ test.describe('FFL Team Builder', () => {
   test.describe('layout: manage mode', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
-    test('Save Team and Cancel visible; Manage button gone', async ({ page }) => {
+    test('Save Team and Cancel visible; Build Team button gone', async ({ page }) => {
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Manage' })).not.toBeVisible()
+      await expect(page.getByRole('button', { name: 'Build Team' })).not.toBeVisible()
     })
 
     test('Save Team disabled until a change is made', async ({ page }) => {
@@ -103,7 +103,7 @@ test.describe('FFL Team Builder', () => {
       const filledBefore = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
       await page.getByRole('button', { name: 'Remove' }).first().click()
       await page.getByRole('button', { name: 'Cancel' }).click()
-      await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Build Team' })).toBeVisible()
       const filledAfter = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
       expect(filledAfter).toBe(filledBefore)
     })
@@ -128,7 +128,7 @@ test.describe('FFL Team Builder', () => {
     test('Save Team saves and returns to read-only mode', async ({ page }) => {
       await page.getByRole('button', { name: 'Remove' }).first().click()
       await page.getByRole('button', { name: 'Save Team' }).click()
-      await expect(page.getByRole('button', { name: 'Manage' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Build Team' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Save Team' })).not.toBeVisible()
       await expect(page.getByRole('heading', { name: /Squad \(/ })).not.toBeVisible()
     })
@@ -139,7 +139,7 @@ test.describe('FFL Team Builder', () => {
   test.describe('bench: dual-position slots', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
     test('B button adds player to a bench slot', async ({ page }) => {
@@ -174,7 +174,7 @@ test.describe('FFL Team Builder', () => {
   test.describe('bench: validation', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
     test('save blocked when bench player has no position assigned', async ({ page }) => {
@@ -207,7 +207,7 @@ test.describe('FFL Team Builder', () => {
   test.describe('interchange', () => {
     test.beforeEach(async ({ page }) => {
       await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
     test('interchange dropdown lists all 7 positions', async ({ page }) => {
@@ -231,7 +231,7 @@ test.describe('FFL Team Builder', () => {
       await expect(benchSection(page).getByText(/·\s*Int/)).toBeVisible()
 
       // Re-enter manage — interchange dropdown still set
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       await expect(page.getByLabel('Interchange')).toHaveValue('star')
     })
   })
@@ -244,7 +244,7 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('local edits not reset when re-entering manage mode (state retention)', async ({ page }) => {
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       const panel = squadPanel(page)
 
       const playerName = await panel.locator('.font-medium').first().textContent()
@@ -252,19 +252,19 @@ test.describe('FFL Team Builder', () => {
 
       await page.getByRole('button', { name: 'Save Team' }).click()
 
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       const kicksSection = positionSection(page, 'Kicks')
       await expect(kicksSection.getByText(playerName!.trim())).toBeVisible()
     })
 
     test('two rounds of editing accumulate correctly', async ({ page }) => {
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       let panel = squadPanel(page)
       const player1 = await panel.locator('.font-medium').first().textContent()
       await panel.getByRole('button', { name: 'H' }).first().click()
       await page.getByRole('button', { name: 'Save Team' }).click()
 
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       panel = squadPanel(page)
       const player2 = await panel.locator('.font-medium').first().textContent()
       await panel.getByRole('button', { name: 'K' }).first().click()
@@ -437,23 +437,25 @@ test.describe('FFL Team Builder', () => {
       await expect(benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })).toBeVisible()
     })
 
-    test('interchange is pre-applied when bench outscores target starter', async ({ page }) => {
+    test('interchange starts not applied (amber) even when bench outscores starter', async ({ page }) => {
       await page.getByRole('button', { name: 'Substitutions' }).click()
-      // Brock (50) outscores Hugh (30) → interchange beneficial → row shows sky border (applied)
+      // Brock (50) outscores Hugh (30) → interchange beneficial, but NOT auto-applied;
+      // user must explicitly click to apply (phase 23 UX change)
       const brockRow = benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })
-      await expect(brockRow).toHaveClass(/border-sky-500/)
+      await expect(brockRow).toHaveClass(/border-amber-600/)
     })
 
-    test('clicking interchange row toggles it off (amber border)', async ({ page }) => {
+    test('clicking interchange row toggles it on (sky border)', async ({ page }) => {
       await page.getByRole('button', { name: 'Substitutions' }).click()
       const brockRow = benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' })
       await brockRow.click()
-      await expect(brockRow).toHaveClass(/border-amber-600/)
+      await expect(brockRow).toHaveClass(/border-sky-500/)
     })
 
     test('Save Subs persists interchanged_out and interchanged_in statuses', async ({ page }) => {
       await page.getByRole('button', { name: 'Substitutions' }).click()
-      // Interchange is pre-applied (beneficial) — save immediately
+      // Interchange is NOT auto-applied — user must click Brock to apply it
+      await benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' }).click()
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
@@ -464,10 +466,9 @@ test.describe('FFL Team Builder', () => {
       await expect(positionSection(page, 'Goals').getByText('Played').first()).toBeVisible()
     })
 
-    test('declining interchange saves with no statuses changed', async ({ page }) => {
+    test('saving without applying interchange leaves no statuses changed', async ({ page }) => {
       await page.getByRole('button', { name: 'Substitutions' }).click()
-      // Toggle interchange off
-      await benchSection(page).locator('.rounded-lg').filter({ hasText: 'Brock Thunder' }).click()
+      // Interchange starts NOT applied (amber) — save immediately without clicking
       await page.getByRole('button', { name: 'Save Subs' }).click()
       await expect(page.getByRole('button', { name: 'Substitutions' })).toBeVisible({ timeout: 10000 })
 
@@ -517,7 +518,7 @@ test.describe('FFL Team Builder', () => {
       const hbSection = positionSection(page, 'Handballs')
       const existingNames = await hbSection.locator('.font-medium').allTextContents()
 
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       const newPlayerName = await squadPanel(page).locator('.font-medium').first().textContent()
       await squadPanel(page).getByRole('button', { name: 'H' }).first().click()
       await page.getByRole('button', { name: 'Save Team' }).click()
@@ -527,7 +528,7 @@ test.describe('FFL Team Builder', () => {
       }
       await expect(hbSection.getByText(newPlayerName!.trim())).toBeVisible()
 
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       for (const name of existingNames) {
         await expect(hbSection.getByText(name.trim())).toBeVisible()
       }
@@ -574,7 +575,7 @@ test.describe('FFL Team Builder', () => {
   test.describe('manage layout', () => {
     test('squad panel visible alongside team in manage mode', async ({ page }) => {
       await goToTeamBuilder(page)
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       await expect(page.getByRole('heading', { name: /Squad \(/ })).toBeVisible()
     })
   })
@@ -607,7 +608,7 @@ test.describe('FFL Team Builder', () => {
       // R2-Ruiboys=3, R2-Cows=4, R3-Ruiboys=5, R3-Cows=6).
       await page.goto('/ffl/club-matches/6/edit')
       await page.waitForLoadState('networkidle')
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
 
       // Traded toggle is visible with a count.
       const tradedToggle = page.getByRole('button', { name: /Traded \(\d+\)/ })
@@ -648,7 +649,7 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('pill hidden in manage mode', async ({ page }) => {
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
       await expect(page.getByText('Improve your score:')).not.toBeVisible()
     })
   })
@@ -680,7 +681,7 @@ test.describe('FFL Team Builder', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/ffl/club-matches/4/edit')
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 })
-      await page.getByRole('button', { name: 'Manage' }).click()
+      await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
     test('Replicate Round button visible in manage mode when previous round exists', async ({ page }) => {
