@@ -89,14 +89,6 @@
           </tr>
         </template>
       </tbody>
-      <tfoot>
-        <tr class="border-t border-border font-semibold">
-          <td class="py-2 pr-4">Total</td>
-          <td></td>
-          <td></td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ total }}</td>
-        </tr>
-      </tfoot>
     </table>
   </div>
 </template>
@@ -266,9 +258,6 @@ function benchScoreDisplay(pm: PlayerMatch): string {
   return positions.map(pos => { const s = benchPositionScore(pm, pos); return s !== null ? String(s) : '?' }).join('/')
 }
 
-const total = computed(() =>
-  props.playerMatches.reduce((sum, pm) => sum + (pmShowScore(pm) ? pm.score : 0), 0)
-)
 </script>
 
 <style scoped>

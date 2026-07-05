@@ -42,10 +42,6 @@ test.describe('FFL Match', () => {
     await expect(page.getByText('Played').first()).toBeVisible()
   })
 
-  test('displays total row', async ({ page }) => {
-    await expect(page.getByText('Total').first()).toBeVisible()
-  })
-
   test('shows Team Builder link in selected club column only', async ({ page }) => {
     // The selected club's h2 link navigates to /edit; the other club's h2 link does not.
     // The Team Builder icon was merged into the club-name link in this branch (no separate title attr).
