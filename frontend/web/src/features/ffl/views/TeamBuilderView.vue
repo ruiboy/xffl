@@ -123,7 +123,7 @@
               </span>
             </button>
             <button
-              v-if="clubMatchDataStatus === 'no_data' || clubMatchDataStatus === 'submitted'"
+              v-if="starterCount > 0 && (clubMatchDataStatus === 'no_data' || clubMatchDataStatus === 'submitted')"
               @click="markFinal"
               :disabled="markingFinal"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
