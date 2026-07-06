@@ -22,8 +22,13 @@ export const statCols: { key: StatKey; label: string }[] = [
   { key: 'goals',     label: 'G' },
 ]
 
+// Star position excludes hitouts: goals×5 + kicks + handballs + marks×2 + tackles×4
 export function starScore(s: StatSummary): number {
-  return statCols.reduce((sum, col) => sum + s[col.key] * (POSITION_MULTIPLIERS[col.key] ?? 1), 0)
+  return s.goals * POSITION_MULTIPLIERS.goals +
+    s.kicks * POSITION_MULTIPLIERS.kicks +
+    s.handballs * POSITION_MULTIPLIERS.handballs +
+    s.marks * POSITION_MULTIPLIERS.marks +
+    s.tackles * POSITION_MULTIPLIERS.tackles
 }
 
 export function fmtStat(val: number | null | undefined): string {
