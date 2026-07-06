@@ -96,6 +96,14 @@
             </button>
             <button
               v-if="!clubMatchLocked"
+              @click="applyBestTeam"
+              title="Fill starters with the highest projected total (uses the active Last 5/Season stat source)"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              Best Team
+            </button>
+            <button
+              v-if="!clubMatchLocked"
               @click="() => { resetTeamState(); markDirty() }"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
             >
@@ -764,6 +772,7 @@ import IconCopy from '../components/icons/IconCopy.vue'
 import IconMenu from '../components/icons/IconMenu.vue'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
+import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
@@ -1630,6 +1639,46 @@ const projectedTotal = computed(() => {
   }
   return Math.round(total)
 })
+
+// ── Best team ────────────────────────────────────────────────────────────────
+
+// Fills the starter slots with the highest-scoring assignment of squad players
+// to positions (Hungarian algorithm over projected scores from the active stat
+// source). Bench slots whose player becomes a starter are cleared; the rest of
+// the bench is left alone. Local state only — Save still applies it.
+function applyBestTeam() {
+  const pool = squad.value.filter(p => !p.toRoundId && formStats(p))
+  if (!pool.length) return
+
+  const slotPositions: PositionKey[] = []
+  for (const pos of positions) {
+    for (let i = 0; i < pos.count; i++) slotPositions.push(pos.key)
+  }
+
+  const values = slotPositions.map(pos => pool.map(p => projectedScore(p, pos) ?? 0))
+  const assignment = solveBestAssignment(values)
+
+  const byPos = new Map<PositionKey, SquadPlayer[]>(positions.map(p => [p.key, []]))
+  assignment.forEach((playerIdx, slotIdx) => {
+    if (playerIdx >= 0) byPos.get(slotPositions[slotIdx])!.push(pool[playerIdx])
+  })
+
+  const starterIds = new Set<string>()
+  for (const pos of positions) {
+    const chosen = byPos.get(pos.key)!
+      .sort((a, b) => (projectedScore(b, pos.key) ?? 0) - (projectedScore(a, pos.key) ?? 0))
+    teamSlots.value[pos.key] = Array.from({ length: pos.count }, (_, i) => ({ player: chosen[i] ?? null }))
+    for (const p of chosen) starterIds.add(p.id)
+  }
+
+  for (const bSlot of benchDualSlots.value) {
+    if (bSlot.player && starterIds.has(bSlot.player.id)) {
+      bSlot.player = null
+      bSlot.positions = [null, null]
+    }
+  }
+  markDirty()
+}
 
 // ── Popup menus (fallback for drag and drop) ─────────────────────────────────
 

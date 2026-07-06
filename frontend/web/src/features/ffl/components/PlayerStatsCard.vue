@@ -1,10 +1,12 @@
 <template>
-  <div class="relative inline-block" @mouseenter="onEnter" @mouseleave="show = false">
+  <div ref="wrap" class="relative inline-block" @mouseenter="onEnter" @mouseleave="show = false">
     <slot />
     <Transition name="fade">
       <div
         v-if="show && aflPlayerSeasonId"
-        class="absolute z-50 left-0 top-full mt-1.5 w-96 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none"
+        class="absolute z-50 left-0 w-96 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none overflow-hidden"
+        :class="placeAbove ? 'bottom-full mb-1.5' : 'top-full mt-1.5'"
+        :style="maxH ? { maxHeight: `${maxH}px` } : {}"
       >
         <div v-if="loading" class="px-4 py-3 text-xs text-text-faint">Loading...</div>
         <template v-else-if="data">
@@ -81,6 +83,10 @@ const props = defineProps<{
 }>()
 
 const show = ref(false)
+const wrap = ref<HTMLElement | null>(null)
+// Open the card on whichever side of the trigger has more room, capped to that space.
+const placeAbove = ref(false)
+const maxH = ref<number | null>(null)
 
 const { result: data, loading } = useQuery(
   GET_PLAYER_STATS_CARD,
@@ -89,7 +95,15 @@ const { result: data, loading } = useQuery(
 )
 
 function onEnter() {
-  if (props.aflPlayerSeasonId) show.value = true
+  if (!props.aflPlayerSeasonId) return
+  const rect = wrap.value?.getBoundingClientRect()
+  if (rect) {
+    const below = window.innerHeight - rect.bottom
+    const above = rect.top
+    placeAbove.value = below < 440 && above > below
+    maxH.value = Math.max(160, (placeAbove.value ? above : below) - 24)
+  }
+  show.value = true
 }
 
 const cardCols = [...statCols, { key: 'star', label: '★' }] as const

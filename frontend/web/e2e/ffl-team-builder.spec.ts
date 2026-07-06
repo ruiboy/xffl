@@ -413,6 +413,23 @@ test.describe('FFL Team Builder', () => {
     })
   })
 
+  // ── Best team ─────────────────────────────────────────────────────────────
+
+  test.describe('best team', () => {
+    test.beforeEach(async ({ page }) => {
+      await goToTeamBuilder(page)
+      await page.getByRole('button', { name: 'Build Team' }).click()
+    })
+
+    test('Best Team fills starters with the highest projected assignment', async ({ page }) => {
+      await page.getByRole('button', { name: 'Best Team' }).click()
+      // Players with form stats leave the squad panel and become starters
+      await expect(squadPanel(page).getByText('Hugh McCluggage')).not.toBeVisible()
+      await expect(page.getByRole('button', { name: 'Save Team' })).toBeEnabled()
+      await expect(page.getByText(/Projected ~\d+/)).toBeVisible()
+    })
+  })
+
   // ── Subs mode — substitution ─────────────────────────────────────────────
   //
   // Round 2, The Howling Cows (club_match id=4):
