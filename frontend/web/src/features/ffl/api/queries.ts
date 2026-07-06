@@ -607,6 +607,12 @@ export const GET_PLAYER_STATS_CARD = gql`
       id
       seasonAvg: stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
       lastN: stats(upToRoundId: $aflRoundId, lastN: ${LAST_N}) { goals kicks handballs marks tackles hitouts games }
+      matches {
+        id
+        status
+        goals kicks handballs marks tackles hitouts
+        clubMatch { match { id round { id name } } }
+      }
     }
   }
 `

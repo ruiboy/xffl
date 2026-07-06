@@ -20,7 +20,22 @@ function benchSection(page: import('@playwright/test').Page) {
 }
 
 function squadPanel(page: import('@playwright/test').Page) {
-  return page.getByRole('heading', { name: /Squad \(/ }).locator('..')
+  // The heading sits inside a flex header row; the panel is that row's parent.
+  return page.getByRole('heading', { name: /Squad \(/ }).locator('../..')
+}
+
+// Adds the first available squad player via the "+" popup menu.
+// `option` matches the menu entry, e.g. /^Kicks/ or /^Bench/.
+async function addFromSquad(page: import('@playwright/test').Page, option: RegExp) {
+  const panel = squadPanel(page)
+  await panel.getByRole('button', { name: 'Add to team' }).first().click()
+  await panel.getByRole('button', { name: option }).click()
+}
+
+// Removes the first filled starter via the row's "−" popup menu.
+async function removeFirstStarter(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'Player actions' }).first().click()
+  await page.getByRole('button', { name: 'Remove' }).click()
 }
 
 test.describe('FFL Team Builder', () => {
@@ -94,14 +109,14 @@ test.describe('FFL Team Builder', () => {
 
     test('Save Team disabled until a change is made', async ({ page }) => {
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeDisabled()
-      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await removeFirstStarter(page)
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeEnabled()
     })
 
     test('Cancel resets changes and exits manage mode', async ({ page }) => {
       const goalsSection = positionSection(page, 'Goals')
       const filledBefore = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
-      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await removeFirstStarter(page)
       await page.getByRole('button', { name: 'Cancel' }).click()
       await expect(page.getByRole('button', { name: 'Build Team' })).toBeVisible()
       const filledAfter = await goalsSection.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).count()
@@ -112,13 +127,47 @@ test.describe('FFL Team Builder', () => {
       await expect(page.getByRole('heading', { name: /Squad \(/ })).toBeVisible()
     })
 
-    test('Remove buttons visible on filled starter slots', async ({ page }) => {
-      await expect(page.getByRole('button', { name: 'Remove' }).first()).toBeVisible()
+    test('starter menu offers Remove on filled starter slots', async ({ page }) => {
+      await page.getByRole('button', { name: 'Player actions' }).first().click()
+      await expect(page.getByRole('button', { name: 'Remove' })).toBeVisible()
     })
 
-    test('B button appears in squad panel', async ({ page }) => {
+    test('add menu in squad panel offers all positions and Bench', async ({ page }) => {
       const panel = squadPanel(page)
-      await expect(panel.getByRole('button', { name: 'B' }).first()).toBeVisible()
+      await panel.getByRole('button', { name: 'Add to team' }).first().click()
+      for (const name of ['Goals', 'Kicks', 'Handballs', 'Marks', 'Tackles', 'Hitouts', 'Star', 'Bench']) {
+        await expect(panel.getByRole('button', { name: new RegExp(`^${name}`) })).toBeVisible()
+      }
+    })
+
+    test('squad panel shows stat summary columns', async ({ page }) => {
+      await expect(page.locator('[title="Last 5 form averages"]').first()).toBeVisible()
+    })
+
+    test('form/season toggle switches the stat source', async ({ page }) => {
+      await expect(page.locator('[title="Last 5 form averages"]').first()).toBeVisible()
+      await page.getByRole('button', { name: 'Season', exact: true }).click()
+      await expect(page.locator('[title="Season averages"]').first()).toBeVisible()
+    })
+
+    test('summary bar shows projected team total', async ({ page }) => {
+      await expect(page.getByText(/Projected ~\d+/)).toBeVisible()
+    })
+
+    test('clicking a stat header sorts squad cards by that stat', async ({ page }) => {
+      const panel = squadPanel(page)
+      const cards = panel.locator('[draggable="true"]')
+      await expect(cards.first()).toBeVisible()
+      await panel.getByRole('button', { name: 'K', exact: true }).click()
+      // K is the first stat cell on each card; values must be non-increasing
+      const kVals = await cards.evaluateAll(els =>
+        els.map(c => {
+          const v = parseFloat(c.querySelectorAll('span.w-9')[0]?.textContent ?? '')
+          return Number.isNaN(v) ? -1 : v
+        }),
+      )
+      expect(kVals.length).toBeGreaterThan(1)
+      expect(kVals).toEqual([...kVals].sort((a, b) => b - a))
     })
 
     test('interchange dropdown visible in manage mode', async ({ page }) => {
@@ -126,7 +175,7 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('Save Team saves and returns to read-only mode', async ({ page }) => {
-      await page.getByRole('button', { name: 'Remove' }).first().click()
+      await removeFirstStarter(page)
       await page.getByRole('button', { name: 'Save Team' }).click()
       await expect(page.getByRole('button', { name: 'Build Team' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Save Team' })).not.toBeVisible()
@@ -142,30 +191,42 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
-    test('B button adds player to a bench slot', async ({ page }) => {
+    test('Bench menu option adds player to a bench slot', async ({ page }) => {
       const panel = squadPanel(page)
       const playerName = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await expect(benchSection(page).getByText(playerName!.trim())).toBeVisible()
     })
 
     test('position selectors appear on filled bench slot', async ({ page }) => {
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await expect(page.getByLabel('Position 1')).toBeVisible()
       await expect(page.getByLabel('Position 2')).toBeVisible()
     })
 
     test('selecting Star as position 1 hides position 2 selector', async ({ page }) => {
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await page.getByLabel('Position 1').selectOption('star')
       await expect(page.getByLabel('Position 2')).not.toBeVisible()
     })
 
-    test('removing bench player clears slot back to empty', async ({ page }) => {
+    test('removing bench player via menu clears slot back to empty', async ({ page }) => {
       const bench = benchSection(page)
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
-      await bench.getByRole('button', { name: 'Remove' }).first().click()
+      await addFromSquad(page, /^Bench/)
+      await bench.getByRole('button', { name: 'Bench player actions' }).first().click()
+      await page.getByRole('button', { name: 'Remove' }).click()
       await expect(bench.getByText('Empty slot').first()).toBeVisible()
+    })
+
+    test('bench menu moves player to a starter position', async ({ page }) => {
+      const bench = benchSection(page)
+      const panel = squadPanel(page)
+      const playerName = (await panel.locator('.font-medium').first().textContent())!.trim()
+      await addFromSquad(page, /^Bench/)
+      await bench.getByRole('button', { name: 'Bench player actions' }).first().click()
+      await page.getByRole('button', { name: /^Kicks/ }).click()
+      await expect(positionSection(page, 'Kicks').getByText(playerName)).toBeVisible()
+      await expect(bench.getByText(playerName)).not.toBeVisible()
     })
   })
 
@@ -178,21 +239,20 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('save blocked when bench player has no position assigned', async ({ page }) => {
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeDisabled()
       await expect(page.getByText('Each bench player must have a position assigned')).toBeVisible()
     })
 
     test('save unblocked when bench player has valid star position', async ({ page }) => {
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await page.getByLabel('Position 1').selectOption('star')
       await expect(page.getByRole('button', { name: 'Save Team' })).toBeEnabled()
     })
 
     test('save blocked when two bench players set but no interchange chosen', async ({ page }) => {
-      const panel = squadPanel(page)
-      await panel.getByRole('button', { name: 'B' }).nth(0).click()
-      await panel.getByRole('button', { name: 'B' }).nth(0).click()
+      await addFromSquad(page, /^Bench/)
+      await addFromSquad(page, /^Bench/)
       // Assign valid positions to both
       await page.getByLabel('Position 1').nth(0).selectOption('star')
       await page.getByLabel('Position 1').nth(1).selectOption('goals')
@@ -221,7 +281,7 @@ test.describe('FFL Team Builder', () => {
 
     test('interchange selection persists through Save → re-open Manage', async ({ page }) => {
       // Add bench player with star position (valid, single bench = no IC required)
-      await squadPanel(page).getByRole('button', { name: 'B' }).first().click()
+      await addFromSquad(page, /^Bench/)
       await page.getByLabel('Position 1').selectOption('star')
       await page.getByLabel('Interchange').selectOption('star')
 
@@ -248,7 +308,7 @@ test.describe('FFL Team Builder', () => {
       const panel = squadPanel(page)
 
       const playerName = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'K' }).first().click()
+      await addFromSquad(page, /^Kicks/)
 
       await page.getByRole('button', { name: 'Save Team' }).click()
 
@@ -261,17 +321,95 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Build Team' }).click()
       let panel = squadPanel(page)
       const player1 = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'H' }).first().click()
+      await addFromSquad(page, /^Handballs/)
       await page.getByRole('button', { name: 'Save Team' }).click()
 
       await page.getByRole('button', { name: 'Build Team' }).click()
       panel = squadPanel(page)
       const player2 = await panel.locator('.font-medium').first().textContent()
-      await panel.getByRole('button', { name: 'K' }).first().click()
+      await addFromSquad(page, /^Kicks/)
       await page.getByRole('button', { name: 'Save Team' }).click()
 
       await expect(positionSection(page, 'Handballs').getByText(player1!.trim())).toBeVisible()
       await expect(positionSection(page, 'Kicks').getByText(player2!.trim())).toBeVisible()
+    })
+  })
+
+  // ── Starter popup menu ────────────────────────────────────────────────────
+
+  test.describe('starter popup menu', () => {
+    test.beforeEach(async ({ page }) => {
+      await goToTeamBuilder(page)
+      await page.getByRole('button', { name: 'Build Team' }).click()
+    })
+
+    test('− menu moves starter to another position', async ({ page }) => {
+      const goals = positionSection(page, 'Goals')
+      const row = goals.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).first()
+      const name = await row.locator('.font-medium').first().textContent()
+      await row.getByRole('button', { name: 'Player actions' }).click()
+      await page.getByRole('button', { name: /^Kicks/ }).click()
+      await expect(positionSection(page, 'Kicks').getByText(name!.trim())).toBeVisible()
+    })
+
+    test('− menu moves starter to bench', async ({ page }) => {
+      const goals = positionSection(page, 'Goals')
+      const row = goals.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).first()
+      const name = await row.locator('.font-medium').first().textContent()
+      await row.getByRole('button', { name: 'Player actions' }).click()
+      await page.getByRole('button', { name: /^Bench/ }).click()
+      await expect(benchSection(page).getByText(name!.trim())).toBeVisible()
+    })
+
+    test('− menu removes starter from the team', async ({ page }) => {
+      const goals = positionSection(page, 'Goals')
+      const row = goals.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).first()
+      const name = (await row.locator('.font-medium').first().textContent())!.trim()
+      await row.getByRole('button', { name: 'Player actions' }).click()
+      await page.getByRole('button', { name: 'Remove' }).click()
+      await expect(goals.getByText(name)).not.toBeVisible()
+      await expect(squadPanel(page).getByText(name)).toBeVisible()
+    })
+  })
+
+  // ── Drag and drop ─────────────────────────────────────────────────────────
+
+  test.describe('drag and drop', () => {
+    // Tall viewport: native HTML5 drag breaks if Playwright has to scroll mid-drag,
+    // so keep source and target both on screen.
+    test.use({ viewport: { width: 1280, height: 2400 } })
+
+    test.beforeEach(async ({ page }) => {
+      await goToTeamBuilder(page)
+      await page.getByRole('button', { name: 'Build Team' }).click()
+    })
+
+    test('drag squad player onto an empty starter slot assigns them', async ({ page }) => {
+      const panel = squadPanel(page)
+      const card = panel.locator('[draggable="true"]').first()
+      const name = await card.locator('.font-medium').first().textContent()
+      const target = positionSection(page, 'Kicks').locator('.rounded-lg').filter({ hasText: 'Empty slot' }).first()
+      await card.dragTo(target)
+      await expect(positionSection(page, 'Kicks').getByText(name!.trim())).toBeVisible()
+    })
+
+    test('drag squad player onto an empty bench slot assigns them', async ({ page }) => {
+      const panel = squadPanel(page)
+      const card = panel.locator('[draggable="true"]').first()
+      const name = await card.locator('.font-medium').first().textContent()
+      const target = benchSection(page).locator('.rounded-lg').filter({ hasText: 'Empty slot' }).first()
+      await card.dragTo(target)
+      await expect(benchSection(page).getByText(name!.trim())).toBeVisible()
+    })
+
+    test('drag starter back to squad panel removes them from the team', async ({ page }) => {
+      const goals = positionSection(page, 'Goals')
+      const row = goals.locator('.rounded-lg').filter({ hasNot: page.getByText('Empty slot') }).first()
+      const name = (await row.locator('.font-medium').first().textContent())!.trim()
+      const panel = squadPanel(page)
+      await row.dragTo(panel.locator('[draggable="true"]').first())
+      await expect(goals.getByText(name)).not.toBeVisible()
+      await expect(panel.getByText(name)).toBeVisible()
     })
   })
 
@@ -520,7 +658,7 @@ test.describe('FFL Team Builder', () => {
 
       await page.getByRole('button', { name: 'Build Team' }).click()
       const newPlayerName = await squadPanel(page).locator('.font-medium').first().textContent()
-      await squadPanel(page).getByRole('button', { name: 'H' }).first().click()
+      await addFromSquad(page, /^Handballs/)
       await page.getByRole('button', { name: 'Save Team' }).click()
 
       for (const name of existingNames) {
@@ -616,7 +754,7 @@ test.describe('FFL Team Builder', () => {
       await tradedToggle.click()
 
       // Henry Smith now appears in the available pool's Traded section.
-      const squadPanel = page.getByRole('heading', { name: /Squad \(/ }).locator('..')
+      const squadPanel = page.getByRole('heading', { name: /Squad \(/ }).locator('../..')
       await expect(squadPanel.getByText('Henry Smith')).toBeVisible()
     })
   })

@@ -8,44 +8,52 @@
       >
         <div v-if="loading" class="px-4 py-3 text-xs text-text-faint">Loading...</div>
         <template v-else-if="data">
-          <div class="px-4 pt-3 pb-3">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-sm font-medium text-text">{{ name }}</span>
-              <span v-if="aflStatus === 'bye'" class="text-xs rounded px-1.5 py-0.5 bg-violet-500/15 text-violet-400">Bye</span>
-            </div>
+          <div class="px-4 py-3">
             <table class="w-full tabular-nums text-xs">
               <thead>
                 <tr class="text-text-faint">
                   <th class="text-left font-normal pb-2 pr-4"></th>
-                  <th class="text-right font-normal pb-2 px-2">G</th>
-                  <th class="text-right font-normal pb-2 px-2">K</th>
-                  <th class="text-right font-normal pb-2 px-2">H</th>
-                  <th class="text-right font-normal pb-2 px-2">M</th>
-                  <th class="text-right font-normal pb-2 px-2">T</th>
-                  <th class="text-right font-normal pb-2 px-2">R</th>
-                  <th class="text-right font-normal pb-2 pl-4 text-yellow-400/70">★</th>
+                  <th
+                    v-for="col in cardCols"
+                    :key="col.key"
+                    class="text-right font-normal pb-2 px-2"
+                    :class="col.key === 'star' ? 'text-yellow-400/70' : ''"
+                  >{{ col.label }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="data.aflPlayerSeason?.seasonAvg" class="text-text-muted">
-                  <td class="text-text-faint py-1.5 pr-4">Season</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.goals) }}</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.kicks) }}</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.handballs) }}</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.marks) }}</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.tackles) }}</td>
-                  <td class="text-right py-1.5 px-2">{{ fmt(data.aflPlayerSeason.seasonAvg.hitouts) }}</td>
-                  <td class="text-right py-1.5 pl-4 text-yellow-400/70">{{ fmt(starScore(data.aflPlayerSeason.seasonAvg)) }}</td>
+                <tr v-if="lastN" class="text-text font-medium">
+                  <td class="text-text-faint font-normal py-1 pr-4 whitespace-nowrap">Last {{ LAST_N }}</td>
+                  <td
+                    v-for="col in cardCols"
+                    :key="col.key"
+                    class="text-right py-1 px-2"
+                    :class="up(statOf(lastN, col.key), seasonAvg ? statOf(seasonAvg, col.key) : undefined) || (col.key === 'star' ? 'text-yellow-400' : '')"
+                  >{{ fmt(statOf(lastN, col.key)) }}</td>
                 </tr>
-                <tr v-if="data.aflPlayerSeason?.lastN" class="text-text font-medium">
-                  <td class="text-text-faint font-normal py-1.5 pr-4">Last {{ LAST_N }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.goals, data.aflPlayerSeason.seasonAvg?.goals)">{{ fmt(data.aflPlayerSeason.lastN.goals) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.kicks, data.aflPlayerSeason.seasonAvg?.kicks)">{{ fmt(data.aflPlayerSeason.lastN.kicks) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.handballs, data.aflPlayerSeason.seasonAvg?.handballs)">{{ fmt(data.aflPlayerSeason.lastN.handballs) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.marks, data.aflPlayerSeason.seasonAvg?.marks)">{{ fmt(data.aflPlayerSeason.lastN.marks) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.tackles, data.aflPlayerSeason.seasonAvg?.tackles)">{{ fmt(data.aflPlayerSeason.lastN.tackles) }}</td>
-                  <td class="text-right py-1.5 px-2" :class="up(data.aflPlayerSeason.lastN.hitouts, data.aflPlayerSeason.seasonAvg?.hitouts)">{{ fmt(data.aflPlayerSeason.lastN.hitouts) }}</td>
-                  <td class="text-right py-1.5 pl-4" :class="up(starScore(data.aflPlayerSeason.lastN), data.aflPlayerSeason.seasonAvg ? starScore(data.aflPlayerSeason.seasonAvg) : undefined) || 'text-yellow-400'">{{ fmt(starScore(data.aflPlayerSeason.lastN)) }}</td>
+                <tr v-if="seasonAvg" class="text-text-muted">
+                  <td class="text-text-faint py-1 pr-4 whitespace-nowrap">Season ({{ seasonAvg.games }})</td>
+                  <td
+                    v-for="col in cardCols"
+                    :key="col.key"
+                    class="text-right py-1 px-2"
+                    :class="col.key === 'star' ? 'text-yellow-400/70' : ''"
+                  >{{ fmt(statOf(seasonAvg, col.key)) }}</td>
+                </tr>
+                <tr v-if="roundRows.length">
+                  <td :colspan="cardCols.length + 1"><div class="h-px bg-border-subtle my-1" /></td>
+                </tr>
+                <tr v-for="m in roundRows" :key="m.id" class="text-text-muted">
+                  <td class="text-text-faint py-0.5 pr-4 whitespace-nowrap">{{ m.clubMatch.match.round.name }}</td>
+                  <template v-if="m.status !== 'dnp'">
+                    <td
+                      v-for="col in cardCols"
+                      :key="col.key"
+                      class="text-right py-0.5 px-2"
+                      :style="roundHeat(m, col.key)"
+                    >{{ statOf(m, col.key) }}</td>
+                  </template>
+                  <td v-else :colspan="cardCols.length" class="text-right py-0.5 px-2 text-text-faint">DNP</td>
                 </tr>
               </tbody>
             </table>
@@ -57,10 +65,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_PLAYER_STATS_CARD } from '../api/queries'
-import { starScore, LAST_N } from '../utils/playerStats'
+import { starScore, statCols, LAST_N, type StatSummary } from '../utils/playerStats'
+import { heatStyle } from '@/utils/heatmap'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps<{
   name: string
@@ -82,7 +92,52 @@ function onEnter() {
   if (props.aflPlayerSeasonId) show.value = true
 }
 
+const cardCols = [...statCols, { key: 'star', label: '★' }] as const
+type CardKey = typeof cardCols[number]['key']
 
+interface CardMatch {
+  id: string
+  status: string | null
+  goals: number
+  kicks: number
+  handballs: number
+  marks: number
+  tackles: number
+  hitouts: number
+  clubMatch: { match: { id: string; round: { id: string; name: string } } }
+}
+
+const seasonAvg = computed<(StatSummary & { games: number }) | null>(() => data.value?.aflPlayerSeason?.seasonAvg ?? null)
+const lastN = computed<StatSummary | null>(() => data.value?.aflPlayerSeason?.lastN ?? null)
+
+// Most recent round first.
+const roundRows = computed<CardMatch[]>(() => {
+  const ms: CardMatch[] = data.value?.aflPlayerSeason?.matches ?? []
+  return [...ms].sort((a, b) => parseInt(b.clubMatch.match.round.id) - parseInt(a.clubMatch.match.round.id))
+})
+
+function statOf(s: StatSummary, key: CardKey): number {
+  return key === 'star' ? starScore(s) : s[key]
+}
+
+const { isDark } = useTheme()
+
+// Per-column heatmap across the played round rows.
+const roundHeatRanges = computed(() => {
+  const played = roundRows.value.filter(m => m.status !== 'dnp')
+  const range = {} as Record<CardKey, { min: number; max: number }>
+  for (const col of cardCols) {
+    const vals = played.map(m => statOf(m, col.key))
+    if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  return range
+})
+
+function roundHeat(m: CardMatch, key: CardKey): Record<string, string> {
+  const r = roundHeatRanges.value[key]
+  if (!r) return {}
+  return heatStyle(statOf(m, key), r.min, r.max, isDark.value)
+}
 
 function fmt(v: number): string {
   return v % 1 === 0 ? String(v) : v.toFixed(1)

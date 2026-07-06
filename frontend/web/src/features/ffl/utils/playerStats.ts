@@ -1,6 +1,6 @@
 import { POSITION_MULTIPLIERS } from './position'
 
-export const LAST_N = 3
+export const LAST_N = 5
 
 export interface StatSummary {
   goals: number

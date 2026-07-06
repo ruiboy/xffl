@@ -255,4 +255,14 @@ FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club
 WHERE p.name = 'Jordan Dawson' AND r.name = 'Round 5' AND l.name = 'AFL'
 ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
 
+-- Rounds 1-2 are in the past (CLOCK_OVERRIDE sits in Round 3): mark them final so
+-- player-season stat averages (statsAll/statsLastN) have qualifying matches.
+UPDATE afl.match SET data_status = 'final'
+WHERE round_id IN (
+  SELECT r.id FROM afl.round r
+  JOIN afl.season s ON r.season_id = s.id
+  JOIN afl.league l ON s.league_id = l.id
+  WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name IN ('Round 1', 'Round 2')
+);
+
 COMMIT;
