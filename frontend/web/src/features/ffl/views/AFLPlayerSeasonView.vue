@@ -96,11 +96,11 @@
                 </span>
               </td>
               <td v-for="col in statCols" :key="col.key" class="py-2 px-2 text-right tabular-nums">
-                <span v-if="row.status !== 'dnp'" :class="statColor(col.key, row.fflPosition)">{{ row[col.key] }}</span>
+                <span v-if="row.status !== 'dnp'" :class="statColor(col.key, row.fflPosition)" :style="roundHeat(row[col.key], col.key)">{{ row[col.key] }}</span>
                 <span v-else class="text-text-faint">—</span>
               </td>
               <td class="py-2 pl-2 pr-3 text-right tabular-nums font-medium">
-                <span v-if="row.status !== 'dnp'" :class="row.fflPosition === 'star' ? 'text-yellow-400' : ''">{{ row.starScore }}</span>
+                <span v-if="row.status !== 'dnp'" :style="roundHeat(row.starScore, 'star')">{{ row.starScore }}</span>
                 <span v-else class="text-text-faint">—</span>
               </td>
               <td class="py-2 pr-2 w-5">
@@ -175,11 +175,15 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { POSITION_LETTERS, POSITION_COLORS } from '../utils/position'
 import { fmtStat } from '../utils/playerStats'
+import { heatStyle } from '@/utils/heatmap'
+import { useTheme } from '@/composables/useTheme'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { clubAbbrev as aflClubAbbrev } from '@/features/afl/utils/clubAbbrev'
 import { clubLogoUrl as fflClubLogoUrl } from '../utils/clubLogos'
 
 const props = defineProps<{ aflPlayerSeasonId: string }>()
+
+const { isDark } = useTheme()
 
 const { result: aflResult, loading, error } = useQuery(
   GET_AFL_PLAYER_SEASON_STATS,
@@ -409,6 +413,27 @@ function shortRound(name: string): string {
 function statColor(statKey: string, position: string | null): string {
   if (!position || position === 'star') return ''
   return statKey === position ? (POSITION_COLORS[position] ?? '') : ''
+}
+
+type HeatKey = typeof statCols[number]['key'] | 'star'
+
+const roundHeatRanges = computed(() => {
+  const played = mergedRows.value.filter(r => r.status !== 'dnp')
+  const range = {} as Record<HeatKey, { min: number; max: number }>
+  for (const col of statCols) {
+    const vals = played.map(r => r[col.key]).filter((v): v is number => v != null)
+    if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  const starVals = played.map(r => r.starScore)
+  if (starVals.length) range['star'] = { min: Math.min(...starVals), max: Math.max(...starVals) }
+  return range
+})
+
+function roundHeat(value: number | null | undefined, key: HeatKey): Record<string, string> {
+  if (value == null) return {}
+  const r = roundHeatRanges.value[key]
+  if (!r || r.min === r.max) return {}
+  return heatStyle(value, r.min, r.max, isDark.value)
 }
 
 
