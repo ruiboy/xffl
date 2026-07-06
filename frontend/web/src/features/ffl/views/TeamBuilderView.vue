@@ -90,14 +90,15 @@
               v-if="prevClubMatchId && !clubMatchLocked"
               @click="copyPreviousTeam"
               :disabled="prevTeamLoading"
+              :title="`Set team from ${prevRound?.name}`"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {{ prevTeamLoading ? 'Replicating…' : `Replicate ${prevRound?.name}` }}
+              {{ prevTeamLoading ? 'Replicating…' : `${prevRound?.name} Team` }}
             </button>
             <button
               v-if="!clubMatchLocked"
               @click="applyBestTeam"
-              title="Fill starters with the highest projected total (uses the active Last 5/Season stat source)"
+              title="Set team for the highest projected total (uses active Last 5/Season stat source)"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
             >
               Best Team

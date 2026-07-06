@@ -827,10 +827,10 @@ test.describe('FFL Team Builder', () => {
     })
   })
 
-  // ── Replicate and Clear buttons ───────────────────────────────────────────
+  // ── Previous-round team and Clear buttons ─────────────────────────────────
   //
   // Round 2 (club_match id=4): prevRound is Round 1, which has Howling Cows
-  // data → Replicate Round 1 button visible in manage mode.
+  // data → "Round 1 Team" button visible in manage mode.
 
   test.describe('replicate and clear buttons', () => {
     test.beforeEach(async ({ page }) => {
@@ -839,8 +839,8 @@ test.describe('FFL Team Builder', () => {
       await page.getByRole('button', { name: 'Build Team' }).click()
     })
 
-    test('Replicate Round button visible in manage mode when previous round exists', async ({ page }) => {
-      await expect(page.getByRole('button', { name: /Replicate Round/ })).toBeVisible()
+    test('previous round team button visible in manage mode when previous round exists', async ({ page }) => {
+      await expect(page.getByRole('button', { name: /Round \d+ Team/ })).toBeVisible()
     })
 
     test('Clear button visible in manage mode', async ({ page }) => {
