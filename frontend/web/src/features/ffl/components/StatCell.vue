@@ -19,7 +19,7 @@ const props = defineProps<{
   last3Style?: Record<string, string>
 }>()
 
-// Shared trend semantics (utils/playerStats): '=' when within thresholds.
+// Shared trend semantics (utils/playerStats): '~' when within thresholds.
 const trend = computed(() => {
   if (props.last3 == null || props.avg == null) return null
   return trendDir(props.last3, props.avg)
@@ -29,7 +29,7 @@ const trendIndicator = computed(() => {
   if (props.last3 == null || props.avg == null) return ''
   if (trend.value === 'up') return '↑'
   if (trend.value === 'down') return '↓'
-  return '='
+  return '~'
 })
 
 const trendIndicatorCls = computed(() => {

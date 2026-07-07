@@ -539,8 +539,11 @@
           <div v-if="managing">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-lg font-semibold text-text-heading">Squad ({{ availablePlayers.length }})</h2>
-              <span class="text-[10px] text-text-faint/70 whitespace-nowrap">
-                <span class="text-green-400">↑</span>/<span class="text-red-400">↓</span> = last {{ LAST_N }} form ≥15% above/below season avg
+              <span
+                class="text-xs text-text-faint whitespace-nowrap"
+                :title="`↑/↓ = last ${LAST_N} form at least 15% above/below season average`"
+              >
+                <span class="text-green-400">↑</span>/<span class="text-red-400">↓</span> = last {{ LAST_N }} form
               </span>
               <!-- Form/Season toggle -->
               <div class="flex items-center rounded border border-border overflow-hidden text-[10px] text-text-faint">

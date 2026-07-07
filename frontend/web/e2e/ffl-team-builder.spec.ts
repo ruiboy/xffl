@@ -422,6 +422,8 @@ test.describe('FFL Team Builder', () => {
     })
 
     test('Best Team fills starters with the highest projected assignment', async ({ page }) => {
+      // Wait for the squad (and its stats, same query) to load before applying
+      await expect(squadPanel(page).getByText('Hugh McCluggage')).toBeVisible()
       await page.getByRole('button', { name: 'Best Team' }).click()
       // Players with form stats leave the squad panel and become starters
       await expect(squadPanel(page).getByText('Hugh McCluggage')).not.toBeVisible()

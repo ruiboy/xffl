@@ -1,53 +1,67 @@
 <template>
   <div>
-    <div class="mb-6">
+    <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-text">Free Agents</h1>
+      <span
+        class="text-xs text-text-faint whitespace-nowrap"
+        :title="`Cells show season avg then last ${LAST_N} avg. ↑/↓ = last ${LAST_N} form at least 15% above/below season average`"
+      >
+        <span class="text-green-400">↑</span>/<span class="text-red-400">↓</span> = last {{ LAST_N }} form
+      </span>
+      <!-- Rank basis toggle: which average ranks the top-20 cut -->
+      <div class="flex items-center rounded border border-border overflow-hidden text-[10px] text-text-faint">
+        <button
+          class="px-1.5 py-0.5 transition-colors"
+          :class="statSource === 'form' ? 'bg-control text-text' : 'hover:text-text'"
+          :title="`Rank the top 20 by last ${LAST_N} averages`"
+          @click="statSource = 'form'"
+        >Last {{ LAST_N }}</button>
+        <button
+          class="px-1.5 py-0.5 transition-colors"
+          :class="statSource === 'season' ? 'bg-control text-text' : 'hover:text-text'"
+          title="Rank the top 20 by season averages"
+          @click="statSource = 'season'"
+        >Season</button>
+      </div>
     </div>
 
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else>
-      <!-- Tab navigation -->
-      <div class="flex gap-1 mb-6 border-b border-border">
-        <button
-          v-for="sec in sections"
-          :key="sec.key"
-          @click="activeTab = sec.key"
-          class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
-          :class="activeTab === sec.key
-            ? 'border-active text-active'
-            : 'border-transparent text-text-muted hover:text-text'"
-        >{{ sec.title }}</button>
-      </div>
-
-      <!-- Tab content -->
-      <template v-for="sec in sections" :key="sec.key">
-        <div v-if="activeTab === sec.key">
-          <p class="mb-3 text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> Last {{ LAST_N }} avg — top 20</p>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-border text-text-muted">
-                  <th class="py-2 pr-4 text-left font-medium">Player</th>
-                  <th class="py-2 pr-4 text-left font-medium whitespace-nowrap">Club</th>
-                  <th class="py-2 px-2 text-right font-medium">Gms</th>
-                  <th
-                    v-for="col in statCols" :key="col.key"
-                    class="py-2 px-2 text-right font-medium"
-                    :class="col.key === sec.key ? 'text-text' : ''"
-                  >{{ col.label }}</th>
-                  <th
-                    class="py-2 pl-2 pr-3 text-right font-medium"
-                    :class="sec.key === 'star' ? 'text-yellow-400' : 'text-text-muted opacity-60'"
-                  >★</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="row in sec.rows"
-                  :key="row.id"
-                  class="border-b border-border-subtle hover:bg-surface-hover"
-                >
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-text-muted">
+              <th class="py-2 pr-4 text-left font-medium">Player</th>
+              <th class="py-2 pr-4 text-left font-medium whitespace-nowrap">Club</th>
+              <th class="py-2 px-2 text-right font-medium">Gms</th>
+              <th
+                v-for="col in statCols" :key="col.key"
+                class="py-2 px-2 text-right font-medium"
+              >
+                <button
+                  class="transition-colors"
+                  :class="col.key === activeKey ? 'text-sky-400' : 'hover:text-text'"
+                  :title="`Top 20 by ${POSITION_LABEL[col.key]}, ranked on ${rankBasisLabel} average`"
+                  @click="activeKey = col.key"
+                >{{ POSITION_LABEL[col.key] }}</button>
+              </th>
+              <th class="py-2 pl-2 pr-3 text-right font-medium">
+                <button
+                  class="transition-colors"
+                  :class="activeKey === 'star' ? 'text-sky-400' : 'text-text-muted hover:text-text'"
+                  :title="`Top 20 by Star score, ranked on ${rankBasisLabel} average`"
+                  @click="activeKey = 'star'"
+                >Star <span class="text-yellow-400">★</span></button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in topRows"
+              :key="row.id"
+              class="border-b border-border-subtle hover:bg-surface-hover"
+            >
                   <td class="py-2 pr-4 font-medium">
                     <PlayerStatsCard :name="row.playerName" :club="row.clubName" :afl-status="null" :afl-player-season-id="row.id" :afl-round-id="null">
                       <router-link
@@ -84,12 +98,10 @@
                       :last3-style="statHeat(row.statsLastN ? starScore(row.statsLastN) : null, 'star')"
                     />
                   </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </template>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
   </div>
 </template>
@@ -118,7 +130,13 @@ const { result, loading, error } = useQuery(
 
 type SectionKey = StatKey | 'star'
 
-const activeTab = ref<SectionKey>('kicks')
+// Stat that ranks the top-20 cut — set by clicking a column header.
+const activeKey = ref<SectionKey>('kicks')
+
+// Which average ranks the cut (and scales the heatmap): last-N form or season.
+const statSource = ref<'form' | 'season'>('form')
+
+const rankBasisLabel = computed(() => statSource.value === 'form' ? `last ${LAST_N}` : 'season')
 
 interface PlayerSeasonRaw {
   id: string
@@ -154,14 +172,16 @@ const rows = computed((): MappedRow[] => {
     }))
 })
 
-// Global heatmap ranges — consistent colours across all tabs
+// Global heatmap ranges — consistent colours across all columns, scaled to the
+// active rank basis.
 const columnRange = computed(() => {
+  const src = (r: MappedRow) => statSource.value === 'form' ? r.statsLastN : r.statsAll
   const range = {} as Record<SectionKey, { min: number; max: number }>
   for (const col of statCols) {
-    const vals = rows.value.map(r => r.statsLastN?.[col.key]).filter((v): v is number => v != null)
+    const vals = rows.value.map(r => src(r)?.[col.key]).filter((v): v is number => v != null)
     if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
   }
-  const starVals = rows.value.map(r => r.statsLastN ? starScore(r.statsLastN) : null).filter((v): v is number => v != null)
+  const starVals = rows.value.map(r => { const s = src(r); return s ? starScore(s) : null }).filter((v): v is number => v != null)
   if (starVals.length) range['star'] = { min: Math.min(...starVals), max: Math.max(...starVals) }
   return range
 })
@@ -174,22 +194,18 @@ function statHeat(value: number | null | undefined, key: SectionKey): Record<str
 }
 
 function sortVal(row: MappedRow, key: SectionKey): number {
+  const [primary, fallback] = statSource.value === 'form'
+    ? [row.statsLastN, row.statsAll]
+    : [row.statsAll, row.statsLastN]
   if (key === 'star') {
-    return row.statsLastN ? starScore(row.statsLastN) : row.statsAll ? starScore(row.statsAll) : -1
+    return primary ? starScore(primary) : fallback ? starScore(fallback) : -1
   }
-  return row.statsLastN?.[key] ?? row.statsAll?.[key] ?? -1
+  return primary?.[key] ?? fallback?.[key] ?? -1
 }
 
-const sections = computed(() => {
-  const defs: { key: SectionKey; title: string }[] = [
-    ...statCols.map(c => ({ key: c.key as SectionKey, title: POSITION_LABEL[c.key] ?? c.label })),
-    { key: 'star', title: POSITION_LABEL['star'] ?? 'Star' },
-  ]
-  return defs.map(def => ({
-    ...def,
-    rows: [...rows.value]
-      .sort((a, b) => sortVal(b, def.key) - sortVal(a, def.key))
-      .slice(0, 20),
-  }))
-})
+const topRows = computed(() =>
+  [...rows.value]
+    .sort((a, b) => sortVal(b, activeKey.value) - sortVal(a, activeKey.value))
+    .slice(0, 20),
+)
 </script>
