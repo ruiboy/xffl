@@ -43,7 +43,7 @@
                     :key="col.key"
                     class="text-right py-1 px-2 whitespace-nowrap"
                     :class="col.key === 'star' ? 'text-yellow-400' : ''"
-                  ><span v-if="lastNTrend(col.key) === 'up'" class="text-[10px] font-normal text-green-400">↑</span><span v-else-if="lastNTrend(col.key) === 'down'" class="text-[10px] font-normal text-red-400">↓</span>{{ fmt(statOf(lastN, col.key)) }}</td>
+                  ><span v-if="lastNTrend(col.key) === 'up'" class="text-[10px] font-normal text-green-400 mr-0.5">↑</span><span v-else-if="lastNTrend(col.key) === 'down'" class="text-[10px] font-normal text-red-400 mr-0.5">↓</span>{{ fmt(statOf(lastN, col.key)) }}</td>
                 </tr>
                 <tr v-if="roundRows.length">
                   <td :colspan="cardCols.length + 1"><div class="h-px bg-border-subtle my-1" /></td>

@@ -301,7 +301,7 @@
                         class="w-9 text-right text-xs tabular-nums whitespace-nowrap"
                         :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
                         :style="statHeat(slot.player, col.key)"
-                      ><span v-if="statTrend(slot.player, col.key) === 'up'" class="text-[10px] text-green-400" :title="trendUpTitle">↑</span><span v-else-if="statTrend(slot.player, col.key) === 'down'" class="text-[10px] text-red-400" :title="trendDownTitle">↓</span><span
+                      ><span v-if="statTrend(slot.player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(slot.player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span><span
                         :class="col.key === pos.key ? 'rounded bg-sky-500/15 ring-1 ring-sky-400/40 px-1 py-0.5' : ''"
                       >{{ squadStat(slot.player, col.key) }}</span></span>
                     </span>
@@ -595,7 +595,7 @@
                     class="w-9 text-right text-xs tabular-nums whitespace-nowrap"
                     :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
                     :style="statHeat(player, col.key)"
-                  ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
+                  ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
                   <!-- Popup fallback for drag and drop -->
                   <button
                     aria-label="Add to team"
@@ -677,7 +677,7 @@
                       class="w-9 text-right text-xs tabular-nums whitespace-nowrap opacity-40"
                       :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
                       :style="statHeat(player, col.key)"
-                    ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
+                    ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
                     <button
                       aria-label="Add to team"
                       class="w-6 h-6 flex items-center justify-center rounded text-text-faint hover:bg-control-hover hover:text-text transition-colors"
