@@ -22,3 +22,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 016 | Accepted | ✅ | ACL identity mapping: xref tables per source per entity (e.g. `afl.xref_<source>_player`); owned by adapters/import tools; no FK to core schema; no shared integration schema |
 | 017 | Accepted | ✅ | `vikstrous/dataloadgen` as the convention for all resolver entity lookups; resolvers never call single-item repo methods by ID; per-request `Loaders` struct in context; batch functions delegate to repository `FindByIDs` |
 | 018 | Accepted | ✅ | Twirp for synchronous cross-service RPC; port interface in application layer; proto in `contracts/proto/`, generated stubs in `contracts/gen/`; `buf` for codegen |
+| 019 | Accepted | ✅ | vitest for pure frontend logic (algorithms, stat maths) as colocated `*.test.ts`; component behaviour stays in Playwright e2e |

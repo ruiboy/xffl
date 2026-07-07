@@ -47,7 +47,7 @@
                 >
                   <div class="flex items-center gap-2 min-w-0">
                     <img :src="clubLogoUrl(player.club)" :alt="player.club" class="w-5 h-5 object-contain shrink-0" />
-                    <span class="text-sm font-medium truncate">{{ player.name }}</span>
+                    <router-link :to="{ name: 'ffl-match', params: { matchId: player.matchId }, query: { highlight: player.pmId } }" class="text-sm font-medium truncate hover:text-text-muted transition-colors">{{ player.name }}</router-link>
                   </div>
                   <span class="text-sm tabular-nums font-semibold shrink-0">{{ player.score }}</span>
                 </div>
@@ -132,9 +132,11 @@ const myClubMatchId = computed(() => {
 })
 
 interface PlayerMatch {
+  id: string
   player: { aflPlayer: { name: string } }
   position: string | null
   status: string | null
+  aflStatus: string | null
   score: number
 }
 
@@ -144,6 +146,7 @@ interface ClubMatch {
 }
 
 interface Match {
+  id: string
   homeClubMatch?: ClubMatch | null
   awayClubMatch?: ClubMatch | null
 }
@@ -155,7 +158,7 @@ const POSITION_LABELS: Record<string, string> = {
 
 const TOP_SCORERS_POSITIONS = ['goals', 'kicks', 'handballs', 'marks', 'tackles', 'hitouts', 'star'] as const
 
-type ScorerEntry = { name: string; club: string; score: number; position: string }
+type ScorerEntry = { name: string; club: string; score: number; position: string; matchId: string; pmId: string }
 
 const topScorersByPosition = computed(() => {
   if (!round.value) return {} as Record<string, { label: string; players: ScorerEntry[] }>
@@ -166,7 +169,7 @@ const topScorersByPosition = computed(() => {
       if (!side) continue
       for (const pm of side.playerMatches) {
         if (pm.aflStatus === 'played' && pm.position) {
-          ;(grouped[pm.position] ??= []).push({ name: pm.player.aflPlayer.name, club: side.club.name, score: pm.score, position: pm.position })
+          ;(grouped[pm.position] ??= []).push({ name: pm.player.aflPlayer.name, club: side.club.name, score: pm.score, position: pm.position, matchId: match.id, pmId: pm.id })
         }
       }
     }

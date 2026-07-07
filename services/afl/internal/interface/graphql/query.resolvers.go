@@ -8,6 +8,8 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"sort"
+	"xffl/services/afl/internal/domain"
 )
 
 // PlayerMatches is the resolver for the playerMatches field.
@@ -60,6 +62,24 @@ func (r *aFLClubSeasonResolver) Season(ctx context.Context, obj *AFLClubSeason) 
 		return nil, err
 	}
 	return convertSeason(s), nil
+}
+
+// PlayerSeasons is the resolver for the playerSeasons field.
+func (r *aFLClubSeasonResolver) PlayerSeasons(ctx context.Context, obj *AFLClubSeason) ([]*AFLPlayerSeason, error) {
+	csID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	players, err := r.Queries.GetPlayerSeasonsByClubSeasonID(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(players, func(i, j int) bool { return players[i].Name < players[j].Name })
+	result := make([]*AFLPlayerSeason, len(players))
+	for i, p := range players {
+		result[i] = &AFLPlayerSeason{ID: toID(p.PlayerSeasonID)}
+	}
+	return result, nil
 }
 
 // Round is the resolver for the round field.
@@ -225,10 +245,15 @@ func (r *aFLPlayerSeasonResolver) Stats(ctx context.Context, obj *AFLPlayerSeaso
 		lastNVal = *lastN
 	}
 
+	statMethod := domain.StatMethodMean
+	if method != nil && *method == AFLStatSummaryMethodMedian {
+		statMethod = domain.StatMethodMedian
+	}
 	s, err := LoadersFromCtx(ctx).PlayerSeasonStats.Load(ctx, statsKey{
 		PlayerSeasonID: psID,
 		UpToRoundID:    upTo,
 		LastN:          lastNVal,
+		Method:         statMethod,
 	})
 	if err != nil {
 		return nil, err
@@ -438,6 +463,23 @@ func (r *queryResolver) AflPlayerSeason(ctx context.Context, id string) (*AFLPla
 		return nil, err
 	}
 	return &AFLPlayerSeason{ID: id}, nil
+}
+
+// AflClubSeason is the resolver for the aflClubSeason field.
+func (r *queryResolver) AflClubSeason(ctx context.Context, id string) (*AFLClubSeason, error) {
+	csID, err := fromID(id)
+	if err != nil {
+		return nil, err
+	}
+	cs, err := r.Queries.GetClubSeasonByID(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	club, err := r.Queries.GetClubForClubSeason(ctx, csID)
+	if err != nil {
+		return nil, err
+	}
+	return convertClubSeason(cs, club), nil
 }
 
 // AflLiveRound is the resolver for the aflLiveRound field.

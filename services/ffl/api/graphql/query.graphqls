@@ -140,6 +140,7 @@ type FFLPlayerMatch {
   playerSeasonId: ID!
   playerSeason: FFLPlayerSeason!
   player: FFLPlayer!
+  matchId: ID
   position: String
   status: FFLPlayerMatchStatus
   aflStatus: FFLAFLPlayerMatchStatus
@@ -168,6 +169,7 @@ type AFLPlayer @key(fields: "id") {
 
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!
+  fflPlayerSeasons: [FFLPlayerSeason!]!
 }
 
 type AFLPlayerMatch @key(fields: "id") {

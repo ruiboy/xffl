@@ -31,17 +31,18 @@ type AFLClubMatch struct {
 }
 
 type AFLClubSeason struct {
-	ID                string     `json:"id"`
-	Club              *AFLClub   `json:"club"`
-	Season            *AFLSeason `json:"season"`
-	Played            int        `json:"played"`
-	Won               int        `json:"won"`
-	Lost              int        `json:"lost"`
-	Drawn             int        `json:"drawn"`
-	For               int        `json:"for"`
-	Against           int        `json:"against"`
-	Percentage        float64    `json:"percentage"`
-	PremiershipPoints int        `json:"premiershipPoints"`
+	ID                string             `json:"id"`
+	Club              *AFLClub           `json:"club"`
+	Season            *AFLSeason         `json:"season"`
+	Played            int                `json:"played"`
+	Won               int                `json:"won"`
+	Lost              int                `json:"lost"`
+	Drawn             int                `json:"drawn"`
+	For               int                `json:"for"`
+	Against           int                `json:"against"`
+	Percentage        float64            `json:"percentage"`
+	PremiershipPoints int                `json:"premiershipPoints"`
+	PlayerSeasons     []*AFLPlayerSeason `json:"playerSeasons"`
 }
 
 type AFLLiveRound struct {
@@ -218,21 +219,21 @@ type UpdateAFLPlayerMatchInput struct {
 }
 
 // Aggregation method to apply over a set of matches.
-// Only MEAN is implemented; additional methods (MEDIAN, STDDEV, …) can be added
-// without a schema change.
 type AFLStatSummaryMethod string
 
 const (
-	AFLStatSummaryMethodMean AFLStatSummaryMethod = "MEAN"
+	AFLStatSummaryMethodMean   AFLStatSummaryMethod = "MEAN"
+	AFLStatSummaryMethodMedian AFLStatSummaryMethod = "MEDIAN"
 )
 
 var AllAFLStatSummaryMethod = []AFLStatSummaryMethod{
 	AFLStatSummaryMethodMean,
+	AFLStatSummaryMethodMedian,
 }
 
 func (e AFLStatSummaryMethod) IsValid() bool {
 	switch e {
-	case AFLStatSummaryMethodMean:
+	case AFLStatSummaryMethodMean, AFLStatSummaryMethodMedian:
 		return true
 	}
 	return false

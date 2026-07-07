@@ -27,7 +27,8 @@ test.describe('Match view', () => {
   })
 
   test('displays stat column headers', async ({ page }) => {
-    for (const label of ['K', 'HB', 'M', 'HO', 'T', 'G', 'B', 'D', 'SC']) {
+    // Labels updated in this branch: HB→H, HO→R, SC→Pts; order: K H D M R T G B Pts
+    for (const label of ['K', 'H', 'D', 'M', 'R', 'T', 'G', 'B', 'Pts']) {
       await expect(page.getByRole('columnheader', { name: label }).first()).toBeVisible()
     }
   })

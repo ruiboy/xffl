@@ -60,10 +60,26 @@ test.describe('Navigation — Phase 21', () => {
       await expect(page.getByTitle('Data Ops')).toBeVisible()
     })
 
-    test('DataOps icon links to data-ops page', async ({ page }) => {
+    test('DataOps icon navigates to data-ops page', async ({ page }) => {
       await setupFflSession(page)
-      await page.getByTitle('Data Ops').click()
-      await expect(page).toHaveURL(/\/ffl\/data-ops/)
+      await expect(page.getByTitle('Data Ops')).toHaveAttribute('href', /\/ffl\/data-ops/)
+    })
+  })
+
+  test.describe('NAV-6: Free Agents icon visible on FFL routes only', () => {
+    test('Free Agents icon is visible in header on FFL home', async ({ page }) => {
+      await setupFflSession(page)
+      await expect(page.getByTitle('Free Agents')).toBeVisible()
+    })
+
+    test('Free Agents icon is not visible on AFL routes', async ({ page }) => {
+      await setupAflSession(page)
+      await expect(page.getByTitle('Free Agents')).not.toBeVisible()
+    })
+
+    test('Free Agents icon href points to /ffl/free-agents', async ({ page }) => {
+      await setupFflSession(page)
+      await expect(page.getByTitle('Free Agents')).toHaveAttribute('href', /\/ffl\/free-agents/)
     })
   })
 

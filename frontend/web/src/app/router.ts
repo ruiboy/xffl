@@ -46,6 +46,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/ffl/club-matches/:clubMatchId',
+      name: 'ffl-club-match',
+      component: () => import('@/features/ffl/views/TeamBuilderView.vue'),
+      props: (route) => ({ clubMatchId: route.params.clubMatchId as string, readonly: true }),
+    },
+    {
       path: '/ffl/club-matches/:clubMatchId/edit',
       name: 'ffl-club-match-edit',
       component: () => import('@/features/ffl/views/TeamBuilderView.vue'),
@@ -56,6 +62,17 @@ const router = createRouter({
       name: 'ffl-afl-player-season',
       component: () => import('@/features/ffl/views/AFLPlayerSeasonView.vue'),
       props: true,
+    },
+    {
+      path: '/ffl/afl/club-seasons/:clubSeasonId',
+      name: 'ffl-afl-club-season',
+      component: () => import('@/features/afl/views/ClubSeasonView.vue'),
+      props: true,
+    },
+    {
+      path: '/ffl/free-agents',
+      name: 'ffl-free-agents',
+      component: () => import('@/features/ffl/views/FreeAgentsView.vue'),
     },
     {
       path: '/ffl/data-ops',

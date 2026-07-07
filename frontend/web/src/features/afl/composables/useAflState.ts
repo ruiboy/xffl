@@ -1,4 +1,5 @@
 import { ref, readonly, computed } from 'vue'
+import { getCookie, setCookie } from '@/utils/cookie'
 
 interface AflState {
   seasonId: string
@@ -8,13 +9,8 @@ interface AflState {
 
 const COOKIE_NAME = 'xffl_afl'
 
-function getCookieRaw(name: string): string {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[2]) : ''
-}
-
 function readCookie(): AflState {
-  const raw = getCookieRaw(COOKIE_NAME)
+  const raw = getCookie(COOKIE_NAME)
   if (!raw) return { seasonId: '', roundId: '', startDate: '' }
   try {
     const parsed = JSON.parse(raw)
@@ -28,12 +24,6 @@ function readCookie(): AflState {
   }
 }
 
-function writeCookie(state: AflState) {
-  const expires = new Date()
-  expires.setHours(24, 0, 0, 0)
-  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(state))};expires=${expires.toUTCString()};path=/`
-}
-
 // Module-level singletons — shared across all component instances
 const stored = readCookie()
 const liveSeasonId = ref<string>(stored.seasonId)
@@ -44,7 +34,7 @@ function setLiveRound(seasonId: string, roundId: string, startDate: string) {
   liveSeasonId.value = seasonId
   liveRoundId.value = roundId
   liveStartDate.value = startDate
-  writeCookie({ seasonId, roundId, startDate })
+  setCookie(COOKIE_NAME, JSON.stringify({ seasonId, roundId, startDate }))
 }
 
 // In-memory only (not persisted) — sticks to whichever round the user last

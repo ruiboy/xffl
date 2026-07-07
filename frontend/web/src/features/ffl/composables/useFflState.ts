@@ -1,4 +1,5 @@
 import { ref, readonly, computed } from 'vue'
+import { getCookie, setCookie } from '@/utils/cookie'
 
 const FFL_COOKIE = 'xffl_ffl'
 
@@ -6,17 +7,6 @@ interface FflState {
   seasonId: string
   roundId: string
   startDate: string
-}
-
-function getCookie(name: string): string {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[2]) : ''
-}
-
-function setCookie(name: string, value: string) {
-  const expires = new Date()
-  expires.setHours(24, 0, 0, 0)
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`
 }
 
 function readFflCookie(): FflState {

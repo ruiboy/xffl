@@ -36,7 +36,15 @@
             />
           </template>
 
-          <!-- DataOps link -->
+          <!-- Free Agents + DataOps -->
+          <router-link
+            v-if="isFfl"
+            :to="{ name: 'ffl-free-agents' }"
+            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+            title="Free Agents"
+          >
+            <IconFreeAgents class="w-5 h-5" />
+          </router-link>
           <router-link
             :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
             class="text-text-muted hover:text-text transition-colors translate-y-0.5"
@@ -87,6 +95,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useTheme, initTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
@@ -94,6 +103,7 @@ import { useFflState } from '@/features/ffl/composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
+import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
@@ -145,32 +155,6 @@ onMounted(() => document.addEventListener('mousedown', onClickOutside))
 onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 
 // Theme
-const isDark = ref(false)
-
-function getThemeCookie(): string {
-  const match = document.cookie.match(/(^| )xffl_dark_mode=([^;]+)/)
-  return match ? match[2] : ''
-}
-
-function setThemeCookie(dark: boolean) {
-  const expires = new Date()
-  expires.setFullYear(expires.getFullYear() + 10)
-  document.cookie = `xffl_dark_mode=${dark ? '1' : '0'};expires=${expires.toUTCString()};path=/`
-}
-
-function applyTheme(dark: boolean) {
-  document.documentElement.classList.toggle('dark', dark)
-  setThemeCookie(dark)
-  isDark.value = dark
-}
-
-function toggleTheme() {
-  applyTheme(!isDark.value)
-}
-
-onMounted(() => {
-  const saved = getThemeCookie()
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  applyTheme(saved !== '' ? saved === '1' : prefersDark)
-})
+const { isDark, toggleTheme } = useTheme()
+onMounted(() => initTheme())
 </script>

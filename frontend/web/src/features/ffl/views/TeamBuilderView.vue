@@ -1,5 +1,7 @@
 <template>
   <div>
+    <!-- Click-away backdrop for popup menus -->
+    <div v-if="openMenuKey" class="fixed inset-0 z-40" @click="closeMenu" />
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
     <template v-else-if="round">
@@ -8,13 +10,13 @@
         <div class="flex items-center">
           <h1 class="text-2xl font-bold flex items-center gap-3">
             <img v-if="selectedClubSeason" :src="clubLogoUrl(selectedClubSeason.club.name)" :alt="selectedClubSeason.club.name" class="w-10 h-10 object-contain" />
-            {{ selectedClubSeason?.club.name ?? '' }}<span class="font-normal text-text-muted"> · Team Builder</span>
+            {{ selectedClubSeason?.club.name ?? '' }}<span v-if="!readonly" class="font-normal text-text-muted"> · Team Builder</span>
           </h1>
           <div class="flex items-center gap-3 ml-auto">
             <div class="flex items-center gap-1 rounded-lg border border-border px-1">
               <router-link
                 v-if="prevClubMatchId"
-                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: prevClubMatchId } }"
+                :to="{ name: readonly ? 'ffl-club-match' : 'ffl-club-match-edit', params: { clubMatchId: prevClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Previous round"
               >‹</router-link>
@@ -22,7 +24,7 @@
               <span class="text-sm text-text-muted tabular-nums">{{ currentRound?.name }}</span>
               <router-link
                 v-if="nextClubMatchId"
-                :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: nextClubMatchId } }"
+                :to="{ name: readonly ? 'ffl-club-match' : 'ffl-club-match-edit', params: { clubMatchId: nextClubMatchId } }"
                 class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:bg-control-hover hover:text-text transition-colors text-sm"
                 title="Next round"
               >›</router-link>
@@ -36,6 +38,14 @@
               <IconSquad class="w-4 h-4" />
               Squad
             </router-link>
+            <router-link
+              v-if="readonly && isMyClub && bootstrapClubMatchId"
+              :to="{ name: 'ffl-club-match-edit', params: { clubMatchId: bootstrapClubMatchId } }"
+              class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+            >
+              <IconTeamBuilder class="w-4 h-4" />
+              Team Builder
+            </router-link>
           </div>
         </div>
       </div>
@@ -43,7 +53,7 @@
       <template v-if="selectedClubSeason && clubMatch">
         <div class="mb-6 flex items-center gap-4 flex-wrap">
           <!-- Subs mode -->
-          <template v-if="subsMode">
+          <template v-if="!readonly && subsMode">
             <button
               @click="exitSubsMode"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -58,7 +68,7 @@
           </template>
 
           <!-- Manage mode -->
-          <template v-else-if="managing">
+          <template v-else-if="!readonly && managing">
             <button
               @click="cancelManage"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
@@ -80,9 +90,18 @@
               v-if="prevClubMatchId && !clubMatchLocked"
               @click="copyPreviousTeam"
               :disabled="prevTeamLoading"
+              :title="`Set team from ${prevRound?.name}`"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {{ prevTeamLoading ? 'Replicating…' : `Replicate ${prevRound?.name}` }}
+              {{ prevTeamLoading ? 'Replicating…' : `${prevRound?.name} Team` }}
+            </button>
+            <button
+              v-if="!clubMatchLocked"
+              @click="applyBestTeam"
+              title="Set team for the highest projected total (uses active Last 5/Season stat source)"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+            >
+              Best Team
             </button>
             <button
               v-if="!clubMatchLocked"
@@ -94,14 +113,14 @@
           </template>
 
           <!-- Default mode buttons -->
-          <template v-else>
+          <template v-else-if="!readonly">
             <button
               @click="managing = true"
               class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
             >
               <span class="flex items-center gap-1.5">
                 <IconManage class="w-3.5 h-3.5" />
-                Manage
+                Build Team
               </span>
             </button>
             <button
@@ -111,7 +130,29 @@
             >
               <span class="flex items-center gap-1.5">
                 <IconSubs class="w-3.5 h-3.5" />
-                Substitutions
+                Make Substitutions
+              </span>
+            </button>
+            <button
+              v-if="starterCount > 0 && (clubMatchDataStatus === 'no_data' || clubMatchDataStatus === 'submitted')"
+              @click="markFinal"
+              :disabled="markingFinal"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconLock class="w-3.5 h-3.5" />
+                {{ markingFinal ? 'Marking…' : 'Mark Final' }}
+              </span>
+            </button>
+            <button
+              v-if="clubMatchDataStatus === 'final'"
+              @click="markSubmitted"
+              :disabled="markingSubmitted"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              <span class="flex items-center gap-1.5">
+                <IconLock :open="true" class="w-3.5 h-3.5" />
+                {{ markingSubmitted ? 'Marking…' : 'Mark Submitted' }}
               </span>
             </button>
             <span class="w-2 shrink-0" />
@@ -129,18 +170,19 @@
           </template>
 
           <!-- Data status pill -->
-          <span
-            v-if="clubMatchDataStatus"
-            class="ml-auto shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
-          >
-            {{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}
-          </span>
+          <div class="ml-auto flex items-center gap-2 shrink-0">
+            <span v-if="markStatusError" class="text-xs text-red-400">{{ markStatusError }}</span>
+            <span
+              v-if="clubMatchDataStatus"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+              :class="dataStatusClass[clubMatchDataStatus] ?? 'bg-surface-raised text-text-faint'"
+            >{{ dataStatusLabel[clubMatchDataStatus] ?? clubMatchDataStatus }}</span>
+          </div>
         </div>
 
         <!-- Substitution suggestions -->
         <div
-          v-if="!managing && suggestedSubstitutionHints.length > 0"
+          v-if="!readonly && !managing && suggestedSubstitutionHints.length > 0"
           class="mb-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
         >
           <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
@@ -161,11 +203,31 @@
           Skipped (no longer in squad): {{ skippedOnCopy.join(', ') }}
         </p>
 
-        <!-- Summary bar -->
+        <!-- Summary bar. In manage mode the projected pill sits at the right edge of
+             the team column (mirroring the grid below); counts stay on the far right. -->
         <div class="mb-8 rounded-lg border border-border bg-surface-raised px-4 py-3">
-          <div class="flex items-center justify-between">
+          <div v-if="managing" class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-text-heading">Team</h2>
+              <span
+                v-if="projectedTotal > 0"
+                class="rounded-md bg-sky-500/15 ring-1 ring-sky-400/40 px-2.5 py-0.5 text-sm tabular-nums text-sky-400"
+                :title="`Estimated total from ${statSourceTitle.toLowerCase()}`"
+              >Projected ~{{ projectedTotal }}</span>
+            </div>
+            <div class="flex items-center justify-end gap-3">
+              <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
+              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+            </div>
+          </div>
+          <div v-else class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-text-heading">Team</h2>
             <div class="flex items-center gap-3">
+              <span
+                v-if="!readonly && projectedTotal > 0"
+                class="rounded-md bg-sky-500/15 ring-1 ring-sky-400/40 px-2.5 py-0.5 text-sm tabular-nums text-sky-400"
+                :title="`Estimated total from ${statSourceTitle.toLowerCase()}`"
+              >Projected ~{{ projectedTotal }}</span>
               <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
               <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
             </div>
@@ -188,11 +250,19 @@
                   v-for="(slot, index) in teamSlots[pos.key]"
                   :key="index"
                   class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
-                  :class="slot.player
+                  :class="[slot.player
                     ? (subsMode && slot.player.aflStatus === 'dnp'
                       ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
                       : 'border-border bg-surface-raised')
-                    : 'border-dashed border-border-subtle bg-surface'"
+                    : 'border-dashed border-border-subtle bg-surface',
+                    managing && slot.player ? 'cursor-grab active:cursor-grabbing' : '',
+                    dragOverKey === `s:${pos.key}:${index}` ? '!border-sky-400 bg-sky-500/10' : '']"
+                  :draggable="managing && !!slot.player"
+                  @dragstart="onDragStart($event, { kind: 'starter', pos: pos.key, index })"
+                  @dragend="onDragEnd"
+                  @dragover="onDragOverTarget($event, `s:${pos.key}:${index}`, starterDropAction(pos.key, index))"
+                  @dragleave="onDragLeave(`s:${pos.key}:${index}`)"
+                  @drop.prevent="onDropTarget(starterDropAction(pos.key, index))"
                   @click="onStarterClick(slot.player)"
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
@@ -223,41 +293,82 @@
                     </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
-                  <div v-if="slot.player && managing" class="flex items-center gap-2">
+                  <div v-if="slot.player && managing" class="relative flex items-center gap-2 shrink-0">
+                    <span class="flex items-center gap-0.5" :title="statSourceTitle">
+                      <span
+                        v-for="col in statSummaryCols"
+                        :key="col.key"
+                        class="w-9 text-right text-xs tabular-nums whitespace-nowrap"
+                        :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
+                        :style="statHeat(slot.player, col.key)"
+                      ><span v-if="statTrend(slot.player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(slot.player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span><span
+                        :class="col.key === pos.key ? 'rounded bg-sky-500/15 ring-1 ring-sky-400/40 px-1 py-0.5' : ''"
+                      >{{ squadStat(slot.player, col.key) }}</span></span>
+                    </span>
                     <button
-                      v-for="target in positions.filter(p => p.key !== pos.key)"
-                      :key="target.key"
-                      class="rounded px-1.5 py-0.5 text-xs transition-colors"
-                      :disabled="isPositionFull(target.key)"
-                      :class="[
-                        isPositionFull(target.key) ? 'opacity-30 cursor-not-allowed' : '',
-                        target.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-faint hover:bg-control-hover hover:text-text'
-                      ]"
-                      :title="`Move to ${target.label}`"
-                      @click="moveToPosition(pos.key, index, target.key)"
+                      aria-label="Player actions"
+                      class="w-6 h-6 flex items-center justify-center rounded text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                      @click.stop="toggleMenu(`starter:${pos.key}:${index}`)"
                     >
-                      {{ target.short }}
+                      <IconMenu class="w-3.5 h-3.5" />
                     </button>
-                    <span class="w-px h-3 bg-border-subtle shrink-0" />
-                    <button
-                      v-if="index > 0 && teamSlots[pos.key][index - 1].player"
-                      aria-label="Move up"
-                      class="text-xs text-text-faint hover:text-text transition-colors"
-                      @click.stop="swapStarters(pos.key, index, index - 1)"
-                    >↑</button>
-                    <button
-                      v-if="index < teamSlots[pos.key].length - 1 && teamSlots[pos.key][index + 1].player"
-                      aria-label="Move down"
-                      class="text-xs text-text-faint hover:text-text transition-colors"
-                      @click.stop="swapStarters(pos.key, index, index + 1)"
-                    >↓</button>
-                    <button
-                      aria-label="Remove"
-                      class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                      @click="removeFromTeam(pos.key, index)"
+                    <div
+                      v-if="openMenuKey === `starter:${pos.key}:${index}`"
+                      class="absolute right-0 top-full mt-1 z-50 w-44 rounded-lg border border-border bg-surface shadow-lg p-1"
+                      @click.stop
                     >
-                      <IconBin class="w-3.5 h-3.5" />
-                    </button>
+                      <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-text-faint">Move to</p>
+                      <button
+                        v-for="target in positions.filter(p => p.key !== pos.key)"
+                        :key="target.key"
+                        class="flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        :class="target.key === 'star' ? 'text-yellow-400' : 'text-text'"
+                        :disabled="isPositionFull(target.key)"
+                        @click.stop="moveToPosition(pos.key, index, target.key); closeMenu()"
+                      >
+                        <span>{{ target.label }}</span>
+                        <span class="flex items-center gap-1.5">
+                          <span class="flex items-center gap-0.5">
+                            <span v-for="n in emptySlotCount(target.key)" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                          </span>
+                          <span class="text-text-faint">{{ target.short }}</span>
+                        </span>
+                      </button>
+                      <button
+                        class="flex w-full items-center justify-between rounded px-2 py-1 text-xs text-text transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        :disabled="benchDualFull"
+                        @click.stop="moveStarterToBench(pos.key, index); closeMenu()"
+                      >
+                        <span>Bench</span>
+                        <span class="flex items-center gap-1.5">
+                          <span class="flex items-center gap-0.5">
+                            <span v-for="n in benchEmptyCount" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                          </span>
+                          <span class="text-text-faint">B</span>
+                        </span>
+                      </button>
+                      <template v-if="canMoveUp(pos.key, index) || canMoveDown(pos.key, index)">
+                        <div class="my-1 h-px bg-border-subtle" />
+                        <button
+                          v-if="canMoveUp(pos.key, index)"
+                          class="flex w-full items-center rounded px-2 py-1 text-xs text-text transition-colors hover:bg-control-hover"
+                          @click.stop="swapStarters(pos.key, index, index - 1); closeMenu()"
+                        >Move up</button>
+                        <button
+                          v-if="canMoveDown(pos.key, index)"
+                          class="flex w-full items-center rounded px-2 py-1 text-xs text-text transition-colors hover:bg-control-hover"
+                          @click.stop="swapStarters(pos.key, index, index + 1); closeMenu()"
+                        >Move down</button>
+                      </template>
+                      <div class="my-1 h-px bg-border-subtle" />
+                      <button
+                        class="flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs text-red-400 transition-colors hover:bg-control-hover"
+                        @click.stop="removeFromTeam(pos.key, index); closeMenu()"
+                      >
+                        <IconBin class="w-3.5 h-3.5" />
+                        Remove
+                      </button>
+                    </div>
                   </div>
                   <div v-else-if="slot.player" class="flex items-center gap-2 shrink-0">
                     <span class="w-28 shrink-0"></span>
@@ -284,8 +395,16 @@
                         ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
                         : 'border-border bg-surface-raised')
                       : 'border-dashed border-border-subtle bg-surface',
-                    recentlyClearedSlot === index ? '!border-orange-400' : ''
+                    recentlyClearedSlot === index ? '!border-orange-400' : '',
+                    managing && slot.player ? 'cursor-grab active:cursor-grabbing' : '',
+                    dragOverKey === `b:${index}` ? '!border-sky-400 bg-sky-500/10' : ''
                   ]"
+                  :draggable="managing && !!slot.player"
+                  @dragstart="onDragStart($event, { kind: 'bench', index })"
+                  @dragend="onDragEnd"
+                  @dragover="onDragOverTarget($event, `b:${index}`, benchDropAction(index))"
+                  @dragleave="onDragLeave(`b:${index}`)"
+                  @drop.prevent="onDropTarget(benchDropAction(index))"
                   @click="onBenchRowClick(slot)"
                 >
                   <!-- Left: name -->
@@ -313,8 +432,8 @@
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
                   </div>
-                  <!-- Right: selectors + remove (manage) or read-only tags -->
-                  <div class="flex items-center gap-2 ml-4 shrink-0">
+                  <!-- Right: selectors + actions menu (manage) or read-only tags -->
+                  <div class="relative flex items-center gap-2 ml-4 shrink-0">
                     <template v-if="slot.player && managing">
                       <select
                         class="text-xs rounded bg-control text-text px-1 py-0.5 border border-border"
@@ -340,14 +459,43 @@
                         </option>
                       </select>
                       <button
-                        aria-label="Remove"
-                        class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                        @click="removeBenchDual(index)"
+                        aria-label="Bench player actions"
+                        class="w-6 h-6 flex items-center justify-center rounded text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                        @click.stop="toggleMenu(`bench:${index}`)"
                       >
-                        <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                          <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v4M8 6.5v4M3 3.5l.7 7.5a.5.5 0 00.5.5h5.6a.5.5 0 00.5-.5L11 3.5"/>
-                        </svg>
+                        <IconMenu class="w-3.5 h-3.5" />
                       </button>
+                      <div
+                        v-if="openMenuKey === `bench:${index}`"
+                        class="absolute right-0 top-full mt-1 z-50 w-44 rounded-lg border border-border bg-surface shadow-lg p-1"
+                        @click.stop
+                      >
+                        <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-text-faint">Move to</p>
+                        <button
+                          v-for="target in positions"
+                          :key="target.key"
+                          class="flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          :class="target.key === 'star' ? 'text-yellow-400' : 'text-text'"
+                          :disabled="isPositionFull(target.key)"
+                          @click.stop="moveBenchToStarter(index, target.key); closeMenu()"
+                        >
+                          <span>{{ target.label }}</span>
+                          <span class="flex items-center gap-1.5">
+                            <span class="flex items-center gap-0.5">
+                              <span v-for="n in emptySlotCount(target.key)" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                            </span>
+                            <span class="text-text-faint">{{ target.short }}</span>
+                          </span>
+                        </button>
+                        <div class="my-1 h-px bg-border-subtle" />
+                        <button
+                          class="flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs text-red-400 transition-colors hover:bg-control-hover"
+                          @click.stop="removeBenchDual(index); closeMenu()"
+                        >
+                          <IconBin class="w-3.5 h-3.5" />
+                          Remove
+                        </button>
+                      </div>
                     </template>
                     <template v-else-if="slot.player">
                       <div class="flex items-center gap-2 shrink-0">
@@ -389,12 +537,46 @@
 
           <!-- Squad panel (right col, manage mode only) -->
           <div v-if="managing">
-            <h2 class="text-lg font-semibold text-text-heading mb-3">Squad ({{ availablePlayers.length }})</h2>
-            <div class="space-y-1">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold text-text-heading">Squad ({{ availablePlayers.length }})</h2>
+              <StatSourceToggle />
+            </div>
+            <!-- Sort headers: name on the left, trend explainer in the gap, stat columns on the right -->
+            <div class="flex items-center justify-between px-4 mb-1 text-[10px] text-text-faint">
+              <button
+                class="transition-colors"
+                :class="squadSortKey === 'name' ? 'text-sky-400 font-semibold' : 'hover:text-text'"
+                title="Sort by name"
+                @click="squadSortKey = 'name'"
+              >Name</button>
+              <div class="flex items-center gap-0.5" :title="statSourceTitle">
+                <button
+                  v-for="col in statSummaryCols"
+                  :key="col.key"
+                  class="w-9 text-right transition-colors"
+                  :class="squadSortKey === col.key
+                    ? 'text-sky-400 font-semibold'
+                    : (col.key === 'star' ? 'text-yellow-400/70 hover:text-yellow-300' : 'hover:text-text')"
+                  :title="`Sort by ${col.label}`"
+                  @click="toggleSquadSort(col.key)"
+                >{{ col.label }}</button>
+                <span class="w-6" />
+              </div>
+            </div>
+            <div
+              class="space-y-1"
+              :class="dragOverKey === 'squad' ? 'rounded-lg ring-1 ring-red-400/50' : ''"
+              @dragover="onDragOverTarget($event, 'squad', squadDropAction())"
+              @dragleave="onDragLeave('squad')"
+              @drop.prevent="onDropTarget(squadDropAction())"
+            >
               <div
-                v-for="player in availablePlayers"
+                v-for="player in sortedAvailablePlayers"
                 :key="player.id"
-                class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2"
+                class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-grab active:cursor-grabbing"
+                draggable="true"
+                @dragstart="onDragStart($event, { kind: 'squad', player })"
+                @dragend="onDragEnd"
               >
                 <div class="flex items-center gap-3 min-w-0">
                   <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
@@ -405,32 +587,59 @@
                   </PlayerStatsCard>
                   <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                 </div>
-                <div class="flex items-center gap-1">
-                  <!-- Position buttons (starters) -->
+                <div class="relative flex items-center gap-0.5 shrink-0">
+                  <!-- Stats summary -->
+                  <span
+                    v-for="col in statSummaryCols"
+                    :key="col.key"
+                    class="w-9 text-right text-xs tabular-nums whitespace-nowrap"
+                    :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
+                    :style="statHeat(player, col.key)"
+                  ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
+                  <!-- Popup fallback for drag and drop -->
                   <button
-                    v-for="pos in positions"
-                    :key="pos.key"
-                    class="rounded px-2 py-0.5 text-xs transition-colors"
-                    :class="[
-                      isPositionFull(pos.key) ? 'opacity-30 cursor-not-allowed' : '',
-                      pos.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-muted hover:bg-control-hover hover:text-text'
-                    ]"
-                    :disabled="isPositionFull(pos.key)"
-                    @click="addToTeam(pos.key, player)"
+                    aria-label="Add to team"
+                    class="w-6 h-6 flex items-center justify-center rounded text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                    @click.stop="toggleMenu(`squad:${player.id}`)"
                   >
-                    {{ pos.short }}
+                    <IconMenu class="w-3.5 h-3.5" />
                   </button>
-                  <span class="w-px h-4 bg-border mx-0.5 shrink-0"></span>
-                  <!-- Bench -->
-                  <button
-                    class="rounded px-2 py-0.5 text-xs text-text-faint hover:bg-control-hover hover:text-text transition-colors"
-                    :disabled="benchDualFull"
-                    :class="{ 'opacity-30 cursor-not-allowed': benchDualFull }"
-                    title="Add to bench"
-                    @click="addBenchDual(player)"
+                  <div
+                    v-if="openMenuKey === `squad:${player.id}`"
+                    class="absolute right-0 top-full mt-1 z-50 w-44 rounded-lg border border-border bg-surface shadow-lg p-1"
+                    @click.stop
                   >
-                    B
-                  </button>
+                    <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-text-faint">Add to</p>
+                    <button
+                      v-for="pos in positions"
+                      :key="pos.key"
+                      class="flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      :class="pos.key === 'star' ? 'text-yellow-400' : 'text-text'"
+                      :disabled="isPositionFull(pos.key)"
+                      @click.stop="addToTeam(pos.key, player); closeMenu()"
+                    >
+                      <span>{{ pos.label }}</span>
+                      <span class="flex items-center gap-1.5">
+                        <span class="flex items-center gap-0.5">
+                          <span v-for="n in emptySlotCount(pos.key)" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                        </span>
+                        <span class="text-text-faint">{{ pos.short }}</span>
+                      </span>
+                    </button>
+                    <button
+                      class="flex w-full items-center justify-between rounded px-2 py-1 text-xs text-text transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      :disabled="benchDualFull"
+                      @click.stop="addBenchDual(player); closeMenu()"
+                    >
+                      <span>Bench</span>
+                      <span class="flex items-center gap-1.5">
+                        <span class="flex items-center gap-0.5">
+                          <span v-for="n in benchEmptyCount" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                        </span>
+                        <span class="text-text-faint">B</span>
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <p v-if="availablePlayers.length === 0" class="text-sm text-text-faint">All players assigned</p>
@@ -445,11 +654,14 @@
               </button>
               <div v-if="showTraded" class="space-y-1">
                 <div
-                  v-for="player in tradedPlayers"
+                  v-for="player in sortedTradedPlayers"
                   :key="player.id"
-                  class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 opacity-40"
+                  class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-2 cursor-grab active:cursor-grabbing"
+                  draggable="true"
+                  @dragstart="onDragStart($event, { kind: 'squad', player })"
+                  @dragend="onDragEnd"
                 >
-                  <div class="flex items-center gap-3 min-w-0">
+                  <div class="flex items-center gap-3 min-w-0 opacity-40">
                     <PlayerStatsCard :name="player.name" :club="player.club" :afl-status="player.aflStatus" :afl-player-season-id="player.aflPlayerSeasonId" :afl-round-id="bootstrapAflRoundId">
                       <div>
                         <div class="font-medium text-sm">{{ player.name }}</div>
@@ -458,25 +670,57 @@
                     </PlayerStatsCard>
                     <span v-if="playerShowScore(player)" class="text-sm tabular-nums text-text shrink-0">{{ player.score }}</span>
                   </div>
-                  <div class="flex items-center gap-1">
+                  <div class="relative flex items-center gap-0.5 shrink-0">
+                    <span
+                      v-for="col in statSummaryCols"
+                      :key="col.key"
+                      class="w-9 text-right text-xs tabular-nums whitespace-nowrap opacity-40"
+                      :class="col.key === 'star' ? 'text-yellow-400/70' : 'text-text-muted'"
+                      :style="statHeat(player, col.key)"
+                    ><span v-if="statTrend(player, col.key) === 'up'" class="text-[10px] text-green-400 mr-0.5" :title="trendUpTitle">↑</span><span v-else-if="statTrend(player, col.key) === 'down'" class="text-[10px] text-red-400 mr-0.5" :title="trendDownTitle">↓</span>{{ squadStat(player, col.key) }}</span>
                     <button
-                      v-for="pos in positions"
-                      :key="pos.key"
-                      class="rounded px-2 py-0.5 text-xs transition-colors"
-                      :class="[
-                        isPositionFull(pos.key) ? 'opacity-30 cursor-not-allowed' : '',
-                        pos.key === 'star' ? 'text-yellow-400 hover:bg-control-hover hover:text-yellow-300' : 'text-text-muted hover:bg-control-hover hover:text-text'
-                      ]"
-                      :disabled="isPositionFull(pos.key)"
-                      @click="addToTeam(pos.key, player)"
-                    >{{ pos.short }}</button>
-                    <span class="w-px h-4 bg-border mx-0.5 shrink-0"></span>
-                    <button
-                      class="rounded px-2 py-0.5 text-xs text-text-faint hover:bg-control-hover hover:text-text transition-colors"
-                      :disabled="benchDualFull"
-                      :class="{ 'opacity-30 cursor-not-allowed': benchDualFull }"
-                      @click="addBenchDual(player)"
-                    >B</button>
+                      aria-label="Add to team"
+                      class="w-6 h-6 flex items-center justify-center rounded text-text-faint hover:bg-control-hover hover:text-text transition-colors"
+                      @click.stop="toggleMenu(`squad:${player.id}`)"
+                    >
+                      <IconMenu class="w-3.5 h-3.5" />
+                    </button>
+                    <div
+                      v-if="openMenuKey === `squad:${player.id}`"
+                      class="absolute right-0 top-full mt-1 z-50 w-44 rounded-lg border border-border bg-surface shadow-lg p-1"
+                      @click.stop
+                    >
+                      <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-text-faint">Add to</p>
+                      <button
+                        v-for="pos in positions"
+                        :key="pos.key"
+                        class="flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        :class="pos.key === 'star' ? 'text-yellow-400' : 'text-text'"
+                        :disabled="isPositionFull(pos.key)"
+                        @click.stop="addToTeam(pos.key, player); closeMenu()"
+                      >
+                        <span>{{ pos.label }}</span>
+                        <span class="flex items-center gap-1.5">
+                          <span class="flex items-center gap-0.5">
+                            <span v-for="n in emptySlotCount(pos.key)" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                          </span>
+                          <span class="text-text-faint">{{ pos.short }}</span>
+                        </span>
+                      </button>
+                      <button
+                        class="flex w-full items-center justify-between rounded px-2 py-1 text-xs text-text transition-colors hover:bg-control-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        :disabled="benchDualFull"
+                        @click.stop="addBenchDual(player); closeMenu()"
+                      >
+                        <span>Bench</span>
+                        <span class="flex items-center gap-1.5">
+                          <span class="flex items-center gap-0.5">
+                            <span v-for="n in benchEmptyCount" :key="n" class="w-1 h-1 rounded-full bg-text-faint" />
+                          </span>
+                          <span class="text-text-faint">B</span>
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -484,7 +728,7 @@
           </div>
         </div>
       </template>
-      <p v-else class="text-text-faint">No club selected. Choose a club in the nav bar.</p>
+      <p v-else class="text-text-faint">{{ readonly ? 'No data.' : 'No club selected. Choose a club in the nav bar.' }}</p>
 
     </template>
   </div>
@@ -495,6 +739,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useQuery, useMutation, useLazyQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND, GET_FFL_SEASON_CLUBS, GET_FFL_CLUB_SEASON, GET_FFL_CLUB_MATCH, GET_FFL_CLUB_MATCH_TEAM } from '../api/queries'
 import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
+import { MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED } from '../../data-ops/api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
@@ -502,15 +747,24 @@ import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
 import { isScoring } from '../utils/scoring'
 import IconSquad from '../components/icons/IconSquad.vue'
+import IconTeamBuilder from '../components/icons/IconTeamBuilder.vue'
+import IconLock from '../components/icons/IconLock.vue'
 import IconManage from '../components/icons/IconManage.vue'
 import IconSubs from '../components/icons/IconSubs.vue'
 import IconBin from '../components/icons/IconBin.vue'
 import IconCopy from '../components/icons/IconCopy.vue'
+import IconMenu from '../components/icons/IconMenu.vue'
+import { heatStyle } from '@/utils/heatmap'
+import { useTheme } from '@/composables/useTheme'
+import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
+import { useStatSource } from '../composables/useStatSource'
+import StatSourceToggle from '../components/StatSourceToggle.vue'
 import { POSITION_MULTIPLIERS } from '../utils/position'
+import { starScore, fmtStat, statCols, trendDir, LAST_N, TREND_PCT, type StatSummary } from '../utils/playerStats'
 
-const props = defineProps<{ clubMatchId: string }>()
+const props = defineProps<{ clubMatchId: string; readonly?: boolean }>()
 
 const positions = [
   { key: 'goals',     label: 'Goals',     short: 'G',  count: 3 },
@@ -545,6 +799,8 @@ interface SquadPlayer {
   hitouts: number | null
   byeStats: { goals: number; kicks: number; handballs: number; marks: number; tackles: number; hitouts: number; games: number } | null
   aflPlayerSeasonId: string | null
+  statsAll: StatSummary | null
+  statsLastN: StatSummary | null
 }
 
 interface Slot {
@@ -570,10 +826,12 @@ const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.
 const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
 const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
 const bootstrapClubSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.clubSeasonId ?? '')
+const bootstrapClubMatchId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.id ?? '')
 const bootstrapClubId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.club?.id ?? '')
+const isMyClub = computed(() => !!bootstrapClubId.value && bootstrapClubId.value === selectedClubId.value)
 
 watch(bootstrapClubId, (id) => {
-  if (id) setClub(id)
+  if (id && !props.readonly) setClub(id)
 }, { immediate: true })
 
 const { result: roundResult, loading: roundLoading, error: roundError } = useQuery(
@@ -694,7 +952,7 @@ const squad = computed<SquadPlayer[]>(() => {
   return clubSeasonData.value.players.nodes.map((r: {
     id: string
     player: { aflPlayer: { name: string } }
-    aflPlayerSeason?: { id?: string; clubSeason?: { club?: { name: string } | null } | null } | null
+    aflPlayerSeason?: { id?: string; clubSeason?: { club?: { name: string } | null } | null; statsAll?: StatSummary | null; statsLastN?: StatSummary | null } | null
     toRoundId?: string | null
   }) => {
     const pm = playerMatchBySeasonId.value.get(r.id)
@@ -716,6 +974,8 @@ const squad = computed<SquadPlayer[]>(() => {
       hitouts: pm?.hitouts ?? null,
       byeStats: pm?.byeStats ?? null,
       aflPlayerSeasonId: pm?.aflPlayerSeasonId ?? r.aflPlayerSeason?.id ?? null,
+      statsAll: r.aflPlayerSeason?.statsAll ?? null,
+      statsLastN: r.aflPlayerSeason?.statsLastN ?? null,
     }
   })
 })
@@ -847,6 +1107,8 @@ function loadTeamFromMatch(cm: NonNullable<typeof clubMatch.value>) {
       hitouts: pm.aflPlayerMatch?.hitouts ?? null,
       byeStats: pm.playerSeason?.aflPlayerSeason?.stats ?? null,
       aflPlayerSeasonId: pm.playerSeason?.aflPlayerSeason?.id ?? squadEntry?.aflPlayerSeasonId ?? null,
+      statsAll: squadEntry?.statsAll ?? null,
+      statsLastN: squadEntry?.statsLastN ?? null,
     }
     const isBench = pm.backupPositions != null || pm.interchangePosition != null
 
@@ -981,6 +1243,41 @@ const clubMatchDataStatus = computed(() => clubMatch.value?.dataStatus as string
 const clubMatchLocked = computed(() => clubMatchDataStatus.value === 'final')
 
 const dataStatusLabel: Record<string, string> = { no_data: 'Not submitted', submitted: 'Submitted', final: 'Final' }
+
+const markingFinal = ref(false)
+const markingSubmitted = ref(false)
+const markStatusError = ref('')
+
+const roundRefetchVars = () => ({ query: GET_FFL_ROUND, variables: { id: bootstrapRoundId.value, aflRoundId: bootstrapAflRoundId.value } })
+
+const { mutate: markFinalMutation } = useMutation(MARK_FFL_TEAM_FINAL, () => ({ refetchQueries: [roundRefetchVars()], awaitRefetchQueries: true }))
+const { mutate: markSubmittedMutation } = useMutation(MARK_FFL_TEAM_SUBMITTED, () => ({ refetchQueries: [roundRefetchVars()], awaitRefetchQueries: true }))
+
+async function markFinal() {
+  if (!currentMatch.value) return
+  markStatusError.value = ''
+  markingFinal.value = true
+  try {
+    await markFinalMutation({ input: { clubMatchId: props.clubMatchId, matchId: currentMatch.value.id, roundId: bootstrapRoundId.value } })
+  } catch (e: any) {
+    markStatusError.value = e.message ?? 'Failed'
+  } finally {
+    markingFinal.value = false
+  }
+}
+
+async function markSubmitted() {
+  if (!currentMatch.value) return
+  markStatusError.value = ''
+  markingSubmitted.value = true
+  try {
+    await markSubmittedMutation({ input: { clubMatchId: props.clubMatchId, matchId: currentMatch.value.id, roundId: bootstrapRoundId.value } })
+  } catch (e: any) {
+    markStatusError.value = e.message ?? 'Failed'
+  } finally {
+    markingSubmitted.value = false
+  }
+}
 const dataStatusClass: Record<string, string> = {
   no_data:   'bg-surface-raised text-text-faint',
   submitted: 'bg-yellow-500/15 text-yellow-500',
@@ -1170,6 +1467,348 @@ function setInterchange(value: string) {
   markDirty()
 }
 
+function moveBenchToStarter(index: number, pos: PositionKey) {
+  const bSlot = benchDualSlots.value[index]
+  if (!bSlot.player) return
+  const slot = teamSlots.value[pos].find(s => !s.player)
+  if (!slot) return
+  slot.player = bSlot.player
+  bSlot.player = null
+  bSlot.positions = [null, null]
+  markDirty()
+}
+
+function moveStarterToBench(pos: PositionKey, index: number) {
+  const player = teamSlots.value[pos][index].player
+  if (!player) return
+  const slot = benchDualSlots.value.find(s => !s.player)
+  if (!slot) return
+  slot.player = player
+  teamSlots.value[pos][index].player = null
+  markDirty()
+}
+
+function canMoveUp(pos: PositionKey, index: number): boolean {
+  return index > 0 && !!teamSlots.value[pos][index - 1].player
+}
+
+function canMoveDown(pos: PositionKey, index: number): boolean {
+  const slots = teamSlots.value[pos]
+  return index < slots.length - 1 && !!slots[index + 1].player
+}
+
+// ── Stats summary (manage mode) ──────────────────────────────────────────────
+
+// Same column order as the squad page (statCols), with the star score appended.
+const statSummaryCols = [...statCols, { key: 'star', label: '★' }] as const
+
+const squadStatsById = computed(() => {
+  const map = new Map<string, { statsAll: StatSummary | null; statsLastN: StatSummary | null }>()
+  for (const p of squad.value) map.set(p.id, { statsAll: p.statsAll, statsLastN: p.statsLastN })
+  return map
+})
+
+// Which stat set drives the summary columns, heatmap, sort, and projections —
+// global toggle shared with the other stats pages.
+const { statSource } = useStatSource()
+
+const statSourceTitle = computed(() =>
+  statSource.value === 'form' ? `Last ${LAST_N} form averages` : 'Season averages'
+)
+
+// Both stat sets for a player. Team-slot players are looked up by id because
+// they may have been loaded before the club season stats arrived.
+function playerStatSets(player: SquadPlayer): { form: StatSummary | null; season: StatSummary | null } {
+  const s = squadStatsById.value.get(player.id)
+  return {
+    form: s?.statsLastN ?? player.statsLastN ?? null,
+    season: s?.statsAll ?? player.statsAll ?? null,
+  }
+}
+
+// The active stat set per the toggle; form falls back to season when a player
+// has no recent games.
+function formStats(player: SquadPlayer): StatSummary | null {
+  const { form, season } = playerStatSets(player)
+  return statSource.value === 'season' ? season : (form ?? season)
+}
+
+// Trend of form vs season for one stat (see trendDir in utils/playerStats).
+const trendUpTitle = `Trending up: last ${LAST_N} average is at least ${TREND_PCT * 100}% above season average`
+const trendDownTitle = `Trending down: last ${LAST_N} average is at least ${TREND_PCT * 100}% below season average`
+
+function statTrend(player: SquadPlayer, key: typeof statSummaryCols[number]['key']): 'up' | 'down' | null {
+  const { form, season } = playerStatSets(player)
+  if (!form || !season) return null
+  const f = key === 'star' ? starScore(form) : form[key]
+  const s = key === 'star' ? starScore(season) : season[key]
+  return trendDir(f, s)
+}
+
+function squadStat(player: SquadPlayer, key: typeof statSummaryCols[number]['key']): string {
+  const s = formStats(player)
+  if (!s) return '—'
+  return fmtStat(key === 'star' ? starScore(s) : s[key])
+}
+
+// Per-column heatmap over the whole squad (same palette as the Squad page).
+const { isDark } = useTheme()
+
+const statColumnRange = computed(() => {
+  const range = {} as Record<typeof statSummaryCols[number]['key'], { min: number; max: number }>
+  for (const col of statSummaryCols) {
+    const vals = squad.value
+      .map(p => {
+        const s = formStats(p)
+        return s ? (col.key === 'star' ? starScore(s) : s[col.key]) : null
+      })
+      .filter((v): v is number => v != null)
+    if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  return range
+})
+
+function statHeat(player: SquadPlayer, key: typeof statSummaryCols[number]['key']): Record<string, string> {
+  const s = formStats(player)
+  if (!s) return {}
+  const r = statColumnRange.value[key]
+  if (!r) return {}
+  return heatStyle(key === 'star' ? starScore(s) : s[key], r.min, r.max, isDark.value)
+}
+
+// Squad panel sorting — click a stat header to sort descending, click again to
+// return to last-name order. Defaults to star score.
+const squadSortKey = ref<typeof statSummaryCols[number]['key'] | 'name'>('star')
+
+function toggleSquadSort(key: typeof statSummaryCols[number]['key']) {
+  squadSortKey.value = squadSortKey.value === key ? 'name' : key
+}
+
+function sortBySquadKey(players: SquadPlayer[]): SquadPlayer[] {
+  const key = squadSortKey.value
+  if (key === 'name') {
+    return [...players].sort((a, b) => {
+      const lastA = a.name.split(' ').pop()?.toLowerCase() ?? ''
+      const lastB = b.name.split(' ').pop()?.toLowerCase() ?? ''
+      return lastA.localeCompare(lastB)
+    })
+  }
+  const val = (p: SquadPlayer): number => {
+    const s = formStats(p)
+    if (!s) return -1
+    return key === 'star' ? starScore(s) : s[key]
+  }
+  return [...players].sort((a, b) => val(b) - val(a))
+}
+
+const sortedAvailablePlayers = computed(() => sortBySquadKey(availablePlayers.value))
+const sortedTradedPlayers = computed(() => sortBySquadKey(tradedPlayers.value))
+
+// Projected points for a starter slot: form average for the position stat × multiplier.
+function projectedScore(player: SquadPlayer, pos: PositionKey): number | null {
+  const s = formStats(player)
+  if (!s) return null
+  return pos === 'star' ? starScore(s) : s[pos] * (POSITION_MULTIPLIERS[pos] ?? 1)
+}
+
+// Estimated team total: form-based projections summed across all filled starter slots.
+const projectedTotal = computed(() => {
+  let total = 0
+  for (const pos of positions) {
+    for (const slot of teamSlots.value[pos.key]) {
+      if (!slot.player) continue
+      total += projectedScore(slot.player, pos.key) ?? 0
+    }
+  }
+  return Math.round(total)
+})
+
+// ── Best team ────────────────────────────────────────────────────────────────
+
+// Fills the starter slots with the highest-scoring assignment of squad players
+// to positions (Hungarian algorithm over projected scores from the active stat
+// source). Bench slots whose player becomes a starter are cleared; the rest of
+// the bench is left alone. Local state only — Save still applies it.
+function applyBestTeam() {
+  const pool = squad.value.filter(p => !p.toRoundId && formStats(p))
+  if (!pool.length) return
+
+  const slotPositions: PositionKey[] = []
+  for (const pos of positions) {
+    for (let i = 0; i < pos.count; i++) slotPositions.push(pos.key)
+  }
+
+  const values = slotPositions.map(pos => pool.map(p => projectedScore(p, pos) ?? 0))
+  const assignment = solveBestAssignment(values)
+
+  const byPos = new Map<PositionKey, SquadPlayer[]>(positions.map(p => [p.key, []]))
+  assignment.forEach((playerIdx, slotIdx) => {
+    if (playerIdx >= 0) byPos.get(slotPositions[slotIdx])!.push(pool[playerIdx])
+  })
+
+  const starterIds = new Set<string>()
+  for (const pos of positions) {
+    const chosen = byPos.get(pos.key)!
+      .sort((a, b) => (projectedScore(b, pos.key) ?? 0) - (projectedScore(a, pos.key) ?? 0))
+    teamSlots.value[pos.key] = Array.from({ length: pos.count }, (_, i) => ({ player: chosen[i] ?? null }))
+    for (const p of chosen) starterIds.add(p.id)
+  }
+
+  for (const bSlot of benchDualSlots.value) {
+    if (bSlot.player && starterIds.has(bSlot.player.id)) {
+      bSlot.player = null
+      bSlot.positions = [null, null]
+    }
+  }
+  markDirty()
+}
+
+// ── Popup menus (fallback for drag and drop) ─────────────────────────────────
+
+// Remaining open slots per target — rendered as dots in the popup menus.
+function emptySlotCount(key: PositionKey): number {
+  return teamSlots.value[key].filter(s => !s.player).length
+}
+
+const benchEmptyCount = computed(() => benchDualSlots.value.filter(s => !s.player).length)
+
+const openMenuKey = ref<string | null>(null)
+
+function toggleMenu(key: string) {
+  openMenuKey.value = openMenuKey.value === key ? null : key
+}
+
+function closeMenu() {
+  openMenuKey.value = null
+}
+
+// ── Drag and drop ────────────────────────────────────────────────────────────
+
+type DragSource =
+  | { kind: 'squad'; player: SquadPlayer }
+  | { kind: 'starter'; pos: PositionKey; index: number }
+  | { kind: 'bench'; index: number }
+
+const dragSource = ref<DragSource | null>(null)
+const dragOverKey = ref<string | null>(null)
+
+function onDragStart(ev: DragEvent, src: DragSource) {
+  if (!managing.value) {
+    ev.preventDefault()
+    return
+  }
+  dragSource.value = src
+  closeMenu()
+  if (ev.dataTransfer) {
+    ev.dataTransfer.setData('text/plain', '')
+    ev.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function onDragEnd() {
+  dragSource.value = null
+  dragOverKey.value = null
+}
+
+function onDragLeave(key: string) {
+  if (dragOverKey.value === key) dragOverKey.value = null
+}
+
+// Returns the action a drop on the given starter slot would perform, or null if invalid.
+function starterDropAction(pos: PositionKey, index: number): (() => void) | null {
+  const src = dragSource.value
+  if (!src) return null
+  const slot = teamSlots.value[pos][index]
+  if (src.kind === 'squad') {
+    const player = src.player
+    if (!slot.player) return () => { slot.player = player; markDirty() }
+    if (!isPositionFull(pos)) return () => addToTeam(pos, player)
+    return null
+  }
+  if (src.kind === 'starter') {
+    const { pos: fromPos, index: fromIndex } = src
+    if (fromPos === pos) {
+      if (fromIndex === index || !slot.player) return null
+      return () => swapStarters(pos, fromIndex, index)
+    }
+    // Cross-position: fill an empty slot, or swap occupants.
+    const fromSlot = teamSlots.value[fromPos][fromIndex]
+    if (!slot.player) return () => { slot.player = fromSlot.player; fromSlot.player = null; markDirty() }
+    return () => {
+      const tmp = fromSlot.player
+      fromSlot.player = slot.player
+      slot.player = tmp
+      markDirty()
+    }
+  }
+  // Bench → starter slot.
+  const bSlot = benchDualSlots.value[src.index]
+  if (!bSlot.player) return null
+  const place = (target: Slot) => {
+    target.player = bSlot.player
+    bSlot.player = null
+    bSlot.positions = [null, null]
+    markDirty()
+  }
+  if (!slot.player) return () => place(slot)
+  const empty = teamSlots.value[pos].find(s => !s.player)
+  if (empty) return () => place(empty)
+  return null
+}
+
+// Returns the action a drop on the given bench slot would perform, or null if invalid.
+function benchDropAction(index: number): (() => void) | null {
+  const src = dragSource.value
+  if (!src) return null
+  const slot = benchDualSlots.value[index]
+  if (src.kind === 'squad') {
+    const player = src.player
+    if (!slot.player) return () => { slot.player = player; markDirty() }
+    if (!benchDualFull.value) return () => addBenchDual(player)
+    return null
+  }
+  if (src.kind === 'starter') {
+    const fromSlot = teamSlots.value[src.pos][src.index]
+    if (!fromSlot.player) return null
+    if (!slot.player) return () => { slot.player = fromSlot.player; fromSlot.player = null; markDirty() }
+    if (!benchDualFull.value) return () => { addBenchDual(fromSlot.player!); fromSlot.player = null }
+    return null
+  }
+  // Bench → bench: reorder (player and backup positions travel together).
+  if (src.index === index) return null
+  const other = benchDualSlots.value[src.index]
+  return () => {
+    const tmpPlayer = other.player
+    const tmpPositions = other.positions
+    other.player = slot.player
+    other.positions = slot.positions
+    slot.player = tmpPlayer
+    slot.positions = tmpPositions
+    markDirty()
+  }
+}
+
+// Dropping a team/bench player back on the squad list removes them from the team.
+function squadDropAction(): (() => void) | null {
+  const src = dragSource.value
+  if (!src) return null
+  if (src.kind === 'starter') return () => removeFromTeam(src.pos, src.index)
+  if (src.kind === 'bench') return () => removeBenchDual(src.index)
+  return null
+}
+
+function onDragOverTarget(ev: DragEvent, key: string, action: (() => void) | null) {
+  if (!action) return
+  ev.preventDefault()
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move'
+  dragOverKey.value = key
+}
+
+function onDropTarget(action: (() => void) | null) {
+  if (action) action()
+  onDragEnd()
+}
+
 // ── Subs mode ────────────────────────────────────────────────────────────────
 
 // True when the AFL match is underway or complete (excludes 'named' — pre-match only).
@@ -1196,10 +1835,7 @@ function initSubsState() {
       .map((pm: { id: string }) => pm.id)
   )
   const savedApplied = pms.some((pm: { status: string | null }) => pm.status === 'interchanged_out')
-  const suggestedIc = clubMatch.value?.suggestedSubstitutions?.some(
-    (s: { kind: string }) => s.kind === 'interchange'
-  ) ?? false
-  interchangeApplied.value = savedApplied || suggestedIc
+  interchangeApplied.value = savedApplied
 }
 
 function isInterchangeSlot(slot: BenchDualSlot): boolean {

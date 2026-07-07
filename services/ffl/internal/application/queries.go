@@ -107,6 +107,10 @@ func (q *Queries) GetClubMatch(ctx context.Context, id int) (domain.ClubMatch, e
 	return q.clubMatches.FindByID(ctx, id)
 }
 
+func (q *Queries) GetClubMatchesByIDs(ctx context.Context, ids []int) (map[int]domain.ClubMatch, error) {
+	return q.clubMatches.FindByIDs(ctx, ids)
+}
+
 func (q *Queries) GetClubMatches(ctx context.Context, matchID int) ([]domain.ClubMatch, error) {
 	return q.clubMatches.FindByMatchID(ctx, matchID)
 }
