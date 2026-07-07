@@ -100,6 +100,11 @@ supergraph-compose:
 proto-gen:
     buf generate
 
+# Export historical AFL stats from afltables.com to afl-historical/<season>.csv
+# Walks backwards from `from` to `to` (inclusive). e.g. just afl-historical-export 2023 2023
+afl-historical-export from to:
+    cd services/afl && go run ./cmd/afltables-export -from {{from}} -to {{to}} -out ../../afl-historical
+
 # Run AFL service tests (includes integration tests via testcontainers)
 test-afl:
     cd services/afl && go test -tags integration ./...
