@@ -49,10 +49,12 @@
                   class="border-b border-border-subtle hover:bg-surface-hover"
                 >
                   <td class="py-2 pr-4 font-medium">
-                    <router-link
-                      :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.id } }"
-                      class="hover:text-text-muted transition-colors"
-                    >{{ row.playerName }}</router-link>
+                    <PlayerStatsCard :name="row.playerName" :club="row.clubName" :afl-status="null" :afl-player-season-id="row.id" :afl-round-id="null">
+                      <router-link
+                        :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.id } }"
+                        class="hover:text-text-muted transition-colors"
+                      >{{ row.playerName }}</router-link>
+                    </PlayerStatsCard>
                   </td>
                   <td class="py-2 pr-4 text-xs text-text-muted whitespace-nowrap">
                     <router-link
@@ -100,6 +102,7 @@ import { heatStyle } from '@/utils/heatmap'
 import { statCols, starScore, type StatSummary, type StatKey, LAST_N } from '../utils/playerStats'
 import { POSITION_LABEL } from '../utils/position'
 import StatCell from '../components/StatCell.vue'
+import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { GET_FREE_AGENTS } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'

@@ -48,9 +48,15 @@
                 <td class="px-2 py-2 text-right tabular-nums text-base font-bold text-yellow-400">{{ starSeasonAvg }}</td>
               </tr>
               <tr class="border-b border-border-subtle">
-                <td class="py-2 text-xs text-text-faint whitespace-nowrap">Last 3 avg</td>
-                <td v-for="col in statCols" :key="col.key" class="px-2 py-2 text-right tabular-nums text-base font-bold" :class="statLast3Up(col.key)">{{ statLast3Avg(col.key) }}</td>
-                <td class="px-2 py-2 text-right tabular-nums text-base font-bold" :class="starLast3Up">{{ starLast3Avg }}</td>
+                <td class="py-2 text-xs text-text-faint whitespace-nowrap">Last {{ LAST_N }} avg</td>
+                <td v-for="col in statCols" :key="col.key" class="px-2 py-2 text-right tabular-nums text-base font-bold">
+                  <span v-if="statLastNTrend(col.key) === 'up'" class="text-xs font-normal text-green-400">↑ </span>
+                  <span v-else-if="statLastNTrend(col.key) === 'down'" class="text-xs font-normal text-red-400">↓ </span>{{ statLastNAvg(col.key) }}
+                </td>
+                <td class="px-2 py-2 text-right tabular-nums text-base font-bold text-yellow-400">
+                  <span v-if="starLastNTrend === 'up'" class="text-xs font-normal text-green-400">↑ </span>
+                  <span v-else-if="starLastNTrend === 'down'" class="text-xs font-normal text-red-400">↓ </span>{{ starLastNAvg }}
+                </td>
               </tr>
               <tr>
                 <td class="py-2 text-xs text-text-faint whitespace-nowrap">Median</td>
@@ -174,7 +180,7 @@ import { GET_AFL_PLAYER_SEASON_STATS, GET_FFL_PLAYER_STINTS } from '../api/queri
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { POSITION_LETTERS, POSITION_COLORS } from '../utils/position'
-import { fmtStat } from '../utils/playerStats'
+import { fmtStat, statCols, starScore, trendDir, LAST_N, type StatKey } from '../utils/playerStats'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -284,17 +290,6 @@ interface MergedRow extends AFLPlayerMatch {
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
-const statCols = [
-  { key: 'kicks' as const,     label: 'K'  },
-  { key: 'handballs' as const, label: 'H'  },
-  { key: 'marks' as const,     label: 'M'  },
-  { key: 'hitouts' as const,   label: 'R'  },
-  { key: 'tackles' as const,   label: 'T'  },
-  { key: 'goals' as const,     label: 'G'  },
-]
-
-type StatKey = typeof statCols[number]['key']
-
 const sortedMatches = computed((): AFLPlayerMatch[] => {
   const ms = playerSeason.value?.matches ?? []
   return [...ms].sort((a, b) => parseInt(a.clubMatch.match.round.id) - parseInt(b.clubMatch.match.round.id))
@@ -338,7 +333,7 @@ const mergedRows = computed((): MergedRow[] =>
     const ffl = fflByAflMatchId.value.get(m.id) ?? null
     return {
       ...m,
-      starScore: fflStar(m),
+      starScore: starScore(m),
       aflMatchId: m.clubMatch.match.id,
       fflMatchId: ffl?.matchId ?? null,
       fflClubName: ffl?.clubName ?? null,
@@ -353,43 +348,36 @@ const mergedRows = computed((): MergedRow[] =>
 
 // ── Analysis ─────────────────────────────────────────────────────────────────
 
-function fflStar(m: AFLPlayerMatch): number {
-  return m.goals * 5 + m.kicks + m.handballs + m.marks * 2 + m.tackles * 4
-}
-
 function starFromSummary(s: AFLStatSummary | null): string {
   if (!s) return '—'
-  return (s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4).toFixed(1)
+  return starScore(s).toFixed(1)
 }
-
 
 function statAvg(key: StatKey): string {
   return fmtStat(playerSeason.value?.statsAll?.[key])
 }
 
-function statLast3Avg(key: StatKey): string {
+function statLastNAvg(key: StatKey): string {
   return fmtStat(playerSeason.value?.statsLastN?.[key])
 }
 
-function statLast3Up(key: StatKey): string {
+// Same trend semantics as the team builder: ↑/↓ when form deviates ≥15% from season.
+function statLastNTrend(key: StatKey): 'up' | 'down' | null {
   const all = playerSeason.value?.statsAll?.[key]
-  const lastN  = playerSeason.value?.statsLastN?.[key]
-  return all != null && lastN != null && lastN > all ? 'text-green-400' : ''
+  const lastN = playerSeason.value?.statsLastN?.[key]
+  if (all == null || lastN == null) return null
+  return trendDir(lastN, all)
 }
 
 const starSeasonAvg = computed(() => starFromSummary(playerSeason.value?.statsAll ?? null))
-const starLast3Avg  = computed(() => starFromSummary(playerSeason.value?.statsLastN ?? null))
+const starLastNAvg  = computed(() => starFromSummary(playerSeason.value?.statsLastN ?? null))
 
-function starFromSummaryNum(s: AFLStatSummary | null | undefined): number | null {
-  if (!s) return null
-  return s.goals * 5 + s.kicks + s.handballs + s.marks * 2 + s.tackles * 4
-}
-const starLast3Up = computed(() => {
-  const all = starFromSummaryNum(playerSeason.value?.statsAll)
-  const lastN  = starFromSummaryNum(playerSeason.value?.statsLastN)
-  return all != null && lastN != null && lastN > all ? 'text-green-400' : 'text-yellow-400'
+const starLastNTrend = computed((): 'up' | 'down' | null => {
+  const all = playerSeason.value?.statsAll
+  const lastN = playerSeason.value?.statsLastN
+  if (!all || !lastN) return null
+  return trendDir(starScore(lastN), starScore(all))
 })
-
 
 const starMedian = computed(() => starFromSummary(playerSeason.value?.statsMedian ?? null))
 

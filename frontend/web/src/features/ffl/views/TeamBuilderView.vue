@@ -777,7 +777,7 @@ import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
 import { POSITION_MULTIPLIERS } from '../utils/position'
-import { starScore, fmtStat, statCols, LAST_N, type StatSummary } from '../utils/playerStats'
+import { starScore, fmtStat, statCols, trendDir, LAST_N, type StatSummary } from '../utils/playerStats'
 
 const props = defineProps<{ clubMatchId: string; readonly?: boolean }>()
 
@@ -1547,8 +1547,7 @@ function formStats(player: SquadPlayer): StatSummary | null {
   return statSource.value === 'season' ? season : (form ?? season)
 }
 
-// Trend of form vs season for one stat: ▲/▼ when form deviates meaningfully
-// (at least 15% of the season value, and at least 0.5 absolute).
+// Trend of form vs season for one stat (see trendDir in utils/playerStats).
 const trendUpTitle = `Trending up: last ${LAST_N} average is at least 15% above season average`
 const trendDownTitle = `Trending down: last ${LAST_N} average is at least 15% below season average`
 
@@ -1557,10 +1556,7 @@ function statTrend(player: SquadPlayer, key: typeof statSummaryCols[number]['key
   if (!form || !season) return null
   const f = key === 'star' ? starScore(form) : form[key]
   const s = key === 'star' ? starScore(season) : season[key]
-  const threshold = Math.max(0.5, 0.15 * Math.abs(s))
-  if (f - s >= threshold) return 'up'
-  if (s - f >= threshold) return 'down'
-  return null
+  return trendDir(f, s)
 }
 
 function squadStat(player: SquadPlayer, key: typeof statSummaryCols[number]['key']): string {

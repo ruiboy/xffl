@@ -2,11 +2,12 @@
   <div ref="wrap" class="relative inline-block" @mouseenter="onEnter" @mouseleave="show = false">
     <slot />
     <Transition name="fade">
+      <!-- Fixed positioning so the card escapes any overflow-clipping ancestor
+           (e.g. overflow-x-auto table wrappers). -->
       <div
         v-if="show && aflPlayerSeasonId"
-        class="absolute z-50 left-0 w-96 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none overflow-hidden"
-        :class="placeAbove ? 'bottom-full mb-1.5' : 'top-full mt-1.5'"
-        :style="maxH ? { maxHeight: `${maxH}px` } : {}"
+        class="fixed z-50 w-96 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none overflow-hidden"
+        :style="cardStyle"
       >
         <div v-if="loading" class="px-4 py-3 text-xs text-text-faint">Loading...</div>
         <template v-else-if="data">
@@ -84,9 +85,11 @@ const props = defineProps<{
 
 const show = ref(false)
 const wrap = ref<HTMLElement | null>(null)
-// Open the card on whichever side of the trigger has more room, capped to that space.
-const placeAbove = ref(false)
-const maxH = ref<number | null>(null)
+// Viewport-fixed placement, computed on hover: open on whichever side of the
+// trigger has more room, capped to that space, clamped inside the viewport.
+const cardStyle = ref<Record<string, string>>({})
+
+const CARD_W = 384 // w-96
 
 const { result: data, loading } = useQuery(
   GET_PLAYER_STATS_CARD,
@@ -100,8 +103,16 @@ function onEnter() {
   if (rect) {
     const below = window.innerHeight - rect.bottom
     const above = rect.top
-    placeAbove.value = below < 440 && above > below
-    maxH.value = Math.max(160, (placeAbove.value ? above : below) - 24)
+    const placeAbove = below < 440 && above > below
+    const maxH = Math.max(160, (placeAbove ? above : below) - 24)
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - CARD_W - 8))
+    cardStyle.value = {
+      left: `${left}px`,
+      maxHeight: `${maxH}px`,
+      ...(placeAbove
+        ? { bottom: `${window.innerHeight - rect.top + 6}px` }
+        : { top: `${rect.bottom + 6}px` }),
+    }
   }
   show.value = true
 }
