@@ -1,6 +1,6 @@
-# Current Sprint — Phase 23: UX — Player Intelligence
+# Current Sprint — Phase 24: Data Management — Data Setup & Historical Import
 
-**Sprint goal:** Richer player and club context for FFL decision-making.
+**Sprint goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
 
 See `plans/ideas.md` for full item descriptions where relevant.
 
@@ -8,8 +8,8 @@ See `plans/ideas.md` for full item descriptions where relevant.
 
 ## Tasks
 
-- [x] PAGE-1: AFL player season view (`/ffl/afl/player-seasons/:id`) — MEDIAN backend, status pills, season stats table, row-level match links, header breadcrumb links, stat label fixes
-- [x] PAGE-3: AFL club season view (`/ffl/afl/club-seasons/:id`) — all players at an AFL club with FFL ownership, stats, and * avg; entry from AFL ladder club names
-- [x] Club Match page (`/ffl/club-matches/:id`) — read-only view of a club's team and scores; linked from FFL match view; Team Builder link shown when club is selected
-- [x] Frontend architecture: formalised three-namespace page hierarchy (FFL / AFL / AFL Lens) in `frontend.md`; consistent page naming and route conventions across `router.ts`, `frontend.md`, and `ideas.md`
-- [x] Cross-page linking UX pass — AFL round Top Players (logo + match link), AFL match DataOps footer removed + stat headers (K H D M R T G B Pts), AFL Lens club season inline player/club links, FFL round top scorer match links, FFL match header club season links, "Improve your score" pill moved above grid for alignment
+- [ ] AFL historical data import — one-time CLI from afltables CSV (2024-present already seeded; earlier years TBD)
+- [ ] Pluggable FFL scoring formula — strategy pattern keyed by season; `ScoringStrategy` interface + concrete implementations covering known formula variants; `ffl.season.scoring_strategy` column; wire into score calculation use case (deferred from Phase 20)
+- [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires pluggable scoring formula above)
+- [ ] AFL season player import — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players
+- [ ] FFL squad import — once/season CLI; resolve FFL rosters to AFL player IDs

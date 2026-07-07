@@ -1,12 +1,8 @@
 # Roadmap
 
-Committed phases — active and next. Completed phases 1–21 are in `plans/history.md`.
+Committed phases — active and next. Completed phases 1–23 are in `plans/history.md`.
 
 ---
-
-## Phase 23: UX — Player Intelligence
-
-**Goal:** Richer player and club context for FFL decision-making. Candidate areas from `plans/ideas.md`: player season pages, free agents, club pages, Team Builder analytics, notes in the match view, score reconciliation. Scope confirmed at sprint start.
 
 ## Phase 24: Data Management — Data Setup & Historical Import
 
