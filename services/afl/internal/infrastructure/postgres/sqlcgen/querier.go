@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
+	FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
 	FindByeByRoundAndClub(ctx context.Context, arg FindByeByRoundAndClubParams) (FindByeByRoundAndClubRow, error)
 	// For each player_season_id, returns whether their club has a bye in the given
@@ -32,6 +33,7 @@ type Querier interface {
 	// that season (afl.season.id ordering is not chronological).
 	FindLatestPlayerSeasonByPlayerID(ctx context.Context, playerID int32) (int32, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
+	FindMatchByRoundAndHomeClubSeason(ctx context.Context, arg FindMatchByRoundAndHomeClubSeasonParams) (int32, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
 	FindPlayerByID(ctx context.Context, id int32) (FindPlayerByIDRow, error)
@@ -44,19 +46,27 @@ type Querier interface {
 	FindPlayerSeasonsByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDWithPlayerRow, error)
 	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
 	FindPlayerSeasonsBySeasonID(ctx context.Context, arg FindPlayerSeasonsBySeasonIDParams) ([]int32, error)
+	FindPlayersByExactName(ctx context.Context, name string) ([]FindPlayersByExactNameRow, error)
 	FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error)
 	FindPlayersByIDsWithClub(ctx context.Context, ids []int32) ([]FindPlayersByIDsWithClubRow, error)
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
+	FindRoundBySeasonAndName(ctx context.Context, arg FindRoundBySeasonAndNameParams) (int32, error)
 	FindRoundIDByClubMatchID(ctx context.Context, id int32) (int32, error)
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	FindSeasonByLeagueAndName(ctx context.Context, arg FindSeasonByLeagueAndNameParams) (int32, error)
 	// Returns average stats for each player_season across final matches that took place
 	// before the given round (by start_dt, since round_id ordering is not guaranteed to be
 	// chronological). Used to compute bye scores from season-to-date form.
 	GetPlayerSeasonAveragesBatch(ctx context.Context, arg GetPlayerSeasonAveragesBatchParams) ([]GetPlayerSeasonAveragesBatchRow, error)
+	// Historical matches are complete, so data_status is 'final' (so their stats
+	// count in player-season averages). Scores/results are not backfilled.
+	InsertHistoricalMatch(ctx context.Context, arg InsertHistoricalMatchParams) (int32, error)
 	InsertPlayer(ctx context.Context, name string) (InsertPlayerRow, error)
 	InsertPlayerSeason(ctx context.Context, arg InsertPlayerSeasonParams) (InsertPlayerSeasonRow, error)
+	InsertRoundReturningID(ctx context.Context, arg InsertRoundReturningIDParams) (int32, error)
+	InsertSeasonReturningID(ctx context.Context, arg InsertSeasonReturningIDParams) (int32, error)
 	SearchPlayersByName(ctx context.Context, query *string) ([]SearchPlayersByNameRow, error)
 	UpdateClubMatchRushedBehinds(ctx context.Context, arg UpdateClubMatchRushedBehindsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
@@ -64,8 +74,15 @@ type Querier interface {
 	UpdateMatchDataStatus(ctx context.Context, arg UpdateMatchDataStatusParams) error
 	UpdateMatchResult(ctx context.Context, arg UpdateMatchResultParams) error
 	UpsertBye(ctx context.Context, arg UpsertByeParams) (UpsertByeRow, error)
+	UpsertClubByName(ctx context.Context, name string) (int32, error)
+	UpsertClubMatchReturningID(ctx context.Context, arg UpsertClubMatchReturningIDParams) (int32, error)
+	UpsertClubSeasonReturningID(ctx context.Context, arg UpsertClubSeasonReturningIDParams) (int32, error)
 	UpsertDataopsMatchSource(ctx context.Context, arg UpsertDataopsMatchSourceParams) error
 	UpsertDataopsPlayerSource(ctx context.Context, arg UpsertDataopsPlayerSourceParams) error
+	// Queries for the one-time historical import (cmd/afltables-import).
+	// Get-or-create helpers for the season→player_match scaffold, plus name lookups
+	// used by the interactive player resolver.
+	UpsertLeagueByName(ctx context.Context, name string) (int32, error)
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 	UpsertPlayerSeason(ctx context.Context, arg UpsertPlayerSeasonParams) (UpsertPlayerSeasonRow, error)
 }
