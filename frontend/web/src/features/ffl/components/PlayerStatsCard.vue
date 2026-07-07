@@ -1,12 +1,14 @@
 <template>
   <div ref="wrap" class="relative inline-block" @mouseenter="onEnter" @mouseleave="show = false">
     <slot />
+    <!-- Teleported to body + fixed positioning so the card escapes both
+         overflow-clipping ancestors (overflow-x-auto wrappers) and stacking
+         contexts (sticky table columns). -->
+    <Teleport to="body">
     <Transition name="fade">
-      <!-- Fixed positioning so the card escapes any overflow-clipping ancestor
-           (e.g. overflow-x-auto table wrappers). -->
       <div
         v-if="show && aflPlayerSeasonId"
-        class="fixed z-50 w-96 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none overflow-hidden"
+        class="fixed z-50 w-max min-w-72 rounded-2xl border border-border bg-surface shadow-lg pointer-events-none overflow-hidden"
         :style="cardStyle"
       >
         <div v-if="loading" class="px-4 py-3 text-xs text-text-faint">Loading...</div>
@@ -25,15 +27,6 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="lastN" class="text-text font-medium">
-                  <td class="text-text-faint font-normal py-1 pr-4 whitespace-nowrap">Last {{ LAST_N }}</td>
-                  <td
-                    v-for="col in cardCols"
-                    :key="col.key"
-                    class="text-right py-1 px-2"
-                    :class="up(statOf(lastN, col.key), seasonAvg ? statOf(seasonAvg, col.key) : undefined) || (col.key === 'star' ? 'text-yellow-400' : '')"
-                  >{{ fmt(statOf(lastN, col.key)) }}</td>
-                </tr>
                 <tr v-if="seasonAvg" class="text-text-muted">
                   <td class="text-text-faint py-1 pr-4 whitespace-nowrap">Season ({{ seasonAvg.games }})</td>
                   <td
@@ -42,6 +35,15 @@
                     class="text-right py-1 px-2"
                     :class="col.key === 'star' ? 'text-yellow-400/70' : ''"
                   >{{ fmt(statOf(seasonAvg, col.key)) }}</td>
+                </tr>
+                <tr v-if="lastN" class="text-text font-medium">
+                  <td class="text-text-faint font-normal py-1 pr-4 whitespace-nowrap">Last {{ LAST_N }}</td>
+                  <td
+                    v-for="col in cardCols"
+                    :key="col.key"
+                    class="text-right py-1 px-2 whitespace-nowrap"
+                    :class="col.key === 'star' ? 'text-yellow-400' : ''"
+                  ><span v-if="lastNTrend(col.key) === 'up'" class="text-[10px] font-normal text-green-400">↑</span><span v-else-if="lastNTrend(col.key) === 'down'" class="text-[10px] font-normal text-red-400">↓</span>{{ fmt(statOf(lastN, col.key)) }}</td>
                 </tr>
                 <tr v-if="roundRows.length">
                   <td :colspan="cardCols.length + 1"><div class="h-px bg-border-subtle my-1" /></td>
@@ -64,6 +66,7 @@
         </template>
       </div>
     </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -71,7 +74,7 @@
 import { ref, computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_PLAYER_STATS_CARD } from '../api/queries'
-import { starScore, statCols, LAST_N, type StatSummary } from '../utils/playerStats'
+import { starScore, statCols, trendDir, LAST_N, type StatSummary } from '../utils/playerStats'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
 
@@ -89,7 +92,9 @@ const wrap = ref<HTMLElement | null>(null)
 // trigger has more room, capped to that space, clamped inside the viewport.
 const cardStyle = ref<Record<string, string>>({})
 
-const CARD_W = 384 // w-96
+// Width estimate for horizontal clamping — the card sizes to its content
+// (w-max), so this errs generous to keep the right edge on screen.
+const CARD_W = 448
 
 const { result: data, loading } = useQuery(
   GET_PLAYER_STATS_CARD,
@@ -108,6 +113,7 @@ function onEnter() {
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - CARD_W - 8))
     cardStyle.value = {
       left: `${left}px`,
+      maxWidth: `${window.innerWidth - left - 8}px`,
       maxHeight: `${maxH}px`,
       ...(placeAbove
         ? { bottom: `${window.innerHeight - rect.top + 6}px` }
@@ -164,12 +170,14 @@ function roundHeat(m: CardMatch, key: CardKey): Record<string, string> {
   return heatStyle(statOf(m, key), r.min, r.max, isDark.value)
 }
 
-function fmt(v: number): string {
-  return v % 1 === 0 ? String(v) : v.toFixed(1)
+// Shared trend semantics (utils/playerStats) for the Last N row's arrows.
+function lastNTrend(key: CardKey): 'up' | 'down' | null {
+  if (!lastN.value || !seasonAvg.value) return null
+  return trendDir(statOf(lastN.value, key), statOf(seasonAvg.value, key))
 }
 
-function up(a: number, b: number | undefined): string {
-  return b !== undefined && a > b ? 'text-green-400' : ''
+function fmt(v: number): string {
+  return v % 1 === 0 ? String(v) : v.toFixed(1)
 }
 </script>
 

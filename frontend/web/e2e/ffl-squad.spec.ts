@@ -34,6 +34,48 @@ test.describe('FFL Squad', () => {
     await expect(row.getByText('Brisbane Lions')).toBeVisible()
   })
 
+  // ── Stats view sorting ─────────────────────────────────────────────────────
+
+  test('clicking a stat header sorts; clicking again restores position order', async ({ page }) => {
+    await page.getByRole('button', { name: 'Stats' }).click()
+    const firstPlayerBefore = await page.locator('tbody td.sticky.left-0').first().textContent()
+
+    const kicksHeader = page.getByRole('button', { name: 'Kicks', exact: true })
+    await kicksHeader.click()
+    await expect(kicksHeader).toHaveClass(/text-sky-400/)
+
+    // Rows are genuinely ordered by kicks: the first StatCell per row is the K
+    // column; its last number is what the sort uses (last-N, season fallback).
+    const kVals = await page.locator('tbody tr').evaluateAll(rows =>
+      rows
+        .filter(r => r.querySelectorAll('div.flex.items-end').length > 0)
+        .map(r => {
+          const spans = r.querySelectorAll('div.flex.items-end')[0]?.querySelectorAll('span') ?? []
+          const v = parseFloat(spans[spans.length - 1]?.textContent ?? '')
+          return Number.isNaN(v) ? -1 : v
+        }),
+    )
+    expect(kVals.length).toBeGreaterThan(1)
+    expect(kVals).toEqual([...kVals].sort((a, b) => b - a))
+
+    // Second click restores the default position-group order
+    await kicksHeader.click()
+    await expect(kicksHeader).not.toHaveClass(/text-sky-400/)
+    await expect(page.locator('tbody td.sticky.left-0').first()).toHaveText(firstPlayerBefore ?? '')
+  })
+
+  test('clicking Player header sorts by name on stats tab', async ({ page }) => {
+    await page.getByRole('button', { name: 'Stats' }).click()
+    const playerHeader = page.getByRole('button', { name: 'Player', exact: true })
+    await playerHeader.click()
+    await expect(playerHeader).toHaveClass(/text-sky-400/)
+    const names = (await page.locator('tbody td.sticky.left-0').allTextContents())
+      .map(n => n.trim()).filter(Boolean)
+    const lastNames = names.map(n => n.split(' ').pop()!.toLowerCase())
+    expect(lastNames.length).toBeGreaterThan(1)
+    expect(lastNames).toEqual([...lastNames].sort((a, b) => a.localeCompare(b)))
+  })
+
   // ── Manage toolbar ─────────────────────────────────────────────────────────
 
   test('shows Manage button initially', async ({ page }) => {

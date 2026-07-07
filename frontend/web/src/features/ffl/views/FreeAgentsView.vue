@@ -2,27 +2,7 @@
   <div>
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-text">Free Agents</h1>
-      <span
-        class="text-xs text-text-faint whitespace-nowrap"
-        :title="`Cells show season avg then last ${LAST_N} avg. ↑/↓ = last ${LAST_N} form at least 15% above/below season average`"
-      >
-        <span class="text-green-400">↑</span>/<span class="text-red-400">↓</span> = last {{ LAST_N }} form
-      </span>
-      <!-- Rank basis toggle: which average ranks the top-20 cut -->
-      <div class="flex items-center rounded border border-border overflow-hidden text-[10px] text-text-faint">
-        <button
-          class="px-1.5 py-0.5 transition-colors"
-          :class="statSource === 'form' ? 'bg-control text-text' : 'hover:text-text'"
-          :title="`Rank the top 20 by last ${LAST_N} averages`"
-          @click="statSource = 'form'"
-        >Last {{ LAST_N }}</button>
-        <button
-          class="px-1.5 py-0.5 transition-colors"
-          :class="statSource === 'season' ? 'bg-control text-text' : 'hover:text-text'"
-          title="Rank the top 20 by season averages"
-          @click="statSource = 'season'"
-        >Season</button>
-      </div>
+      <StatSourceToggle />
     </div>
 
     <div v-if="loading" class="text-text-faint">Loading...</div>
@@ -115,6 +95,8 @@ import { statCols, starScore, type StatSummary, type StatKey, LAST_N } from '../
 import { POSITION_LABEL } from '../utils/position'
 import StatCell from '../components/StatCell.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
+import StatSourceToggle from '../components/StatSourceToggle.vue'
+import { useStatSource } from '../composables/useStatSource'
 import { GET_FREE_AGENTS } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -133,8 +115,9 @@ type SectionKey = StatKey | 'star'
 // Stat that ranks the top-20 cut — set by clicking a column header.
 const activeKey = ref<SectionKey>('kicks')
 
-// Which average ranks the cut (and scales the heatmap): last-N form or season.
-const statSource = ref<'form' | 'season'>('form')
+// Which average ranks the cut (and scales the heatmap) — global toggle shared
+// with the other stats pages.
+const { statSource } = useStatSource()
 
 const rankBasisLabel = computed(() => statSource.value === 'form' ? `last ${LAST_N}` : 'season')
 

@@ -108,6 +108,10 @@ test-afl:
 test-ffl:
     cd services/ffl && go test -tags integration ./...
 
+# Run frontend unit tests (vitest — pure logic only)
+test-frontend:
+    cd frontend/web && npm run test:unit
+
 # Run e2e tests in a fully isolated environment (dev stack may remain running)
 test-e2e:
     #!/usr/bin/env bash
@@ -139,6 +143,7 @@ test-e2e:
 test-all:
     just test-afl
     just test-ffl
+    just test-frontend
     just test-e2e
 
 # Back up Postgres to backups/ (set BACKUP_REMOTE=rclone-remote:bucket/path to also upload)

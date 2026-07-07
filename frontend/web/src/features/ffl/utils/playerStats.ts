@@ -38,7 +38,7 @@ export function fmtStat(val: number | null | undefined): string {
 
 // Trend thresholds: form must deviate from season by at least TREND_PCT of the
 // season value, and by at least TREND_MIN_ABS absolute, to count as a trend.
-export const TREND_PCT = 0.15
+export const TREND_PCT = 0.10
 export const TREND_MIN_ABS = 0.5
 
 // Direction of form (last-N) vs season average, or null when within thresholds.

@@ -1,9 +1,9 @@
 <template>
   <div class="flex items-end justify-end gap-1">
-    <span class="text-xs" :style="avgStyle">{{ fmtStat(avg) }}</span>
+    <span :class="statSource === 'season' ? '' : 'text-xs'" :style="avgStyle">{{ fmtStat(avg) }}</span>
     <template v-if="last3 != null">
       <span v-if="trendIndicator" class="text-[10px]" :class="trendIndicatorCls">{{ trendIndicator }}</span>
-      <span :style="last3Style">{{ fmtStat(last3) }}</span>
+      <span :class="statSource === 'form' ? '' : 'text-xs'" :style="last3Style">{{ fmtStat(last3) }}</span>
     </template>
   </div>
 </template>
@@ -11,6 +11,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { fmtStat, trendDir } from '../utils/playerStats'
+import { useStatSource } from '../composables/useStatSource'
 
 const props = defineProps<{
   avg: number | null | undefined
@@ -18,6 +19,9 @@ const props = defineProps<{
   avgStyle?: Record<string, string>
   last3Style?: Record<string, string>
 }>()
+
+// The active source (global toggle) renders at full size, the other small.
+const { statSource } = useStatSource()
 
 // Shared trend semantics (utils/playerStats): '~' when within thresholds.
 const trend = computed(() => {

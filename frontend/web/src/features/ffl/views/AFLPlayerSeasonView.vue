@@ -361,7 +361,7 @@ function statLastNAvg(key: StatKey): string {
   return fmtStat(playerSeason.value?.statsLastN?.[key])
 }
 
-// Same trend semantics as the team builder: ↑/↓ when form deviates ≥15% from season.
+// Same trend semantics as the team builder: ↑/↓ per trendDir thresholds.
 function statLastNTrend(key: StatKey): 'up' | 'down' | null {
   const all = playerSeason.value?.statsAll?.[key]
   const lastN = playerSeason.value?.statsLastN?.[key]

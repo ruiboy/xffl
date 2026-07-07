@@ -265,4 +265,35 @@ WHERE round_id IN (
   WHERE l.name = 'AFL' AND s.name = 'AFL 2026' AND r.name IN ('Round 1', 'Round 2')
 );
 
+-- Free agents: AFL players with stats but no FFL squad (the FFL seed never
+-- references them), so the Free Agents page has rows to rank and hover.
+INSERT INTO afl.player (name) VALUES
+('Floyd Ranger'),
+('Ossie Vacant')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO afl.player_season (player_id, club_season_id)
+SELECT p.id, cs.id
+FROM afl.player p, afl.club_season cs
+JOIN afl.club c ON cs.club_id = c.id
+JOIN afl.season s ON cs.season_id = s.id
+JOIN afl.league l ON s.league_id = l.id
+WHERE p.name IN ('Floyd Ranger', 'Ossie Vacant')
+  AND c.name = 'Adelaide Crows' AND l.name = 'AFL' AND s.name = 'AFL 2026'
+ON CONFLICT (player_id, club_season_id) DO NOTHING;
+
+-- Round 1 stat lines (Round 1 is final, so these feed statsAll/statsLastN).
+-- Floyd out-kicks Ossie so kick-ranking order is deterministic.
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, 25, 10, 5, 0, 3, 1, 0
+FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club_season cs ON ps.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id JOIN afl.club_match cm ON cm.club_season_id = cs.id JOIN afl.match m ON cm.match_id = m.id JOIN afl.round r ON m.round_id = r.id
+WHERE p.name = 'Floyd Ranger' AND c.name = 'Adelaide Crows' AND r.name = 'Round 1'
+ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
+
+INSERT INTO afl.player_match (player_season_id, club_match_id, kicks, handballs, marks, hitouts, tackles, goals, behinds)
+SELECT ps.id, cm.id, 12, 8, 3, 0, 6, 0, 1
+FROM afl.player_season ps JOIN afl.player p ON ps.player_id = p.id JOIN afl.club_season cs ON ps.club_season_id = cs.id JOIN afl.club c ON cs.club_id = c.id JOIN afl.club_match cm ON cm.club_season_id = cs.id JOIN afl.match m ON cm.match_id = m.id JOIN afl.round r ON m.round_id = r.id
+WHERE p.name = 'Ossie Vacant' AND c.name = 'Adelaide Crows' AND r.name = 'Round 1'
+ON CONFLICT (player_season_id, club_match_id) DO NOTHING;
+
 COMMIT;

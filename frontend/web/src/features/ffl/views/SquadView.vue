@@ -55,15 +55,33 @@
                 : 'border-transparent text-text-muted hover:text-text hover:border-border'"
             >{{ seg.label }}</button>
           </div>
-          <p v-show="statsView === 'stats'" class="text-xs text-text-faint">Season avg <span class="text-green-400">↑</span><span class="text-red-400">↓</span> Last {{ LAST_N }} avg</p>
+          <StatSourceToggle v-show="statsView === 'stats'" class="ml-auto" />
         </div>
 
         <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-border text-left text-text-muted">
-              <th class="sticky left-0 z-20 bg-surface py-2 pr-3 font-medium w-36">Player</th>
-              <th class="sticky left-36 z-20 bg-surface py-2 pr-3 font-medium whitespace-nowrap">Club</th>
+              <th class="sticky left-0 z-20 bg-surface py-2 pr-3 font-medium w-36">
+                <button
+                  v-if="statsView === 'stats'"
+                  class="transition-colors"
+                  :class="statsSortKey === 'name' ? 'text-sky-400' : 'hover:text-text'"
+                  title="Sort by name (click again for position order)"
+                  @click="toggleStatsSort('name')"
+                >Player</button>
+                <template v-else>Player</template>
+              </th>
+              <th class="sticky left-36 z-20 bg-surface py-2 pr-3 font-medium whitespace-nowrap">
+                <button
+                  v-if="statsView === 'stats'"
+                  class="transition-colors"
+                  :class="statsSortKey === 'club' ? 'text-sky-400' : 'hover:text-text'"
+                  title="Sort by club (click again for position order)"
+                  @click="toggleStatsSort('club')"
+                >Club</button>
+                <template v-else>Club</template>
+              </th>
               <!-- Squad headers -->
               <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full">
                 <div class="flex">
@@ -71,15 +89,29 @@
                 </div>
               </th>
               <th v-show="statsView === 'squad' && isMyClub && managing" class="py-2 px-2"></th>
-              <!-- Stats headers -->
+              <!-- Stats headers — click to sort, click again for position order -->
               <template v-for="col in statCols" :key="col.key">
-              <th v-show="statsView === 'stats'" class="py-2 px-2 font-medium text-right">{{ col.label }}</th>
+              <th v-show="statsView === 'stats'" class="py-2 px-2 font-medium text-right">
+                <button
+                  class="transition-colors"
+                  :class="statsSortKey === col.key ? 'text-sky-400' : 'hover:text-text'"
+                  :title="`Sort by ${POSITION_LABEL[col.key]} (click again for position order)`"
+                  @click="toggleStatsSort(col.key)"
+                >{{ POSITION_LABEL[col.key] }}</button>
+              </th>
               </template>
-              <th v-show="statsView === 'stats'" class="py-2 pl-2 pr-3 font-medium text-right text-yellow-400">★</th>
+              <th v-show="statsView === 'stats'" class="py-2 pl-2 pr-3 font-medium text-right">
+                <button
+                  class="transition-colors"
+                  :class="statsSortKey === 'star' ? 'text-sky-400' : 'text-text-muted hover:text-text'"
+                  title="Sort by Star score (click again for position order)"
+                  @click="toggleStatsSort('star')"
+                >Star <span class="text-yellow-400">★</span></button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <template v-for="(group, gi) in groupedPlayers" :key="group.pos ?? 'bench'">
+            <template v-for="(group, gi) in displayedGroups" :key="group.pos ?? 'bench'">
               <tr v-if="gi > 0"><td colspan="10" class="pt-3"></td></tr>
               <template v-for="row in group.players" :key="row.id">
                 <tr
@@ -91,8 +123,10 @@
                   @click="statsView === 'squad' && managing && toggleRow(row)"
                 >
                   <td class="sticky left-0 z-10 bg-surface group-hover:bg-surface-hover py-2 pr-3 font-medium w-36 truncate max-w-[144px]">
-                    <router-link v-if="row.aflPlayerSeason?.id" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }" class="hover:text-text-muted transition-colors" @click.stop>{{ row.player.aflPlayer.name }}</router-link>
-                    <span v-else>{{ row.player.aflPlayer.name }}</span>
+                    <PlayerStatsCard :name="row.player.aflPlayer.name" :club="row.aflPlayerSeason?.clubSeason?.club?.name ?? null" :afl-status="null" :afl-player-season-id="row.aflPlayerSeason?.id ?? null" :afl-round-id="null">
+                      <router-link v-if="row.aflPlayerSeason?.id" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }" class="hover:text-text-muted transition-colors" @click.stop>{{ row.player.aflPlayer.name }}</router-link>
+                      <span v-else>{{ row.player.aflPlayer.name }}</span>
+                    </PlayerStatsCard>
                   </td>
                   <td class="sticky left-36 z-10 bg-surface group-hover:bg-surface-hover py-2 pr-3 text-xs text-text-muted whitespace-nowrap">
                     <router-link v-if="row.aflPlayerSeason?.clubSeason?.id" :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: row.aflPlayerSeason.clubSeason.id } }" class="inline-flex items-center gap-1 hover:text-text transition-colors" @click.stop>
@@ -168,8 +202,10 @@
                   @click="statsView === 'squad' && managing && toggleRow(row)"
                 >
                   <td class="sticky left-0 z-10 bg-surface py-2 pr-3 font-medium w-36 truncate max-w-[144px]">
-                    <router-link v-if="row.aflPlayerSeason?.id" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }" class="hover:text-text-muted transition-colors" @click.stop>{{ row.player.aflPlayer.name }}</router-link>
-                    <span v-else>{{ row.player.aflPlayer.name }}</span>
+                    <PlayerStatsCard :name="row.player.aflPlayer.name" :club="row.aflPlayerSeason?.clubSeason?.club?.name ?? null" :afl-status="null" :afl-player-season-id="row.aflPlayerSeason?.id ?? null" :afl-round-id="null">
+                      <router-link v-if="row.aflPlayerSeason?.id" :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: row.aflPlayerSeason.id } }" class="hover:text-text-muted transition-colors" @click.stop>{{ row.player.aflPlayer.name }}</router-link>
+                      <span v-else>{{ row.player.aflPlayer.name }}</span>
+                    </PlayerStatsCard>
                   </td>
                   <td class="sticky left-36 z-10 bg-surface py-2 pr-3 text-xs text-text-muted whitespace-nowrap">
                     <router-link v-if="row.aflPlayerSeason?.clubSeason?.id" :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: row.aflPlayerSeason.clubSeason.id } }" class="inline-flex items-center gap-1 hover:text-text transition-colors" @click.stop>
@@ -276,8 +312,11 @@ import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation, useApolloClient } from '@vue/apollo-composable'
 import { useTheme } from '@/composables/useTheme'
 import { heatStyle } from '@/utils/heatmap'
-import { statCols, starScore, type StatSummary, type StatKey, LAST_N } from '../utils/playerStats'
+import { statCols, starScore, type StatSummary, type StatKey } from '../utils/playerStats'
 import StatCell from '../components/StatCell.vue'
+import PlayerStatsCard from '../components/PlayerStatsCard.vue'
+import StatSourceToggle from '../components/StatSourceToggle.vue'
+import { useStatSource } from '../composables/useStatSource'
 import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS, GET_FFL_ROUND_CLUB_MATCHES } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
 import { useFflState } from '../composables/useFflState'
@@ -305,6 +344,7 @@ const segments: { id: StatsView; label: string }[] = [
 ]
 
 const { isDark } = useTheme()
+const { statSource } = useStatSource()
 
 const isMyClub = computed(() => !!selectedClubId.value && clubSeason.value?.club.id === selectedClubId.value)
 
@@ -418,6 +458,41 @@ const groupedPlayers = computed(() => {
   })
 })
 
+// --- Stats view sorting ---
+
+// Click a header to sort flat (stats descending, name/club ascending);
+// click it again to return to the default position-group order.
+type StatsSortKey = StatKey | 'star' | 'name' | 'club'
+const statsSortKey = ref<StatsSortKey | null>(null)
+
+function toggleStatsSort(key: StatsSortKey) {
+  statsSortKey.value = statsSortKey.value === key ? null : key
+}
+
+const displayedGroups = computed(() => {
+  const key = statsSortKey.value
+  if (statsView.value !== 'stats' || !key) return groupedPlayers.value
+
+  let sorted: PlayerSeasonRow[]
+  if (key === 'name') {
+    sorted = [...activePlayers.value].sort(byLastName)
+  } else if (key === 'club') {
+    const club = (r: PlayerSeasonRow) => r.aflPlayerSeason?.clubSeason?.club?.name ?? ''
+    sorted = [...activePlayers.value].sort((a, b) => club(a).localeCompare(club(b)) || byLastName(a, b))
+  } else {
+    const val = (r: PlayerSeasonRow): number => {
+      const ps = r.aflPlayerSeason
+      const s = statSource.value === 'form'
+        ? (ps?.statsLastN ?? ps?.statsAll)
+        : (ps?.statsAll ?? ps?.statsLastN)
+      if (!s) return -1
+      return key === 'star' ? starScore(s) : s[key]
+    }
+    sorted = [...activePlayers.value].sort((a, b) => val(b) - val(a))
+  }
+  return [{ pos: null, label: '', players: sorted }]
+})
+
 // --- Manage mode: add/remove ---
 
 // Saved flash
@@ -503,18 +578,21 @@ interface PlayerSeasonRow {
   costCents?: number | null
 }
 
+// Heatmap ranges scaled to the active stat source (global Last N/Season toggle).
 const columnRange = computed(() => {
   const allRows = [
     ...groupedPlayers.value.flatMap(g => g.players),
     ...tradedPlayers.value,
   ] as PlayerSeasonRow[]
+  const src = (r: PlayerSeasonRow) =>
+    statSource.value === 'form' ? r.aflPlayerSeason?.statsLastN : r.aflPlayerSeason?.statsAll
   const range = {} as Record<StatKey | 'star', { min: number; max: number }>
   for (const col of statCols) {
-    const vals = allRows.map(r => r.aflPlayerSeason?.statsLastN?.[col.key]).filter((v): v is number => v != null)
+    const vals = allRows.map(r => src(r)?.[col.key]).filter((v): v is number => v != null)
     if (vals.length) range[col.key] = { min: Math.min(...vals), max: Math.max(...vals) }
   }
   const starVals = allRows
-    .map(r => r.aflPlayerSeason?.statsLastN ? starScore(r.aflPlayerSeason.statsLastN) : null)
+    .map(r => { const s = src(r); return s ? starScore(s) : null })
     .filter((v): v is number => v != null)
   if (starVals.length) range['star'] = { min: Math.min(...starVals), max: Math.max(...starVals) }
   return range

@@ -539,27 +539,7 @@
           <div v-if="managing">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-lg font-semibold text-text-heading">Squad ({{ availablePlayers.length }})</h2>
-              <span
-                class="text-xs text-text-faint whitespace-nowrap"
-                :title="`↑/↓ = last ${LAST_N} form at least 15% above/below season average`"
-              >
-                <span class="text-green-400">↑</span>/<span class="text-red-400">↓</span> = last {{ LAST_N }} form
-              </span>
-              <!-- Form/Season toggle -->
-              <div class="flex items-center rounded border border-border overflow-hidden text-[10px] text-text-faint">
-                <button
-                  class="px-1.5 py-0.5 transition-colors"
-                  :class="statSource === 'form' ? 'bg-control text-text' : 'hover:text-text'"
-                  :title="`Show averages over each player's last ${LAST_N} games`"
-                  @click="statSource = 'form'"
-                >Last {{ LAST_N }}</button>
-                <button
-                  class="px-1.5 py-0.5 transition-colors"
-                  :class="statSource === 'season' ? 'bg-control text-text' : 'hover:text-text'"
-                  title="Show averages over the whole season"
-                  @click="statSource = 'season'"
-                >Season</button>
-              </div>
+              <StatSourceToggle />
             </div>
             <!-- Sort headers: name on the left, trend explainer in the gap, stat columns on the right -->
             <div class="flex items-center justify-between px-4 mb-1 text-[10px] text-text-faint">
@@ -779,8 +759,10 @@ import { useTheme } from '@/composables/useTheme'
 import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
+import { useStatSource } from '../composables/useStatSource'
+import StatSourceToggle from '../components/StatSourceToggle.vue'
 import { POSITION_MULTIPLIERS } from '../utils/position'
-import { starScore, fmtStat, statCols, trendDir, LAST_N, type StatSummary } from '../utils/playerStats'
+import { starScore, fmtStat, statCols, trendDir, LAST_N, TREND_PCT, type StatSummary } from '../utils/playerStats'
 
 const props = defineProps<{ clubMatchId: string; readonly?: boolean }>()
 
@@ -1526,8 +1508,9 @@ const squadStatsById = computed(() => {
   return map
 })
 
-// Which stat set drives the summary columns, heatmap, sort, and projections.
-const statSource = ref<'form' | 'season'>('form')
+// Which stat set drives the summary columns, heatmap, sort, and projections —
+// global toggle shared with the other stats pages.
+const { statSource } = useStatSource()
 
 const statSourceTitle = computed(() =>
   statSource.value === 'form' ? `Last ${LAST_N} form averages` : 'Season averages'
@@ -1551,8 +1534,8 @@ function formStats(player: SquadPlayer): StatSummary | null {
 }
 
 // Trend of form vs season for one stat (see trendDir in utils/playerStats).
-const trendUpTitle = `Trending up: last ${LAST_N} average is at least 15% above season average`
-const trendDownTitle = `Trending down: last ${LAST_N} average is at least 15% below season average`
+const trendUpTitle = `Trending up: last ${LAST_N} average is at least ${TREND_PCT * 100}% above season average`
+const trendDownTitle = `Trending down: last ${LAST_N} average is at least ${TREND_PCT * 100}% below season average`
 
 function statTrend(player: SquadPlayer, key: typeof statSummaryCols[number]['key']): 'up' | 'down' | null {
   const { form, season } = playerStatSets(player)

@@ -40,4 +40,29 @@ test.describe('Free Agents', () => {
     await expect(page.getByRole('button', { name: 'Goals', exact: true })).toHaveClass(/text-sky-400/)
     await expect(page.getByRole('button', { name: 'Kicks', exact: true })).not.toHaveClass(/text-sky-400/)
   })
+
+  test('rows are actually ordered by the ranked stat', async ({ page }) => {
+    await page.getByRole('button', { name: 'Kicks', exact: true }).click()
+    await expect(page.locator('tbody tr').first()).toBeVisible()
+    // First StatCell in each row is the K column; its last number is the value
+    // the default rank basis uses (last-N, falling back to season). Missing
+    // stats rank as -1.
+    const kVals = await page.locator('tbody tr').evaluateAll(rows =>
+      rows.map(r => {
+        const spans = r.querySelectorAll('div.flex.items-end')[0]?.querySelectorAll('span') ?? []
+        const v = parseFloat(spans[spans.length - 1]?.textContent ?? '')
+        return Number.isNaN(v) ? -1 : v
+      }),
+    )
+    expect(kVals.length).toBeGreaterThan(1)
+    expect(kVals).toEqual([...kVals].sort((a, b) => b - a))
+  })
+
+  test('hovering a player shows the stats card with averages and round rows', async ({ page }) => {
+    await page.locator('tbody tr').first().getByRole('link').first().hover()
+    const card = page.locator('div.fixed.z-50')
+    await expect(card.getByText(/Season \(\d+\)/)).toBeVisible()
+    await expect(card.getByText(/Last \d+/)).toBeVisible()
+    await expect(card.getByText(/Round/).first()).toBeVisible()
+  })
 })

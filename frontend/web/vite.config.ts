@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
@@ -11,5 +12,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+  },
+  test: {
+    // Unit tests only (ADR-019); Playwright owns e2e/*.spec.ts
+    include: ['src/**/*.test.ts'],
   },
 })
