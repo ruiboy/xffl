@@ -12,16 +12,18 @@ import (
 // fakeHistoricalRepo is an in-memory HistoricalRepo for exercising the
 // resolution branches without a database.
 type fakeHistoricalRepo struct {
-	players    []PlayerRef
-	nextPlayer int
-	nextID     int
-	xref       map[string]int // "source|season|club|player" -> player_season_id
+	players     []PlayerRef
+	playerYears map[int][]int    // player id -> known season years (for gap detection)
+	playerClubs map[int][]string // player id -> club names (for dup-name disambiguation)
+	nextPlayer  int
+	nextID      int
+	xref        map[string]int // "source|season|club|player" -> player_season_id
 	// captured writes
 	playerMatches []PlayerMatchInput
 }
 
 func newFakeRepo(existing ...PlayerRef) *fakeHistoricalRepo {
-	f := &fakeHistoricalRepo{xref: map[string]int{}, nextPlayer: 100, nextID: 1}
+	f := &fakeHistoricalRepo{xref: map[string]int{}, playerYears: map[int][]int{}, playerClubs: map[int][]string{}, nextPlayer: 100, nextID: 1}
 	f.players = append(f.players, existing...)
 	return f
 }
@@ -52,6 +54,12 @@ func (f *fakeHistoricalRepo) FindPlayersByExactName(_ context.Context, name stri
 	return out, nil
 }
 func (f *fakeHistoricalRepo) AllPlayers(context.Context) ([]PlayerRef, error) { return f.players, nil }
+func (f *fakeHistoricalRepo) PlayerSeasonYears(_ context.Context, playerID int) ([]int, error) {
+	return f.playerYears[playerID], nil
+}
+func (f *fakeHistoricalRepo) ClubsForNamedPlayers(_ context.Context, _ string) (map[int][]string, error) {
+	return f.playerClubs, nil
+}
 func (f *fakeHistoricalRepo) CreatePlayer(_ context.Context, name string) (int, error) {
 	f.nextPlayer++
 	f.players = append(f.players, PlayerRef{ID: f.nextPlayer, Name: name})
@@ -89,11 +97,15 @@ func (p *recordingPrompter) Choose(_ context.Context, _, _, _ string, cands []Pl
 type capturingLog struct {
 	newPlayers []string
 	nearMisses []string
+	gaps       []string
 }
 
 func (l *capturingLog) NewPlayer(_, _, name string, _ int) { l.newPlayers = append(l.newPlayers, name) }
 func (l *capturingLog) NearMiss(_, _, name, cand string, _ float64) {
 	l.nearMisses = append(l.nearMisses, name+"~"+cand)
+}
+func (l *capturingLog) Gap(name string, _, _ int, _ string, _ int) {
+	l.gaps = append(l.gaps, name)
 }
 
 func row(club, player string) HistoricalRow {
@@ -131,16 +143,34 @@ func (resolverStub) Resolve(_ context.Context, name, _ string, cands []PlayerCan
 	return out, nil
 }
 
-func TestImport_ExactUniqueAutoLinks(t *testing.T) {
+func TestImport_ExactUniqueAdjacentAutoLinks(t *testing.T) {
 	repo := newFakeRepo(PlayerRef{ID: 50, Name: "Dustin Martin"})
+	repo.playerYears[50] = []int{2019, 2020, 2021} // adjacent to the 2020 row
 	prompter := &recordingPrompter{}
 	log := &capturingLog{}
 	sum := runImport(t, repo, prompter, log, []HistoricalRow{row("Richmond", "Dustin Martin")})
 
-	assert.Equal(t, 0, prompter.calls, "exact-unique must not prompt")
+	assert.Equal(t, 0, prompter.calls, "exact match adjacent to career must not prompt")
 	assert.Equal(t, 0, sum.NewPlayers)
 	require.Len(t, repo.playerMatches, 1)
 	assert.Equal(t, 900000+50, repo.playerMatches[0].PlayerSeasonID)
+}
+
+func TestImport_SameNameSeasonGapAutoLinksAndLogs(t *testing.T) {
+	// An existing "John Smith" played 2004–2005; the row is 2020 — a gap. Policy:
+	// auto-link (same player) and log it for review, without prompting.
+	repo := newFakeRepo(PlayerRef{ID: 70, Name: "John Smith"})
+	repo.playerYears[70] = []int{2004, 2005}
+	prompter := &recordingPrompter{}
+	log := &capturingLog{}
+	sum := runImport(t, repo, prompter, log, []HistoricalRow{row("Richmond", "John Smith")})
+
+	assert.Equal(t, 0, prompter.calls, "season gap must NOT prompt")
+	assert.Equal(t, 0, sum.NewPlayers, "auto-linked, not created")
+	assert.Equal(t, 1, sum.Gaps)
+	assert.Equal(t, []string{"John Smith"}, log.gaps, "gap logged for review")
+	require.Len(t, repo.playerMatches, 1)
+	assert.Equal(t, 900000+70, repo.playerMatches[0].PlayerSeasonID, "linked to existing player")
 }
 
 func TestImport_NoMatchAutoCreates(t *testing.T) {
@@ -169,6 +199,24 @@ func TestImport_DuplicateExactNamesPrompt(t *testing.T) {
 	assert.Equal(t, 0, sum.NewPlayers)
 	require.Len(t, repo.playerMatches, 1)
 	assert.Equal(t, 900000+61, repo.playerMatches[0].PlayerSeasonID, "links to operator's choice")
+}
+
+func TestImport_DuplicateNameResolvedByClub(t *testing.T) {
+	// Two "Bailey Williams" — one Bulldogs, one West Coast. A Bulldogs row must
+	// auto-link to the Bulldogs player without prompting.
+	repo := newFakeRepo(
+		PlayerRef{ID: 80, Name: "Bailey Williams"},
+		PlayerRef{ID: 81, Name: "Bailey Williams"},
+	)
+	repo.playerClubs = map[int][]string{80: {"Western Bulldogs"}, 81: {"West Coast"}}
+	prompter := &recordingPrompter{}
+	sum := runImport(t, repo, prompter, &capturingLog{},
+		[]HistoricalRow{{Round: "1", Club: "Western Bulldogs", HomeClub: "Western Bulldogs", AwayClub: "Carlton", Player: "Bailey Williams"}})
+
+	assert.Equal(t, 0, prompter.calls, "club disambiguates — no prompt")
+	assert.Equal(t, 0, sum.NewPlayers)
+	require.Len(t, repo.playerMatches, 1)
+	assert.Equal(t, 900000+80, repo.playerMatches[0].PlayerSeasonID, "linked to the Bulldogs Bailey Williams")
 }
 
 func TestImport_XrefShortCircuits(t *testing.T) {

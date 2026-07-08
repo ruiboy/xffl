@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -132,9 +134,42 @@ func (r *HistoricalRepository) AllPlayers(ctx context.Context) ([]application.Pl
 	return out, nil
 }
 
+func (r *HistoricalRepository) ClubsForNamedPlayers(ctx context.Context, name string) (map[int][]string, error) {
+	rows, err := r.q.FindClubsForNamedPlayers(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	out := map[int][]string{}
+	for _, row := range rows {
+		id := int(row.PlayerID)
+		out[id] = append(out[id], row.ClubName)
+	}
+	return out, nil
+}
+
 func (r *HistoricalRepository) CreatePlayer(ctx context.Context, name string) (int, error) {
 	p, err := r.q.InsertPlayer(ctx, name)
 	return int(p.ID), err
+}
+
+// PlayerSeasonYears returns the AFL season years a player has records in,
+// parsed from season names of the form "AFL YYYY".
+func (r *HistoricalRepository) PlayerSeasonYears(ctx context.Context, playerID int) ([]int, error) {
+	names, err := r.q.FindSeasonNamesByPlayerID(ctx, int32(playerID))
+	if err != nil {
+		return nil, err
+	}
+	years := make([]int, 0, len(names))
+	for _, n := range names {
+		fields := strings.Fields(n)
+		if len(fields) == 0 {
+			continue
+		}
+		if y, err := strconv.Atoi(fields[len(fields)-1]); err == nil {
+			years = append(years, y)
+		}
+	}
+	return years, nil
 }
 
 func (r *HistoricalRepository) GetOrCreatePlayerSeason(ctx context.Context, playerID, clubSeasonID int) (int, error) {

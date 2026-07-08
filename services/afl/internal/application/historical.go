@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -11,14 +12,9 @@ import (
 // for decisions made during the historical import.
 const AfltablesSource = "afltables"
 
-const (
-	// A fuzzy match at or above this confidence, with no exact name match, is
-	// treated as genuinely ambiguous and prompted rather than auto-created.
-	historicalPromptThreshold = 0.90
-	// A fuzzy match at or above this confidence is logged as a near-miss when a
-	// new player is auto-created, for post-hoc review.
-	historicalNearMissThreshold = 0.75
-)
+// A fuzzy match at or above this confidence is logged as a near-miss when a new
+// player is auto-created, so a genuine spelling-variant can be reviewed/relinked.
+const historicalNearMissThreshold = 0.75
 
 // HistoricalRow is one player-match line to ingest (mapped from the CSV by the
 // CLI). Defined here so the use case does not depend on the infrastructure
@@ -71,7 +67,9 @@ type HistoricalRepo interface {
 	InsertMatch(ctx context.Context, roundID int, venue string, startDt time.Time) (int, error)
 	UpsertClubMatch(ctx context.Context, matchID, clubSeasonID int, side string) (int, error)
 	FindPlayersByExactName(ctx context.Context, name string) ([]PlayerRef, error)
+	ClubsForNamedPlayers(ctx context.Context, name string) (map[int][]string, error)
 	AllPlayers(ctx context.Context) ([]PlayerRef, error)
+	PlayerSeasonYears(ctx context.Context, playerID int) ([]int, error)
 	CreatePlayer(ctx context.Context, name string) (int, error)
 	GetOrCreatePlayerSeason(ctx context.Context, playerID, clubSeasonID int) (int, error)
 	UpsertPlayerMatch(ctx context.Context, p PlayerMatchInput) error
@@ -83,7 +81,8 @@ type HistoricalRepo interface {
 type PlayerChoice struct {
 	PlayerID   int
 	Name       string
-	Confidence float64 // 0 for exact-name duplicates
+	Confidence float64 // 0 for exact-name / gap prompts
+	Detail     string  // e.g. "played 2004–2015" — context for the operator
 }
 
 // PlayerPrompter asks the operator to resolve an ambiguous player. It returns
@@ -96,6 +95,10 @@ type PlayerPrompter interface {
 type HistoricalReviewLogger interface {
 	NewPlayer(season, club, name string, playerID int)
 	NearMiss(season, club, name, candidateName string, confidence float64)
+	// Gap records a same-name match auto-linked across a season gap (missed
+	// seasons between this row's year and the player's known career) — the audit
+	// trail for possible same-name-different-player merges.
+	Gap(name string, year, missedSeasons int, existingSpan string, playerID int)
 }
 
 // ImportSeasonSummary reports what a season import did.
@@ -105,6 +108,7 @@ type ImportSeasonSummary struct {
 	PlayerMatches int
 	NewPlayers    int
 	Prompted      int
+	Gaps          int // same-name matches auto-linked across a season gap (logged)
 }
 
 // HistoricalImporter ingests one season of afltables CSV rows into the AFL
@@ -208,7 +212,7 @@ func (h *HistoricalImporter) ImportSeason(ctx context.Context, year int, rows []
 		sum.Matches++
 
 		for _, r := range grp {
-			psID, err := h.resolvePlayerSeason(ctx, r, seasonName, ensureClubSeason, psCache, &allPlayers, &sum)
+			psID, err := h.resolvePlayerSeason(ctx, year, r, seasonName, ensureClubSeason, psCache, &allPlayers, &sum)
 			if err != nil {
 				return sum, err
 			}
@@ -232,7 +236,7 @@ func (h *HistoricalImporter) ImportSeason(ctx context.Context, year int, rows []
 // resolvePlayerSeason resolves a row's player to a player_season_id, creating
 // the player and/or player_season as needed, and caching the decision.
 func (h *HistoricalImporter) resolvePlayerSeason(
-	ctx context.Context, r HistoricalRow, seasonName string,
+	ctx context.Context, year int, r HistoricalRow, seasonName string,
 	ensureClubSeason func(string) (int, error), psCache map[string]int,
 	allPlayers *[]PlayerRef, sum *ImportSeasonSummary,
 ) (int, error) {
@@ -253,7 +257,7 @@ func (h *HistoricalImporter) resolvePlayerSeason(
 		return id, nil
 	}
 
-	playerID, err := h.resolvePlayerID(ctx, r, seasonName, allPlayers, sum)
+	playerID, err := h.resolvePlayerID(ctx, year, r, seasonName, allPlayers, sum)
 	if err != nil {
 		return 0, err
 	}
@@ -272,7 +276,7 @@ func (h *HistoricalImporter) resolvePlayerSeason(
 // no-match auto-creates (logging any near-miss), and ambiguity (duplicate exact
 // names, or a high-confidence fuzzy match) is prompted.
 func (h *HistoricalImporter) resolvePlayerID(
-	ctx context.Context, r HistoricalRow, seasonName string,
+	ctx context.Context, year int, r HistoricalRow, seasonName string,
 	allPlayers *[]PlayerRef, sum *ImportSeasonSummary,
 ) (int, error) {
 	exact, err := h.repo.FindPlayersByExactName(ctx, r.Player)
@@ -280,21 +284,51 @@ func (h *HistoricalImporter) resolvePlayerID(
 		return 0, fmt.Errorf("exact lookup for %q: %w", r.Player, err)
 	}
 	if len(exact) == 1 {
+		// One same-named player exists. If this season is adjacent to their known
+		// career it's the same person (auto-link); a gap suggests a different
+		// player sharing the name, so prompt.
+		years, err := h.repo.PlayerSeasonYears(ctx, exact[0].ID)
+		if err != nil {
+			return 0, fmt.Errorf("season years for %q: %w", r.Player, err)
+		}
+		if yearConnected(year, years) {
+			return exact[0].ID, nil
+		}
+		// Season gap: overwhelmingly the same player returning after a layoff, so
+		// auto-link — but log it so genuine same-name-different-player collisions
+		// can be found and split afterward.
+		h.log.Gap(r.Player, year, nearestGap(year, years)-1, spanDetail(years), exact[0].ID)
+		sum.Gaps++
 		return exact[0].ID, nil
 	}
 	if len(exact) > 1 {
+		// Multiple players share this name. If exactly one of them played for the
+		// row's club, that disambiguates it (e.g. the two Bailey Williamses split
+		// by Bulldogs/West Coast) — auto-link. Otherwise prompt.
+		clubs, err := h.repo.ClubsForNamedPlayers(ctx, r.Player)
+		if err != nil {
+			return 0, fmt.Errorf("clubs for %q: %w", r.Player, err)
+		}
+		var byClub []PlayerRef
+		for _, p := range exact {
+			if containsFold(clubs[p.ID], r.Club) {
+				byClub = append(byClub, p)
+			}
+		}
+		if len(byClub) == 1 {
+			return byClub[0].ID, nil
+		}
 		choices := make([]PlayerChoice, len(exact))
 		for i, p := range exact {
-			choices[i] = PlayerChoice{PlayerID: p.ID, Name: p.Name}
+			choices[i] = PlayerChoice{PlayerID: p.ID, Name: p.Name, Detail: spanDetail(mustYears(ctx, h.repo, p.ID))}
 		}
 		return h.promptOrCreate(ctx, r, seasonName, choices, allPlayers, sum)
 	}
 
+	// No exact match: create a new player. Never silently link a fuzzy match —
+	// instead log a near-miss (any similar existing name) for post-hoc review,
+	// so a genuine spelling-variant split can be relinked afterward.
 	best := h.fuzzyBest(ctx, r.Player, r.Club, *allPlayers)
-	if best.PlayerID != 0 && best.Confidence >= historicalPromptThreshold {
-		return h.promptOrCreate(ctx, r, seasonName, []PlayerChoice{best}, allPlayers, sum)
-	}
-
 	id, err := h.createPlayer(ctx, seasonName, r.Club, r.Player, allPlayers, sum)
 	if err != nil {
 		return 0, err
@@ -349,6 +383,75 @@ func (h *HistoricalImporter) fuzzyBest(ctx context.Context, name, club string, p
 	}
 	top := matches[0]
 	return PlayerChoice{PlayerID: top.Candidate.PlayerSeasonID, Name: top.Candidate.Name, Confidence: top.Confidence}
+}
+
+// yearConnected reports whether `year` is adjacent to (within one year of) any
+// season the player already has — i.e. their career reaches this season. No
+// known seasons is treated as connected (nothing to doubt).
+func yearConnected(year int, years []int) bool {
+	if len(years) == 0 {
+		return true
+	}
+	for _, y := range years {
+		if y-year <= 1 && year-y <= 1 {
+			return true
+		}
+	}
+	return false
+}
+
+func containsFold(list []string, s string) bool {
+	for _, v := range list {
+		if strings.EqualFold(v, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// mustYears fetches a player's season years for display, swallowing errors.
+func mustYears(ctx context.Context, repo HistoricalRepo, playerID int) []int {
+	years, _ := repo.PlayerSeasonYears(ctx, playerID)
+	return years
+}
+
+// nearestGap returns the distance in years from `year` to the closest season
+// the player already has (0 means overlapping/present). Assumes years non-empty.
+func nearestGap(year int, years []int) int {
+	best := -1
+	for _, y := range years {
+		d := y - year
+		if d < 0 {
+			d = -d
+		}
+		if best < 0 || d < best {
+			best = d
+		}
+	}
+	if best < 0 {
+		return 0
+	}
+	return best
+}
+
+// spanDetail summarises a player's known seasons for an operator prompt.
+func spanDetail(years []int) string {
+	if len(years) == 0 {
+		return "no recorded seasons"
+	}
+	lo, hi := years[0], years[0]
+	for _, y := range years {
+		if y < lo {
+			lo = y
+		}
+		if y > hi {
+			hi = y
+		}
+	}
+	if lo == hi {
+		return fmt.Sprintf("played %d", lo)
+	}
+	return fmt.Sprintf("played %d–%d", lo, hi)
 }
 
 // roundName maps an afltables round token to the DB convention: numeric rounds

@@ -51,13 +51,14 @@ Parser + CSV writer live in `internal/infrastructure/afltables`.
 
 Reads `afl-historical/<season>.csv`, creates the season→player_match scaffold,
 and resolves player identity against existing `afl.player` records. Idempotent
-(natural-key upserts + the `dataops_player_source` xref). Ingests **oldest→
-newest** so each person is created once at their debut and reused forward.
+(natural-key upserts + the `dataops_player_source` xref). Ingests **newest→
+oldest** so a real career chains backward from the seeded modern seasons.
 
-Resolution: exact-unique names auto-link, brand-new names auto-create, and only
-genuine ambiguity (duplicate exact names, or a high-confidence fuzzy match)
-prompts on **stdin**. Every new player and near-miss is appended to a review log
-(`afl-historical/import-review.log`).
+Resolution: an exact name adjacent to a known career auto-links; a brand-new
+name auto-creates; and ambiguity prompts on **stdin** — a **season gap** (same
+name, non-consecutive seasons → likely a different player), duplicate exact
+names, or a high-confidence fuzzy near-match. Every new player and near-miss is
+appended to a review log (`afl-historical/import-review.log`).
 
 ```
 just afl-historical-import 1998 2023

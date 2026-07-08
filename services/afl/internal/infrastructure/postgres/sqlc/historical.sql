@@ -61,3 +61,22 @@ ORDER BY id;
 SELECT id, name FROM afl.player
 WHERE deleted_at IS NULL
 ORDER BY id;
+
+-- name: FindClubsForNamedPlayers :many
+-- (player_id, club_name) pairs for every player sharing the given name — used
+-- to disambiguate same-name players by the club of the row being imported.
+SELECT p.id AS player_id, c.name AS club_name
+FROM afl.player p
+JOIN afl.player_season ps ON ps.player_id = p.id AND ps.deleted_at IS NULL
+JOIN afl.club_season cs ON cs.id = ps.club_season_id AND cs.deleted_at IS NULL
+JOIN afl.club c ON c.id = cs.club_id AND c.deleted_at IS NULL
+WHERE p.name = $1 AND p.deleted_at IS NULL;
+
+-- name: FindSeasonNamesByPlayerID :many
+-- Distinct AFL season names a player has any player_season in — used to detect
+-- career gaps when the same name recurs in non-consecutive seasons.
+SELECT DISTINCT s.name
+FROM afl.season s
+JOIN afl.club_season cs ON cs.season_id = s.id AND cs.deleted_at IS NULL
+JOIN afl.player_season ps ON ps.club_season_id = cs.id AND ps.deleted_at IS NULL
+WHERE ps.player_id = $1 AND s.deleted_at IS NULL;

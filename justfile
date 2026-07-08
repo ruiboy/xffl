@@ -106,7 +106,7 @@ afl-historical-export from to:
     cd services/afl && go run ./cmd/afltables-export -from {{from}} -to {{to}} -out ../../afl-historical
 
 # Import historical AFL CSVs into the DB (interactive player linking).
-# Ingests oldest→newest so player identity builds forward. e.g. just afl-historical-import 1998 2023
+# Ingests newest→oldest so careers chain back from seeded seasons. e.g. just afl-historical-import 1998 2023
 afl-historical-import from to:
     cd services/afl && go run ./cmd/afltables-import -from {{from}} -to {{to}} -dir ../../afl-historical
 

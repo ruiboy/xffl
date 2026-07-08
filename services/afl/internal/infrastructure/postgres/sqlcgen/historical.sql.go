@@ -42,6 +42,42 @@ func (q *Queries) FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, erro
 	return items, nil
 }
 
+const findClubsForNamedPlayers = `-- name: FindClubsForNamedPlayers :many
+SELECT p.id AS player_id, c.name AS club_name
+FROM afl.player p
+JOIN afl.player_season ps ON ps.player_id = p.id AND ps.deleted_at IS NULL
+JOIN afl.club_season cs ON cs.id = ps.club_season_id AND cs.deleted_at IS NULL
+JOIN afl.club c ON c.id = cs.club_id AND c.deleted_at IS NULL
+WHERE p.name = $1 AND p.deleted_at IS NULL
+`
+
+type FindClubsForNamedPlayersRow struct {
+	PlayerID int32
+	ClubName string
+}
+
+// (player_id, club_name) pairs for every player sharing the given name — used
+// to disambiguate same-name players by the club of the row being imported.
+func (q *Queries) FindClubsForNamedPlayers(ctx context.Context, name string) ([]FindClubsForNamedPlayersRow, error) {
+	rows, err := q.db.Query(ctx, findClubsForNamedPlayers, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindClubsForNamedPlayersRow{}
+	for rows.Next() {
+		var i FindClubsForNamedPlayersRow
+		if err := rows.Scan(&i.PlayerID, &i.ClubName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findMatchByRoundAndHomeClubSeason = `-- name: FindMatchByRoundAndHomeClubSeason :one
 SELECT m.id FROM afl.match m
 JOIN afl.club_match cm ON cm.match_id = m.id AND cm.side = 'home' AND cm.deleted_at IS NULL
@@ -124,6 +160,36 @@ func (q *Queries) FindSeasonByLeagueAndName(ctx context.Context, arg FindSeasonB
 	var id int32
 	err := row.Scan(&id)
 	return id, err
+}
+
+const findSeasonNamesByPlayerID = `-- name: FindSeasonNamesByPlayerID :many
+SELECT DISTINCT s.name
+FROM afl.season s
+JOIN afl.club_season cs ON cs.season_id = s.id AND cs.deleted_at IS NULL
+JOIN afl.player_season ps ON ps.club_season_id = cs.id AND ps.deleted_at IS NULL
+WHERE ps.player_id = $1 AND s.deleted_at IS NULL
+`
+
+// Distinct AFL season names a player has any player_season in — used to detect
+// career gaps when the same name recurs in non-consecutive seasons.
+func (q *Queries) FindSeasonNamesByPlayerID(ctx context.Context, playerID int32) ([]string, error) {
+	rows, err := q.db.Query(ctx, findSeasonNamesByPlayerID, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertHistoricalMatch = `-- name: InsertHistoricalMatch :one

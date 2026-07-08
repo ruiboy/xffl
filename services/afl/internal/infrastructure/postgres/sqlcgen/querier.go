@@ -25,6 +25,9 @@ type Querier interface {
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
+	// (player_id, club_name) pairs for every player sharing the given name — used
+	// to disambiguate same-name players by the club of the row being imported.
+	FindClubsForNamedPlayers(ctx context.Context, name string) ([]FindClubsForNamedPlayersRow, error)
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
 	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
 	FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalMatchesBySeasonIDRow, error)
@@ -56,6 +59,9 @@ type Querier interface {
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	FindSeasonByLeagueAndName(ctx context.Context, arg FindSeasonByLeagueAndNameParams) (int32, error)
+	// Distinct AFL season names a player has any player_season in — used to detect
+	// career gaps when the same name recurs in non-consecutive seasons.
+	FindSeasonNamesByPlayerID(ctx context.Context, playerID int32) ([]string, error)
 	// Returns average stats for each player_season across final matches that took place
 	// before the given round (by start_dt, since round_id ordering is not guaranteed to be
 	// chronological). Used to compute bye scores from season-to-date form.

@@ -19,7 +19,7 @@ xffl/
 │
 ├── services/
 │   ├── afl/               → AFL service (Go, GraphQL, :8080)
-│   │   ├── cmd/           → Entrypoint
+│   │   ├── cmd/           → Entrypoints
 │   │   └── internal/      → domain/ application/ infrastructure/ interface/
 │   ├── ffl/               → FFL service (Go, GraphQL, :8081)
 │   │   ├── cmd/           → Entrypoint
@@ -35,8 +35,10 @@ xffl/
 │   ├── database/          → DB connection helper
 │   └── events/            → EventDispatcher interface + PG LISTEN/NOTIFY + in-memory
 │
-└── dev/
-    ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
-    ├── backup/            → backup.sh + restore.sh (pg_dump → gzip; rclone upload if BACKUP_REMOTE set)
-    └── postgres/seed/     → SQL seed files
+├── dev/
+│   ├── docker-compose.yml → Postgres (:5432) + Typesense (:8108)
+│   ├── backup/            → backup.sh + restore.sh (pg_dump → gzip; rclone upload if BACKUP_REMOTE set)
+│   └── postgres/seed/     → SQL seed files
+│
+└── afl-historical/       → Historical AFL CSVs + import audit logs (Phase 24 backfill; see its README)
 ```

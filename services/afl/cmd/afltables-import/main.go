@@ -2,11 +2,12 @@
 // afltables-export) into the AFL schema, creating the season→player_match
 // scaffold and resolving player identity interactively.
 //
-// It processes seasons in ascending (chronological) order so each real person
-// is created once at their first appearance and reused forward. Exact-unique
-// names auto-link, brand-new names auto-create, and only genuine ambiguity
-// (duplicate exact names, or a high-confidence fuzzy near-match) prompts on
-// stdin. Every new player and fuzzy near-miss is appended to a review log.
+// It processes seasons newest→oldest so a real career chains backward from the
+// seeded modern seasons and a genuine gap (same name, non-consecutive seasons)
+// stands out. Exact names adjacent to a known career auto-link; brand-new names
+// auto-create; and ambiguity — a season gap, duplicate exact names, or a
+// high-confidence fuzzy near-match — prompts on stdin. Every new player and
+// fuzzy near-miss is appended to a review log.
 //
 //	cd services/afl
 //	DATABASE_URL=... go run ./cmd/afltables-import -from 1998 -to 2023
@@ -67,7 +68,9 @@ func main() {
 		review,
 	)
 
-	for year := *from; year <= *to; year++ {
+	// Newest→oldest: a real career chains backward from the seeded modern
+	// seasons with no false prompts, so a genuine season gap stands out.
+	for year := *to; year >= *from; year-- {
 		rows, err := loadSeason(*dir, year)
 		if err != nil {
 			fatal("season %d: %v", year, err)
@@ -77,8 +80,8 @@ func main() {
 		if err != nil {
 			fatal("import %d: %v", year, err)
 		}
-		fmt.Printf("season %d: %d matches, %d player-matches, %d new players, %d prompted\n",
-			sum.Season, sum.Matches, sum.PlayerMatches, sum.NewPlayers, sum.Prompted)
+		fmt.Printf("season %d: %d matches, %d player-matches, %d new players, %d gaps-logged, %d prompted\n",
+			sum.Season, sum.Matches, sum.PlayerMatches, sum.NewPlayers, sum.Gaps, sum.Prompted)
 	}
 	fmt.Printf("\nDone. Review log: %s\n", *reviewPath)
 }
@@ -98,8 +101,13 @@ func loadSeason(dir string, year int) ([]application.HistoricalRow, error) {
 	for i, r := range csvRows {
 		out[i] = application.HistoricalRow{
 			Round: r.Round, Date: r.Date, Venue: r.Venue,
-			HomeClub: r.HomeClub, AwayClub: r.AwayClub, Club: r.Club, Player: r.Player,
-			Kicks: r.Kicks, Marks: r.Marks, Handballs: r.Handballs,
+			// Map afltables short names to canonical club names so historical
+			// data attaches to existing club records, not duplicates.
+			HomeClub: afltables.CanonicalClub(r.HomeClub),
+			AwayClub: afltables.CanonicalClub(r.AwayClub),
+			Club:     afltables.CanonicalClub(r.Club),
+			Player:   r.Player,
+			Kicks:    r.Kicks, Marks: r.Marks, Handballs: r.Handballs,
 			Goals: r.Goals, Behinds: r.Behinds, Hitouts: r.Hitouts, Tackles: r.Tackles,
 		}
 	}
@@ -113,18 +121,24 @@ type stdinPrompter struct{ in *bufio.Reader }
 func (p *stdinPrompter) Choose(_ context.Context, name, club, season string, candidates []application.PlayerChoice) (int, error) {
 	fmt.Printf("\nAMBIGUOUS: %q  (%s, %s)\n", name, club, season)
 	for i, c := range candidates {
-		if c.Confidence > 0 {
-			fmt.Printf("  [%d] %s (id %d) — %.0f%% match\n", i+1, c.Name, c.PlayerID, c.Confidence*100)
-		} else {
-			fmt.Printf("  [%d] %s (id %d)\n", i+1, c.Name, c.PlayerID)
+		suffix := ""
+		if c.Detail != "" {
+			suffix = " — " + c.Detail
 		}
+		if c.Confidence > 0 {
+			suffix += fmt.Sprintf(" (%.0f%% name match)", c.Confidence*100)
+		}
+		fmt.Printf("  [%d] %s (id %d)%s\n", i+1, c.Name, c.PlayerID, suffix)
 	}
 	fmt.Printf("  [n] create new player\n")
 	for {
 		fmt.Printf("Choose [1-%d/n]: ", len(candidates))
 		line, err := p.in.ReadString('\n')
 		if err != nil {
-			return 0, err
+			// No input available (non-interactive run): default to a new player,
+			// which is always safe — it never silently links the wrong record.
+			fmt.Println("(no input — creating new player)")
+			return 0, nil
 		}
 		line = strings.TrimSpace(line)
 		if line == "n" || line == "N" {
@@ -159,6 +173,11 @@ func (l *reviewLog) NewPlayer(season, club, name string, playerID int) {
 
 func (l *reviewLog) NearMiss(season, club, name, candidateName string, confidence float64) {
 	fmt.Fprintf(l.f, "NEARMISS\t%s\t%s\t%q ~ %q\t(%.0f%%)\n", season, club, name, candidateName, confidence*100)
+}
+
+// Gap lines are sortable big-gap-first with: grep '^GAP' log | sort -t$'\t' -k2 -rn
+func (l *reviewLog) Gap(name string, year, missedSeasons int, existingSpan string, playerID int) {
+	fmt.Fprintf(l.f, "GAP\t%d\t%q\t%d missed → linked to id %d (%s)\n", missedSeasons, name, year, playerID, existingSpan)
 }
 
 func (l *reviewLog) Close() error { return l.f.Close() }

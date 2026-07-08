@@ -27,8 +27,9 @@ func (p *autoCreatePrompter) Choose(context.Context, string, string, string, []a
 
 type noopReviewLog struct{ newPlayers int }
 
-func (l *noopReviewLog) NewPlayer(string, string, string, int)      { l.newPlayers++ }
+func (l *noopReviewLog) NewPlayer(string, string, string, int)            { l.newPlayers++ }
 func (l *noopReviewLog) NearMiss(string, string, string, string, float64) {}
+func (l *noopReviewLog) Gap(string, int, int, string, int)               {}
 
 func truncateHistorical(t *testing.T) {
 	t.Helper()
