@@ -13,8 +13,18 @@ in sibling files and are indexed here.
 | ID | Route | Status | What it shows | Effort |
 |---|---|---|---|---|
 | PAGE-2 | `/ffl/player-seasons/:fflPlayerSeasonId` | Expand-row in SquadView; not a full page | One club's ownership of a player: club-specific notes, averages scoped to "while they were mine", per-round breakdown. | S |
-| PAGE-9 | `/ffl/afl/clubs/:aflClubId` | Future — needs 2+ seasons | All-time FFL history of an AFL club across seasons: players drafted, aggregate scoring, per-season breakdown. | — |
-| PAGE-10 | `/ffl/afl/players/:aflPlayerId` | Future — needs 2+ seasons | All-time FFL career of an AFL player across seasons: FFL clubs, total * points, FFL games played. | — |
+| PAGE-9 | `/ffl/afl/clubs/:aflClubId` | Unblocked (Phase 24 backfill) | All-time FFL history of an AFL club across seasons: players drafted, aggregate scoring, per-season breakdown. | — |
+| PAGE-10 | `/ffl/afl/players/:aflPlayerId` | Unblocked (Phase 24 backfill) | All-time FFL career of an AFL player across seasons: FFL clubs, total * points, FFL games played. | — |
+
+### Navigating the historical AFL data
+
+The Phase 24 backfill loaded 1998–2023 AFL player/match stats, but nothing in the
+webapp reaches it — AFL views only surface the live season(s). Make it navigable:
+
+- **Season switching** on AFL views (round/match/ladder) so any season back to 1998 is reachable — a season picker or historical index.
+- **AFL player career view across seasons** (delivers PAGE-10): full stat history, clubs, per-season averages/★ — now that players carry 20+ years of `player_season`/`player_match` rows.
+- **AFL club season history** (delivers PAGE-9).
+- Existing player/club links already exist on current pages; they just need a historical destination.
 
 ### Player Notes
 
