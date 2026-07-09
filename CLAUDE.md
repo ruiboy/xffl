@@ -14,7 +14,7 @@ frontend/web/    → Vue 3 SPA (TypeScript, Vite, port 3000)
 contracts/       → Shared event type definitions
 shared/          → Shared Go packages (database, events)
 dev/             → Docker Compose, seed data, dev tooling
-afl-historical/  → Historical AFL CSVs + import audit logs (history of AFL stats backfill)
+doc/             → ERDs, review findings
 ```
 
 ## Non-Negotiable Rules
