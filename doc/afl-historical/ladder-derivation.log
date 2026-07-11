@@ -1,0 +1,34 @@
+# AFL ladder derivation — 1998–2023
+
+Derived the `drv_*` columns that drive the AFL ladder for the historical seasons
+(the import wrote raw player_match facts only). Script: `derive-ladders.sql`.
+
+## What was set
+
+1. `club_match.drv_score` = Σ(player goals)×6 + Σ(player behinds) + rushed_behinds
+   — 10,096 club-innings (1998–2023 final matches). The rushed-behinds backfill
+   was the prerequisite; without it scores would undercount.
+2. `club_season` ladder standings (played/won/lost/drawn/for/against/premiership
+   points) — 441 club-seasons, from home-and-away results only (finals excluded).
+
+## Validation
+
+- Run against 2026 (finals-excluded), the ladder SQL reproduced the
+  domain-computed (`CalculateLadder`) `club_season` standings **exactly — 0
+  mismatches**. So the SQL matches the tested Go ladder logic.
+- Spot check — 2000: Essendon 21–1, 84 pts, 159.1% at the top (their famous
+  minor-premiership season; 22 H&A games confirms finals were excluded).
+
+## Notes / follow-ups
+
+- `club_match.drv_premiership_points` deliberately left untouched — it's a
+  vestigial column (premiership points live on `club_season`; nothing reads the
+  club_match one). Not needed for the ladder.
+- 2024 and 2025 are empty fixture scaffolds in the seed (all `no_data`, no player
+  stats), so no ladder is derivable for them — only 1998–2023 (imported) and 2026
+  (live) have data.
+- **Finals-exclusion gap in the app:** `domain.CalculateLadder` /
+  `FindFinalBySeasonID` filter on `data_status='final'` (completeness), not round
+  type, so they'd include finals in the ladder. Only safe today because 2026 has
+  no finals yet. When the derive step is built into the import, it must exclude
+  finals rounds (this SQL does).
