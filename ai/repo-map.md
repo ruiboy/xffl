@@ -40,5 +40,6 @@ xffl/
 │   ├── backup/            → backup.sh + restore.sh (pg_dump → gzip; rclone upload if BACKUP_REMOTE set)
 │   └── postgres/seed/     → SQL seed files
 │
-└── afl-historical/       → Historical AFL CSVs + import audit logs (Phase 24 backfill; see its README)
+└── doc/                  → ERDs, review findings
+    └── afl-historical/   → Phase 24 backfill provenance archive (CSVs + audit logs)
 ```
