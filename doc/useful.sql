@@ -7,7 +7,7 @@ from ffl.player_season fps
          left outer join afl.player ap on ap.id = aps.player_id
          left outer join afl.club_season acs on acs.id = aps.club_season_id
          left outer join afl.club ac on ac.id = acs.club_id
-R         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
+         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
          left outer join ffl.round frto on frto.id = fps.to_round_id
 order by fc.name, ap.name;
 
