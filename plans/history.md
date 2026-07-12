@@ -252,3 +252,9 @@ Completed phases from the xffl rebuild. See `plans/roadmap.md` for active and up
 - [x] Cross-page linking UX pass — AFL round Top Players (logo + match link), AFL match DataOps footer removed + stat headers (K H D M R T G B Pts), AFL Lens club season inline player/club links, FFL round top scorer match links, FFL match header club season links, "Improve your score" pill moved above grid for alignment
 - [x] Team Builder: drag-and-drop with popup-menu fallback, per-player stat summaries with heatmaps and form/season trend arrows, projected team total, and Best Team optimiser (Hungarian assignment)
 - [x] Shared stat intelligence: global Last N/Season source toggle, `trendDir` thresholds (constants), sortable stat columns, richer player hover card (per-round heat-mapped lines); vitest unit tests (ADR-019)
+
+## Phase 24: Data Management — Data Setup & Historical Import ✅
+
+**Goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
+
+- [x] AFL historical data import — afltables scrape + import CLIs; 1998–2023 loaded, 2024/2025 finalised + derived (scores, rushed behinds, ladders). Made navigable in the webapp (season picker, season-in-URL, ladder home) and finals typed via `round_type`.

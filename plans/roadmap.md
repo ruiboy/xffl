@@ -4,12 +4,6 @@ Committed phases — active and next. Completed phases 1–23 are in `plans/hist
 
 ---
 
-## Phase 24: Data Management — Data Setup & Historical Import
-
-**Goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
-
-- [x] AFL historical data import — afltables scrape + import CLIs; 1998–2023 loaded, 2024/2025 finalised + derived (scores, rushed behinds, ladders). Made navigable in the webapp (season picker, season-in-URL, ladder home) and finals typed via `round_type`.
-
 ## Phase 25: FFL Scoring & Historical Import
 
 **Goal:** Make FFL scoring pluggable per season, then backfill historical FFL teams from forum data with era-correct scoring.
