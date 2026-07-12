@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func pos(p Position) *Position      { return &p }
-func aflSts(s AFLStatus) *AFLStatus { return &s }
+func pos(p Position) *Position                     { return &p }
+func aflSts(s AFLStatus) *AFLStatus                { return &s }
 func pmSts(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
-func strPtr(s string) *string { return &s }
+func strPtr(s string) *string                      { return &s }
 
 // ── Score() ──────────────────────────────────────────────────────────────────
 
@@ -448,7 +448,7 @@ func TestClubMatch_DeclareSubs_RedeclareReplacesPreviousPairing(t *testing.T) {
 	for _, pm := range updated {
 		byID[pm.ID] = pm
 	}
-	assert.Equal(t, PlayerMatchStatusNamed, *byID[1].Status)    // reset from subbed_out
+	assert.Equal(t, PlayerMatchStatusNamed, *byID[1].Status)     // reset from subbed_out
 	assert.Equal(t, PlayerMatchStatusSubbedOut, *byID[2].Status) // new sub
 	assert.Equal(t, PlayerMatchStatusSubbedIn, *byID[3].Status)  // still subbed in
 }

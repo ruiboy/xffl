@@ -22,9 +22,9 @@ func (e ByeIneligibleError) Error() string {
 
 // SetTeamParams are the inputs to SetTeam.
 type SetTeamParams struct {
-	ClubMatchID     int
-	Entries         []SetTeamEntry
-	ClubMatchNotes  *string // optional notes to write on the club_match row
+	ClubMatchID    int
+	Entries        []SetTeamEntry
+	ClubMatchNotes *string // optional notes to write on the club_match row
 }
 
 // SetTeamEntry represents a single player assignment in a team.
@@ -86,6 +86,10 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		// Apply bye status and scores. Starters on a bye get drv_afl_status = "bye" and
 		// drv_score computed from season average. Bench players on a bye get the status only
 		// (score is set at activation via DeclareSubs).
+		rules, ruleErr := c.rulesForClubMatch(ctx, params.ClubMatchID)
+		if ruleErr != nil {
+			return ruleErr
+		}
 		for i, pm := range newPlayers {
 			bi, hasBye := byeByFFFLPS[pm.PlayerSeasonID]
 			if !hasBye {
@@ -97,7 +101,7 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 			status := domain.AFLStatusBye
 			newPlayers[i].AFLStatus = &status
 			if pm.Position != nil {
-				score := pm.CalculateByeScore(domain.AFLAvgStats{
+				score := rules.ByeScore(*pm.Position, domain.AFLAvgStats{
 					Goals: bi.AvgGoals, Kicks: bi.AvgKicks, Handballs: bi.AvgHandballs,
 					Marks: bi.AvgMarks, Tackles: bi.AvgTackles, Hitouts: bi.AvgHitouts,
 				})
@@ -106,7 +110,7 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		}
 
 		// validate and submit the team
-		if _, err := cm.SubmitTeam(newPlayers); err != nil {
+		if _, err := cm.SubmitTeam(newPlayers, rules); err != nil {
 			return err
 		}
 
@@ -432,6 +436,11 @@ func (c *Commands) applyByeScoresForActivated(ctx context.Context, clubMatchID i
 		return err
 	}
 
+	rules, err := c.rulesForClubMatch(ctx, clubMatchID)
+	if err != nil {
+		return err
+	}
+
 	activated := make([]domain.PlayerMatch, 0)
 	for _, pm := range pms {
 		isActivated := pm.Status != nil &&
@@ -501,7 +510,7 @@ func (c *Commands) applyByeScoresForActivated(ctx context.Context, clubMatchID i
 		if !ok {
 			continue
 		}
-		score := pm.CalculateByeScore(domain.AFLAvgStats{
+		score := rules.ByeScore(*pm.Position, domain.AFLAvgStats{
 			Goals: bi.AvgGoals, Kicks: bi.AvgKicks, Handballs: bi.AvgHandballs,
 			Marks: bi.AvgMarks, Tackles: bi.AvgTackles, Hitouts: bi.AvgHitouts,
 		})

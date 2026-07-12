@@ -3,14 +3,14 @@ package domain
 import "context"
 
 type PlayerSeason struct {
-	ID                 int
-	PlayerID           int
-	ClubSeasonID       int
-	AFLPlayerSeasonID  int
-	FromRoundID        *int
-	ToRoundID          *int
-	Notes              *string
-	CostCents          *int
+	ID                int
+	PlayerID          int
+	ClubSeasonID      int
+	AFLPlayerSeasonID int
+	FromRoundID       *int
+	ToRoundID         *int
+	Notes             *string
+	CostCents         *int
 }
 
 type PlayerSeasonRepository interface {

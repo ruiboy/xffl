@@ -135,6 +135,22 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 	return items, nil
 }
 
+const getRulesIDByClubMatchID = `-- name: GetRulesIDByClubMatchID :one
+SELECT s.rules_id
+FROM ffl.club_match cm
+JOIN ffl.match m  ON m.id = cm.match_id
+JOIN ffl.round r  ON r.id = m.round_id
+JOIN ffl.season s ON s.id = r.season_id
+WHERE cm.id = $1 AND cm.deleted_at IS NULL
+`
+
+func (q *Queries) GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, getRulesIDByClubMatchID, id)
+	var rules_id string
+	err := row.Scan(&rules_id)
+	return rules_id, err
+}
+
 const updateClubMatchDataStatus = `-- name: UpdateClubMatchDataStatus :exec
 UPDATE ffl.club_match
 SET data_status = $2,

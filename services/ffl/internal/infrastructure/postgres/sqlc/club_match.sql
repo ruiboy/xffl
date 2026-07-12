@@ -41,3 +41,11 @@ WHERE id = $1 AND deleted_at IS NULL;
 -- name: CountFinalClubMatchesByMatchID :one
 SELECT COUNT(*) FROM ffl.club_match
 WHERE match_id = $1 AND data_status = 'final' AND deleted_at IS NULL;
+
+-- name: GetRulesIDByClubMatchID :one
+SELECT s.rules_id
+FROM ffl.club_match cm
+JOIN ffl.match m  ON m.id = cm.match_id
+JOIN ffl.round r  ON r.id = m.round_id
+JOIN ffl.season s ON s.id = r.season_id
+WHERE cm.id = $1 AND cm.deleted_at IS NULL;

@@ -126,4 +126,5 @@ type FflSeason struct {
 	LeagueID    int32
 	Name        string
 	AflSeasonID int32
+	RulesID     string
 }

@@ -109,6 +109,12 @@ See [event-flow.md](event-flow.md).
 
 Fantasy Football League — a fantasy competition built on AFL statistics.
 
+### Rules (per season)
+
+A season's **rules** govern how its teams are scored and built, and belong to a scoring **era**. They group independent facets — today **scoring** (point values per stat) and **composition** (positions and their starter slots, bench size, whether interchange exists), with room for more as needed (e.g. draft, salary cap, trading). What the rules apply to is up to whatever holds them; here, a season.
+
+These have changed across eras — goals were once worth 4 points and are now 5, and the interchange slot was added in a later era — so each season is scored and validated by **its own era's rules**, and historical seasons keep their original formula. Every season carries an explicit rules id (an unknown one is an error; there is no implicit fallback). The tables in this section describe the current era.
+
 ### Positions (fantasy)
 
 A **position** is a scoring slot in a fantasy team. It determines *which* AFL stat earns fantasy points and at what rate.
@@ -125,27 +131,29 @@ Positions are **not** field positions (forward, midfielder, etc.).
 | `star` | Goals + kicks + handballs + marks + tackles | 5×G + 1×K + 1×H + 2×M + 4×T | 1 |
 | **Total** | | | **18** |
 
-`PlayerMatch.CalculateScore(aflStats)` is a pure domain function that applies the position multiplier to AFL statistics.
+Scoring is a pure domain calculation that applies the season's scoring rules — the position's stat(s) × the era's point value(s) — to a player's AFL statistics.
 
 ### Team composition
 
 A fantasy club submits a team each round. Teams need not be full.
 
-#### Bench (up to 4 players)
+#### Bench
+
+The bench holds up to the season's bench size (currently 4 players).
 
 | Bench role | Backup positions | Limit |
 |------------|-----------------|-------|
 | **Backup star** | `"star"` | at most 1 |
-| **Dual-position** | exactly 2 non-star positions | at most 3 |
+| **Dual-position** | exactly 2 non-star positions | fill the remaining bench slots |
 
-Hard rules enforced by `domain.ValidateTeam()`:
-1. Starter count per position ≤ `PositionSlots[pos]`
-2. Total bench players ≤ 4
+Hard rules enforced when a team is submitted (validated against the season's scoring rules):
+1. Starter count per position ≤ the season's starter slots for that position
+2. Total bench players ≤ the season's bench size
 3. At most 1 backup star (`BackupPositions` contains `"star"`)
 4. Non-star bench players have **exactly 2** backup positions, neither of which is `"star"`
 5. Each non-star position appears in **at most one** bench player's backup pair
-6. At most 1 `InterchangePosition` set across all players in the team
-7. `InterchangePosition` (if set) must be a recognised `Position` value
+6. Interchange is capped by the season — at most 1 `InterchangePosition` across the team when the era has interchange, none when it does not
+7. `InterchangePosition` (if set) must be a position the season recognises
 
 #### Bench player identification
 

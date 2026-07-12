@@ -10,7 +10,7 @@ import (
 )
 
 const findAllSeasons = `-- name: FindAllSeasons :many
-SELECT id, name, league_id, afl_season_id
+SELECT id, name, league_id, afl_season_id, rules_id
 FROM ffl.season
 WHERE deleted_at IS NULL
 ORDER BY name
@@ -21,6 +21,7 @@ type FindAllSeasonsRow struct {
 	Name        string
 	LeagueID    int32
 	AflSeasonID int32
+	RulesID     string
 }
 
 func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error) {
@@ -37,6 +38,7 @@ func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, erro
 			&i.Name,
 			&i.LeagueID,
 			&i.AflSeasonID,
+			&i.RulesID,
 		); err != nil {
 			return nil, err
 		}
@@ -49,7 +51,7 @@ func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, erro
 }
 
 const findSeasonByID = `-- name: FindSeasonByID :one
-SELECT id, name, league_id, afl_season_id
+SELECT id, name, league_id, afl_season_id, rules_id
 FROM ffl.season
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -59,6 +61,7 @@ type FindSeasonByIDRow struct {
 	Name        string
 	LeagueID    int32
 	AflSeasonID int32
+	RulesID     string
 }
 
 func (q *Queries) FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error) {
@@ -69,6 +72,7 @@ func (q *Queries) FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDR
 		&i.Name,
 		&i.LeagueID,
 		&i.AflSeasonID,
+		&i.RulesID,
 	)
 	return i, err
 }

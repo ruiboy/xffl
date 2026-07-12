@@ -8,22 +8,22 @@ constants, so historical seasons score with their own era's formula.
 FFL "positions" are stat buckets (`goals, kicks, handballs, marks, tackles, hitouts,
 star`), each scoring its stat(s) × a point value. Today every parameter is a package
 constant in `domain/player_match.go` — which *is* the latest (2015+) era. Replace them
-with a `SeasonRules` value object, one per era, selected per season.
+with a `Rules` value object, one per era, selected per season.
 
-- `SeasonRules` carries **everything**, including the parts that have never changed, so
+- `Rules` carries **everything**, including the parts that have never changed, so
   they're data rather than assumptions: per-stat point values, the positions + slot
   counts, each position's stat-set (the star's set is what gained/lost hitouts), bench
   size, interchange on/off, substitution rule.
 - One generic scoring function replaces the `CalculateScore` switch — the star isn't
-  special, it's just a position whose stat-set is longer. Eras become one-line deltas.
-- Rules are **code** in the FFL domain (one value per era + a registry), version-
-  controlled and unit-tested. A `ffl.season.scoring_rules_version` column stores which
-  era a season uses; the **year→era mapping is data**, so exact years can be pinned later
-  without code changes.
+  special, it's just a position whose stat-set is longer.
+- Rules are **code** in the FFL domain: each era is a complete, standalone `Rules`
+  literal in a registry (no era derived from another), version-controlled and unit-tested.
+  A `ffl.season.rules_id` column stores which era a season uses; the
+  **year→era mapping is data**, so exact years can be pinned later without code changes.
 
 ## One source of truth
 
-`SeasonRules` drives scoring, team-selection validation, the team-builder UX, and a
+`Rules` drives scoring, team-selection validation, the team-builder UX, and a
 human-readable "rules this season" description — all from the same data.
 
 ## Known eras (years approximate, confirm later)
@@ -39,7 +39,7 @@ is parameterized so it can be set when confirmed.
 
 ## Plan
 
-1. **Refactor to parity** — extract today's constants into a single "current" `SeasonRules`
+1. **Refactor to parity** — extract today's constants into a single "current" `Rules`
    + the generic engine; route all call sites through it (live scoring, bye scoring, team
    validation, and the forum parser's multipliers). Add the column, defaulted to current.
    Gate: 2026 scores identical before and after.

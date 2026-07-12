@@ -23,6 +23,11 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 		return 0, fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
 	}
 
+	rules, err := c.rulesForClubMatch(ctx, clubMatchID)
+	if err != nil {
+		return 0, err
+	}
+
 	// Partition into linked (have AFL player_match_id) and unlinked.
 	var aflMatchIDs []int
 	var unlinkedPSIDs []int
@@ -139,7 +144,10 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 				icPos := domain.Position(*pm.InterchangePosition)
 				scorePM.Position = &icPos
 			}
-			score := scorePM.CalculateScore(aflStats)
+			score := 0
+			if scorePM.Position != nil {
+				score = rules.Score(*scorePM.Position, aflStats)
+			}
 			upsertParams := domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,
@@ -183,7 +191,14 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 			return err
 		}
 
-		score := pm.CalculateScore(stats)
+		rules, err := c.rulesForClubMatch(ctx, pm.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		score := 0
+		if pm.Position != nil {
+			score = rules.Score(*pm.Position, stats)
+		}
 		updated, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 			ClubMatchID:         pm.ClubMatchID,
 			PlayerSeasonID:      pm.PlayerSeasonID,
@@ -257,6 +272,16 @@ func matchPremiershipPoints(m domain.Match) (home, away int) {
 // drv_afl_status ∈ {played, dnp} — none are null or playing.
 func (c *Commands) AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error) {
 	return c.playerMatches.AllAFLStatusesFinal(ctx, clubMatchID)
+}
+
+// rulesForClubMatch resolves the rules for the season this club match belongs to.
+// An unknown rules id is an error (there is no implicit fallback).
+func (c *Commands) rulesForClubMatch(ctx context.Context, clubMatchID int) (domain.Rules, error) {
+	id, err := c.clubMatches.GetRulesID(ctx, clubMatchID)
+	if err != nil {
+		return domain.Rules{}, fmt.Errorf("resolve rules for club_match %d: %w", clubMatchID, err)
+	}
+	return domain.RulesFor(id)
 }
 
 func (c *Commands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {

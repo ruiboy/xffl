@@ -7,6 +7,7 @@ type Season struct {
 	Name        string
 	LeagueID    int
 	AFLSeasonID int
+	RulesID     string
 }
 
 type SeasonRepository interface {
