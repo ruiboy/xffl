@@ -1183,8 +1183,10 @@ function hasSubScore(player: SquadPlayer): boolean {
 }
 
 function formatTeamText(): string {
+  const showTotals = grandTotal.value > 0
   const clubName = (selectedClubSeason.value?.club.name ?? 'TEAM').toUpperCase()
-  const lines: string[] = [`${clubName} ${grandTotal.value}`]
+  const lines: string[] = [`${clubName} ${showTotals ? grandTotal.value: ''}`]
+  lines.push('')
 
   for (const pos of positions) {
     const slots = teamSlots.value[pos.key].filter((s: Slot) => s.player)
@@ -1197,7 +1199,7 @@ function formatTeamText(): string {
       const score = showScore ? ` ${starterDisplayScore(slot.player!, pos.key)}` : ''
       lines.push(`${slot.player!.name}${club ? ` (${club})` : ''}${tag ? ` ${tag}` : ''}${score}`)
     }
-    lines.push(String(positionTotal(pos.key)))
+    lines.push(String(showTotals ? positionTotal(pos.key) : ''))
   }
 
   const benchSlots = benchDualSlots.value.filter((s: BenchDualSlot) => s.player)
