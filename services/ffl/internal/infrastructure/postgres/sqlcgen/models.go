@@ -115,6 +115,7 @@ type FflRound struct {
 	SeasonID   int32
 	Name       string
 	AflRoundID int32
+	RoundType  string
 }
 
 type FflSeason struct {

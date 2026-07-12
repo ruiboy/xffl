@@ -14,6 +14,7 @@ import (
 const findFinalMatchesBySeasonID = `-- name: FindFinalMatchesBySeasonID :many
 SELECT m.id,
        m.round_id,
+       r.round_type,
        COALESCE(home.id, 0)              AS home_club_match_id,
        COALESCE(home.club_season_id, 0)  AS home_club_season_id,
        COALESCE(home.drv_score, 0)       AS home_score,
@@ -32,6 +33,7 @@ WHERE r.season_id = $1
 type FindFinalMatchesBySeasonIDRow struct {
 	ID               int32
 	RoundID          int32
+	RoundType        string
 	HomeClubMatchID  int32
 	HomeClubSeasonID int32
 	HomeScore        int32
@@ -52,6 +54,7 @@ func (q *Queries) FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32
 		if err := rows.Scan(
 			&i.ID,
 			&i.RoundID,
+			&i.RoundType,
 			&i.HomeClubMatchID,
 			&i.HomeClubSeasonID,
 			&i.HomeScore,

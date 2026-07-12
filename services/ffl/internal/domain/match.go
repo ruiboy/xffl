@@ -18,6 +18,7 @@ const (
 type Match struct {
 	ID        int
 	RoundID   int
+	RoundType RoundType
 	Home      ClubMatch
 	Away      ClubMatch
 	Venue     string

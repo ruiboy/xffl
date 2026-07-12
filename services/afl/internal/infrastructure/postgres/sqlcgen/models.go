@@ -134,6 +134,7 @@ type AflRound struct {
 	DeletedAt pgtype.Timestamptz
 	SeasonID  int32
 	Name      string
+	RoundType string
 }
 
 type AflSeason struct {

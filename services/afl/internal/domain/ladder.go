@@ -2,10 +2,14 @@ package domain
 
 // CalculateLadder folds a set of matches into per-ClubSeason standings.
 // Matches must have StoredScore set on each ClubMatch; matches with a missing
-// ClubSeasonID on either side are skipped.
+// ClubSeasonID on either side are skipped, as are finals rounds (the ladder is
+// home-and-away only).
 func CalculateLadder(matches []Match) map[int]ClubSeason {
 	standings := make(map[int]ClubSeason)
 	for _, m := range matches {
+		if m.RoundType.IsFinal() {
+			continue
+		}
 		if m.Home.ClubSeasonID == 0 || m.Away.ClubSeasonID == 0 {
 			continue
 		}

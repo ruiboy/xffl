@@ -58,6 +58,18 @@ func TestCalculateLadder(t *testing.T) {
 		assert.Equal(t, ClubSeason{ID: 3, Played: 1, Won: 1, For: 90, Against: 60, PremiershipPoints: 4}, got[3])
 	})
 
+	t.Run("finals matches are excluded from the ladder", func(t *testing.T) {
+		matches := []Match{
+			{RoundType: RoundTypeMinor, Home: ClubMatch{ClubSeasonID: 1, StoredScore: 100}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 80}},
+			{RoundType: RoundTypeGrandFinal, Home: ClubMatch{ClubSeasonID: 1, StoredScore: 100}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 80}},
+		}
+		got := CalculateLadder(matches)
+
+		// only the home-and-away match counts; the grand final is ignored
+		assert.Equal(t, ClubSeason{ID: 1, Played: 1, Won: 1, For: 100, Against: 80, PremiershipPoints: 4}, got[1])
+		assert.Equal(t, ClubSeason{ID: 2, Played: 1, Lost: 1, For: 80, Against: 100}, got[2])
+	})
+
 	t.Run("skips entries with missing club season IDs", func(t *testing.T) {
 		matches := []Match{
 			{Home: ClubMatch{ClubSeasonID: 0, StoredScore: 100}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 80}},

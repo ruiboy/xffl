@@ -63,6 +63,17 @@ func TestCalculateLadder(t *testing.T) {
 			want: map[int]ClubSeason{},
 		},
 		{
+			name: "grand final is excluded from the ladder",
+			matches: []Match{
+				{RoundType: RoundTypeMinor, Home: ClubMatch{ClubSeasonID: 1, StoredScore: 1200}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 1000}},
+				{RoundType: RoundTypeGrandFinal, Home: ClubMatch{ClubSeasonID: 1, StoredScore: 1200}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 1000}},
+			},
+			want: map[int]ClubSeason{
+				1: {ID: 1, Played: 1, Won: 1, For: 1200, Against: 1000, PremiershipPoints: 4},
+				2: {ID: 2, Played: 1, Lost: 1, For: 1000, Against: 1200},
+			},
+		},
+		{
 			name:    "empty matches",
 			matches: []Match{},
 			want:    map[int]ClubSeason{},

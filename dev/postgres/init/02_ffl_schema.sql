@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS ffl.round (
     deleted_at TIMESTAMP WITH TIME ZONE,
     season_id INTEGER NOT NULL REFERENCES ffl.season(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    afl_round_id INTEGER NOT NULL
+    afl_round_id INTEGER NOT NULL,
+    round_type VARCHAR(50) NOT NULL DEFAULT 'MINOR'
 );
 
 -- Create match table

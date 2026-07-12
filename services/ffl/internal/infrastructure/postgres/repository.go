@@ -221,8 +221,9 @@ func (r *MatchRepository) FindFinalBySeasonID(ctx context.Context, seasonID int)
 	out := make([]domain.Match, len(rows))
 	for i, row := range rows {
 		out[i] = domain.Match{
-			ID:      int(row.ID),
-			RoundID: int(row.RoundID),
+			ID:        int(row.ID),
+			RoundID:   int(row.RoundID),
+			RoundType: domain.RoundType(row.RoundType),
 			Home: domain.ClubMatch{
 				ID:           int(row.HomeClubMatchID),
 				ClubSeasonID: int(row.HomeClubSeasonID),
