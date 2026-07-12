@@ -61,3 +61,45 @@ func TestRulesValidate_DrivenByRules(t *testing.T) {
 		assert.Contains(t, err.Error(), "interchange is not permitted")
 	})
 }
+
+// The structural bench/interchange composition rules (independent of the era's
+// scalar parameters).
+func TestRulesValidate_BenchAndInterchangeShape(t *testing.T) {
+	t.Run("non-star bench player must have exactly 2 backup positions", func(t *testing.T) {
+		err := rules2015.Validate([]PlayerMatch{{BackupPositions: strPtr("goals")}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "exactly 2 backup positions")
+	})
+
+	t.Run("non-star bench player cannot list star as a backup", func(t *testing.T) {
+		err := rules2015.Validate([]PlayerMatch{{BackupPositions: strPtr("goals,star")}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot list star as a backup position")
+	})
+
+	t.Run("a non-star position may be covered by at most one bench player", func(t *testing.T) {
+		team := []PlayerMatch{
+			{BackupPositions: strPtr("goals,kicks")},
+			{BackupPositions: strPtr("goals,marks")}, // goals already covered
+		}
+		err := rules2015.Validate(team)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already covered")
+	})
+
+	t.Run("interchange position must be a recognised position", func(t *testing.T) {
+		err := rules2015.Validate([]PlayerMatch{
+			{BackupPositions: strPtr("goals,kicks"), InterchangePosition: strPtr("bogus")},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not a valid position")
+	})
+
+	t.Run("interchange position must be one of the player's own backups", func(t *testing.T) {
+		err := rules2015.Validate([]PlayerMatch{
+			{BackupPositions: strPtr("goals,kicks"), InterchangePosition: strPtr("marks")},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not one of this player's backup positions")
+	})
+}
