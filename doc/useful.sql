@@ -7,7 +7,7 @@ from ffl.player_season fps
          left outer join afl.player ap on ap.id = aps.player_id
          left outer join afl.club_season acs on acs.id = aps.club_season_id
          left outer join afl.club ac on ac.id = acs.club_id
-R         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
+         left outer join ffl.round frfrom on frfrom.id = fps.from_round_id
          left outer join ffl.round frto on frto.id = fps.to_round_id
 order by fc.name, ap.name;
 
@@ -104,8 +104,8 @@ with target_round as (
     join afl.season s on s.id = r.season_id
     join afl.league l on l.id = s.league_id
     where l.name = 'AFL'
-      and s.name = 'AFL 2026'
-      and r.name = 'Opening Round'
+      and s.name = 'AFL 2023'
+      and r.name = 'Round 5'
 ),
 player_totals as (
     select
@@ -137,16 +137,16 @@ select
     m.id        as match_id,
     cs.side,
     cs.club_name,
+    cs.drv_score,
+    cs.computed_score,
     cs.player_goals,
     cs.player_behinds,
     cs.rushed_behinds,
-    cs.computed_score,
-    cs.drv_score,
     m.start_dt
 from afl.match m
 join target_round tr on tr.id = m.round_id
 join club_scores cs  on cs.match_id = m.id
-order by m.start_dt, cs.side desc;
+order by m.start_dt, m.id, cs.side desc;
 
 
 -- afl match stats for a player

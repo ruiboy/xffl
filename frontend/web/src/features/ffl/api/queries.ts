@@ -616,3 +616,37 @@ export const GET_PLAYER_STATS_CARD = gql`
     }
   }
 `
+
+export const GET_FFL_SEASONS = gql`
+  query GetFFLSeasons {
+    fflSeasons {
+      id
+      name
+    }
+  }
+`
+
+export const GET_FFL_SEASON_LADDER = gql`
+  query GetFFLSeasonLadder($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      name
+      ladder {
+        id
+        club { id name }
+        played
+        won
+        lost
+        drawn
+        for
+        against
+        percentage
+        premiershipPoints
+      }
+      rounds {
+        id
+        name
+      }
+    }
+  }
+`

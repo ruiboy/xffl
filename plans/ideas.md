@@ -13,8 +13,31 @@ in sibling files and are indexed here.
 | ID | Route | Status | What it shows | Effort |
 |---|---|---|---|---|
 | PAGE-2 | `/ffl/player-seasons/:fflPlayerSeasonId` | Expand-row in SquadView; not a full page | One club's ownership of a player: club-specific notes, averages scoped to "while they were mine", per-round breakdown. | S |
-| PAGE-9 | `/ffl/afl/clubs/:aflClubId` | Future — needs 2+ seasons | All-time FFL history of an AFL club across seasons: players drafted, aggregate scoring, per-season breakdown. | — |
-| PAGE-10 | `/ffl/afl/players/:aflPlayerId` | Future — needs 2+ seasons | All-time FFL career of an AFL player across seasons: FFL clubs, total * points, FFL games played. | — |
+| PAGE-9 | `/ffl/afl/clubs/:aflClubId` | Unblocked (Phase 24 backfill) | All-time FFL history of an AFL club across seasons: players drafted, aggregate scoring, per-season breakdown. | — |
+| PAGE-10 | `/ffl/afl/players/:aflPlayerId` | Unblocked (Phase 24 backfill) | All-time FFL career of an AFL player across seasons: FFL clubs, total * points, FFL games played. | — |
+
+### Navigating the historical AFL data
+
+The Phase 24 backfill loaded 1998–2023 AFL player/match stats, but nothing in the
+webapp reaches it — AFL views only surface the live season(s). Make it navigable:
+
+- **Season switching** on AFL views (round/match/ladder) so any season back to 1998 is reachable — a season picker or historical index. *(Shipped: season lives in the URL at `/afl/seasons/:id` + `/ffl/seasons/:id`, a season picker in the global nav, and the season ladder is the home page. See PAGE-11 below for the richer season landing.)*
+- **AFL player career view across seasons** (delivers PAGE-10): full stat history, clubs, per-season averages/★ — now that players carry 20+ years of `player_season`/`player_match` rows.
+- **AFL club season history** (delivers PAGE-9).
+- Existing player/club links already exist on current pages; they just need a historical destination.
+
+#### PAGE-11 — Season dashboard vs full ladder
+
+Today the season landing *is* the full ladder. Split them: make the landing a glanceable
+**season dashboard**, with the full ladder as its own page.
+
+- **Dashboard** — a brief ladder (all teams; games / premiership-points / percentage
+  columns only) plus a round snapshot: the current round if the season is live, else its
+  last round — which for a completed season is the Grand Final, so a historic season
+  headlines the premier.
+- **Full ladder** — its own page with the complete table.
+
+Symmetric for FFL.
 
 ### Player Notes
 
@@ -41,7 +64,7 @@ The cross-lens actions from the 2026-07 codebase review. Full detail, severity t
 `file:line` references: [`doc/review-findings.md`](../doc/review-findings.md) (dated snapshot at
 commit `1ce978c`).
 
-REV-1 (event reliability) graduated to roadmap Phase 25.
+REV-1 (event reliability) graduated to roadmap Phase 26.
 
 | ID | Action | Detail in |
 |---|---|---|
@@ -54,10 +77,18 @@ REV-1 (event reliability) graduated to roadmap Phase 25.
 | REV-8 | Documentation truth pass: domain.md match-style fiction + `named` status; cookbook, testing.md, repo-map.md, frontend.md staleness. | review §2 |
 | REV-9 | Frontend structural pass: settle the cross-feature import rule; split `TeamBuilderView.vue`; introduce fragments; scope Team Builder/Squad queries. | review §4 |
 | REV-10 | Backup/restore parity guard: dump schema alongside data backups or diff live schema against init SQL. | review §3 |
+| REV-11 | Replace name-based finals detection with a typed `round.round_type`; fixes the ladder finals leak (`CalculateLadder`/`FindFinalBySeasonID` filter on `data_status='final'`, not round type, so finals count toward the H&A ladder) and unblocks per-week finals nav. Latent until the Phase 24 backfill flipped 2024/2025 finals to `final`; the derivation SQL excludes them via `NOT ILIKE '%Final%'`, so the two now disagree. | [round-type-enum.md](round-type-enum.md) |
 
 ---
 
 ## Platform & Other
+
+### Season setup imports
+
+Once-per-season CLIs, run when a new season starts rather than every round.
+
+- **AFL season player import** — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players.
+- **FFL squad import** — once/season CLI; resolve FFL rosters to AFL player IDs.
 
 ### Player availability
 

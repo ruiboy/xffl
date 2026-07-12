@@ -100,6 +100,16 @@ supergraph-compose:
 proto-gen:
     buf generate
 
+# Export historical AFL stats from afltables.com to afl-historical/<season>.csv
+# Walks backwards from `from` to `to` (inclusive). e.g. just afl-historical-export 2023 2023
+afl-historical-export from to:
+    cd services/afl && go run ./cmd/afltables-export -from {{from}} -to {{to}} -out ../../afl-historical
+
+# Import historical AFL CSVs into the DB (interactive player linking).
+# Ingests newest→oldest so careers chain back from seeded seasons. e.g. just afl-historical-import 1998 2023
+afl-historical-import from to:
+    cd services/afl && go run ./cmd/afltables-import -from {{from}} -to {{to}} -dir ../../afl-historical
+
 # Run AFL service tests (includes integration tests via testcontainers)
 test-afl:
     cd services/afl && go test -tags integration ./...

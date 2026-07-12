@@ -54,6 +54,7 @@ WHERE id = $1 AND deleted_at IS NULL;
 -- name: FindFinalMatchesBySeasonID :many
 SELECT m.id,
        m.round_id,
+       r.round_type,
        COALESCE(home.id, 0)              AS home_club_match_id,
        COALESCE(home.club_season_id, 0)  AS home_club_season_id,
        COALESCE(home.drv_score, 0)       AS home_score,

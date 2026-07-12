@@ -240,3 +240,21 @@ Completed phases from the xffl rebuild. See `plans/roadmap.md` for active and up
 - [x] Smoke-test team submission and substitution flows against real data; capture edge cases
 - [x] Reduce `dev/seed` to a single representative round (enough for demo and future dev)
 - [x] Confirm e2e tests pass against slim seed
+
+## Phase 23: UX — Player Intelligence ✅
+
+**Goal:** Richer player and club context for FFL decision-making. Candidate areas from `plans/ideas.md`: player season pages, free agents, club pages, Team Builder analytics, notes in the match view, score reconciliation. Scope confirmed at sprint start.
+
+- [x] PAGE-1: AFL player season view (`/ffl/afl/player-seasons/:id`) — MEDIAN backend, status pills, season stats table, row-level match links, header breadcrumb links, stat label fixes
+- [x] PAGE-3: AFL club season view (`/ffl/afl/club-seasons/:id`) — all players at an AFL club with FFL ownership, stats, and ★ avg; entry from AFL ladder club names
+- [x] Club Match page (`/ffl/club-matches/:id`) — read-only view of a club's team and scores; linked from FFL match view; Team Builder link shown when club is selected
+- [x] Frontend architecture: formalised three-namespace page hierarchy (FFL / AFL / AFL Lens) in `frontend.md`; consistent page naming and route conventions across `router.ts`, `frontend.md`, and `ideas.md`
+- [x] Cross-page linking UX pass — AFL round Top Players (logo + match link), AFL match DataOps footer removed + stat headers (K H D M R T G B Pts), AFL Lens club season inline player/club links, FFL round top scorer match links, FFL match header club season links, "Improve your score" pill moved above grid for alignment
+- [x] Team Builder: drag-and-drop with popup-menu fallback, per-player stat summaries with heatmaps and form/season trend arrows, projected team total, and Best Team optimiser (Hungarian assignment)
+- [x] Shared stat intelligence: global Last N/Season source toggle, `trendDir` thresholds (constants), sortable stat columns, richer player hover card (per-round heat-mapped lines); vitest unit tests (ADR-019)
+
+## Phase 24: Data Management — Data Setup & Historical Import ✅
+
+**Goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
+
+- [x] AFL historical data import — afltables scrape + import CLIs; 1998–2023 loaded, 2024/2025 finalised + derived (scores, rushed behinds, ladders). Made navigable in the webapp (season picker, season-in-URL, ladder home) and finals typed via `round_type`.

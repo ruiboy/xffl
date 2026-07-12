@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useFflState } from '@/features/ffl/composables/useFflState'
-import { useAflState } from '@/features/afl/composables/useAflState'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,17 +13,18 @@ const router = createRouter({
     {
       path: '/ffl',
       name: 'home',
-      redirect: () => {
-        const { liveRoundId } = useFflState()
-        return liveRoundId.value
-          ? { name: 'ffl-round', params: { roundId: liveRoundId.value } }
-          : { name: 'ffl-ladder' }
-      },
+      redirect: { name: 'ffl-ladder' },
     },
     {
       path: '/ffl/ladder',
       name: 'ffl-ladder',
       component: () => import('@/features/ffl/views/HomeView.vue'),
+    },
+    {
+      path: '/ffl/seasons/:seasonId',
+      name: 'ffl-season',
+      component: () => import('@/features/ffl/views/SeasonView.vue'),
+      props: true,
     },
     {
       path: '/ffl/rounds/:roundId',
@@ -84,17 +83,18 @@ const router = createRouter({
     {
       path: '/afl',
       name: 'afl-home',
-      redirect: () => {
-        const { liveRoundId } = useAflState()
-        return liveRoundId.value
-          ? { name: 'afl-round', params: { roundId: liveRoundId.value } }
-          : { name: 'afl-ladder' }
-      },
+      redirect: { name: 'afl-ladder' },
     },
     {
       path: '/afl/ladder',
       name: 'afl-ladder',
       component: () => import('@/features/afl/views/HomeView.vue'),
+    },
+    {
+      path: '/afl/seasons/:seasonId',
+      name: 'afl-season',
+      component: () => import('@/features/afl/views/SeasonView.vue'),
+      props: true,
     },
     {
       path: '/afl/rounds/:roundId',

@@ -3,6 +3,29 @@
 BEGIN;
 
 -- ============================================================
+-- Round classification (round_type) — AFL + FFL
+-- ============================================================
+-- Derive round_type from the round name so the ladder can exclude finals by
+-- type rather than name matching. Seeded rounds are home-and-away only today,
+-- so this resolves everything to MINOR; it is here so any finals rounds added
+-- to a seed later are typed automatically. Mirrors the live backfill.
+
+UPDATE afl.round SET round_type = CASE
+    WHEN name ILIKE 'Grand Final%'       THEN 'GRAND_FINAL'
+    WHEN name ILIKE 'Preliminary Final%' THEN 'PRELIMINARY_FINAL'
+    WHEN name ILIKE 'Semi Final%'        THEN 'SEMI_FINAL'
+    WHEN name ILIKE 'Elimination Final%' THEN 'ELIMINATION_FINAL'
+    WHEN name ILIKE 'Qualifying Final%'  THEN 'QUALIFYING_FINAL'
+    WHEN name ILIKE 'Wildcard%'          THEN 'WILDCARD_FINAL'
+    ELSE 'MINOR'
+END;
+
+UPDATE ffl.round SET round_type = CASE
+    WHEN name ILIKE 'Grand Final%' THEN 'GRAND_FINAL'
+    ELSE 'MINOR'
+END;
+
+-- ============================================================
 -- AFL: Compute club_match scores from player stats
 -- ============================================================
 

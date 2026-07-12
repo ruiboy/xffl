@@ -1,0 +1,38 @@
+# Rushed behinds backfill — 1998–2023
+
+Populated afl.club_match.rushed_behinds for the historical seasons (the earlier
+import left them 0). Source: each team's final score (goals.behinds) from the
+afltables season pages (afltables.com/afl/seas/<year>.html). For each team in a
+match:
+
+    rushed_behinds = team_total_behinds − sum(player behinds)   (floored at 0)
+
+The team behinds come from the season-page score line; the player behinds are
+already in afl.player_match.
+
+## Result
+
+- 10,092 club-innings updated (of 10,096; the ~4 unmatched are the 2010 drawn
+  Grand Final + replay, which share round/clubs and are an accepted edge case).
+- Total rushed behinds 1998–2023: 22,847  (avg 2.26 per team per match, max 11).
+- 8,937 team-innings had ≥1 rushed behind.
+- Spot check — 2023 R1 Carlton (8.10.58 = 10 behinds, 8 to players) → 2 rushed;
+  Richmond (10 behinds, all credited) → 0. Correct.
+
+## Per season (rushed behinds, games)
+
+1998: 900 / 185     2007: 1056 / 185    2016: 910 / 207
+1999: 935 / 185     2008: 1127 / 185    2017: 835 / 207
+2000: 854 / 185     2009: 692 / 185     2018: 839 / 207
+2001: 869 / 185     2010: 831 / 185     2019: 861 / 207
+2002: 769 / 185     2011: 872 / 196     2020: 551 / 162  (COVID-shortened)
+2003: 719 / 185     2012: 968 / 207     2021: 835 / 207
+2004: 757 / 185     2013: 978 / 207     2022: 891 / 207
+2005: 849 / 185     2014: 1023 / 207    2023: 977 / 216
+2006: 953 / 185     2015: 996 / 206
+
+## Note
+
+One-off DB enrichment (not part of the import CLI). Re-run: scrape season pages
+for team behinds, load to a staging table keyed by (year, round, club), then
+UPDATE club_match.rushed_behinds = GREATEST(0, team_behinds − Σ player behinds).

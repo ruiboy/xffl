@@ -1,0 +1,2 @@
+# Keep the import audit logs here for provenance (overrides the global *.log ignore)
+!*.log
