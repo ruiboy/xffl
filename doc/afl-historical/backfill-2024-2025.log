@@ -1,0 +1,77 @@
+# 2024/2025 finalize + derive backfill
+
+The seed already carried complete 2024/2025 player_match stats (9,936 rows per
+season) but left them `no_data`, unscored, with no rushed behinds and no ladder.
+This backfill gave 2024/2025 the same finish as the 1998–2023 import: rushed
+behinds, `data_status='final'`, `drv_score`, and `club_season` ladders.
+
+Unlike 1998–2023 (which was scraped and inserted whole), the 2024/2025 matches
+already existed in the seed — so nothing was imported. The team-behinds figures
+were scraped and joined onto the existing rows.
+
+## 1) Rushed behinds — season-page scrape
+
+Source: team score lines on afltables.com/afl/seas/{2024,2025}.html (the same
+season pages used for 1998–2023). For each team in a match the final quarter's
+behinds tally is the team total; `rushed_behinds = GREATEST(0, team_behinds −
+Σ player behinds)`.
+
+Join key: `(season, round, club)` — a club plays exactly one match per round, so
+this uniquely identifies a club_match and sidesteps home/away designation
+(the join is on club, not side).
+
+Two reconciliations were required and verified before any write:
+
+- **Round labels.** afltables numbers the season `Round 1..25`; the seed uses
+  `Opening Round` + `Round 1..24`. afltables `Round 1` (4 games) = seed
+  `Opening Round`; afltables `Round N` = seed `Round N-1`; finals labels
+  identical. Confirmed by per-round match-count fingerprint on both seasons.
+- **Club names.** afltables short names (`Sydney`, `Adelaide`, …) map to the
+  seed's full names (`Sydney Swans`, `Adelaide Crows`, …) by prefix; 1:1 across
+  all 18 clubs.
+
+Safety net: staged rows were resolved to club_match rows and the cardinality
+checked to be an exact bijection — 864 staged rows ↔ 864 club_match rows, no
+orphans on either side — before the UPDATE. (Silent mis-assignment was the
+failure mode of the earlier player-stat import attempt; this check forecloses
+it.)
+
+Result (UPDATE 864):
+
+- 2024: 962 rushed behinds, avg 2.23/team/match, max 8, 382/432 innings ≥1.
+- 2025: 878 rushed behinds, avg 2.03/team/match, max 8, 375/432 innings ≥1.
+  (In line with 1998–2023: avg 2.26, max 11.)
+
+Spot check — 2024 Grand Final: Brisbane 18.12.120 → 12 behinds (rushed 3 +
+player 9); Sydney 9.6.60 → 6 behinds (rushed 1 + player 5). Correct.
+
+## 2) Finalize + derive
+
+Reused `derive-ladders.sql` with the year range set to 2024–2025, after first
+flipping the 432 matches to `data_status='final'` (the derive steps filter on
+it):
+
+- `club_match.drv_score` = Σ(goals×6 + behinds) + rushed_behinds — 864 innings.
+- `club_season` ladder standings from home-and-away results only (finals
+  excluded via `NOT ILIKE '%Final%'`; 2024/2025 both have finals, so unlike the
+  2026 validation run this exclusion actually bites) — 36 club-seasons.
+
+Validation — ladders match real AFL history:
+
+- 2024: Sydney Swans minor premiers (17–6, 68 pts, 126.7%); Port Adelaide 2nd;
+  Richmond wooden spoon (2–21). Premier (Brisbane) won the GF; GF excluded from
+  the ladder, as it should be.
+- 2025: Adelaide Crows top (18–5, 72 pts); Geelong 2nd; Brisbane 3rd carrying
+  the season's one draw (16–6–1); West Coast last (1–22).
+- Each club played 23 H&A games; league premiership points total 828 per season
+  (207 H&A matches × 4), the expected invariant.
+
+## Notes
+
+- `club_match.drv_premiership_points` left untouched (vestigial; points live on
+  club_season) — same as 1998–2023.
+- The finals-exclusion gap in `domain.CalculateLadder` /`FindFinalBySeasonID`
+  (filters on `data_status='final'`, not round type) still stands: with
+  2024/2025 finals now `final`, the Go ladder path would wrongly include them.
+  The SQL here excludes finals correctly; the app path needs the same fix before
+  it recomputes these seasons' ladders.

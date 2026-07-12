@@ -64,6 +64,7 @@ REV-1 (event reliability) graduated to roadmap Phase 25.
 | REV-8 | Documentation truth pass: domain.md match-style fiction + `named` status; cookbook, testing.md, repo-map.md, frontend.md staleness. | review §2 |
 | REV-9 | Frontend structural pass: settle the cross-feature import rule; split `TeamBuilderView.vue`; introduce fragments; scope Team Builder/Squad queries. | review §4 |
 | REV-10 | Backup/restore parity guard: dump schema alongside data backups or diff live schema against init SQL. | review §3 |
+| REV-11 | Exclude finals from the AFL ladder by round type, not completeness. `domain.CalculateLadder` / `FindFinalBySeasonID` filter on `data_status='final'`, so finals rounds count toward the home-and-away ladder. Latent until now (2026 has no finals); with the Phase 24 backfill flipping 2024/2025 finals to `final`, the app path would over-count them — the derivation SQL already excludes them via `NOT ILIKE '%Final%'`, so the two now disagree. Fix the Go path before it recomputes any completed season's ladder. | `doc/afl-historical/backfill-2024-2025.log` |
 
 ---
 
