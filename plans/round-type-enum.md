@@ -13,9 +13,9 @@ the foundation for per-week finals navigation.
 ## Model
 
 - `round_type` lives on `round`, not `match` — rounds are homogeneous (every match in a round shares a type).
-- Stored as `VARCHAR(50) NOT NULL DEFAULT 'HOME_AND_AWAY'`, mirroring `match.data_status` / `club_match.side`. Validity + an `IsFinal()` helper live in the domain layer; **no DB CHECK** (project rule — enum logic in domain).
-- Values (AFL): `HOME_AND_AWAY`, `WILDCARD_FINAL`, `QUALIFYING_FINAL`, `ELIMINATION_FINAL`, `SEMI_FINAL`, `PRELIMINARY_FINAL`, `GRAND_FINAL`. `IsFinal()` = any of the finals values. `HOME_AND_AWAY` over `MINOR` (unambiguous vs "minor premiership"). "Opening Round" and FFL "SUPERBYE" are `HOME_AND_AWAY`.
-- **FFL mirror:** its own enum (service isolation — no cross-service import), same values. FFL finals / super-bye semantics may diverge from AFL, so set it independently at FFL season-setup; do **not** couple it to the linked `afl_round_id`'s type at query time.
+- Stored as `VARCHAR(50) NOT NULL DEFAULT 'MINOR'`, mirroring `match.data_status` / `club_match.side`. Validity + an `IsFinal()` helper live in the domain layer; **no DB CHECK** (project rule — enum logic in domain).
+- Values (AFL): `MINOR`, `WILDCARD_FINAL`, `QUALIFYING_FINAL`, `ELIMINATION_FINAL`, `SEMI_FINAL`, `PRELIMINARY_FINAL`, `GRAND_FINAL`. `IsFinal()` = any of the finals values. "Opening Round" is `MINOR`.
+- **FFL mirror:** its own enum (service isolation — no cross-service import), but only **two values** — `MINOR` and `GRAND_FINAL`. FFL models no finals lead-up rounds by type; everything but the grand final is `MINOR` (including the SUPERBYE round), and `IsFinal()` on the FFL side is just `== GRAND_FINAL`. Set it independently at FFL season-setup; do **not** couple it to the linked `afl_round_id`'s type at query time.
 
 ## Finals week is derived, not stored
 
@@ -48,8 +48,8 @@ ffl.round (… season_id, name, afl_round_id)
 ### Live DB — DDL + backfill
 
 ```sql
-ALTER TABLE afl.round ADD COLUMN round_type VARCHAR(50) NOT NULL DEFAULT 'HOME_AND_AWAY';
-ALTER TABLE ffl.round ADD COLUMN round_type VARCHAR(50) NOT NULL DEFAULT 'HOME_AND_AWAY';
+ALTER TABLE afl.round ADD COLUMN round_type VARCHAR(50) NOT NULL DEFAULT 'MINOR';
+ALTER TABLE ffl.round ADD COLUMN round_type VARCHAR(50) NOT NULL DEFAULT 'MINOR';
 
 -- Backfill from round names (the last time a name is parsed). The live DB carries
 -- finals rounds (1998–2023, 2024/2025) that the seed files do not.
@@ -60,15 +60,17 @@ UPDATE afl.round SET round_type = CASE
     WHEN name ILIKE 'Elimination Final%' THEN 'ELIMINATION_FINAL'
     WHEN name ILIKE 'Qualifying Final%'  THEN 'QUALIFYING_FINAL'
     WHEN name ILIKE 'Wildcard%'          THEN 'WILDCARD_FINAL'
-    ELSE 'HOME_AND_AWAY'
+    ELSE 'MINOR'
 END;
--- FFL: same CASE; live/seed FFL rounds are H&A + SUPERBYE only today, so all resolve
--- to HOME_AND_AWAY. Keep the CASE for when FFL finals land.
+-- FFL: only two values, so the CASE is just
+--   WHEN name ILIKE 'Grand Final%' THEN 'GRAND_FINAL' ELSE 'MINOR'.
+-- Live/seed FFL rounds are MINOR + SUPERBYE today, so all resolve to MINOR until
+-- an FFL grand final is added.
 ```
 
 ### `dev/postgres/init` (fresh-DB schema)
 
-- `01_afl_schema.sql` — add `round_type VARCHAR(50) NOT NULL DEFAULT 'HOME_AND_AWAY'` to `afl.round` (after `name`).
+- `01_afl_schema.sql` — add `round_type VARCHAR(50) NOT NULL DEFAULT 'MINOR'` to `afl.round` (after `name`).
 - `02_ffl_schema.sql` — same on `ffl.round` (after `afl_round_id`).
 
 ### `dev/postgres/seed` + `dev/postgres/test-e2e` (fixtures)
