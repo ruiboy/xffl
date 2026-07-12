@@ -64,7 +64,7 @@ The cross-lens actions from the 2026-07 codebase review. Full detail, severity t
 `file:line` references: [`doc/review-findings.md`](../doc/review-findings.md) (dated snapshot at
 commit `1ce978c`).
 
-REV-1 (event reliability) graduated to roadmap Phase 25.
+REV-1 (event reliability) graduated to roadmap Phase 26.
 
 | ID | Action | Detail in |
 |---|---|---|
@@ -82,6 +82,13 @@ REV-1 (event reliability) graduated to roadmap Phase 25.
 ---
 
 ## Platform & Other
+
+### Season setup imports
+
+Once-per-season CLIs, run when a new season starts rather than every round.
+
+- **AFL season player import** — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players.
+- **FFL squad import** — once/season CLI; resolve FFL rosters to AFL player IDs.
 
 ### Player availability
 

@@ -8,13 +8,16 @@ Committed phases — active and next. Completed phases 1–23 are in `plans/hist
 
 **Goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
 
-- [ ] AFL season player import — once/season CLI; fuzzy name matching to existing players; accept/reject flow for new and retiring players
-- [ ] FFL squad import — once/season CLI; resolve FFL rosters to AFL player IDs
-- [ ] AFL historical data import — one-time CLI from afltables CSV (2024-present already seeded; earlier years TBD)
+- [x] AFL historical data import — afltables scrape + import CLIs; 1998–2023 loaded, 2024/2025 finalised + derived (scores, rushed behinds, ladders). Made navigable in the webapp (season picker, season-in-URL, ladder home) and finals typed via `round_type`.
+
+## Phase 25: FFL Scoring & Historical Import
+
+**Goal:** Make FFL scoring pluggable per season, then backfill historical FFL teams from forum data with era-correct scoring.
+
 - [ ] Pluggable FFL scoring formula — strategy pattern keyed by season; `ScoringStrategy` interface + concrete implementations covering known formula variants; `ffl.season.scoring_strategy` column; wire into score calculation use case (deferred from Phase 20)
 - [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires pluggable scoring formula above)
 
-## Phase 25: Event Reliability (REV-1)
+## Phase 26: Event Reliability (REV-1)
 
 **Goal:** Event processing fails loudly and recoverably — remove the silent-permanent-death mode found by the 2026-07 review (`doc/review-findings.md` §6, the one `critical` finding).
 
