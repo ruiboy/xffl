@@ -183,3 +183,37 @@ export const GET_AFL_MATCH = gql`
     }
   }
 `
+
+export const GET_AFL_SEASONS = gql`
+  query GetAFLSeasons {
+    aflSeasons {
+      id
+      name
+    }
+  }
+`
+
+export const GET_AFL_SEASON = gql`
+  query GetAFLSeason($id: ID!) {
+    aflSeason(id: $id) {
+      id
+      name
+      ladder {
+        id
+        club { id name }
+        played
+        won
+        lost
+        drawn
+        for
+        against
+        percentage
+        premiershipPoints
+      }
+      rounds {
+        id
+        name
+      }
+    }
+  }
+`

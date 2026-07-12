@@ -18,6 +18,19 @@
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
 
+          <SeasonSelector
+            v-if="isAfl && aflSeasons.length > 0"
+            :model-value="currentAflSeasonId"
+            :seasons="aflSeasons"
+            @update:model-value="goAflSeason"
+          />
+          <SeasonSelector
+            v-if="isFfl && fflSeasons.length > 0"
+            :model-value="currentFflSeasonId"
+            :seasons="fflSeasons"
+            @update:model-value="goFflSeason"
+          />
+
           <template v-if="isFfl">
             <router-link
               v-if="selectedClubId && selectedClubSeasonId"
@@ -96,12 +109,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTheme, initTheme } from '@/composables/useTheme'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
+import { GET_FFL_SEASON_CLUBS, GET_FFL_SEASONS } from '@/features/ffl/api/queries'
+import { GET_AFL_SEASONS } from '@/features/afl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
+import SeasonSelector from '@/components/SeasonSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
@@ -109,12 +124,50 @@ import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
 const route = useRoute()
+const router = useRouter()
 const { selectedClubId, liveSeasonId, selectedRoundId: fflSelectedRoundId, setClub } = useFflState()
-const { selectedRoundId: aflSelectedRoundId } = useAflState()
+const { selectedRoundId: aflSelectedRoundId, liveSeasonId: aflLiveSeasonId } = useAflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
 const isAfl = computed(() => route.path.startsWith('/afl'))
+
+// Season selectors — list seasons for whichever service is active, newest first.
+const { result: aflSeasonsResult } = useQuery(
+  GET_AFL_SEASONS,
+  undefined,
+  () => ({ enabled: isAfl.value }),
+)
+const { result: fflSeasonsResult } = useQuery(
+  GET_FFL_SEASONS,
+  undefined,
+  () => ({ enabled: isFfl.value }),
+)
+
+function byNameDesc(a: { name: string }, b: { name: string }) {
+  return b.name.localeCompare(a.name)
+}
+const aflSeasons = computed<{ id: string; name: string }[]>(
+  () => [...(aflSeasonsResult.value?.aflSeasons ?? [])].sort(byNameDesc),
+)
+const fflSeasons = computed<{ id: string; name: string }[]>(
+  () => [...(fflSeasonsResult.value?.fflSeasons ?? [])].sort(byNameDesc),
+)
+
+// Current season = the one in the URL on a season route, else the live season.
+const currentAflSeasonId = computed(() =>
+  route.name === 'afl-season' ? String(route.params.seasonId) : aflLiveSeasonId.value,
+)
+const currentFflSeasonId = computed(() =>
+  route.name === 'ffl-season' ? String(route.params.seasonId) : liveSeasonId.value,
+)
+
+function goAflSeason(seasonId: string) {
+  router.push({ name: 'afl-season', params: { seasonId } })
+}
+function goFflSeason(seasonId: string) {
+  router.push({ name: 'ffl-season', params: { seasonId } })
+}
 
 // Load clubs for the current FFL season (driven by state, not route params)
 const { result: clubsResult } = useQuery(

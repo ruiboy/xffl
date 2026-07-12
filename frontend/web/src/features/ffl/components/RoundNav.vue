@@ -2,7 +2,7 @@
   <nav class="flex flex-wrap gap-2">
     <!-- Ladder pill -->
     <router-link
-      :to="{ name: 'ffl-ladder' }"
+      :to="ladderTo ?? { name: 'ffl-ladder' }"
       class="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-control text-text-muted hover:bg-control-hover hover:text-text"
       title="Ladder"
     >
@@ -26,7 +26,7 @@
           ? 'bg-control text-text-muted hover:bg-control-hover hover:text-text'
           : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
     >
-      {{ round.name.replace(/^Round\s+/i, '') }}
+      {{ roundPillLabel(round.name) }}
       <!-- Pulsing dot when this is the live round and it starts today -->
       <span
         v-if="round.id === liveRoundId && isLiveToday"
@@ -40,6 +40,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
+import { roundPillLabel } from '@/utils/roundLabel'
 
 interface Round {
   id: string
@@ -52,6 +53,7 @@ const props = defineProps<{
   liveStartDate?: string
   activeId?: string
   toRound?: (r: Round) => RouteLocationRaw
+  ladderTo?: RouteLocationRaw
 }>()
 
 const route = useRoute()
