@@ -15,23 +15,30 @@
           class="text-sm text-text-muted hover:text-text transition-colors"
         >AFL</router-link>
 
+        <!-- Season selector, immediately after the service links -->
+        <SeasonSelector
+          v-if="isAfl && aflSeasons.length > 0"
+          :model-value="currentAflSeasonId"
+          :seasons="aflSeasons"
+          @update:model-value="goAflSeason"
+        />
+        <SeasonSelector
+          v-if="isFfl && fflSeasons.length > 0"
+          :model-value="currentFflSeasonId"
+          :seasons="fflSeasons"
+          @update:model-value="goFflSeason"
+        />
+
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
 
-          <SeasonSelector
-            v-if="isAfl && aflSeasons.length > 0"
-            :model-value="currentAflSeasonId"
-            :seasons="aflSeasons"
-            @update:model-value="goAflSeason"
-          />
-          <SeasonSelector
-            v-if="isFfl && fflSeasons.length > 0"
-            :model-value="currentFflSeasonId"
-            :seasons="fflSeasons"
-            @update:model-value="goFflSeason"
-          />
-
           <template v-if="isFfl">
+            <ClubSelector
+              v-if="clubs.length > 0"
+              :model-value="selectedClubId"
+              :clubs="clubs"
+              @update:model-value="setClub"
+            />
             <router-link
               v-if="selectedClubId && selectedClubSeasonId"
               :to="{ name: 'ffl-club-season', params: { clubSeasonId: selectedClubSeasonId } }"
@@ -41,12 +48,6 @@
               <IconSquad class="w-4 h-4" />
               Squad
             </router-link>
-            <ClubSelector
-              v-if="clubs.length > 0"
-              :model-value="selectedClubId"
-              :clubs="clubs"
-              @update:model-value="setClub"
-            />
           </template>
 
           <!-- Free Agents + DataOps -->
