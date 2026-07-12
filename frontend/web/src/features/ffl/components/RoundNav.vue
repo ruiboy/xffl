@@ -1,18 +1,5 @@
 <template>
   <nav class="flex flex-wrap gap-2">
-    <!-- Ladder pill -->
-    <router-link
-      :to="ladderTo ?? { name: 'ffl-ladder' }"
-      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-control text-text-muted hover:bg-control-hover hover:text-text"
-      title="Ladder"
-    >
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="13" width="4" height="8" rx="0.5" />
-        <rect x="9.5" y="8" width="4" height="13" rx="0.5" />
-        <rect x="16" y="3" width="4" height="18" rx="0.5" />
-      </svg>
-    </router-link>
-
     <!-- Round pills -->
     <router-link
       v-for="round in rounds"
@@ -53,7 +40,6 @@ const props = defineProps<{
   liveStartDate?: string
   activeId?: string
   toRound?: (r: Round) => RouteLocationRaw
-  ladderTo?: RouteLocationRaw
 }>()
 
 const route = useRoute()

@@ -11,7 +11,6 @@
         :rounds="season.rounds"
         :live-round-id="liveRoundId"
         :live-start-date="liveStartDate"
-        :ladder-to="{ name: 'afl-season', params: { seasonId: season.id } }"
       />
 
       <section>

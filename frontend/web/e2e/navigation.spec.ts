@@ -18,34 +18,31 @@ test.describe('Navigation — Phase 21', () => {
     })
   })
 
-  test.describe('NAV-3: Ladder pill in RoundNav', () => {
-    test('FFL RoundNav has ladder pill as first item', async ({ page }) => {
-      await setupFflSession(page)
-      const roundNav = page.locator('main nav').last()
-      const ladderPill = roundNav.getByTitle('Ladder')
-      await expect(ladderPill).toBeVisible()
-    })
-
-    test('FFL ladder pill navigates to FFL home', async ({ page }) => {
-      await setupFflSession(page)
-      await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
-      await page.waitForURL(/\/ffl\/rounds\//)
-      await page.locator('main nav').last().getByTitle('Ladder').click()
-      await expect(page).toHaveURL('/ffl/ladder')
-    })
-
-    test('AFL RoundNav has ladder pill as first item', async ({ page }) => {
+  test.describe('NAV-3: Ladder is the home; RoundNav has no ladder pill', () => {
+    test('AFL home shows the ladder', async ({ page }) => {
       await setupAflSession(page)
-      const roundNav = page.locator('main nav').last()
-      await expect(roundNav.getByTitle('Ladder')).toBeVisible()
+      await expect(page).toHaveURL(/\/afl\/ladder$/)
+      await expect(page.getByRole('heading', { name: 'Ladder' })).toBeVisible()
     })
 
-    test('AFL ladder pill navigates to AFL home', async ({ page }) => {
+    test('FFL home shows the ladder', async ({ page }) => {
+      await setupFflSession(page)
+      await expect(page).toHaveURL(/\/ffl\/ladder$/)
+      await expect(page.getByRole('heading', { name: 'Ladder' })).toBeVisible()
+    })
+
+    test('RoundNav no longer has a ladder pill', async ({ page }) => {
+      await setupAflSession(page)
+      await expect(page.getByTitle('Ladder')).toHaveCount(0)
+    })
+
+    test('breadcrumb returns to the ladder from an AFL round', async ({ page }) => {
       await setupAflSession(page)
       await page.locator('main nav').last().getByRole('link', { name: '1', exact: true }).click()
       await page.waitForURL(/\/afl\/rounds\//)
-      await page.locator('main nav').last().getByTitle('Ladder').click()
-      await expect(page).toHaveURL('/afl/ladder')
+      await page.getByRole('link', { name: 'AFL 2026', exact: true }).click()
+      await expect(page).toHaveURL(/\/afl\/ladder$/)
+      await expect(page.getByRole('heading', { name: 'Ladder' })).toBeVisible()
     })
   })
 
@@ -115,12 +112,6 @@ test.describe('Navigation — Phase 21', () => {
       // Round 1 pill should now be active
       const round1 = page.locator('main nav').last().getByRole('link', { name: '1', exact: true })
       await expect(round1).toHaveClass(/bg-active/)
-    })
-
-    test('DataOps FFL Teams round nav has a ladder pill', async ({ page }) => {
-      await page.getByRole('button', { name: 'FFL Teams' }).click()
-      await page.waitForLoadState('networkidle')
-      await expect(page.locator('main nav').last().getByTitle('Ladder')).toBeVisible()
     })
   })
 })

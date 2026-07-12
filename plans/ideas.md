@@ -21,10 +21,23 @@ in sibling files and are indexed here.
 The Phase 24 backfill loaded 1998–2023 AFL player/match stats, but nothing in the
 webapp reaches it — AFL views only surface the live season(s). Make it navigable:
 
-- **Season switching** on AFL views (round/match/ladder) so any season back to 1998 is reachable — a season picker or historical index.
+- **Season switching** on AFL views (round/match/ladder) so any season back to 1998 is reachable — a season picker or historical index. *(Shipped: season lives in the URL at `/afl/seasons/:id` + `/ffl/seasons/:id`, a season picker in the global nav, and the season ladder is the home page. See PAGE-11 below for the richer season landing.)*
 - **AFL player career view across seasons** (delivers PAGE-10): full stat history, clubs, per-season averages/★ — now that players carry 20+ years of `player_season`/`player_match` rows.
 - **AFL club season history** (delivers PAGE-9).
 - Existing player/club links already exist on current pages; they just need a historical destination.
+
+#### PAGE-11 — Season dashboard vs full ladder
+
+Today the season landing *is* the full ladder. Split them: make the landing a glanceable
+**season dashboard**, with the full ladder as its own page.
+
+- **Dashboard** — a brief ladder (all teams; games / premiership-points / percentage
+  columns only) plus a round snapshot: the current round if the season is live, else its
+  last round — which for a completed season is the Grand Final, so a historic season
+  headlines the premier.
+- **Full ladder** — its own page with the complete table.
+
+Symmetric for FFL.
 
 ### Player Notes
 

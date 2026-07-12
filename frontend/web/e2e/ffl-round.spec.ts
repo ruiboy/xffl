@@ -22,9 +22,9 @@ test.describe('FFL Round', () => {
     await expect(roundNav.getByRole('link', { name: '1', exact: true })).toBeVisible()
   })
 
-  test('FFL breadcrumb link navigates back to home', async ({ page }) => {
+  test('FFL breadcrumb link navigates back to the ladder', async ({ page }) => {
     await page.locator('main').getByRole('link', { name: 'FFL 2026' }).click()
-    await expect(page).toHaveURL(/\/ffl\/rounds\//)
+    await expect(page).toHaveURL(/\/ffl\/ladder$/)
   })
 
   test('displays match summaries', async ({ page }) => {
