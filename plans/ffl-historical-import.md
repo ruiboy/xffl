@@ -62,9 +62,12 @@ weekly submitted teams across all seasons), which then largely auto-resolves.
   the breadcrumb; round titles are freeform — e.g. "SheepDog Trials" — so not
   reliably parseable).
 
-### Raw post staging
-Captured posts are stored raw and re-parseable, keyed by `(topicId, postId)`.
-Re-running a parser never requires re-capture. Idempotent.
+### Staging (ephemeral)
+Captured posts are held **in-session only** — no staging table. If a session ends,
+re-paste the page (cheap: one bookmarklet click + paste). Idempotency lives at the
+**commit** layer: re-importing a round is diff-based (via `SetTeam`), so re-running
+is always safe. Durable progress is the committed data, not the staging — see
+Progress tracking below.
 
 ### Team registry + escape hatch
 Forum author → FFL club, **per season** (clubs come and go: Grand Pooh Bears,
@@ -101,9 +104,19 @@ and the posted score preserved in `notes`.
 - **Final, end-to-end**: reconcile evaluated season/round totals against the
   **score-only spreadsheets** (an independent source of truth) after all imports.
 
-## Coverage tracking
-A matrix per layer — season × round (× club) showing done / missing / failed /
-partial — so the work survives many sittings and gaps are visible.
+## Progress tracking (derived, not maintained)
+Progress is durable because **the committed data is the record** — not a checklist,
+and not the sprint doc (far too coarse for ~20 seasons × ~22 rounds × clubs). A
+**coverage dashboard** in DataOps derives status by querying the real tables:
+- **Fixtures** present for a season/round? (`match` rows) — defines the expected cells.
+- **Squad** imported for a club/season? (`player_season` rows)
+- **Submitted team** present for a `club_match`? (`player_match` rows), with an
+  evaluated `drv_score` and a posted score in `notes`?
+
+"Missing" = no rows; "partial" = fixture but no team, or a team with unresolved
+players / no posted score. Ephemeral staging is fine: you never lose your place
+because done = in the database. Import across as many sessions as needed; reopen
+the dashboard to see what's left.
 
 ## Reuse (already exists)
 - `forum.Parser.Parse(teamName, post)` — 4 formats, author supplies the team name.
@@ -111,14 +124,15 @@ partial — so the work survives many sittings and gaps are visible.
 - DataOps player-link UI (`FflPlayerLinkModal`) — basis for resolution review.
 
 ## Delivery slices
-1. **Capture + stage + inspect** — bookmarklet, paste box, raw staging, view parsed
-   posts for one pasted page. No commit.
+1. **Capture + inspect** — bookmarklet, paste box, in-session parse + view of one
+   pasted page. No commit, no staging table.
 2. **Fixtures importer** — seasons/rounds/matches for one season; team registry.
 3. **Squads importer** + closed-set player resolution (memoized per season) + review.
 4. **Trades importer** — PlayerSeason windows.
 5. **Submitted-teams importer** — post classification + authoritative-post selection,
    commit via `ImportRoundTeams`, evaluated scoring + posted-to-notes.
-6. **Coverage matrix** + **reconciliation** (per-match deltas, then spreadsheet).
+6. **Coverage dashboard** (derived from imported data) + **reconciliation**
+   (per-match deltas, then spreadsheet).
 
 Prove the whole chain on **one season** (ideally a recent, well-formatted one)
 before scaling to all 20.
