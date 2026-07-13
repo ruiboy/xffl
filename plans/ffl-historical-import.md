@@ -23,6 +23,19 @@ out of scope here.
   A bookmarklet run in your authenticated browser captures each page; the backend
   never touches the forum.
 
+## Prerequisite: nail down the scoring eras
+Recomputed scores are only as correct as the `Rules`, and the current era
+definitions in `rules_eras.go` are **approximations** — both the per-era
+parameters (points, positions, bench, interchange) and the season each change took
+effect. Before the import can produce trustworthy scores — and before
+reconciliation against posted scores / the score-only spreadsheets means anything —
+confirm:
+- the **exact per-era parameters**, and
+- the **exact season → era mapping**, then tag every `ffl.season.rules_id`.
+
+This is a hard dependency: wrong eras → wrong recomputed scores → false
+reconciliation deltas. Era model lives in [ffl-scoring-rules.md](ffl-scoring-rules.md).
+
 ## Forum artifact → schema (why the order is forced)
 
 | Forum artifact | Becomes | Notes |
@@ -124,6 +137,8 @@ the dashboard to see what's left.
 - DataOps player-link UI (`FflPlayerLinkModal`) — basis for resolution review.
 
 ## Delivery slices
+0. **Nail down the eras** (prerequisite) — confirm exact per-era parameters and the
+   season → era mapping in `rules_eras.go`; tag every `ffl.season.rules_id`.
 1. **Capture + inspect** — bookmarklet, paste box, in-session parse + view of one
    pasted page. No commit, no staging table.
 2. **Fixtures importer** — seasons/rounds/matches for one season; team registry.
