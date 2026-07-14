@@ -26,16 +26,15 @@ with a `Rules` value object, one per era, selected per season.
 `Rules` drives scoring, team-selection validation, the team-builder UX, and a
 human-readable "rules this season" description — all from the same data.
 
-## Known eras (years approximate, confirm later)
+## Known eras
 
-- **1998** — goal 4, tackle 3, star includes hitouts, no interchange
-- **1999** — hitouts removed from the star
-- **2005** — tackle 4
-- **2010** — goal 5
-- **2015** — interchange position added
+- **1998** — goal 4, tackle 3, star includes hitouts, no bench, no interchange
+- **1999** — star excludes hitouts
+- **2000** — tackle → 4
+- **2001** — bench added, interchange added
+- **2011** — goal → 5
 
-Each change applies to that season onward. A no-bench early era is suspected; bench size
-is parameterized so it can be set when confirmed.
+Each change applies to that season onward. The current era is **2011**.
 
 ## Plan
 

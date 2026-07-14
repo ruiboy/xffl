@@ -24,7 +24,7 @@ func TestRecalculateFFLScore_UsesSeasonEraRules(t *testing.T) {
 	ids := seedTestData(t, pool)
 	ctx := context.Background()
 
-	// Tag the season with the 1998 era (seedTestData leaves it at the default '2015').
+	// Tag the season with the 1998 era (seedTestData leaves it at the default '2011').
 	_, err := pool.Exec(ctx, "UPDATE ffl.season SET rules_id = '1998' WHERE id = $1", ids.seasonID)
 	require.NoError(t, err)
 

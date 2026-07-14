@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRules2015_Score(t *testing.T) {
+func TestRules2011_Score(t *testing.T) {
 	stats := AFLStats{Goals: 3, Kicks: 10, Handballs: 8, Marks: 4, Tackles: 5, Hitouts: 6}
 	tests := []struct {
 		pos  Position
@@ -24,13 +24,13 @@ func TestRules2015_Score(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.pos), func(t *testing.T) {
-			assert.Equal(t, tt.want, rules2015.Score(tt.pos, stats))
+			assert.Equal(t, tt.want, rules2011.Score(tt.pos, stats))
 		})
 	}
-	assert.Equal(t, 0, rules2015.Score(Position("nope"), stats), "unknown position scores 0")
+	assert.Equal(t, 0, rules2011.Score(Position("nope"), stats), "unknown position scores 0")
 }
 
-func TestRules2015_ByeScore(t *testing.T) {
+func TestRules2011_ByeScore(t *testing.T) {
 	// fractional averages verify per-stat floor-before-multiply behaviour
 	avg := AFLAvgStats{Goals: 3.9, Kicks: 10.2, Handballs: 8.8, Marks: 4.5, Tackles: 5.1, Hitouts: 6.7}
 	tests := []struct {
@@ -48,13 +48,13 @@ func TestRules2015_ByeScore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.pos), func(t *testing.T) {
-			assert.Equal(t, tt.want, rules2015.ByeScore(tt.pos, avg))
+			assert.Equal(t, tt.want, rules2011.ByeScore(tt.pos, avg))
 		})
 	}
 }
 
-// The 2015 rules' slot counts are the known composition validation relies on.
-func TestRules2015_Slots(t *testing.T) {
+// The 2011 rules' slot counts are the known composition validation relies on.
+func TestRules2011_Slots(t *testing.T) {
 	want := map[Position]int{
 		PositionGoals:     3,
 		PositionKicks:     4,
@@ -65,18 +65,18 @@ func TestRules2015_Slots(t *testing.T) {
 		PositionStar:      1,
 	}
 	for pos, n := range want {
-		got, ok := rules2015.Slots(pos)
-		require.Truef(t, ok, "2015 rules missing position %q", pos)
+		got, ok := rules2011.Slots(pos)
+		require.Truef(t, ok, "2011 rules missing position %q", pos)
 		assert.Equalf(t, n, got, "slot mismatch for %q", pos)
 	}
-	assert.Len(t, rules2015.Composition.Positions, len(want))
+	assert.Len(t, rules2011.Composition.Positions, len(want))
 }
 
 func TestRulesFor(t *testing.T) {
 	t.Run("known id resolves", func(t *testing.T) {
-		r, err := RulesFor("2015")
+		r, err := RulesFor("2011")
 		require.NoError(t, err)
-		assert.Equal(t, "2015", r.ID)
+		assert.Equal(t, "2011", r.ID)
 	})
 	t.Run("empty id errors (no implicit fallback)", func(t *testing.T) {
 		_, err := RulesFor("")

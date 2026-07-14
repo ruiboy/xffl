@@ -6,11 +6,11 @@ package domain
 // stat-set, interchange), so the parts that have *never* varied are supplied by
 // the constructors below rather than copy-pasted into every era.
 //
-//	2015 — goal 5, tackle 4, star excludes hitouts, interchange
-//	2010 — goal 5, tackle 4, star excludes hitouts, no interchange
-//	2005 — goal 4, tackle 4, star excludes hitouts, no interchange
-//	1999 — goal 4, tackle 3, star excludes hitouts, no interchange
-//	1998 — goal 4, tackle 3, star includes hitouts, no interchange
+//	2011 — goal 5, tackle 4, star excludes hitouts, bench, interchange
+//	2001 — goal 4, tackle 4, star excludes hitouts, bench, interchange
+//	2000 — goal 4, tackle 4, star excludes hitouts, no bench, no interchange
+//	1999 — goal 4, tackle 3, star excludes hitouts, no bench, no interchange
+//	1998 — goal 4, tackle 3, star includes hitouts, no bench, no interchange
 //
 // Years are era-start labels; which season uses which era is data
 // (ffl.season.rules_id), so exact boundaries can be pinned later.
@@ -53,35 +53,35 @@ func starStatsWithHitouts() []Stat {
 }
 
 var (
-	rules2015 = Rules{
-		ID:          "2015",
+	rules2011 = Rules{
+		ID:          "2011",
 		Scoring:     Scoring{Points: statPoints(5, 4)},
 		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: true},
 	}
-	rules2010 = Rules{
-		ID:          "2010",
-		Scoring:     Scoring{Points: statPoints(5, 4)},
-		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: false},
-	}
-	rules2005 = Rules{
-		ID:          "2005",
+	rules2001 = Rules{
+		ID:          "2001",
 		Scoring:     Scoring{Points: statPoints(4, 4)},
-		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: false},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: true},
+	}
+	rules2000 = Rules{
+		ID:          "2000",
+		Scoring:     Scoring{Points: statPoints(4, 4)},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 0, Interchange: false},
 	}
 	rules1999 = Rules{
 		ID:          "1999",
 		Scoring:     Scoring{Points: statPoints(4, 3)},
-		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: false},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 0, Interchange: false},
 	}
 	rules1998 = Rules{
 		ID:          "1998",
 		Scoring:     Scoring{Points: statPoints(4, 3)},
-		Composition: Composition{Positions: standardPositions(starStatsWithHitouts()), BenchSize: 4, Interchange: false},
+		Composition: Composition{Positions: standardPositions(starStatsWithHitouts()), BenchSize: 0, Interchange: false},
 	}
 )
 
 func init() {
-	for _, r := range []Rules{rules1998, rules1999, rules2005, rules2010, rules2015} {
+	for _, r := range []Rules{rules1998, rules1999, rules2000, rules2001, rules2011} {
 		rulesByID[r.ID] = r
 	}
 }

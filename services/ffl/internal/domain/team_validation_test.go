@@ -25,12 +25,12 @@ func interchangeBench() PlayerMatch {
 // slot counts, bench size, and interchange availability all come from the rules.
 func TestRulesValidate_DrivenByRules(t *testing.T) {
 	t.Run("per-position slots come from the rules", func(t *testing.T) {
-		// 2015 allows 3 goals starters; a 4th is rejected.
+		// 2011 allows 3 goals starters; a 4th is rejected.
 		team := []PlayerMatch{starter(PositionGoals), starter(PositionGoals), starter(PositionGoals)}
-		require.NoError(t, rules2015.Validate(team))
+		require.NoError(t, rules2011.Validate(team))
 
 		team = append(team, starter(PositionGoals))
-		err := rules2015.Validate(team)
+		err := rules2011.Validate(team)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "maximum is 3")
 	})
@@ -42,23 +42,35 @@ func TestRulesValidate_DrivenByRules(t *testing.T) {
 			{BackupPositions: strPtr("handballs,hitouts")},
 			{BackupPositions: strPtr("star")},
 		}
-		require.NoError(t, rules2015.Validate(bench), "4 bench players fit BenchSize 4")
+		require.NoError(t, rules2011.Validate(bench), "4 bench players fit BenchSize 4")
 
-		tight := rules2015
+		tight := rules2011
 		tight.Composition.BenchSize = 2
 		err := tight.Validate(bench)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "maximum is 2")
 	})
 
-	t.Run("interchange is allowed only when the season enables it", func(t *testing.T) {
+	t.Run("interchange is allowed only when the rules enable it", func(t *testing.T) {
 		team := []PlayerMatch{starter(PositionGoals), interchangeBench()}
 
-		require.NoError(t, rules2015.Validate(team), "2015 has interchange")
+		require.NoError(t, rules2011.Validate(team), "2011 has interchange")
 
-		err := rules1998.Validate(team)
-		require.Error(t, err, "1998 has no interchange")
+		// Same rules with interchange turned off (bench still allowed, to isolate
+		// the interchange rule from the bench-size rule).
+		noInterchange := rules2011
+		noInterchange.Composition.Interchange = false
+		err := noInterchange.Validate(team)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "interchange is not permitted")
+	})
+
+	t.Run("a no-bench era rejects any bench player", func(t *testing.T) {
+		// 1998–2000 had no bench (BenchSize 0).
+		team := []PlayerMatch{starter(PositionGoals), {BackupPositions: strPtr("goals,kicks")}}
+		err := rules1998.Validate(team)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "maximum is 0")
 	})
 }
 
@@ -66,13 +78,13 @@ func TestRulesValidate_DrivenByRules(t *testing.T) {
 // scalar parameters).
 func TestRulesValidate_BenchAndInterchangeShape(t *testing.T) {
 	t.Run("non-star bench player must have exactly 2 backup positions", func(t *testing.T) {
-		err := rules2015.Validate([]PlayerMatch{{BackupPositions: strPtr("goals")}})
+		err := rules2011.Validate([]PlayerMatch{{BackupPositions: strPtr("goals")}})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "exactly 2 backup positions")
 	})
 
 	t.Run("non-star bench player cannot list star as a backup", func(t *testing.T) {
-		err := rules2015.Validate([]PlayerMatch{{BackupPositions: strPtr("goals,star")}})
+		err := rules2011.Validate([]PlayerMatch{{BackupPositions: strPtr("goals,star")}})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot list star as a backup position")
 	})
@@ -82,13 +94,13 @@ func TestRulesValidate_BenchAndInterchangeShape(t *testing.T) {
 			{BackupPositions: strPtr("goals,kicks")},
 			{BackupPositions: strPtr("goals,marks")}, // goals already covered
 		}
-		err := rules2015.Validate(team)
+		err := rules2011.Validate(team)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "already covered")
 	})
 
 	t.Run("interchange position must be a recognised position", func(t *testing.T) {
-		err := rules2015.Validate([]PlayerMatch{
+		err := rules2011.Validate([]PlayerMatch{
 			{BackupPositions: strPtr("goals,kicks"), InterchangePosition: strPtr("bogus")},
 		})
 		require.Error(t, err)
@@ -96,7 +108,7 @@ func TestRulesValidate_BenchAndInterchangeShape(t *testing.T) {
 	})
 
 	t.Run("interchange position must be one of the player's own backups", func(t *testing.T) {
-		err := rules2015.Validate([]PlayerMatch{
+		err := rules2011.Validate([]PlayerMatch{
 			{BackupPositions: strPtr("goals,kicks"), InterchangePosition: strPtr("marks")},
 		})
 		require.Error(t, err)
