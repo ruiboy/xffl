@@ -61,23 +61,38 @@ weekly submitted teams across all seasons), which then largely auto-resolves.
 
 ## Shared infrastructure
 
-### Capture (bookmarklet)
+### Capture — userscript (primary)
+A **userscript** (Violentmonkey / Tampermonkey / Greasemonkey), not a bookmarklet.
+The reason: getting the data *out* to `http://localhost` is the hard part — a
+bookmarklet's `fetch()` from the `https` forum is blocked by mixed-content + CORS.
+A userscript's privileged **`GM_xmlhttpRequest`** (with an `@connect localhost`
+grant) bypasses both, so it can read the DOM **and POST straight to the local
+ingest endpoint — no copy/paste at all.**
+
 - The forum's JSON-LD blob is **truncated** — ignore it. Full post bodies live in
   the DOM: `div.post` → `div.content` (with `<br>`/table markup), and the author
   is reliably attached (`POST_AUTHOR` / `span[itemprop=name]`).
-- Bookmarklet walks `div.post`, extracts `{topicId, postId, author, timestamp, html}`
-  for every post on the page, and writes a JSON payload to the **clipboard**
-  (avoids the https-forum → http-localhost mixed-content/CORS problem entirely).
-- You paste the payload into a DataOps "capture" box. One paste per page.
-- **Multi-page threads**: paste each page; posts are staged by `(topicId, postId)`,
+- `@match` the forum; the script auto-runs on each page, injects a **"Capture this
+  round"** button (and inline confirmation, e.g. "✓ round 3, 4 teams saved"),
+  walks `div.post` for `{topicId, postId, author, timestamp, html}`, and POSTs the
+  page payload to the ingest endpoint.
+- **Navigation stays human** — you click through threads/pages in your real
+  logged-in session, one page at a time. The script only captures the page you're
+  on; it never fetches pages itself (auto-walking pagination would look robotic and
+  risk tripping bot detection).
+- **Multi-page threads**: capture each page; posts are staged by `(topicId, postId)`,
   so a round's pages accumulate and dedupe naturally.
-- You confirm **season + round** at capture time (bookmarklet pre-fills season from
-  the breadcrumb; round titles are freeform — e.g. "SheepDog Trials" — so not
-  reliably parseable).
+- You confirm **season + round** at capture time (season pre-filled from the
+  breadcrumb; round titles are freeform — e.g. "SheepDog Trials" — so not reliably
+  parseable).
+
+**Fallback (zero-install):** a bookmarklet that writes the same JSON payload to the
+**clipboard**, pasted into a DataOps "capture" box. Same ingest, one paste per page —
+for when the extension isn't wanted.
 
 ### Staging (ephemeral)
 Captured posts are held **in-session only** — no staging table. If a session ends,
-re-paste the page (cheap: one bookmarklet click + paste). Idempotency lives at the
+re-capture the page (cheap: one click in the userscript). Idempotency lives at the
 **commit** layer: re-importing a round is diff-based (via `SetTeam`), so re-running
 is always safe. Durable progress is the committed data, not the staging — see
 Progress tracking below.
@@ -139,8 +154,8 @@ the dashboard to see what's left.
 ## Delivery slices
 0. **Nail down the eras** (prerequisite) — confirm exact per-era parameters and the
    season → era mapping in `rules_eras.go`; tag every `ffl.season.rules_id`.
-1. **Capture + inspect** — bookmarklet, paste box, in-session parse + view of one
-   pasted page. No commit, no staging table.
+1. **Capture + inspect** — userscript → local ingest endpoint; in-session parse +
+   view of one captured page. No commit, no staging table.
 2. **Fixtures importer** — seasons/rounds/matches for one season; team registry.
 3. **Squads importer** + closed-set player resolution (memoized per season) + review.
 4. **Trades importer** — PlayerSeason windows.
