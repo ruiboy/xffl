@@ -156,10 +156,6 @@ type AFLPlayerSeason
   a rolling form window. Returns null if the player has no qualifying matches.
   """
   stats(upToRoundId: ID, lastN: Int, method: AFLStatSummaryMethod): AFLStatSummary @join__field(graph: AFL)
-
-  """
-  All FFL player seasons linked to this AFL player season (across all FFL clubs/stints).
-  """
   fflPlayerSeasons: [FFLPlayerSeason!]! @join__field(graph: FFL)
 }
 
@@ -235,6 +231,15 @@ input CalculateFFLFantasyScoreInput
   marks: Int!
   tackles: Int!
   hitouts: Int!
+}
+
+input CapturedFFLPostInput
+  @join__type(graph: FFL)
+{
+  postId: String!
+  author: String!
+  timestamp: String
+  html: String!
 }
 
 input ConfirmedFFLPlayerInput
@@ -324,6 +329,18 @@ type FFLMatch
   awayClubMatch: FFLClubMatch
 }
 
+type FFLParsedPlayer
+  @join__type(graph: FFL)
+{
+  name: String!
+  clubHint: String!
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+}
+
 type FFLPlayer
   @join__type(graph: FFL)
 {
@@ -390,6 +407,33 @@ input FFLPlayerSeasonFilter
 {
   """Not supported"""
   active: Boolean
+}
+
+"""
+A captured forum page previewed in-session (historical import, slice 1). Not persisted.
+"""
+type FFLPreviewedPage
+  @join__type(graph: FFL)
+{
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [FFLPreviewedPost!]!
+}
+
+type FFLPreviewedPost
+  @join__type(graph: FFL)
+{
+  postId: String!
+  author: String!
+
+  """
+  Parser format for the author; empty if the author is unknown (escape hatch).
+  """
+  team: String!
+  isTeamSubmission: Boolean!
+  parseError: String!
+  players: [FFLParsedPlayer!]!
 }
 
 enum FFLReorderDirection
@@ -462,6 +506,15 @@ type ImportAFLMatchStatsResult
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
   match: AFLMatch!
+}
+
+input IngestFFLForumPageInput
+  @join__type(graph: FFL)
+{
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [CapturedFFLPostInput!]!
 }
 
 scalar join__FieldSet
@@ -555,6 +608,14 @@ type Mutation
   """
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 
+  """
+  Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes.
+  """
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage! @join__field(graph: FFL)
+
+  """Clear the in-session forum capture buffer."""
+  clearFFLForumCaptures: Boolean! @join__field(graph: FFL)
+
   """Lock a FFL club_match as final — triggers the FFL scoring chain."""
   markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
 
@@ -635,6 +696,11 @@ type Query
   fflRoundByAflRound(aflRoundId: ID!): FFLRound @join__field(graph: FFL)
   fflClubMatch(id: ID!): FFLClubMatch @join__field(graph: FFL)
   fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]! @join__field(graph: FFL)
+
+  """
+  Forum pages captured this session for preview (ephemeral; not persisted).
+  """
+  fflCapturedPages: [FFLPreviewedPage!]! @join__field(graph: FFL)
 }
 
 input RemoveFFLPlayerFromSeasonInput
