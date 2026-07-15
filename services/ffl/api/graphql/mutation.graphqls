@@ -24,6 +24,12 @@ type Mutation {
   "Confirm a reviewed parse result and write player matches to the database."
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
 
+  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
+
+  "Clear the in-session forum capture buffer."
+  clearFFLForumCaptures: Boolean!
+
   "Lock a FFL club_match as final — triggers the FFL scoring chain."
   markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
 
@@ -120,6 +126,20 @@ input ConfirmedFFLPlayerInput {
   backupPositions: String
   interchangePosition: String
   score: Int
+}
+
+input IngestFFLForumPageInput {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [CapturedFFLPostInput!]!
+}
+
+input CapturedFFLPostInput {
+  postId: String!
+  author: String!
+  timestamp: String
+  html: String!
 }
 
 input MarkFFLTeamFinalInput {

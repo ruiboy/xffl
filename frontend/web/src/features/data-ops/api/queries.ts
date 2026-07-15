@@ -56,6 +56,31 @@ export const GET_AFL_SEASON_CLUB_SEASONS = gql`
   }
 `
 
+export const GET_FFL_CAPTURED_PAGES = gql`
+  query GetFFLCapturedPages {
+    fflCapturedPages {
+      season
+      roundTitle
+      topicId
+      posts {
+        postId
+        author
+        team
+        isTeamSubmission
+        parseError
+        players {
+          name
+          clubHint
+          position
+          backupPositions
+          interchangePosition
+          score
+        }
+      }
+    }
+  }
+`
+
 export const SEARCH_AFL_PLAYERS = gql`
   query SearchAFLPlayers($query: String!) {
     aflPlayerSearch(query: $query) {

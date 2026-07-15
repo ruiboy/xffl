@@ -22,8 +22,7 @@ type AFLPlayerMatch struct {
 func (AFLPlayerMatch) IsEntity() {}
 
 type AFLPlayerSeason struct {
-	ID string `json:"id"`
-	// All FFL player seasons linked to this AFL player season (across all FFL clubs/stints).
+	ID               string             `json:"id"`
 	FflPlayerSeasons []*FFLPlayerSeason `json:"fflPlayerSeasons"`
 }
 
@@ -56,6 +55,13 @@ type CalculateFFLFantasyScoreInput struct {
 	Marks         int    `json:"marks"`
 	Tackles       int    `json:"tackles"`
 	Hitouts       int    `json:"hitouts"`
+}
+
+type CapturedFFLPostInput struct {
+	PostID    string  `json:"postId"`
+	Author    string  `json:"author"`
+	Timestamp *string `json:"timestamp,omitempty"`
+	HTML      string  `json:"html"`
 }
 
 type ConfirmFFLTeamSubmissionInput struct {
@@ -121,6 +127,16 @@ type FFLMatch struct {
 	AwayClubMatch *FFLClubMatch `json:"awayClubMatch,omitempty"`
 }
 
+type FFLParsedPlayer struct {
+	Name                string `json:"name"`
+	ClubHint            string `json:"clubHint"`
+	Position            string `json:"position"`
+	BackupPositions     string `json:"backupPositions"`
+	InterchangePosition string `json:"interchangePosition"`
+	Score               *int   `json:"score,omitempty"`
+	Notes               string `json:"notes"`
+}
+
 type FFLPlayer struct {
 	ID          string     `json:"id"`
 	AflPlayerID string     `json:"aflPlayerId"`
@@ -170,6 +186,24 @@ type FFLPlayerSeasonFilter struct {
 	Active *bool `json:"active,omitempty"`
 }
 
+// A captured forum page previewed in-session (historical import, slice 1). Not persisted.
+type FFLPreviewedPage struct {
+	Season     string              `json:"season"`
+	RoundTitle string              `json:"roundTitle"`
+	TopicID    string              `json:"topicId"`
+	Posts      []*FFLPreviewedPost `json:"posts"`
+}
+
+type FFLPreviewedPost struct {
+	PostID string `json:"postId"`
+	Author string `json:"author"`
+	// Parser format for the author; empty if the author is unknown (escape hatch).
+	Team             string             `json:"team"`
+	IsTeamSubmission bool               `json:"isTeamSubmission"`
+	ParseError       string             `json:"parseError"`
+	Players          []*FFLParsedPlayer `json:"players"`
+}
+
 type FFLRound struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
@@ -204,6 +238,13 @@ type FFLTeamPlayerInput struct {
 	BackupPositions     *string `json:"backupPositions,omitempty"`
 	InterchangePosition *string `json:"interchangePosition,omitempty"`
 	DisplayOrder        int     `json:"displayOrder"`
+}
+
+type IngestFFLForumPageInput struct {
+	Season     string                  `json:"season"`
+	RoundTitle string                  `json:"roundTitle"`
+	TopicID    string                  `json:"topicId"`
+	Posts      []*CapturedFFLPostInput `json:"posts"`
 }
 
 type MarkFFLTeamFinalInput struct {

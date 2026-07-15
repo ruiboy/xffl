@@ -1,5 +1,11 @@
 import gql from 'graphql-tag'
 
+export const CLEAR_FFL_FORUM_CAPTURES = gql`
+  mutation ClearFFLForumCaptures {
+    clearFFLForumCaptures
+  }
+`
+
 export const IMPORT_AFL_MATCH_STATS = gql`
   mutation ImportAFLMatchStats($matchId: ID!) {
     importAFLMatchStats(matchId: $matchId) {

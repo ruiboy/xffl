@@ -71,6 +71,17 @@ type TeamParser interface {
 	Parse(ctx context.Context, teamName, post string) ([]ParsedPlayerRow, error)
 }
 
+// ForumProcessor turns raw forum capture (post content HTML + author) into
+// parseable text and team identity, then parses it. Implemented by the forum
+// adapter, keeping HTML/forum specifics out of the application layer.
+type ForumProcessor interface {
+	TeamParser
+	// HTMLToText converts a post's content HTML into newline-separated text.
+	HTMLToText(html string) string
+	// TeamForAuthor returns the parser format for a forum author, or "" if unknown.
+	TeamForAuthor(author string) string
+}
+
 // ParsedPlayerRow is one player line extracted from a forum post.
 type ParsedPlayerRow struct {
 	Name                string

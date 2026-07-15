@@ -118,6 +118,16 @@ type ComplexityRoot struct {
 		Venue         func(childComplexity int) int
 	}
 
+	FFLParsedPlayer struct {
+		BackupPositions     func(childComplexity int) int
+		ClubHint            func(childComplexity int) int
+		InterchangePosition func(childComplexity int) int
+		Name                func(childComplexity int) int
+		Notes               func(childComplexity int) int
+		Position            func(childComplexity int) int
+		Score               func(childComplexity int) int
+	}
+
 	FFLPlayer struct {
 		AflPlayer   func(childComplexity int) int
 		AflPlayerID func(childComplexity int) int
@@ -161,6 +171,22 @@ type ComplexityRoot struct {
 		PageInfo func(childComplexity int) int
 	}
 
+	FFLPreviewedPage struct {
+		Posts      func(childComplexity int) int
+		RoundTitle func(childComplexity int) int
+		Season     func(childComplexity int) int
+		TopicID    func(childComplexity int) int
+	}
+
+	FFLPreviewedPost struct {
+		Author           func(childComplexity int) int
+		IsTeamSubmission func(childComplexity int) int
+		ParseError       func(childComplexity int) int
+		Players          func(childComplexity int) int
+		PostID           func(childComplexity int) int
+		Team             func(childComplexity int) int
+	}
+
 	FFLRound struct {
 		AflRound   func(childComplexity int) int
 		AflRoundID func(childComplexity int) int
@@ -187,8 +213,10 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddFFLPlayerToSeason         func(childComplexity int, input AddFFLPlayerToSeasonInput) int
 		CalculateFFLFantasyScore     func(childComplexity int, input CalculateFFLFantasyScoreInput) int
+		ClearFFLForumCaptures        func(childComplexity int) int
 		ConfirmFFLTeamSubmission     func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
 		DeclareFFLSubstitutions      func(childComplexity int, input DeclareFFLSubstitutionsInput) int
+		IngestFFLForumPage           func(childComplexity int, input IngestFFLForumPageInput) int
 		MarkFFLTeamFinal             func(childComplexity int, input MarkFFLTeamFinalInput) int
 		MarkFFLTeamSubmitted         func(childComplexity int, input MarkFFLTeamFinalInput) int
 		ParseFFLTeamSubmission       func(childComplexity int, input ParseFFLTeamSubmissionInput) int
@@ -212,6 +240,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		FflCapturedPages                  func(childComplexity int) int
 		FflClub                           func(childComplexity int, id string) int
 		FflClubMatch                      func(childComplexity int, id string) int
 		FflClubSeason                     func(childComplexity int, id string) int
@@ -304,6 +333,8 @@ type MutationResolver interface {
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
 	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
 	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
+	IngestFFLForumPage(ctx context.Context, input IngestFFLForumPageInput) (*FFLPreviewedPage, error)
+	ClearFFLForumCaptures(ctx context.Context) (bool, error)
 	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
 	MarkFFLTeamSubmitted(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
 	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
@@ -324,6 +355,7 @@ type QueryResolver interface {
 	FflRoundByAflRound(ctx context.Context, aflRoundID string) (*FFLRound, error)
 	FflClubMatch(ctx context.Context, id string) (*FFLClubMatch, error)
 	FflPlayerSeasonsByAflPlayerSeason(ctx context.Context, aflPlayerSeasonID string) ([]*FFLPlayerSeason, error)
+	FflCapturedPages(ctx context.Context) ([]*FFLPreviewedPage, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -638,6 +670,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.FFLMatch.Venue(childComplexity), true
 
+	case "FFLParsedPlayer.backupPositions":
+		if e.ComplexityRoot.FFLParsedPlayer.BackupPositions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.BackupPositions(childComplexity), true
+	case "FFLParsedPlayer.clubHint":
+		if e.ComplexityRoot.FFLParsedPlayer.ClubHint == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.ClubHint(childComplexity), true
+	case "FFLParsedPlayer.interchangePosition":
+		if e.ComplexityRoot.FFLParsedPlayer.InterchangePosition == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.InterchangePosition(childComplexity), true
+	case "FFLParsedPlayer.name":
+		if e.ComplexityRoot.FFLParsedPlayer.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.Name(childComplexity), true
+	case "FFLParsedPlayer.notes":
+		if e.ComplexityRoot.FFLParsedPlayer.Notes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.Notes(childComplexity), true
+	case "FFLParsedPlayer.position":
+		if e.ComplexityRoot.FFLParsedPlayer.Position == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.Position(childComplexity), true
+	case "FFLParsedPlayer.score":
+		if e.ComplexityRoot.FFLParsedPlayer.Score == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLParsedPlayer.Score(childComplexity), true
+
 	case "FFLPlayer.aflPlayer":
 		if e.ComplexityRoot.FFLPlayer.AflPlayer == nil {
 			break
@@ -828,6 +903,68 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.FFLPlayerSeasonConnection.PageInfo(childComplexity), true
 
+	case "FFLPreviewedPage.posts":
+		if e.ComplexityRoot.FFLPreviewedPage.Posts == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPage.Posts(childComplexity), true
+	case "FFLPreviewedPage.roundTitle":
+		if e.ComplexityRoot.FFLPreviewedPage.RoundTitle == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPage.RoundTitle(childComplexity), true
+	case "FFLPreviewedPage.season":
+		if e.ComplexityRoot.FFLPreviewedPage.Season == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPage.Season(childComplexity), true
+	case "FFLPreviewedPage.topicId":
+		if e.ComplexityRoot.FFLPreviewedPage.TopicID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPage.TopicID(childComplexity), true
+
+	case "FFLPreviewedPost.author":
+		if e.ComplexityRoot.FFLPreviewedPost.Author == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.Author(childComplexity), true
+	case "FFLPreviewedPost.isTeamSubmission":
+		if e.ComplexityRoot.FFLPreviewedPost.IsTeamSubmission == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.IsTeamSubmission(childComplexity), true
+	case "FFLPreviewedPost.parseError":
+		if e.ComplexityRoot.FFLPreviewedPost.ParseError == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.ParseError(childComplexity), true
+	case "FFLPreviewedPost.players":
+		if e.ComplexityRoot.FFLPreviewedPost.Players == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.Players(childComplexity), true
+	case "FFLPreviewedPost.postId":
+		if e.ComplexityRoot.FFLPreviewedPost.PostID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.PostID(childComplexity), true
+	case "FFLPreviewedPost.team":
+		if e.ComplexityRoot.FFLPreviewedPost.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.Team(childComplexity), true
+
 	case "FFLRound.aflRound":
 		if e.ComplexityRoot.FFLRound.AflRound == nil {
 			break
@@ -937,6 +1074,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CalculateFFLFantasyScore(childComplexity, args["input"].(CalculateFFLFantasyScoreInput)), true
+	case "Mutation.clearFFLForumCaptures":
+		if e.ComplexityRoot.Mutation.ClearFFLForumCaptures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.ClearFFLForumCaptures(childComplexity), true
 	case "Mutation.confirmFFLTeamSubmission":
 		if e.ComplexityRoot.Mutation.ConfirmFFLTeamSubmission == nil {
 			break
@@ -959,6 +1102,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeclareFFLSubstitutions(childComplexity, args["input"].(DeclareFFLSubstitutionsInput)), true
+	case "Mutation.ingestFFLForumPage":
+		if e.ComplexityRoot.Mutation.IngestFFLForumPage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_ingestFFLForumPage_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.IngestFFLForumPage(childComplexity, args["input"].(IngestFFLForumPageInput)), true
 	case "Mutation.markFFLTeamFinal":
 		if e.ComplexityRoot.Mutation.MarkFFLTeamFinal == nil {
 			break
@@ -1091,6 +1245,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ParseFFLTeamSubmissionResult.ResolvedPlayers(childComplexity), true
 
+	case "Query.fflCapturedPages":
+		if e.ComplexityRoot.Query.FflCapturedPages == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.FflCapturedPages(childComplexity), true
 	case "Query.fflClub":
 		if e.ComplexityRoot.Query.FflClub == nil {
 			break
@@ -1311,12 +1471,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddFFLPlayerToSeasonInput,
 		ec.unmarshalInputCalculateFFLFantasyScoreInput,
+		ec.unmarshalInputCapturedFFLPostInput,
 		ec.unmarshalInputConfirmFFLTeamSubmissionInput,
 		ec.unmarshalInputConfirmedFFLPlayerInput,
 		ec.unmarshalInputDeclareFFLSubstitutionsInput,
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLSubPairing,
 		ec.unmarshalInputFFLTeamPlayerInput,
+		ec.unmarshalInputIngestFFLForumPageInput,
 		ec.unmarshalInputMarkFFLTeamFinalInput,
 		ec.unmarshalInputParseFFLTeamSubmissionInput,
 		ec.unmarshalInputRemoveFFLPlayerFromSeasonInput,
@@ -1402,6 +1564,34 @@ var sources = []*ast.Source{
   endCursor: String
   totalCount: Int
 }
+
+"A captured forum page previewed in-session (historical import, slice 1). Not persisted."
+type FFLPreviewedPage {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [FFLPreviewedPost!]!
+}
+
+type FFLPreviewedPost {
+  postId: String!
+  author: String!
+  "Parser format for the author; empty if the author is unknown (escape hatch)."
+  team: String!
+  isTeamSubmission: Boolean!
+  parseError: String!
+  players: [FFLParsedPlayer!]!
+}
+
+type FFLParsedPlayer {
+  name: String!
+  clubHint: String!
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+}
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/mutation.graphqls", Input: `type Mutation {
   "Add an AFL player to an FFL club's season squad."
@@ -1428,6 +1618,12 @@ var sources = []*ast.Source{
 
   "Confirm a reviewed parse result and write player matches to the database."
   confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
+
+  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
+
+  "Clear the in-session forum capture buffer."
+  clearFFLForumCaptures: Boolean!
 
   "Lock a FFL club_match as final — triggers the FFL scoring chain."
   markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
@@ -1527,6 +1723,20 @@ input ConfirmedFFLPlayerInput {
   score: Int
 }
 
+input IngestFFLForumPageInput {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [CapturedFFLPostInput!]!
+}
+
+input CapturedFFLPostInput {
+  postId: String!
+  author: String!
+  timestamp: String
+  html: String!
+}
+
 input MarkFFLTeamFinalInput {
   clubMatchId: ID!
   matchId: ID!
@@ -1566,6 +1776,9 @@ enum FFLReorderDirection {
   fflClubMatch(id: ID!): FFLClubMatch
 
   fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]!
+
+  "Forum pages captured this session for preview (ephemeral; not persisted)."
+  fflCapturedPages: [FFLPreviewedPage!]!
 }
 
 type FFLSeason {
@@ -1720,7 +1933,6 @@ type AFLPlayer @key(fields: "id") {
 
 type AFLPlayerSeason @key(fields: "id") {
   id: ID!
-  "All FFL player seasons linked to this AFL player season (across all FFL clubs/stints)."
   fflPlayerSeasons: [FFLPlayerSeason!]!
 }
 
@@ -1923,6 +2135,17 @@ func (ec *executionContext) field_Mutation_declareFFLSubstitutions_args(ctx cont
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeclareFFLSubstitutionsInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐDeclareFFLSubstitutionsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_ingestFFLForumPage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNIngestFFLForumPageInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐIngestFFLForumPageInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3704,6 +3927,209 @@ func (ec *executionContext) fieldContext_FFLMatch_awayClubMatch(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLParsedPlayer_name(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_clubHint(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_clubHint,
+		func(ctx context.Context) (any, error) {
+			return obj.ClubHint, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_clubHint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_position(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_position,
+		func(ctx context.Context) (any, error) {
+			return obj.Position, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_backupPositions(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_backupPositions,
+		func(ctx context.Context) (any, error) {
+			return obj.BackupPositions, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_backupPositions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_interchangePosition(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_interchangePosition,
+		func(ctx context.Context) (any, error) {
+			return obj.InterchangePosition, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_interchangePosition(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_score(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_score,
+		func(ctx context.Context) (any, error) {
+			return obj.Score, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_score(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLParsedPlayer_notes(ctx context.Context, field graphql.CollectedField, obj *FFLParsedPlayer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLParsedPlayer_notes,
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLParsedPlayer_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLParsedPlayer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLPlayer_id(ctx context.Context, field graphql.CollectedField, obj *FFLPlayer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4727,6 +5153,326 @@ func (ec *executionContext) fieldContext_FFLPlayerSeasonConnection_pageInfo(_ co
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLPreviewedPage_season(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPage_season,
+		func(ctx context.Context) (any, error) {
+			return obj.Season, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPage_season(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPage_roundTitle(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPage_roundTitle,
+		func(ctx context.Context) (any, error) {
+			return obj.RoundTitle, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPage_roundTitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPage_topicId(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPage_topicId,
+		func(ctx context.Context) (any, error) {
+			return obj.TopicID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPage_topicId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPage_posts(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPage_posts,
+		func(ctx context.Context) (any, error) {
+			return obj.Posts, nil
+		},
+		nil,
+		ec.marshalNFFLPreviewedPost2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPostᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPage_posts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "postId":
+				return ec.fieldContext_FFLPreviewedPost_postId(ctx, field)
+			case "author":
+				return ec.fieldContext_FFLPreviewedPost_author(ctx, field)
+			case "team":
+				return ec.fieldContext_FFLPreviewedPost_team(ctx, field)
+			case "isTeamSubmission":
+				return ec.fieldContext_FFLPreviewedPost_isTeamSubmission(ctx, field)
+			case "parseError":
+				return ec.fieldContext_FFLPreviewedPost_parseError(ctx, field)
+			case "players":
+				return ec.fieldContext_FFLPreviewedPost_players(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPreviewedPost", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_postId(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_postId,
+		func(ctx context.Context) (any, error) {
+			return obj.PostID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_postId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_author(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_author,
+		func(ctx context.Context) (any, error) {
+			return obj.Author, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_team(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_team,
+		func(ctx context.Context) (any, error) {
+			return obj.Team, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_isTeamSubmission(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_isTeamSubmission,
+		func(ctx context.Context) (any, error) {
+			return obj.IsTeamSubmission, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_isTeamSubmission(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_parseError(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_parseError,
+		func(ctx context.Context) (any, error) {
+			return obj.ParseError, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_parseError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_players(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_players,
+		func(ctx context.Context) (any, error) {
+			return obj.Players, nil
+		},
+		nil,
+		ec.marshalNFFLParsedPlayer2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLParsedPlayerᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_players(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_FFLParsedPlayer_name(ctx, field)
+			case "clubHint":
+				return ec.fieldContext_FFLParsedPlayer_clubHint(ctx, field)
+			case "position":
+				return ec.fieldContext_FFLParsedPlayer_position(ctx, field)
+			case "backupPositions":
+				return ec.fieldContext_FFLParsedPlayer_backupPositions(ctx, field)
+			case "interchangePosition":
+				return ec.fieldContext_FFLParsedPlayer_interchangePosition(ctx, field)
+			case "score":
+				return ec.fieldContext_FFLParsedPlayer_score(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLParsedPlayer_notes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLParsedPlayer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLRound_id(ctx context.Context, field graphql.CollectedField, obj *FFLRound) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5642,6 +6388,86 @@ func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx c
 	if fc.Args, err = ec.field_Mutation_confirmFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_ingestFFLForumPage,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().IngestFFLForumPage(ctx, fc.Args["input"].(IngestFFLForumPageInput))
+		},
+		nil,
+		ec.marshalNFFLPreviewedPage2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "season":
+				return ec.fieldContext_FFLPreviewedPage_season(ctx, field)
+			case "roundTitle":
+				return ec.fieldContext_FFLPreviewedPage_roundTitle(ctx, field)
+			case "topicId":
+				return ec.fieldContext_FFLPreviewedPage_topicId(ctx, field)
+			case "posts":
+				return ec.fieldContext_FFLPreviewedPage_posts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPreviewedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_ingestFFLForumPage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_clearFFLForumCaptures(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_clearFFLForumCaptures,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().ClearFFLForumCaptures(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearFFLForumCaptures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -6747,6 +7573,45 @@ func (ec *executionContext) fieldContext_Query_fflPlayerSeasonsByAflPlayerSeason
 	if fc.Args, err = ec.field_Query_fflPlayerSeasonsByAflPlayerSeason_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_fflCapturedPages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_fflCapturedPages,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().FflCapturedPages(ctx)
+		},
+		nil,
+		ec.marshalNFFLPreviewedPage2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPageᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_fflCapturedPages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "season":
+				return ec.fieldContext_FFLPreviewedPage_season(ctx, field)
+			case "roundTitle":
+				return ec.fieldContext_FFLPreviewedPage_roundTitle(ctx, field)
+			case "topicId":
+				return ec.fieldContext_FFLPreviewedPage_topicId(ctx, field)
+			case "posts":
+				return ec.fieldContext_FFLPreviewedPage_posts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPreviewedPage", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -8850,6 +9715,57 @@ func (ec *executionContext) unmarshalInputCalculateFFLFantasyScoreInput(ctx cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCapturedFFLPostInput(ctx context.Context, obj any) (CapturedFFLPostInput, error) {
+	var it CapturedFFLPostInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"postId", "author", "timestamp", "html"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "postId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PostID = data
+		case "author":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Author = data
+		case "timestamp":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Timestamp = data
+		case "html":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("html"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HTML = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputConfirmFFLTeamSubmissionInput(ctx context.Context, obj any) (ConfirmFFLTeamSubmissionInput, error) {
 	var it ConfirmFFLTeamSubmissionInput
 	if obj == nil {
@@ -9109,6 +10025,57 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 				return it, err
 			}
 			it.DisplayOrder = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIngestFFLForumPageInput(ctx context.Context, obj any) (IngestFFLForumPageInput, error) {
+	var it IngestFFLForumPageInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"season", "roundTitle", "topicId", "posts"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "season":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("season"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Season = data
+		case "roundTitle":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roundTitle"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoundTitle = data
+		case "topicId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("topicId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TopicID = data
+		case "posts":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("posts"))
+			data, err := ec.unmarshalNCapturedFFLPostInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐCapturedFFLPostInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Posts = data
 		}
 	}
 	return it, nil
@@ -10183,6 +11150,72 @@ func (ec *executionContext) _FFLMatch(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var fFLParsedPlayerImplementors = []string{"FFLParsedPlayer"}
+
+func (ec *executionContext) _FFLParsedPlayer(ctx context.Context, sel ast.SelectionSet, obj *FFLParsedPlayer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fFLParsedPlayerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FFLParsedPlayer")
+		case "name":
+			out.Values[i] = ec._FFLParsedPlayer_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clubHint":
+			out.Values[i] = ec._FFLParsedPlayer_clubHint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "position":
+			out.Values[i] = ec._FFLParsedPlayer_position(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "backupPositions":
+			out.Values[i] = ec._FFLParsedPlayer_backupPositions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "interchangePosition":
+			out.Values[i] = ec._FFLParsedPlayer_interchangePosition(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "score":
+			out.Values[i] = ec._FFLParsedPlayer_score(ctx, field, obj)
+		case "notes":
+			out.Values[i] = ec._FFLParsedPlayer_notes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var fFLPlayerImplementors = []string{"FFLPlayer"}
 
 func (ec *executionContext) _FFLPlayer(ctx context.Context, sel ast.SelectionSet, obj *FFLPlayer) graphql.Marshaler {
@@ -10677,6 +11710,124 @@ func (ec *executionContext) _FFLPlayerSeasonConnection(ctx context.Context, sel 
 	return out
 }
 
+var fFLPreviewedPageImplementors = []string{"FFLPreviewedPage"}
+
+func (ec *executionContext) _FFLPreviewedPage(ctx context.Context, sel ast.SelectionSet, obj *FFLPreviewedPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fFLPreviewedPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FFLPreviewedPage")
+		case "season":
+			out.Values[i] = ec._FFLPreviewedPage_season(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "roundTitle":
+			out.Values[i] = ec._FFLPreviewedPage_roundTitle(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "topicId":
+			out.Values[i] = ec._FFLPreviewedPage_topicId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "posts":
+			out.Values[i] = ec._FFLPreviewedPage_posts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var fFLPreviewedPostImplementors = []string{"FFLPreviewedPost"}
+
+func (ec *executionContext) _FFLPreviewedPost(ctx context.Context, sel ast.SelectionSet, obj *FFLPreviewedPost) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fFLPreviewedPostImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FFLPreviewedPost")
+		case "postId":
+			out.Values[i] = ec._FFLPreviewedPost_postId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "author":
+			out.Values[i] = ec._FFLPreviewedPost_author(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "team":
+			out.Values[i] = ec._FFLPreviewedPost_team(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isTeamSubmission":
+			out.Values[i] = ec._FFLPreviewedPost_isTeamSubmission(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "parseError":
+			out.Values[i] = ec._FFLPreviewedPost_parseError(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "players":
+			out.Values[i] = ec._FFLPreviewedPost_players(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var fFLRoundImplementors = []string{"FFLRound"}
 
 func (ec *executionContext) _FFLRound(ctx context.Context, sel ast.SelectionSet, obj *FFLRound) graphql.Marshaler {
@@ -11094,6 +12245,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "ingestFFLForumPage":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_ingestFFLForumPage(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearFFLForumCaptures":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearFFLForumCaptures(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "markFFLTeamFinal":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markFFLTeamFinal(ctx, field)
@@ -11502,6 +12667,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_fflPlayerSeasonsByAflPlayerSeason(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "fflCapturedPages":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_fflCapturedPages(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -12133,6 +13320,26 @@ func (ec *executionContext) unmarshalNCalculateFFLFantasyScoreInput2xfflᚋservi
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCapturedFFLPostInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐCapturedFFLPostInputᚄ(ctx context.Context, v any) ([]*CapturedFFLPostInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*CapturedFFLPostInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCapturedFFLPostInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐCapturedFFLPostInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNCapturedFFLPostInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐCapturedFFLPostInput(ctx context.Context, v any) (*CapturedFFLPostInput, error) {
+	res, err := ec.unmarshalInputCapturedFFLPostInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNConfirmFFLTeamSubmissionInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐConfirmFFLTeamSubmissionInput(ctx context.Context, v any) (ConfirmFFLTeamSubmissionInput, error) {
 	res, err := ec.unmarshalInputConfirmFFLTeamSubmissionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12245,6 +13452,32 @@ func (ec *executionContext) marshalNFFLMatch2ᚖxfflᚋservicesᚋfflᚋinternal
 	return ec._FFLMatch(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNFFLParsedPlayer2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLParsedPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*FFLParsedPlayer) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFFLParsedPlayer2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLParsedPlayer(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFFLParsedPlayer2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLParsedPlayer(ctx context.Context, sel ast.SelectionSet, v *FFLParsedPlayer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FFLParsedPlayer(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFFLPlayer2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayer(ctx context.Context, sel ast.SelectionSet, v FFLPlayer) graphql.Marshaler {
 	return ec._FFLPlayer(ctx, sel, &v)
 }
@@ -12347,6 +13580,62 @@ func (ec *executionContext) marshalNFFLPlayerSeasonConnection2ᚖxfflᚋservices
 		return graphql.Null
 	}
 	return ec._FFLPlayerSeasonConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFFLPreviewedPage2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage(ctx context.Context, sel ast.SelectionSet, v FFLPreviewedPage) graphql.Marshaler {
+	return ec._FFLPreviewedPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFFLPreviewedPage2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPageᚄ(ctx context.Context, sel ast.SelectionSet, v []*FFLPreviewedPage) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFFLPreviewedPage2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFFLPreviewedPage2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage(ctx context.Context, sel ast.SelectionSet, v *FFLPreviewedPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FFLPreviewedPage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFFLPreviewedPost2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*FFLPreviewedPost) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFFLPreviewedPost2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPost(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFFLPreviewedPost2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPost(ctx context.Context, sel ast.SelectionSet, v *FFLPreviewedPost) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FFLPreviewedPost(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFFLReorderDirection2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLReorderDirection(ctx context.Context, v any) (FFLReorderDirection, error) {
@@ -12537,6 +13826,11 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNIngestFFLForumPageInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐIngestFFLForumPageInput(ctx context.Context, v any) (IngestFFLForumPageInput, error) {
+	res, err := ec.unmarshalInputIngestFFLForumPageInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {

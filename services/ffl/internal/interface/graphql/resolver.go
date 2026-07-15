@@ -7,4 +7,5 @@ type Resolver struct {
 	Queries  *application.Queries
 	Commands *application.Commands
 	DataOps  *application.DataOpsCommands
+	Captures *application.ForumCaptureBuffer
 }

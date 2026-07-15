@@ -100,16 +100,18 @@ func main() {
 		}
 	}()
 
+	parser := forum.NewParser()
 	dataOps := application.NewDataOpsCommands(
 		db,
 		playerLookup,
 		forum.NewLevenshteinResolver(),
-		forum.NewParser(),
+		parser,
 		dispatcher,
 		commands,
 	)
+	captures := application.NewForumCaptureBuffer(parser)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

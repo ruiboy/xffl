@@ -283,6 +283,31 @@ func (r *mutationResolver) ConfirmFFLTeamSubmission(ctx context.Context, input C
 	return result, nil
 }
 
+// IngestFFLForumPage is the resolver for the ingestFFLForumPage field.
+func (r *mutationResolver) IngestFFLForumPage(ctx context.Context, input IngestFFLForumPageInput) (*FFLPreviewedPage, error) {
+	posts := make([]application.CapturedPost, 0, len(input.Posts))
+	for _, p := range input.Posts {
+		ts := ""
+		if p.Timestamp != nil {
+			ts = *p.Timestamp
+		}
+		posts = append(posts, application.CapturedPost{PostID: p.PostID, Author: p.Author, Timestamp: ts, HTML: p.HTML})
+	}
+	page := r.Captures.Ingest(ctx, application.CapturedPageParams{
+		Season:     input.Season,
+		RoundTitle: input.RoundTitle,
+		TopicID:    input.TopicID,
+		Posts:      posts,
+	})
+	return toPreviewedPage(page), nil
+}
+
+// ClearFFLForumCaptures is the resolver for the clearFFLForumCaptures field.
+func (r *mutationResolver) ClearFFLForumCaptures(ctx context.Context) (bool, error) {
+	r.Captures.Clear()
+	return true, nil
+}
+
 // MarkFFLTeamFinal is the resolver for the markFFLTeamFinal field.
 func (r *mutationResolver) MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error) {
 	clubMatchID, err := fromID(input.ClubMatchID)

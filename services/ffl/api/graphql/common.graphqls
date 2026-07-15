@@ -3,3 +3,31 @@ type PageInfo {
   endCursor: String
   totalCount: Int
 }
+
+"A captured forum page previewed in-session (historical import, slice 1). Not persisted."
+type FFLPreviewedPage {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [FFLPreviewedPost!]!
+}
+
+type FFLPreviewedPost {
+  postId: String!
+  author: String!
+  "Parser format for the author; empty if the author is unknown (escape hatch)."
+  team: String!
+  isTeamSubmission: Boolean!
+  parseError: String!
+  players: [FFLParsedPlayer!]!
+}
+
+type FFLParsedPlayer {
+  name: String!
+  clubHint: String!
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+}
