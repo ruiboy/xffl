@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
 	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
@@ -72,7 +73,7 @@ func (s *stubPlayerLookup) LookupByeInfo(_ context.Context, aflPSIDs []int, _ in
 	return out, nil
 }
 
-func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {
+func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *dataops.DataOpsCommands) *httptest.Server {
 	t.Helper()
 
 	q := sqlcgen.New(pool)
@@ -150,7 +151,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 		pg.NewPlayerMatchRepository(testQ),
 		pg.NewPlayerSeasonRepository(testQ),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		testDB,
 		stub,
 		forum.NewLevenshteinResolver(),
@@ -330,7 +331,7 @@ func TestMarkFFLTeamSubmitted(t *testing.T) {
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		&stubPlayerLookup{pool: pool},
 		forum.NewLevenshteinResolver(),
@@ -395,7 +396,7 @@ func TestMarkFFLTeamFinal(t *testing.T) {
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		&stubPlayerLookup{pool: pool},
 		forum.NewLevenshteinResolver(),

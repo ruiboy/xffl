@@ -13,6 +13,7 @@ import (
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
 	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
@@ -101,7 +102,7 @@ func main() {
 	}()
 
 	parser := forum.NewParser()
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		playerLookup,
 		forum.NewLevenshteinResolver(),
@@ -109,7 +110,7 @@ func main() {
 		dispatcher,
 		commands,
 	)
-	captures := application.NewForumCaptureBuffer(parser)
+	captures := dataops.NewForumCaptureBuffer(parser)
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

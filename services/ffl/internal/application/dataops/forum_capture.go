@@ -1,8 +1,10 @@
-package application
+package dataops
 
 import (
 	"context"
 	"sync"
+
+	"xffl/services/ffl/internal/application"
 )
 
 // CapturedPost is one forum post as captured by the userscript.
@@ -26,7 +28,7 @@ type PreviewedPost struct {
 	PostID     string
 	Author     string
 	Team       string // parser format; "" if the author is unknown (escape hatch)
-	Players    []ParsedPlayerRow
+	Players    []application.ParsedPlayerRow
 	ParseError string
 }
 
@@ -45,12 +47,12 @@ type PreviewedPage struct {
 // pages — slice 1 of the historical import. Not persisted; cleared on restart.
 // Durable progress comes later from the committed data, not this buffer.
 type ForumCaptureBuffer struct {
-	forum ForumProcessor
+	forum application.ForumProcessor
 	mu    sync.Mutex
 	pages []PreviewedPage
 }
 
-func NewForumCaptureBuffer(forum ForumProcessor) *ForumCaptureBuffer {
+func NewForumCaptureBuffer(forum application.ForumProcessor) *ForumCaptureBuffer {
 	return &ForumCaptureBuffer{forum: forum}
 }
 

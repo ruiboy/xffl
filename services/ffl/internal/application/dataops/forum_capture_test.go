@@ -1,4 +1,4 @@
-package application
+package dataops
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"xffl/services/ffl/internal/application"
 )
 
 // fakeForumProcessor identifies only "ruiboy" and parses any text into one player.
@@ -18,8 +20,8 @@ func (fakeForumProcessor) TeamForAuthor(author string) string {
 	}
 	return ""
 }
-func (fakeForumProcessor) Parse(_ context.Context, _, _ string) ([]ParsedPlayerRow, error) {
-	return []ParsedPlayerRow{{Name: "Jake Waterman", Position: "goals"}}, nil
+func (fakeForumProcessor) Parse(_ context.Context, _, _ string) ([]application.ParsedPlayerRow, error) {
+	return []application.ParsedPlayerRow{{Name: "Jake Waterman", Position: "goals"}}, nil
 }
 
 func TestForumCaptureBuffer_Ingest(t *testing.T) {

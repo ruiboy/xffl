@@ -15,9 +15,6 @@ type Query {
   fflClubMatch(id: ID!): FFLClubMatch
 
   fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]!
-
-  "Forum pages captured this session for preview (ephemeral; not persisted)."
-  fflCapturedPages: [FFLPreviewedPage!]!
 }
 
 type FFLSeason {

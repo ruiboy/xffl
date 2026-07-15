@@ -331,16 +331,16 @@ type MutationResolver interface {
 	UpdateFFLPlayerSeason(ctx context.Context, input UpdateFFLPlayerSeasonInput) (*FFLPlayerSeason, error)
 	CalculateFFLFantasyScore(ctx context.Context, input CalculateFFLFantasyScoreInput) (*FFLPlayerMatch, error)
 	SetFFLTeam(ctx context.Context, input SetFFLTeamInput) ([]*FFLPlayerMatch, error)
-	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
-	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
-	IngestFFLForumPage(ctx context.Context, input IngestFFLForumPageInput) (*FFLPreviewedPage, error)
-	ClearFFLForumCaptures(ctx context.Context) (bool, error)
-	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
-	MarkFFLTeamSubmitted(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
 	RecalculateFFLLadder(ctx context.Context, seasonID string) (bool, error)
 	RecalculateFFLClubMatchScore(ctx context.Context, clubMatchID string) (int, error)
 	DeclareFFLSubstitutions(ctx context.Context, input DeclareFFLSubstitutionsInput) ([]*FFLPlayerMatch, error)
 	ReorderFFLPlayerMatch(ctx context.Context, id string, direction FFLReorderDirection) ([]*FFLPlayerMatch, error)
+	ParseFFLTeamSubmission(ctx context.Context, input ParseFFLTeamSubmissionInput) (*ParseFFLTeamSubmissionResult, error)
+	ConfirmFFLTeamSubmission(ctx context.Context, input ConfirmFFLTeamSubmissionInput) ([]*FFLPlayerMatch, error)
+	MarkFFLTeamFinal(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
+	MarkFFLTeamSubmitted(ctx context.Context, input MarkFFLTeamFinalInput) (bool, error)
+	IngestFFLForumPage(ctx context.Context, input IngestFFLForumPageInput) (*FFLPreviewedPage, error)
+	ClearFFLForumCaptures(ctx context.Context) (bool, error)
 }
 type QueryResolver interface {
 	FflSeasons(ctx context.Context) ([]*FFLSeason, error)
@@ -1564,6 +1564,94 @@ var sources = []*ast.Source{
   endCursor: String
   totalCount: Int
 }
+`, BuiltIn: false},
+	{Name: "../../../api/graphql/dataops.graphqls", Input: `# Operational data-import surface (the DataOps concern): forum team import and
+# capture. Kept separate from the core FFL product schema. Resolvers land in
+# dataops.resolvers.go (gqlgen follow-schema layout).
+
+extend type Mutation {
+  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
+
+  "Confirm a reviewed parse result and write player matches to the database."
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
+
+  "Lock a FFL club_match as final — triggers the FFL scoring chain."
+  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
+
+  "Revert a FFL club_match from final back to submitted, allowing further edits."
+  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean!
+
+  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
+
+  "Clear the in-session forum capture buffer."
+  clearFFLForumCaptures: Boolean!
+}
+
+extend type Query {
+  "Forum pages captured this session for preview (ephemeral; not persisted)."
+  fflCapturedPages: [FFLPreviewedPage!]!
+}
+
+type ParseFFLTeamSubmissionResult {
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type ResolvedPlayer {
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input ParseFFLTeamSubmissionInput {
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+input ConfirmFFLTeamSubmissionInput {
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input ConfirmedFFLPlayerInput {
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
+
+input MarkFFLTeamFinalInput {
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
+}
+
+input IngestFFLForumPageInput {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [CapturedFFLPostInput!]!
+}
+
+input CapturedFFLPostInput {
+  postId: String!
+  author: String!
+  timestamp: String
+  html: String!
+}
 
 "A captured forum page previewed in-session (historical import, slice 1). Not persisted."
 type FFLPreviewedPage {
@@ -1612,24 +1700,6 @@ type FFLParsedPlayer {
     BYE_INELIGIBLE — extensions.playerSeasonId identifies the ineligible player.
   """
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
-
-  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
-  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
-
-  "Confirm a reviewed parse result and write player matches to the database."
-  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
-
-  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
-  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
-
-  "Clear the in-session forum capture buffer."
-  clearFFLForumCaptures: Boolean!
-
-  "Lock a FFL club_match as final — triggers the FFL scoring chain."
-  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
-
-  "Revert a FFL club_match from final back to submitted, allowing further edits."
-  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean!
 
   "Rebuild FFL ladder standings for the given season from all final matches."
   recalculateFFLLadder(seasonId: ID!): Boolean!
@@ -1684,65 +1754,6 @@ input FFLTeamPlayerInput {
   displayOrder: Int!
 }
 
-type ParseFFLTeamSubmissionResult {
-  resolvedPlayers: [ResolvedPlayer!]!
-  needsReview: [Int!]!
-}
-
-type ResolvedPlayer {
-  parsedName: String!
-  clubHint: String!
-  resolvedName: String
-  resolvedClub: String
-  position: String!
-  backupPositions: String!
-  interchangePosition: String!
-  score: Int
-  notes: String!
-  playerSeasonId: ID
-  confidence: Float!
-}
-
-input ParseFFLTeamSubmissionInput {
-  clubSeasonId: ID!
-  clubMatchId: ID!
-  teamName: String!
-  post: String!
-}
-
-input ConfirmFFLTeamSubmissionInput {
-  clubMatchId: ID!
-  players: [ConfirmedFFLPlayerInput!]!
-}
-
-input ConfirmedFFLPlayerInput {
-  playerSeasonId: ID!
-  position: String!
-  backupPositions: String
-  interchangePosition: String
-  score: Int
-}
-
-input IngestFFLForumPageInput {
-  season: String!
-  roundTitle: String!
-  topicId: String!
-  posts: [CapturedFFLPostInput!]!
-}
-
-input CapturedFFLPostInput {
-  postId: String!
-  author: String!
-  timestamp: String
-  html: String!
-}
-
-input MarkFFLTeamFinalInput {
-  clubMatchId: ID!
-  matchId: ID!
-  roundId: ID!
-}
-
 input FFLSubPairing {
   replacedPmId:  ID!
   replacingPmId: ID!
@@ -1776,9 +1787,6 @@ enum FFLReorderDirection {
   fflClubMatch(id: ID!): FFLClubMatch
 
   fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: ID!): [FFLPlayerSeason!]!
-
-  "Forum pages captured this session for preview (ephemeral; not persisted)."
-  fflCapturedPages: [FFLPreviewedPage!]!
 }
 
 type FFLSeason {
@@ -6272,288 +6280,6 @@ func (ec *executionContext) fieldContext_Mutation_setFFLTeam(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_parseFFLTeamSubmission,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ParseFFLTeamSubmission(ctx, fc.Args["input"].(ParseFFLTeamSubmissionInput))
-		},
-		nil,
-		ec.marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionResult,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "resolvedPlayers":
-				return ec.fieldContext_ParseFFLTeamSubmissionResult_resolvedPlayers(ctx, field)
-			case "needsReview":
-				return ec.fieldContext_ParseFFLTeamSubmissionResult_needsReview(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ParseFFLTeamSubmissionResult", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_parseFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_confirmFFLTeamSubmission,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ConfirmFFLTeamSubmission(ctx, fc.Args["input"].(ConfirmFFLTeamSubmissionInput))
-		},
-		nil,
-		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_FFLPlayerMatch_id(ctx, field)
-			case "playerSeasonId":
-				return ec.fieldContext_FFLPlayerMatch_playerSeasonId(ctx, field)
-			case "playerSeason":
-				return ec.fieldContext_FFLPlayerMatch_playerSeason(ctx, field)
-			case "player":
-				return ec.fieldContext_FFLPlayerMatch_player(ctx, field)
-			case "matchId":
-				return ec.fieldContext_FFLPlayerMatch_matchId(ctx, field)
-			case "position":
-				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
-			case "status":
-				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
-			case "aflStatus":
-				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
-			case "backupPositions":
-				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
-			case "interchangePosition":
-				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
-			case "displayOrder":
-				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
-			case "notes":
-				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
-			case "score":
-				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
-			case "aflPlayerMatchId":
-				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatchId(ctx, field)
-			case "aflPlayerMatch":
-				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatch(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FFLPlayerMatch", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_confirmFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_ingestFFLForumPage,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().IngestFFLForumPage(ctx, fc.Args["input"].(IngestFFLForumPageInput))
-		},
-		nil,
-		ec.marshalNFFLPreviewedPage2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "season":
-				return ec.fieldContext_FFLPreviewedPage_season(ctx, field)
-			case "roundTitle":
-				return ec.fieldContext_FFLPreviewedPage_roundTitle(ctx, field)
-			case "topicId":
-				return ec.fieldContext_FFLPreviewedPage_topicId(ctx, field)
-			case "posts":
-				return ec.fieldContext_FFLPreviewedPage_posts(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FFLPreviewedPage", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_ingestFFLForumPage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_clearFFLForumCaptures(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_clearFFLForumCaptures,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Mutation().ClearFFLForumCaptures(ctx)
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_clearFFLForumCaptures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_markFFLTeamFinal,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().MarkFFLTeamFinal(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_markFFLTeamFinal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_markFFLTeamSubmitted,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().MarkFFLTeamSubmitted(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_markFFLTeamSubmitted_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_recalculateFFLLadder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6778,6 +6504,288 @@ func (ec *executionContext) fieldContext_Mutation_reorderFFLPlayerMatch(ctx cont
 	if fc.Args, err = ec.field_Mutation_reorderFFLPlayerMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_parseFFLTeamSubmission,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ParseFFLTeamSubmission(ctx, fc.Args["input"].(ParseFFLTeamSubmissionInput))
+		},
+		nil,
+		ec.marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLTeamSubmissionResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_parseFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "resolvedPlayers":
+				return ec.fieldContext_ParseFFLTeamSubmissionResult_resolvedPlayers(ctx, field)
+			case "needsReview":
+				return ec.fieldContext_ParseFFLTeamSubmissionResult_needsReview(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ParseFFLTeamSubmissionResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_parseFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_confirmFFLTeamSubmission,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ConfirmFFLTeamSubmission(ctx, fc.Args["input"].(ConfirmFFLTeamSubmissionInput))
+		},
+		nil,
+		ec.marshalNFFLPlayerMatch2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPlayerMatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_confirmFFLTeamSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FFLPlayerMatch_id(ctx, field)
+			case "playerSeasonId":
+				return ec.fieldContext_FFLPlayerMatch_playerSeasonId(ctx, field)
+			case "playerSeason":
+				return ec.fieldContext_FFLPlayerMatch_playerSeason(ctx, field)
+			case "player":
+				return ec.fieldContext_FFLPlayerMatch_player(ctx, field)
+			case "matchId":
+				return ec.fieldContext_FFLPlayerMatch_matchId(ctx, field)
+			case "position":
+				return ec.fieldContext_FFLPlayerMatch_position(ctx, field)
+			case "status":
+				return ec.fieldContext_FFLPlayerMatch_status(ctx, field)
+			case "aflStatus":
+				return ec.fieldContext_FFLPlayerMatch_aflStatus(ctx, field)
+			case "backupPositions":
+				return ec.fieldContext_FFLPlayerMatch_backupPositions(ctx, field)
+			case "interchangePosition":
+				return ec.fieldContext_FFLPlayerMatch_interchangePosition(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_FFLPlayerMatch_displayOrder(ctx, field)
+			case "notes":
+				return ec.fieldContext_FFLPlayerMatch_notes(ctx, field)
+			case "score":
+				return ec.fieldContext_FFLPlayerMatch_score(ctx, field)
+			case "aflPlayerMatchId":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatchId(ctx, field)
+			case "aflPlayerMatch":
+				return ec.fieldContext_FFLPlayerMatch_aflPlayerMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPlayerMatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_confirmFFLTeamSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markFFLTeamFinal,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MarkFFLTeamFinal(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markFFLTeamFinal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markFFLTeamFinal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markFFLTeamSubmitted,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MarkFFLTeamSubmitted(ctx, fc.Args["input"].(MarkFFLTeamFinalInput))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markFFLTeamSubmitted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markFFLTeamSubmitted_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_ingestFFLForumPage,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().IngestFFLForumPage(ctx, fc.Args["input"].(IngestFFLForumPageInput))
+		},
+		nil,
+		ec.marshalNFFLPreviewedPage2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLPreviewedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_ingestFFLForumPage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "season":
+				return ec.fieldContext_FFLPreviewedPage_season(ctx, field)
+			case "roundTitle":
+				return ec.fieldContext_FFLPreviewedPage_roundTitle(ctx, field)
+			case "topicId":
+				return ec.fieldContext_FFLPreviewedPage_topicId(ctx, field)
+			case "posts":
+				return ec.fieldContext_FFLPreviewedPage_posts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FFLPreviewedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_ingestFFLForumPage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_clearFFLForumCaptures(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_clearFFLForumCaptures,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().ClearFFLForumCaptures(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearFFLForumCaptures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -12231,48 +12239,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "parseFFLTeamSubmission":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_parseFFLTeamSubmission(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "confirmFFLTeamSubmission":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_confirmFFLTeamSubmission(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "ingestFFLForumPage":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_ingestFFLForumPage(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "clearFFLForumCaptures":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_clearFFLForumCaptures(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "markFFLTeamFinal":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_markFFLTeamFinal(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "markFFLTeamSubmitted":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_markFFLTeamSubmitted(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "recalculateFFLLadder":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_recalculateFFLLadder(ctx, field)
@@ -12297,6 +12263,48 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reorderFFLPlayerMatch":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reorderFFLPlayerMatch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "parseFFLTeamSubmission":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_parseFFLTeamSubmission(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "confirmFFLTeamSubmission":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_confirmFFLTeamSubmission(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markFFLTeamFinal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markFFLTeamFinal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markFFLTeamSubmitted":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markFFLTeamSubmitted(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ingestFFLForumPage":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_ingestFFLForumPage(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearFFLForumCaptures":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearFFLForumCaptures(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -1,4 +1,4 @@
-package application
+package dataops
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"xffl/contracts/events"
+	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
 	sharedevents "xffl/shared/events"
 )
@@ -15,9 +16,9 @@ const confidenceThreshold = 0.85
 
 // ResolvedPlayer is a parsed player row that has been matched to an ffl.player_season record.
 type ResolvedPlayer struct {
-	Parsed         ParsedPlayerRow
+	Parsed         application.ParsedPlayerRow
 	PlayerSeasonID int
-	BestMatch      PlayerNameMatch
+	BestMatch      application.PlayerNameMatch
 	Confident      bool // true if confidence >= threshold
 }
 
@@ -51,15 +52,15 @@ type MarkTeamFinalParams struct {
 
 // DataOpsCommands handles data import operations.
 type DataOpsCommands struct {
-	tx             TxManager
-	playerLookup   PlayerLookup
-	playerResolver PlayerResolver
-	teamParser     TeamParser
+	tx             application.TxManager
+	playerLookup   application.PlayerLookup
+	playerResolver application.PlayerResolver
+	teamParser     application.TeamParser
 	dispatcher     sharedevents.Dispatcher
-	commands       *Commands
+	commands       *application.Commands
 }
 
-func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolver, parser TeamParser, dispatcher sharedevents.Dispatcher, commands *Commands) *DataOpsCommands {
+func NewDataOpsCommands(tx application.TxManager, lookup application.PlayerLookup, resolver application.PlayerResolver, parser application.TeamParser, dispatcher sharedevents.Dispatcher, commands *application.Commands) *DataOpsCommands {
 	return &DataOpsCommands{
 		tx:             tx,
 		playerLookup:   lookup,
@@ -73,7 +74,7 @@ func NewDataOpsCommands(tx TxManager, lookup PlayerLookup, resolver PlayerResolv
 // LookupCandidates fetches player names from the AFL service and returns a candidate pool.
 // aflIDToPlayerSeasonID maps afl_player_id → player_season_id (built by the caller who
 // already has both ffl.player and player_season records available).
-func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSeasonID map[int]int) ([]PlayerCandidate, error) {
+func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSeasonID map[int]int) ([]application.PlayerCandidate, error) {
 	aflPlayerIDs := make([]int, 0, len(aflIDToPlayerSeasonID))
 	for aflID := range aflIDToPlayerSeasonID {
 		aflPlayerIDs = append(aflPlayerIDs, aflID)
@@ -84,10 +85,10 @@ func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSea
 		return nil, err
 	}
 
-	candidates := make([]PlayerCandidate, 0, len(fetched))
+	candidates := make([]application.PlayerCandidate, 0, len(fetched))
 	for _, f := range fetched {
 		psID := aflIDToPlayerSeasonID[f.AFLPlayerID]
-		candidates = append(candidates, PlayerCandidate{
+		candidates = append(candidates, application.PlayerCandidate{
 			PlayerID:    psID, // player_season_id in squad context
 			AFLPlayerID: f.AFLPlayerID,
 			Name:        f.Name,
@@ -99,14 +100,14 @@ func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSea
 
 // ParseTeamSubmission parses a raw forum post and resolves each player against the squad.
 // No DB writes occur. The caller reviews the result and calls ImportRoundTeams to confirm.
-func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseTeamSubmissionParams, playerSeasons []domain.PlayerSeason, candidates []PlayerCandidate) (ParseTeamSubmissionResult, error) {
+func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseTeamSubmissionParams, playerSeasons []domain.PlayerSeason, candidates []application.PlayerCandidate) (ParseTeamSubmissionResult, error) {
 	rows, err := c.teamParser.Parse(ctx, params.TeamName, params.Post)
 	if err != nil {
 		return ParseTeamSubmissionResult{}, fmt.Errorf("parse forum post: %w", err)
 	}
 
 	// Build a lookup from AFLPlayerID → candidate (includes PlayerSeasonID from the caller).
-	candidateByAFLID := make(map[int]PlayerCandidate, len(candidates))
+	candidateByAFLID := make(map[int]application.PlayerCandidate, len(candidates))
 	for _, cand := range candidates {
 		candidateByAFLID[cand.AFLPlayerID] = cand
 	}
@@ -146,7 +147,7 @@ func (c *DataOpsCommands) ParseTeamSubmission(ctx context.Context, params ParseT
 // The sum of all posted player scores is written to club_match.notes as "posted:NN".
 func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRoundTeamsParams) ([]domain.PlayerMatch, error) {
 	positionCount := make(map[string]int)
-	entries := make([]SetTeamEntry, 0, len(params.ResolvedPlayers))
+	entries := make([]application.SetTeamEntry, 0, len(params.ResolvedPlayers))
 	postedTotal := 0
 	anyPosted := false
 	for _, rp := range params.ResolvedPlayers {
@@ -158,7 +159,7 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 			groupKey = "bench"
 		}
 		positionCount[groupKey]++
-		e := SetTeamEntry{
+		e := application.SetTeamEntry{
 			PlayerSeasonID: rp.PlayerSeasonID,
 			Position:       rp.Parsed.Position,
 			DisplayOrder:   positionCount[groupKey],
@@ -178,7 +179,7 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		}
 		entries = append(entries, e)
 	}
-	sp := SetTeamParams{
+	sp := application.SetTeamParams{
 		ClubMatchID: params.ClubMatchID,
 		Entries:     entries,
 	}
@@ -191,14 +192,14 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 
 // MarkTeamSubmitted reverts the club_match data_status to 'submitted' and publishes FFL.ClubMatchUpdated(submitted).
 func (c *DataOpsCommands) MarkTeamSubmitted(ctx context.Context, params MarkTeamFinalParams) error {
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+	err := c.tx.WithTx(ctx, func(repos application.WriteRepos) error {
 		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataSubmitted)
 	})
 	if err != nil {
 		return err
 	}
 
-	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	pms, err := c.commands.FindPlayerMatchesByClubMatch(ctx, params.ClubMatchID)
 	if err != nil {
 		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 	}
@@ -208,7 +209,7 @@ func (c *DataOpsCommands) MarkTeamSubmitted(ctx context.Context, params MarkTeam
 		MatchID:       params.MatchID,
 		RoundID:       params.RoundID,
 		DataStatus:    string(domain.ClubMatchDataSubmitted),
-		PlayerMatches: buildPlayerMatchMap(pms),
+		PlayerMatches: application.BuildPlayerMatchMap(pms),
 	})
 	if err == nil {
 		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
@@ -220,14 +221,14 @@ func (c *DataOpsCommands) MarkTeamSubmitted(ctx context.Context, params MarkTeam
 
 // MarkTeamFinal sets the club_match data_status to 'final' and publishes FFL.ClubMatchUpdated(final).
 func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFinalParams) error {
-	err := c.tx.WithTx(ctx, func(repos WriteRepos) error {
+	err := c.tx.WithTx(ctx, func(repos application.WriteRepos) error {
 		return repos.ClubMatches.UpdateDataStatus(ctx, params.ClubMatchID, domain.ClubMatchDataFinal)
 	})
 	if err != nil {
 		return err
 	}
 
-	pms, err := c.commands.playerMatches.FindByClubMatchID(ctx, params.ClubMatchID)
+	pms, err := c.commands.FindPlayerMatchesByClubMatch(ctx, params.ClubMatchID)
 	if err != nil {
 		slog.WarnContext(ctx, "load player_matches failed for FflClubMatchUpdated", slog.Int("club_match_id", params.ClubMatchID), slog.Any("error", err))
 	}
@@ -237,7 +238,7 @@ func (c *DataOpsCommands) MarkTeamFinal(ctx context.Context, params MarkTeamFina
 		MatchID:       params.MatchID,
 		RoundID:       params.RoundID,
 		DataStatus:    string(domain.ClubMatchDataFinal),
-		PlayerMatches: buildPlayerMatchMap(pms),
+		PlayerMatches: application.BuildPlayerMatchMap(pms),
 	})
 	if err == nil {
 		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {

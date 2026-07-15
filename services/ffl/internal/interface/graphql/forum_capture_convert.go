@@ -1,9 +1,9 @@
 package graphql
 
-import "xffl/services/ffl/internal/application"
+import "xffl/services/ffl/internal/application/dataops"
 
 // toPreviewedPage maps an application PreviewedPage to the GraphQL model.
-func toPreviewedPage(p application.PreviewedPage) *FFLPreviewedPage {
+func toPreviewedPage(p dataops.PreviewedPage) *FFLPreviewedPage {
 	posts := make([]*FFLPreviewedPost, 0, len(p.Posts))
 	for _, pp := range p.Posts {
 		players := make([]*FFLParsedPlayer, 0, len(pp.Players))

@@ -533,16 +533,6 @@ func (r *queryResolver) FflPlayerSeasonsByAflPlayerSeason(ctx context.Context, a
 	return result, nil
 }
 
-// FflCapturedPages is the resolver for the fflCapturedPages field.
-func (r *queryResolver) FflCapturedPages(ctx context.Context) ([]*FFLPreviewedPage, error) {
-	pages := r.Captures.Pages()
-	out := make([]*FFLPreviewedPage, 0, len(pages))
-	for _, pg := range pages {
-		out = append(out, toPreviewedPage(pg))
-	}
-	return out, nil
-}
-
 // AFLPlayerSeason returns AFLPlayerSeasonResolver implementation.
 func (r *Resolver) AFLPlayerSeason() AFLPlayerSeasonResolver { return &aFLPlayerSeasonResolver{r} }
 

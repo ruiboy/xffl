@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
 	"xffl/services/ffl/internal/infrastructure/forum"
 )
 
@@ -25,7 +25,7 @@ N Daicos COL<i data-tag="post_body_end" class="hide"></i>`
 // End-to-end (no DB) proof of slice 1: a captured page flows through the ingest
 // resolver → forum HTML/parse → preview, and the query reflects it.
 func TestIngestFFLForumPage_ParsesRealPost(t *testing.T) {
-	r := &Resolver{Captures: application.NewForumCaptureBuffer(forum.NewParser())}
+	r := &Resolver{Captures: dataops.NewForumCaptureBuffer(forum.NewParser())}
 	ctx := context.Background()
 
 	page, err := r.Mutation().IngestFFLForumPage(ctx, IngestFFLForumPageInput{

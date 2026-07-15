@@ -599,32 +599,6 @@ type Mutation
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
 
   """
-  Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes.
-  """
-  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
-
-  """
-  Confirm a reviewed parse result and write player matches to the database.
-  """
-  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
-
-  """
-  Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes.
-  """
-  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage! @join__field(graph: FFL)
-
-  """Clear the in-session forum capture buffer."""
-  clearFFLForumCaptures: Boolean! @join__field(graph: FFL)
-
-  """Lock a FFL club_match as final — triggers the FFL scoring chain."""
-  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
-
-  """
-  Revert a FFL club_match from final back to submitted, allowing further edits.
-  """
-  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
-
-  """
   Rebuild FFL ladder standings for the given season from all final matches.
   """
   recalculateFFLLadder(seasonId: ID!): Boolean! @join__field(graph: FFL)
@@ -643,6 +617,32 @@ type Mutation
   Move a player match up or down within its position group, adjusting display order.
   """
   reorderFFLPlayerMatch(id: ID!, direction: FFLReorderDirection!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+
+  """
+  Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes.
+  """
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult! @join__field(graph: FFL)
+
+  """
+  Confirm a reviewed parse result and write player matches to the database.
+  """
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]! @join__field(graph: FFL)
+
+  """Lock a FFL club_match as final — triggers the FFL scoring chain."""
+  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
+
+  """
+  Revert a FFL club_match from final back to submitted, allowing further edits.
+  """
+  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean! @join__field(graph: FFL)
+
+  """
+  Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes.
+  """
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage! @join__field(graph: FFL)
+
+  """Clear the in-session forum capture buffer."""
+  clearFFLForumCaptures: Boolean! @join__field(graph: FFL)
 }
 
 type PageInfo

@@ -18,24 +18,6 @@ type Mutation {
   """
   setFFLTeam(input: SetFFLTeamInput!): [FFLPlayerMatch!]!
 
-  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
-  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
-
-  "Confirm a reviewed parse result and write player matches to the database."
-  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
-
-  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
-  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
-
-  "Clear the in-session forum capture buffer."
-  clearFFLForumCaptures: Boolean!
-
-  "Lock a FFL club_match as final — triggers the FFL scoring chain."
-  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
-
-  "Revert a FFL club_match from final back to submitted, allowing further edits."
-  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean!
-
   "Rebuild FFL ladder standings for the given season from all final matches."
   recalculateFFLLadder(seasonId: ID!): Boolean!
 
@@ -87,65 +69,6 @@ input FFLTeamPlayerInput {
   backupPositions: String
   interchangePosition: String
   displayOrder: Int!
-}
-
-type ParseFFLTeamSubmissionResult {
-  resolvedPlayers: [ResolvedPlayer!]!
-  needsReview: [Int!]!
-}
-
-type ResolvedPlayer {
-  parsedName: String!
-  clubHint: String!
-  resolvedName: String
-  resolvedClub: String
-  position: String!
-  backupPositions: String!
-  interchangePosition: String!
-  score: Int
-  notes: String!
-  playerSeasonId: ID
-  confidence: Float!
-}
-
-input ParseFFLTeamSubmissionInput {
-  clubSeasonId: ID!
-  clubMatchId: ID!
-  teamName: String!
-  post: String!
-}
-
-input ConfirmFFLTeamSubmissionInput {
-  clubMatchId: ID!
-  players: [ConfirmedFFLPlayerInput!]!
-}
-
-input ConfirmedFFLPlayerInput {
-  playerSeasonId: ID!
-  position: String!
-  backupPositions: String
-  interchangePosition: String
-  score: Int
-}
-
-input IngestFFLForumPageInput {
-  season: String!
-  roundTitle: String!
-  topicId: String!
-  posts: [CapturedFFLPostInput!]!
-}
-
-input CapturedFFLPostInput {
-  postId: String!
-  author: String!
-  timestamp: String
-  html: String!
-}
-
-input MarkFFLTeamFinalInput {
-  clubMatchId: ID!
-  matchId: ID!
-  roundId: ID!
 }
 
 input FFLSubPairing {

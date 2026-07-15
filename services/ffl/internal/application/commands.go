@@ -33,6 +33,13 @@ type Commands struct {
 	playerSeasons domain.PlayerSeasonRepository
 }
 
+// FindPlayerMatchesByClubMatch returns the player_matches for a club_match.
+// Exposed so the dataops package can build event snapshots without reaching
+// into Commands' private repositories.
+func (c *Commands) FindPlayerMatchesByClubMatch(ctx context.Context, clubMatchID int) ([]domain.PlayerMatch, error) {
+	return c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
+}
+
 func NewCommands(
 	tx TxManager,
 	dispatcher sharedevents.Dispatcher,

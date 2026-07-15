@@ -92,7 +92,7 @@ stop-all:
 # Router hot-reloads supergraph.graphql automatically via --hot-reload
 supergraph-compose:
     cat services/afl/api/graphql/common.graphqls services/afl/api/graphql/query.graphqls services/afl/api/graphql/mutation.graphqls > dev/router/afl-schema.graphql
-    cat services/ffl/api/graphql/common.graphqls services/ffl/api/graphql/query.graphqls services/ffl/api/graphql/mutation.graphqls > dev/router/ffl-schema.graphql
+    cat services/ffl/api/graphql/common.graphqls services/ffl/api/graphql/query.graphqls services/ffl/api/graphql/mutation.graphqls services/ffl/api/graphql/dataops.graphqls > dev/router/ffl-schema.graphql
     ~/.rover/bin/rover supergraph compose --config dev/router/supergraph.yaml --elv2-license=accept --output dev/router/supergraph.graphql
     @echo "Supergraph written to dev/router/supergraph.graphql"
 

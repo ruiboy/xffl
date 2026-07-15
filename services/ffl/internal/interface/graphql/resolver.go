@@ -1,11 +1,14 @@
 package graphql
 
-import "xffl/services/ffl/internal/application"
+import (
+	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
+)
 
 // Resolver is the dependency injection container for GraphQL resolvers.
 type Resolver struct {
 	Queries  *application.Queries
 	Commands *application.Commands
-	DataOps  *application.DataOpsCommands
-	Captures *application.ForumCaptureBuffer
+	DataOps  *dataops.DataOpsCommands
+	Captures *dataops.ForumCaptureBuffer
 }

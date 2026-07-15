@@ -180,7 +180,7 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		MatchID:       matchID,
 		RoundID:       match.RoundID,
 		DataStatus:    string(cm.DataStatus),
-		PlayerMatches: buildPlayerMatchMap(latest),
+		PlayerMatches: BuildPlayerMatchMap(latest),
 	})
 	if err == nil {
 		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
@@ -264,7 +264,7 @@ func (c *Commands) DeclareSubs(ctx context.Context, clubMatchID int, subs []doma
 		MatchID:       cm.MatchID,
 		RoundID:       m.RoundID,
 		DataStatus:    string(cm.DataStatus),
-		PlayerMatches: buildPlayerMatchMap(pms),
+		PlayerMatches: BuildPlayerMatchMap(pms),
 	}); err == nil {
 		if err := c.dispatcher.Publish(ctx, events.FflClubMatchUpdated, b); err != nil {
 			slog.WarnContext(ctx, "publish FflClubMatchUpdated failed after DeclareSubs", slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
@@ -300,8 +300,8 @@ func entryToPlayerMatch(e SetTeamEntry, clubMatchID int, existing map[int]domain
 	return pm
 }
 
-// buildPlayerMatchMap builds the FflPlayerMatchInfo snapshot from a slice of player_matches.
-func buildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatchInfo {
+// BuildPlayerMatchMap builds the FflPlayerMatchInfo snapshot from a slice of player_matches.
+func BuildPlayerMatchMap(pms []domain.PlayerMatch) map[int]events.FflPlayerMatchInfo {
 	m := make(map[int]events.FflPlayerMatchInfo, len(pms))
 	for _, pm := range pms {
 		info := events.FflPlayerMatchInfo{}
