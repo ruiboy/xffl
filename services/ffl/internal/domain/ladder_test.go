@@ -80,7 +80,7 @@ func TestCalculateLadder(t *testing.T) {
 			want:    map[int]ClubSeason{},
 		},
 		{
-			name: "scoring bye adds to For and Played but earns no premiership points",
+			name: "scoring bye adds to For only — not played, no premiership points",
 			matches: []Match{
 				{Home: ClubMatch{ClubSeasonID: 1, StoredScore: 1200}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 1000}},
 			},
@@ -88,17 +88,17 @@ func TestCalculateLadder(t *testing.T) {
 			want: map[int]ClubSeason{
 				1: {ID: 1, Played: 1, Won: 1, For: 1200, Against: 1000, PremiershipPoints: 4},
 				2: {ID: 2, Played: 1, Lost: 1, For: 1000, Against: 1200},
-				3: {ID: 3, Played: 1, For: 850},
+				3: {ID: 3, For: 850},
 			},
 		},
 		{
-			name: "bye accumulates onto the club's head-to-head standings",
+			name: "bye adds only For onto the club's head-to-head standings",
 			matches: []Match{
 				{Home: ClubMatch{ClubSeasonID: 1, StoredScore: 1000}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 900}},
 			},
 			byes: []ByeResult{{ClubSeasonID: 1, Score: 800, RoundType: RoundTypeMinor}},
 			want: map[int]ClubSeason{
-				1: {ID: 1, Played: 2, Won: 1, For: 1800, Against: 900, PremiershipPoints: 4},
+				1: {ID: 1, Played: 1, Won: 1, For: 1800, Against: 900, PremiershipPoints: 4},
 				2: {ID: 2, Played: 1, Lost: 1, For: 900, Against: 1000},
 			},
 		},

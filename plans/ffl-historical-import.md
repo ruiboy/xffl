@@ -194,8 +194,8 @@ before scaling to all 20.
 
 ## Open questions / deferred
 - **Scoring byes are modelled** (single-sided `match_style='bye'` match + one
-  `ClubMatch`); the club fields a team, its score counts toward `For` (and a played
-  round) but earns no premiership points. The **superbye** — the one match variant
+  `ClubMatch`); the club fields a team and its score counts toward `For` only — not
+  a played round, and no premiership points. The **superbye** — the one match variant
   beyond regular home-vs-away — is still deferred (structural model TBD).
 - Delta policy (what to do when evaluated ≠ posted) — decided in the second pass.
 - 1998–2005 — separate sourcing, separate effort.

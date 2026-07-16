@@ -17,8 +17,8 @@ type ByeResult struct {
 // CalculateLadder folds a season's final matches and scoring byes into
 // per-ClubSeason standings. Matches must have StoredScore set on each ClubMatch;
 // matches with a missing ClubSeasonID on either side are skipped, as is the grand
-// final (the ladder is home-and-away only). A bye adds its score to For and counts
-// as a played round, but earns no premiership points.
+// final (the ladder is home-and-away only). A bye adds its score to For but does
+// not count as a played round and earns no premiership points.
 func CalculateLadder(matches []Match, byes []ByeResult) map[int]ClubSeason {
 	standings := make(map[int]ClubSeason)
 	for _, m := range matches {
@@ -65,7 +65,6 @@ func CalculateLadder(matches []Match, byes []ByeResult) map[int]ClubSeason {
 		}
 		cs := standings[b.ClubSeasonID]
 		cs.ID = b.ClubSeasonID
-		cs.Played++
 		cs.For += b.Score
 		standings[b.ClubSeasonID] = cs
 	}
