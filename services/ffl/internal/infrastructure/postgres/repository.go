@@ -171,7 +171,7 @@ func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]d
 	}
 	out := make([]domain.Round, len(rows))
 	for i, row := range rows {
-		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}
+		out[i] = domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID), Type: domain.RoundType(row.RoundType)}
 	}
 	return out, nil
 }
@@ -181,7 +181,7 @@ func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, e
 	if err != nil {
 		return domain.Round{}, err
 	}
-	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}, nil
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID), Type: domain.RoundType(row.RoundType)}, nil
 }
 
 func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) (domain.Round, error) {
@@ -206,6 +206,19 @@ func (r *RoundRepository) Create(ctx context.Context, seasonID int, name string,
 		return domain.Round{}, err
 	}
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID), Type: domain.RoundType(row.RoundType)}, nil
+}
+
+func (r *RoundRepository) Update(ctx context.Context, id int, name string, aflRoundID int, roundType domain.RoundType) error {
+	return r.q.UpdateRound(ctx, sqlcgen.UpdateRoundParams{
+		ID:         int32(id),
+		Name:       name,
+		AflRoundID: int32(aflRoundID),
+		RoundType:  string(roundType),
+	})
+}
+
+func (r *RoundRepository) SoftDelete(ctx context.Context, id int) error {
+	return r.q.SoftDeleteRound(ctx, int32(id))
 }
 
 // --- Match ---
@@ -282,6 +295,10 @@ func (r *MatchRepository) UpdateResult(ctx context.Context, matchID int, result 
 		ID:        int32(matchID),
 		DrvResult: &s,
 	})
+}
+
+func (r *MatchRepository) SoftDeleteByRoundID(ctx context.Context, roundID int) error {
+	return r.q.SoftDeleteMatchesByRoundID(ctx, int32(roundID))
 }
 
 func (r *MatchRepository) FindFinalBySeasonID(ctx context.Context, seasonID int) ([]domain.Match, error) {
@@ -545,6 +562,26 @@ func (r *ClubMatchRepository) UpdateDataStatus(ctx context.Context, id int, stat
 	})
 }
 
+func (r *ClubMatchRepository) SoftDeleteByMatchID(ctx context.Context, matchID int) error {
+	return r.q.SoftDeleteClubMatchesByMatchID(ctx, int32(matchID))
+}
+
+func (r *ClubMatchRepository) FindFinalByesBySeasonID(ctx context.Context, seasonID int) ([]domain.ByeResult, error) {
+	rows, err := r.q.FindFinalFflByesBySeasonID(ctx, int32(seasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ByeResult, len(rows))
+	for i, row := range rows {
+		out[i] = domain.ByeResult{
+			ClubSeasonID: int(row.ClubSeasonID),
+			Score:        int(row.Score),
+			RoundType:    domain.RoundType(row.RoundType),
+		}
+	}
+	return out, nil
+}
+
 func (r *ClubMatchRepository) CountFinalByMatchID(ctx context.Context, matchID int) (int, error) {
 	count, err := r.q.CountFinalClubMatchesByMatchID(ctx, int32(matchID))
 	return int(count), err
@@ -685,6 +722,11 @@ func toPlayerMatch(id, clubMatchID, playerSeasonID int32, position, status, drvA
 
 func (r *PlayerMatchRepository) DeleteByClubMatchID(ctx context.Context, clubMatchID int) error {
 	return r.q.DeletePlayerMatchesByClubMatchID(ctx, int32(clubMatchID))
+}
+
+func (r *PlayerMatchRepository) CountByRoundID(ctx context.Context, roundID int) (int, error) {
+	n, err := r.q.CountPlayerMatchesByRoundID(ctx, int32(roundID))
+	return int(n), err
 }
 
 func (r *PlayerMatchRepository) DeleteByID(ctx context.Context, id int) error {

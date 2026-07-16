@@ -25,6 +25,21 @@ func (q *Queries) AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (b
 	return result, err
 }
 
+const countPlayerMatchesByRoundID = `-- name: CountPlayerMatchesByRoundID :one
+SELECT COUNT(*)
+FROM ffl.player_match pm
+JOIN ffl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE m.round_id = $1 AND pm.deleted_at IS NULL
+`
+
+func (q *Queries) CountPlayerMatchesByRoundID(ctx context.Context, roundID int32) (int64, error) {
+	row := q.db.QueryRow(ctx, countPlayerMatchesByRoundID, roundID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deletePlayerMatchByID = `-- name: DeletePlayerMatchByID :exec
 DELETE FROM ffl.player_match
 WHERE id = $1

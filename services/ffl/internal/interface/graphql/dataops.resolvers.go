@@ -255,83 +255,56 @@ func (r *mutationResolver) BuildFFLSeason(ctx context.Context, input BuildFFLSea
 	return &FFLBuiltSeason{SeasonID: toID(built.SeasonID), RulesID: built.RulesID, ClubSeasons: css}, nil
 }
 
-// AddFFLRound is the resolver for the addFFLRound field.
-func (r *mutationResolver) AddFFLRound(ctx context.Context, input AddFFLRoundInput) (*FFLBuiltRound, error) {
+// SaveFFLFixtures is the resolver for the saveFFLFixtures field.
+func (r *mutationResolver) SaveFFLFixtures(ctx context.Context, input SaveFFLFixturesInput) (bool, error) {
 	seasonID, err := fromID(input.SeasonID)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	aflRoundID, err := fromID(input.AflRoundID)
-	if err != nil {
-		return nil, err
-	}
-	roundType := domain.RoundTypeMinor
-	if input.RoundType != nil && *input.RoundType != "" {
-		roundType = domain.RoundType(*input.RoundType)
-	}
-	rnd, err := r.Builder.AddRound(ctx, seasonID, input.Name, aflRoundID, roundType)
-	if err != nil {
-		return nil, err
-	}
-	return &FFLBuiltRound{RoundID: toID(rnd.ID), Name: rnd.Name}, nil
-}
-
-// AddFFLFixture is the resolver for the addFFLFixture field.
-func (r *mutationResolver) AddFFLFixture(ctx context.Context, input AddFFLFixtureInput) (*FFLBuiltFixture, error) {
-	roundID, err := fromID(input.RoundID)
-	if err != nil {
-		return nil, err
-	}
-	homeCS, err := fromID(input.HomeClubSeasonID)
-	if err != nil {
-		return nil, err
-	}
-	awayCS, err := fromID(input.AwayClubSeasonID)
-	if err != nil {
-		return nil, err
-	}
-	f, err := r.Builder.AddFixture(ctx, roundID, homeCS, awayCS)
-	if err != nil {
-		return nil, err
-	}
-	return &FFLBuiltFixture{
-		MatchID:         toID(f.MatchID),
-		HomeClubMatchID: toID(f.HomeClubMatchID),
-		AwayClubMatchID: toID(f.AwayClubMatchID),
-	}, nil
-}
-
-// GenerateFFLHomeAndAway is the resolver for the generateFFLHomeAndAway field.
-func (r *mutationResolver) GenerateFFLHomeAndAway(ctx context.Context, input GenerateFFLHomeAndAwayInput) ([]*FFLBuiltRound, error) {
-	seasonID, err := fromID(input.SeasonID)
-	if err != nil {
-		return nil, err
-	}
-	aflRoundStart, err := fromID(input.AflRoundStartID)
-	if err != nil {
-		return nil, err
-	}
-	clubSeasonIDs := make([]int, len(input.ClubSeasonIds))
-	for i, id := range input.ClubSeasonIds {
-		v, err := fromID(id)
-		if err != nil {
-			return nil, err
+	rounds := make([]dataops.RoundSpec, len(input.Rounds))
+	for i, ri := range input.Rounds {
+		spec := dataops.RoundSpec{
+			Name:       ri.Name,
+			AFLRoundID: 0,
+			Type:       domain.RoundTypeMinor,
 		}
-		clubSeasonIDs[i] = v
+		if ri.RoundID != nil && *ri.RoundID != "" {
+			id, err := fromID(*ri.RoundID)
+			if err != nil {
+				return false, err
+			}
+			spec.RoundID = &id
+		}
+		if spec.AFLRoundID, err = fromID(ri.AflRoundID); err != nil {
+			return false, err
+		}
+		if ri.RoundType != nil && *ri.RoundType != "" {
+			spec.Type = domain.RoundType(*ri.RoundType)
+		}
+		for _, f := range ri.Fixtures {
+			home, err := fromID(f.HomeClubSeasonID)
+			if err != nil {
+				return false, err
+			}
+			away, err := fromID(f.AwayClubSeasonID)
+			if err != nil {
+				return false, err
+			}
+			spec.Fixtures = append(spec.Fixtures, dataops.FixtureSpec{HomeClubSeasonID: home, AwayClubSeasonID: away})
+		}
+		for _, b := range ri.Byes {
+			cs, err := fromID(b)
+			if err != nil {
+				return false, err
+			}
+			spec.Byes = append(spec.Byes, cs)
+		}
+		rounds[i] = spec
 	}
-	namePrefix := ""
-	if input.NamePrefix != nil {
-		namePrefix = *input.NamePrefix
+	if err := r.Builder.SaveFixtures(ctx, seasonID, rounds); err != nil {
+		return false, err
 	}
-	generated, err := r.Builder.GenerateHomeAndAway(ctx, seasonID, clubSeasonIDs, input.Rounds, aflRoundStart, namePrefix)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*FFLBuiltRound, len(generated))
-	for i, g := range generated {
-		out[i] = &FFLBuiltRound{RoundID: toID(g.RoundID), Name: g.Name}
-	}
-	return out, nil
+	return true, nil
 }
 
 // FflCapturedPages is the resolver for the fflCapturedPages field.
@@ -350,6 +323,42 @@ func (r *queryResolver) FflRulesEras(ctx context.Context) ([]*FFLRulesEra, error
 	out := make([]*FFLRulesEra, len(rules))
 	for i, rule := range rules {
 		out[i] = &FFLRulesEra{ID: rule.ID, Label: rule.Describe()}
+	}
+	return out, nil
+}
+
+// FflSeasonFixtures is the resolver for the fflSeasonFixtures field.
+func (r *queryResolver) FflSeasonFixtures(ctx context.Context, seasonID string) ([]*FFLFixtureRound, error) {
+	sID, err := fromID(seasonID)
+	if err != nil {
+		return nil, err
+	}
+	rounds, err := r.Builder.LoadFixtures(ctx, sID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*FFLFixtureRound, len(rounds))
+	for i, rnd := range rounds {
+		fixtures := make([]*FFLFixturePairing, len(rnd.Fixtures))
+		for j, f := range rnd.Fixtures {
+			fixtures[j] = &FFLFixturePairing{
+				HomeClubSeasonID: toID(f.HomeClubSeasonID),
+				AwayClubSeasonID: toID(f.AwayClubSeasonID),
+			}
+		}
+		byes := make([]string, len(rnd.Byes))
+		for j, b := range rnd.Byes {
+			byes[j] = toID(b)
+		}
+		out[i] = &FFLFixtureRound{
+			RoundID:    toID(rnd.RoundID),
+			Name:       rnd.Name,
+			AflRoundID: toID(rnd.AFLRoundID),
+			RoundType:  string(rnd.Type),
+			Locked:     rnd.Locked,
+			Fixtures:   fixtures,
+			Byes:       byes,
+		}
 	}
 	return out, nil
 }

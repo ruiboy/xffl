@@ -84,32 +84,3 @@ func createClub(ctx context.Context, t *testing.T, name string) int {
 	return club.ID
 }
 
-// TestBuilder_GenerateHomeAndAway builds a full 6-round round-robin in one call.
-func TestBuilder_GenerateHomeAndAway(t *testing.T) {
-	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
-
-	clubIDs := []int{
-		createClub(ctx, t, "Gen A"), createClub(ctx, t, "Gen B"),
-		createClub(ctx, t, "Gen C"), createClub(ctx, t, "Gen D"),
-	}
-	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
-		SeasonName:  "2017",
-		RulesID:     "2011",
-		AFLSeasonID: 3,
-		ClubIDs:     clubIDs,
-	})
-	require.NoError(t, err)
-
-	csIDs := make([]int, len(built.ClubSeasons))
-	for i, cs := range built.ClubSeasons {
-		csIDs[i] = cs.ClubSeasonID
-	}
-
-	rounds, err := builder.GenerateHomeAndAway(ctx, built.SeasonID, csIDs, 6, 100, "Round ")
-	require.NoError(t, err)
-	require.Len(t, rounds, 6)
-	for _, r := range rounds {
-		assert.Len(t, r.Fixtures, 2, "4 clubs => 2 fixtures per round")
-	}
-}

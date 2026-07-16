@@ -80,6 +80,7 @@ func PositionPtr(p Position) *Position { return &p }
 type PlayerMatchRepository interface {
 	DeleteByClubMatchID(ctx context.Context, clubMatchID int) error
 	DeleteByID(ctx context.Context, id int) error
+	CountByRoundID(ctx context.Context, roundID int) (int, error)
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)

@@ -22,8 +22,9 @@
     <!-- ═══════════════════════════════════════════ -->
     <!-- Tab: Seasons + Fixtures                     -->
     <!-- ═══════════════════════════════════════════ -->
-    <div v-if="activeTab === 'seasons-fixtures'">
-      <SeasonBuilder />
+    <div v-if="activeTab === 'seasons-fixtures'" class="space-y-6">
+      <SeasonBuilder @created="onSeasonCreated" />
+      <FixtureBuilder :initial-season-id="createdSeasonId" />
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -68,6 +69,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import SeasonBuilder from '../components/SeasonBuilder.vue'
+import FixtureBuilder from '../components/FixtureBuilder.vue'
 import { RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
@@ -81,6 +83,12 @@ const tabs = [
   { id: 'calculate', label: 'Calculate' },
 ]
 const activeTab = ref((route.query.tab as string) || 'seasons-fixtures')
+
+// Hand a just-created season to the fixture builder so it opens ready to edit.
+const createdSeasonId = ref<string | null>(null)
+function onSeasonCreated(seasonId: string) {
+  createdSeasonId.value = seasonId
+}
 
 // ════════════════════════════════════════════
 // Calculate

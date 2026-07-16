@@ -12,21 +12,9 @@ export const BUILD_FFL_SEASON = gql`
   }
 `
 
-export const ADD_FFL_ROUND = gql`
-  mutation AddFFLRound($input: AddFFLRoundInput!) {
-    addFFLRound(input: $input) { roundId name }
-  }
-`
-
-export const ADD_FFL_FIXTURE = gql`
-  mutation AddFFLFixture($input: AddFFLFixtureInput!) {
-    addFFLFixture(input: $input) { matchId homeClubMatchId awayClubMatchId }
-  }
-`
-
-export const GENERATE_FFL_HOME_AND_AWAY = gql`
-  mutation GenerateFFLHomeAndAway($input: GenerateFFLHomeAndAwayInput!) {
-    generateFFLHomeAndAway(input: $input) { roundId name }
+export const SAVE_FFL_FIXTURES = gql`
+  mutation SaveFFLFixtures($input: SaveFFLFixturesInput!) {
+    saveFFLFixtures(input: $input)
   }
 `
 

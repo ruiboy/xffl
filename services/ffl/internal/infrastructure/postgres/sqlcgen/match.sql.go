@@ -236,6 +236,17 @@ func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]Fi
 	return items, nil
 }
 
+const softDeleteMatchesByRoundID = `-- name: SoftDeleteMatchesByRoundID :exec
+UPDATE ffl.match
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE round_id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteMatchesByRoundID(ctx context.Context, roundID int32) error {
+	_, err := q.db.Exec(ctx, softDeleteMatchesByRoundID, roundID)
+	return err
+}
+
 const updateFflMatchResult = `-- name: UpdateFflMatchResult :exec
 UPDATE ffl.match
 SET drv_result = $2,

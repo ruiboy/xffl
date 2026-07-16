@@ -40,12 +40,6 @@ type AFLSeason struct {
 
 func (AFLSeason) IsEntity() {}
 
-type AddFFLFixtureInput struct {
-	RoundID          string `json:"roundId"`
-	HomeClubSeasonID string `json:"homeClubSeasonId"`
-	AwayClubSeasonID string `json:"awayClubSeasonId"`
-}
-
 type AddFFLPlayerToSeasonInput struct {
 	ClubSeasonID      string  `json:"clubSeasonId"`
 	AflPlayerSeasonID string  `json:"aflPlayerSeasonId"`
@@ -53,22 +47,11 @@ type AddFFLPlayerToSeasonInput struct {
 	CostCents         *int    `json:"costCents,omitempty"`
 }
 
-type AddFFLRoundInput struct {
-	SeasonID   string `json:"seasonId"`
-	Name       string `json:"name"`
-	AflRoundID string `json:"aflRoundId"`
-	// MINOR (default) or GRAND_FINAL.
-	RoundType *string `json:"roundType,omitempty"`
-}
-
 type BuildFFLSeasonInput struct {
-	// Free-text FFL season name (e.g. "2024", "2024 Winter").
-	SeasonName string `json:"seasonName"`
-	// The scoring era to apply (from fflRulesEras).
-	RulesID     string `json:"rulesId"`
-	AflSeasonID string `json:"aflSeasonId"`
-	// Existing clubs playing this season, by id.
-	ClubIds []string `json:"clubIds"`
+	SeasonName  string   `json:"seasonName"`
+	RulesID     string   `json:"rulesId"`
+	AflSeasonID string   `json:"aflSeasonId"`
+	ClubIds     []string `json:"clubIds"`
 }
 
 type CalculateFFLFantasyScoreInput struct {
@@ -112,17 +95,6 @@ type FFLBuiltClubSeason struct {
 	ClubSeasonID string `json:"clubSeasonId"`
 }
 
-type FFLBuiltFixture struct {
-	MatchID         string `json:"matchId"`
-	HomeClubMatchID string `json:"homeClubMatchId"`
-	AwayClubMatchID string `json:"awayClubMatchId"`
-}
-
-type FFLBuiltRound struct {
-	RoundID string `json:"roundId"`
-	Name    string `json:"name"`
-}
-
 type FFLBuiltSeason struct {
 	SeasonID    string                `json:"seasonId"`
 	RulesID     string                `json:"rulesId"`
@@ -161,6 +133,24 @@ type FFLClubSeason struct {
 	Percentage        float64                    `json:"percentage"`
 	PremiershipPoints int                        `json:"premiershipPoints"`
 	Players           *FFLPlayerSeasonConnection `json:"players"`
+}
+
+type FFLFixturePairing struct {
+	HomeClubSeasonID string `json:"homeClubSeasonId"`
+	AwayClubSeasonID string `json:"awayClubSeasonId"`
+}
+
+// A round loaded for the fixture builder: its fixtures, byes, and lock state.
+type FFLFixtureRound struct {
+	RoundID    string `json:"roundId"`
+	Name       string `json:"name"`
+	AflRoundID string `json:"aflRoundId"`
+	RoundType  string `json:"roundType"`
+	// True when the round has submitted teams — its fixtures are immutable.
+	Locked   bool                 `json:"locked"`
+	Fixtures []*FFLFixturePairing `json:"fixtures"`
+	// club_season ids on a scoring bye this round.
+	Byes []string `json:"byes"`
 }
 
 type FFLMatch struct {
@@ -292,14 +282,6 @@ type FFLTeamPlayerInput struct {
 	DisplayOrder        int     `json:"displayOrder"`
 }
 
-type GenerateFFLHomeAndAwayInput struct {
-	SeasonID        string   `json:"seasonId"`
-	ClubSeasonIds   []string `json:"clubSeasonIds"`
-	Rounds          int      `json:"rounds"`
-	AflRoundStartID string   `json:"aflRoundStartId"`
-	NamePrefix      *string  `json:"namePrefix,omitempty"`
-}
-
 type IngestFFLForumPageInput struct {
 	Season     string                  `json:"season"`
 	RoundTitle string                  `json:"roundTitle"`
@@ -354,6 +336,28 @@ type ResolvedPlayer struct {
 	Notes               string  `json:"notes"`
 	PlayerSeasonID      *string `json:"playerSeasonId,omitempty"`
 	Confidence          float64 `json:"confidence"`
+}
+
+type SaveFFLFixtureInput struct {
+	HomeClubSeasonID string `json:"homeClubSeasonId"`
+	AwayClubSeasonID string `json:"awayClubSeasonId"`
+}
+
+type SaveFFLFixturesInput struct {
+	SeasonID string               `json:"seasonId"`
+	Rounds   []*SaveFFLRoundInput `json:"rounds"`
+}
+
+type SaveFFLRoundInput struct {
+	// Existing round id to edit; null to create a new round.
+	RoundID    *string `json:"roundId,omitempty"`
+	Name       string  `json:"name"`
+	AflRoundID string  `json:"aflRoundId"`
+	// MINOR (default) or GRAND_FINAL.
+	RoundType *string                `json:"roundType,omitempty"`
+	Fixtures  []*SaveFFLFixtureInput `json:"fixtures"`
+	// club_season ids on a scoring bye this round.
+	Byes []string `json:"byes"`
 }
 
 type SetFFLTeamInput struct {

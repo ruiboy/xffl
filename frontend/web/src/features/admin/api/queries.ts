@@ -14,3 +14,57 @@ export const GET_FFL_BUILDER_REFS = gql`
     }
   }
 `
+
+// The list of FFL seasons for the fixture-builder season picker.
+export const GET_FFL_SEASON_LIST = gql`
+  query FFLSeasonList {
+    fflSeasons {
+      id
+      name
+    }
+  }
+`
+
+// A season's context for the fixture builder: its club_seasons (id + name) and
+// the AFL season's rounds (for the per-round AFL round selector).
+export const GET_FFL_BUILDER_SEASON = gql`
+  query FFLBuilderSeason($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      name
+      ladder {
+        id
+        club {
+          id
+          name
+        }
+      }
+      aflSeason {
+        id
+        name
+        rounds {
+          id
+          name
+        }
+      }
+    }
+  }
+`
+
+// A season's saved rounds with their fixtures, byes and lock state.
+export const GET_FFL_SEASON_FIXTURES = gql`
+  query FFLSeasonFixtures($seasonId: ID!) {
+    fflSeasonFixtures(seasonId: $seasonId) {
+      roundId
+      name
+      aflRoundId
+      roundType
+      locked
+      fixtures {
+        homeClubSeasonId
+        awayClubSeasonId
+      }
+      byes
+    }
+  }
+`

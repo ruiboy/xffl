@@ -168,6 +168,40 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 	return items, nil
 }
 
+const findFinalFflByesBySeasonID = `-- name: FindFinalFflByesBySeasonID :many
+SELECT cm.club_season_id, COALESCE(cm.drv_score, 0) AS score, r.round_type
+FROM ffl.club_match cm
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+JOIN ffl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
+WHERE r.season_id = $1 AND cm.side = 'bye' AND cm.data_status = 'final' AND cm.deleted_at IS NULL
+`
+
+type FindFinalFflByesBySeasonIDRow struct {
+	ClubSeasonID int32
+	Score        int32
+	RoundType    string
+}
+
+func (q *Queries) FindFinalFflByesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflByesBySeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findFinalFflByesBySeasonID, seasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindFinalFflByesBySeasonIDRow{}
+	for rows.Next() {
+		var i FindFinalFflByesBySeasonIDRow
+		if err := rows.Scan(&i.ClubSeasonID, &i.Score, &i.RoundType); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRulesIDByClubMatchID = `-- name: GetRulesIDByClubMatchID :one
 SELECT s.rules_id
 FROM ffl.club_match cm
@@ -182,6 +216,17 @@ func (q *Queries) GetRulesIDByClubMatchID(ctx context.Context, id int32) (string
 	var rules_id string
 	err := row.Scan(&rules_id)
 	return rules_id, err
+}
+
+const softDeleteClubMatchesByMatchID = `-- name: SoftDeleteClubMatchesByMatchID :exec
+UPDATE ffl.club_match
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE match_id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteClubMatchesByMatchID(ctx context.Context, matchID int32) error {
+	_, err := q.db.Exec(ctx, softDeleteClubMatchesByMatchID, matchID)
+	return err
 }
 
 const updateClubMatchDataStatus = `-- name: UpdateClubMatchDataStatus :exec

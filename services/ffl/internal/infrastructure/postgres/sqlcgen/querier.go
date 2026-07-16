@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (bool, error)
 	CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error)
+	CountPlayerMatchesByRoundID(ctx context.Context, roundID int32) (int64, error)
 	CreateClub(ctx context.Context, name string) (CreateClubRow, error)
 	CreateClubMatch(ctx context.Context, arg CreateClubMatchParams) (CreateClubMatchRow, error)
 	CreateClubSeason(ctx context.Context, arg CreateClubSeasonParams) (CreateClubSeasonRow, error)
@@ -37,6 +38,7 @@ type Querier interface {
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
+	FindFinalFflByesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflByesBySeasonIDRow, error)
 	FindFinalFflMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflMatchesBySeasonIDRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
@@ -58,6 +60,9 @@ type Querier interface {
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error)
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
+	SoftDeleteClubMatchesByMatchID(ctx context.Context, matchID int32) error
+	SoftDeleteMatchesByRoundID(ctx context.Context, roundID int32) error
+	SoftDeleteRound(ctx context.Context, id int32) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error
 	UpdateClubMatchNotes(ctx context.Context, arg UpdateClubMatchNotesParams) error
@@ -70,6 +75,7 @@ type Querier interface {
 	UpdatePlayerMatchPosition(ctx context.Context, arg UpdatePlayerMatchPositionParams) error
 	UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error
 	UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error)
+	UpdateRound(ctx context.Context, arg UpdateRoundParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }
 

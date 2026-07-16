@@ -54,3 +54,15 @@ WHERE cm.id = $1 AND cm.deleted_at IS NULL;
 INSERT INTO ffl.club_match (match_id, club_season_id, side)
 VALUES ($1, $2, $3)
 RETURNING id, match_id, club_season_id, side, data_status;
+
+-- name: SoftDeleteClubMatchesByMatchID :exec
+UPDATE ffl.club_match
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE match_id = $1 AND deleted_at IS NULL;
+
+-- name: FindFinalFflByesBySeasonID :many
+SELECT cm.club_season_id, COALESCE(cm.drv_score, 0) AS score, r.round_type
+FROM ffl.club_match cm
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+JOIN ffl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
+WHERE r.season_id = $1 AND cm.side = 'bye' AND cm.data_status = 'final' AND cm.deleted_at IS NULL;

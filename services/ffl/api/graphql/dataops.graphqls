@@ -21,17 +21,11 @@ extend type Mutation {
   "Clear the in-session forum capture buffer."
   clearFFLForumCaptures: Boolean!
 
-  "Create an FFL season (year + clubs). rules_id is auto-assigned from the year."
+  "Create an FFL season (name + rules era + clubs)."
   buildFFLSeason(input: BuildFFLSeasonInput!): FFLBuiltSeason!
 
-  "Create a round in a season."
-  addFFLRound(input: AddFFLRoundInput!): FFLBuiltRound!
-
-  "Create a regular home-vs-away fixture in a round (match + two club_matches)."
-  addFFLFixture(input: AddFFLFixtureInput!): FFLBuiltFixture!
-
-  "Generate a full home-and-away season (round-robin) over the given club_seasons."
-  generateFFLHomeAndAway(input: GenerateFFLHomeAndAwayInput!): [FFLBuiltRound!]!
+  "Save (create / edit / delete) a season's rounds and fixtures. Reconciled atomically; rounds with submitted teams are immutable."
+  saveFFLFixtures(input: SaveFFLFixturesInput!): Boolean!
 }
 
 extend type Query {
@@ -40,6 +34,27 @@ extend type Query {
 
   "The scoring eras available to assign to a season (for the season builder)."
   fflRulesEras: [FFLRulesEra!]!
+
+  "A season's rounds with their fixtures and byes, for the fixture builder."
+  fflSeasonFixtures(seasonId: ID!): [FFLFixtureRound!]!
+}
+
+"A round loaded for the fixture builder: its fixtures, byes, and lock state."
+type FFLFixtureRound {
+  roundId: ID!
+  name: String!
+  aflRoundId: ID!
+  roundType: String!
+  "True when the round has submitted teams — its fixtures are immutable."
+  locked: Boolean!
+  fixtures: [FFLFixturePairing!]!
+  "club_season ids on a scoring bye this round."
+  byes: [ID!]!
+}
+
+type FFLFixturePairing {
+  homeClubSeasonId: ID!
+  awayClubSeasonId: ID!
 }
 
 "A selectable scoring era: its rules_id and a human summary of what distinguishes it."
@@ -153,35 +168,24 @@ type FFLBuiltClubSeason {
   clubSeasonId: ID!
 }
 
-input AddFFLRoundInput {
+input SaveFFLFixturesInput {
   seasonId: ID!
+  rounds: [SaveFFLRoundInput!]!
+}
+
+input SaveFFLRoundInput {
+  "Existing round id to edit; null to create a new round."
+  roundId: ID
   name: String!
   aflRoundId: ID!
   "MINOR (default) or GRAND_FINAL."
   roundType: String
+  fixtures: [SaveFFLFixtureInput!]!
+  "club_season ids on a scoring bye this round."
+  byes: [ID!]!
 }
 
-type FFLBuiltRound {
-  roundId: ID!
-  name: String!
-}
-
-input AddFFLFixtureInput {
-  roundId: ID!
+input SaveFFLFixtureInput {
   homeClubSeasonId: ID!
   awayClubSeasonId: ID!
-}
-
-type FFLBuiltFixture {
-  matchId: ID!
-  homeClubMatchId: ID!
-  awayClubMatchId: ID!
-}
-
-input GenerateFFLHomeAndAwayInput {
-  seasonId: ID!
-  clubSeasonIds: [ID!]!
-  rounds: Int!
-  aflRoundStartId: ID!
-  namePrefix: String
 }

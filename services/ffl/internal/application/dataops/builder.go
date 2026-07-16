@@ -122,57 +122,6 @@ func (b *Builder) AddFixture(ctx context.Context, roundID, homeClubSeasonID, awa
 	return out, err
 }
 
-// GeneratedRound is a round created by GenerateHomeAndAway with its fixtures.
-type GeneratedRound struct {
-	RoundID  int
-	Name     string
-	Fixtures []BuiltFixture
-}
-
-// GenerateHomeAndAway creates a full home-and-away season — `rounds` rounds of
-// round-robin fixtures over the given club_seasons — atomically. Round N is named
-// "<namePrefix>N" and maps to afl_round_id (aflRoundStart + N-1).
-func (b *Builder) GenerateHomeAndAway(ctx context.Context, seasonID int, clubSeasonIDs []int, rounds, aflRoundStart int, namePrefix string) ([]GeneratedRound, error) {
-	sched := RoundRobinPairings(len(clubSeasonIDs), rounds)
-	if sched == nil {
-		return nil, fmt.Errorf("cannot schedule %d clubs over %d rounds (need an even club count ≥ 2 and rounds ≥ 1)", len(clubSeasonIDs), rounds)
-	}
-	if namePrefix == "" {
-		namePrefix = "Round "
-	}
-	var out []GeneratedRound
-	err := b.tx.WithTx(ctx, func(repos application.WriteRepos) error {
-		for i, pairings := range sched {
-			rnd, err := repos.Rounds.Create(ctx, seasonID, fmt.Sprintf("%s%d", namePrefix, i+1), aflRoundStart+i, domain.RoundTypeMinor)
-			if err != nil {
-				return err
-			}
-			gr := GeneratedRound{RoundID: rnd.ID, Name: rnd.Name}
-			for _, p := range pairings {
-				m, err := repos.Matches.Create(ctx, rnd.ID, nil)
-				if err != nil {
-					return err
-				}
-				home, err := repos.ClubMatches.Create(ctx, m.ID, clubSeasonIDs[p.HomeIdx], "home")
-				if err != nil {
-					return err
-				}
-				away, err := repos.ClubMatches.Create(ctx, m.ID, clubSeasonIDs[p.AwayIdx], "away")
-				if err != nil {
-					return err
-				}
-				gr.Fixtures = append(gr.Fixtures, BuiltFixture{MatchID: m.ID, HomeClubMatchID: home.ID, AwayClubMatchID: away.ID})
-			}
-			out = append(out, gr)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ensureLeague returns the single FFL league, creating it if none exists yet.
 func ensureLeague(ctx context.Context, repos application.WriteRepos) (int, error) {
 	leagues, err := repos.Leagues.FindAll(ctx)

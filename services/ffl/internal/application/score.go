@@ -235,7 +235,11 @@ func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error
 	if err != nil {
 		return fmt.Errorf("load final FFL matches: %w", err)
 	}
-	for _, cs := range domain.CalculateLadder(matches) {
+	byes, err := c.clubMatches.FindFinalByesBySeasonID(ctx, seasonID)
+	if err != nil {
+		return fmt.Errorf("load final FFL byes: %w", err)
+	}
+	for _, cs := range domain.CalculateLadder(matches, byes) {
 		if err := c.clubSeasons.Update(ctx, cs); err != nil {
 			slog.WarnContext(ctx, "update club season failed",
 				slog.Int("club_season_id", cs.ID), slog.Any("error", err))

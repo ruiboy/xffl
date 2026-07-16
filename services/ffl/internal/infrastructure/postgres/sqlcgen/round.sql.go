@@ -74,7 +74,7 @@ func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (
 }
 
 const findRoundByID = `-- name: FindRoundByID :one
-SELECT id, name, season_id, afl_round_id
+SELECT id, name, season_id, afl_round_id, round_type
 FROM ffl.round
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -84,6 +84,7 @@ type FindRoundByIDRow struct {
 	Name       string
 	SeasonID   int32
 	AflRoundID int32
+	RoundType  string
 }
 
 func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error) {
@@ -94,16 +95,17 @@ func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow
 		&i.Name,
 		&i.SeasonID,
 		&i.AflRoundID,
+		&i.RoundType,
 	)
 	return i, err
 }
 
 const findRoundsBySeasonID = `-- name: FindRoundsBySeasonID :many
-SELECT r.id, r.name, r.season_id, r.afl_round_id
+SELECT r.id, r.name, r.season_id, r.afl_round_id, r.round_type
 FROM ffl.round r
 LEFT JOIN ffl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
 WHERE r.season_id = $1 AND r.deleted_at IS NULL
-GROUP BY r.id, r.name, r.season_id, r.afl_round_id
+GROUP BY r.id, r.name, r.season_id, r.afl_round_id, r.round_type
 ORDER BY MIN(m.start_dt) NULLS LAST, r.id
 `
 
@@ -112,6 +114,7 @@ type FindRoundsBySeasonIDRow struct {
 	Name       string
 	SeasonID   int32
 	AflRoundID int32
+	RoundType  string
 }
 
 func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error) {
@@ -128,6 +131,7 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 			&i.Name,
 			&i.SeasonID,
 			&i.AflRoundID,
+			&i.RoundType,
 		); err != nil {
 			return nil, err
 		}
@@ -137,4 +141,38 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 		return nil, err
 	}
 	return items, nil
+}
+
+const softDeleteRound = `-- name: SoftDeleteRound :exec
+UPDATE ffl.round
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteRound(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, softDeleteRound, id)
+	return err
+}
+
+const updateRound = `-- name: UpdateRound :exec
+UPDATE ffl.round
+SET name = $2, afl_round_id = $3, round_type = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateRoundParams struct {
+	ID         int32
+	Name       string
+	AflRoundID int32
+	RoundType  string
+}
+
+func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error {
+	_, err := q.db.Exec(ctx, updateRound,
+		arg.ID,
+		arg.Name,
+		arg.AflRoundID,
+		arg.RoundType,
+	)
+	return err
 }

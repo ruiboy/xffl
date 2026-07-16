@@ -110,15 +110,20 @@ parsing. This is deliberate: fixtures especially need a **permanent** builder
 because finals are constructed as-we-go *every* season, forever — not a one-off
 backfill tool.
 
-1. **Season** (manual) — enter **year + clubs**; the season row is created with
-   `rules_id` **auto-assigned from the year** (era mapping — finishes slice 0's
-   season→era tagging), and a `ClubSeason` per club (find-or-create the `Club`).
-2. **Fixtures** (manual **builder page** in DataOps) — create `Round`s and
-   `Match`/`ClubMatch` pairings. Tools: set the first 3 rounds (a 4-team round-robin
-   cycle) and **replicate to fill** the H&A season; add **byes**, the **superbye**
-   (the one match variant beyond regular home-vs-away — model deferred), and
-   **finals rounds individually as they happen**. This page is a lasting product
-   feature, used live each finals series.
+1. **Season** (manual) — enter a **season name**, pick the **scoring era**
+   explicitly (from `fflRulesEras`, pre-selected from the AFL season's year but
+   overridable), the **AFL season**, and the **clubs** (checklist of existing clubs
+   by id). Creates the season with the chosen `rules_id` and a `ClubSeason` per club.
+2. **Fixtures** (manual **builder page** in Admin) — a staged, round-by-round editor
+   saved atomically via `saveFFLFixtures` (reconcile: create / replace / delete;
+   rounds with submitted teams are locked/immutable). Per round you add enough
+   matches to cover the clubs; any leftover club is a **scoring bye** (a single-sided
+   `match_style='bye'` match + one `ClubMatch`, so the club still fields a team and
+   its score counts toward the season aggregate — no premiership points). Tools:
+   **Repeat rounds X–Y** (optionally reversing home/away, auto-incrementing the AFL
+   round) to fill the H&A season, and **add finals rounds individually as they happen**.
+   The **superbye** (the one match variant beyond regular home-vs-away) is still deferred.
+   This page is a lasting product feature, used live each finals series.
 3. **Squads** → `PlayerSeason` rows, resolved to AFL players once per season.
    - **XML import** for recent years (consistent format from external software) —
      preferred where available: it front-loads the *closed-set* squad that makes
@@ -188,8 +193,10 @@ Prove the whole chain on **one season** (ideally a recent, well-formatted one)
 before scaling to all 20.
 
 ## Open questions / deferred
-- **Superbye** — the one match variant beyond regular home-vs-away. Needed
-  eventually; structural model (schema/round_type/match field) deferred.
+- **Scoring byes are modelled** (single-sided `match_style='bye'` match + one
+  `ClubMatch`); the club fields a team, its score counts toward `For` (and a played
+  round) but earns no premiership points. The **superbye** — the one match variant
+  beyond regular home-vs-away — is still deferred (structural model TBD).
 - Delta policy (what to do when evaluated ≠ posted) — decided in the second pass.
 - 1998–2005 — separate sourcing, separate effort.
 - Per-layer format cataloguing — expand parsers as new formats/teams are met

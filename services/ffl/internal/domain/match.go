@@ -60,4 +60,5 @@ type MatchRepository interface {
 	// Create inserts a match in a round. matchStyle is nil for a regular
 	// home-vs-away match
 	Create(ctx context.Context, roundID int, matchStyle *string) (Match, error)
+	SoftDeleteByRoundID(ctx context.Context, roundID int) error
 }

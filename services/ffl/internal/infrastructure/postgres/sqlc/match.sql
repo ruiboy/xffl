@@ -63,3 +63,8 @@ WHERE r.season_id = $1 AND m.deleted_at IS NULL;
 INSERT INTO ffl.match (round_id, match_style)
 VALUES ($1, sqlc.narg('match_style'))
 RETURNING id, round_id;
+
+-- name: SoftDeleteMatchesByRoundID :exec
+UPDATE ffl.match
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE round_id = $1 AND deleted_at IS NULL;
