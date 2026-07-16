@@ -20,10 +20,17 @@
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- Tab: Seasons + Fixtures                     -->
+    <!-- Tab: Seasons                                -->
     <!-- ═══════════════════════════════════════════ -->
-    <div v-if="activeTab === 'seasons-fixtures'" class="space-y-6">
+    <div v-if="activeTab === 'seasons'" class="space-y-6">
+      <SeasonsList ref="seasonsList" />
       <SeasonBuilder @created="onSeasonCreated" />
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Tab: Fixtures                               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="activeTab === 'fixtures'">
       <FixtureBuilder :initial-season-id="createdSeasonId" />
     </div>
 
@@ -69,6 +76,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import SeasonBuilder from '../components/SeasonBuilder.vue'
+import SeasonsList from '../components/SeasonsList.vue'
 import FixtureBuilder from '../components/FixtureBuilder.vue'
 import { RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
@@ -79,15 +87,20 @@ const route = useRoute()
 
 // ---- Tabs ----
 const tabs = [
-  { id: 'seasons-fixtures', label: 'Seasons + Fixtures' },
+  { id: 'seasons', label: 'Seasons' },
+  { id: 'fixtures', label: 'Fixtures' },
   { id: 'calculate', label: 'Calculate' },
 ]
-const activeTab = ref((route.query.tab as string) || 'seasons-fixtures')
+const activeTab = ref((route.query.tab as string) || 'seasons')
 
-// Hand a just-created season to the fixture builder so it opens ready to edit.
+// Hand a just-created season to the fixture builder, refresh the list, and jump
+// to the Fixtures tab so it opens ready to edit.
 const createdSeasonId = ref<string | null>(null)
+const seasonsList = ref<{ refetch: () => void } | null>(null)
 function onSeasonCreated(seasonId: string) {
   createdSeasonId.value = seasonId
+  seasonsList.value?.refetch()
+  activeTab.value = 'fixtures'
 }
 
 // ════════════════════════════════════════════

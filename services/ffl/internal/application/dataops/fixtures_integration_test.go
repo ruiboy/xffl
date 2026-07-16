@@ -227,6 +227,69 @@ func TestFindFinalByesBySeasonID(t *testing.T) {
 	assert.Equal(t, domain.ByeResult{ClubSeasonID: csC, Score: 850, RoundType: domain.RoundTypeMinor}, byes[0])
 }
 
+func TestSaveFixtures_Superbye(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFsuper", 6)
+
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Superbye: []int{csA, csB, csC},
+	}}))
+
+	// Loads back as a superbye of all three clubs.
+	loaded, err := builder.LoadFixtures(ctx, seasonID)
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	assert.Empty(t, loaded[0].Fixtures)
+	assert.ElementsMatch(t, []int{csA, csB, csC}, loaded[0].Superbye)
+
+	// Persisted as one superbye match with a side='superbye' club_match per club.
+	var matchStyles, sides int
+	require.NoError(t, testPool.QueryRow(ctx,
+		`SELECT count(*) FROM ffl.match m JOIN ffl.round r ON r.id = m.round_id
+		 WHERE r.season_id = $1 AND m.match_style = 'superbye' AND m.deleted_at IS NULL`, seasonID).Scan(&matchStyles))
+	assert.Equal(t, 1, matchStyles)
+	require.NoError(t, testPool.QueryRow(ctx,
+		`SELECT count(*) FROM ffl.club_match cm JOIN ffl.match m ON m.id = cm.match_id
+		 JOIN ffl.round r ON r.id = m.round_id
+		 WHERE r.season_id = $1 AND cm.side = 'superbye' AND cm.deleted_at IS NULL`, seasonID).Scan(&sides))
+	assert.Equal(t, 3, sides)
+}
+
+func TestFindFinalSuperbyesBySeasonID(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFsuperladder", 7)
+
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Superbye: []int{csA, csB, csC},
+	}}))
+
+	// Finalise each superbye club_match with a score.
+	scores := map[int]int{csA: 900, csB: 1100, csC: 800}
+	for cs, sc := range scores {
+		_, err := testPool.Exec(ctx,
+			`UPDATE ffl.club_match SET data_status = 'final', drv_score = $2
+			 WHERE side = 'superbye' AND club_season_id = $1`, cs, sc)
+		require.NoError(t, err)
+	}
+
+	rows, err := postgres.NewClubMatchRepository(sqlcgen.New(testPool)).FindFinalSuperbyesBySeasonID(ctx, seasonID)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	// All in one match, minor round, scores as set.
+	matchID := rows[0].MatchID
+	got := map[int]int{}
+	for _, r := range rows {
+		assert.Equal(t, matchID, r.MatchID, "one superbye match")
+		assert.Equal(t, domain.RoundTypeMinor, r.RoundType)
+		got[r.ClubSeasonID] = r.Score
+	}
+	assert.Equal(t, scores, got)
+}
+
 // seedTeam inserts a minimal player_match so a club_match counts as having a team.
 func seedTeam(ctx context.Context, t *testing.T, pool *pgxpool.Pool, clubMatchID, clubSeasonID int) {
 	t.Helper()

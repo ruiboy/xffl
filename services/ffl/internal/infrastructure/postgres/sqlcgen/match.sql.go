@@ -186,6 +186,7 @@ func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatc
 
 const findMatchesByRoundID = `-- name: FindMatchesByRoundID :many
 SELECT m.id, m.round_id,
+       COALESCE(m.match_style, '') AS match_style,
        COALESCE(home.id, 0) AS home_club_match_id,
        COALESCE(away.id, 0) AS away_club_match_id,
        COALESCE(m.venue, '') AS venue,
@@ -201,6 +202,7 @@ ORDER BY m.id
 type FindMatchesByRoundIDRow struct {
 	ID              int32
 	RoundID         int32
+	MatchStyle      string
 	HomeClubMatchID int32
 	AwayClubMatchID int32
 	Venue           string
@@ -220,6 +222,7 @@ func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]Fi
 		if err := rows.Scan(
 			&i.ID,
 			&i.RoundID,
+			&i.MatchStyle,
 			&i.HomeClubMatchID,
 			&i.AwayClubMatchID,
 			&i.Venue,

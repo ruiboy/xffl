@@ -25,6 +25,22 @@ export const GET_FFL_SEASON_LIST = gql`
   }
 `
 
+// All FFL seasons with their rules era and clubs, for the Seasons admin list.
+export const GET_FFL_SEASONS_ADMIN = gql`
+  query FFLSeasonsAdmin {
+    fflSeasons {
+      id
+      name
+      rulesId
+      ladder {
+        club {
+          name
+        }
+      }
+    }
+  }
+`
+
 // A season's context for the fixture builder: its club_seasons (id + name) and
 // the AFL season's rounds (for the per-round AFL round selector).
 export const GET_FFL_BUILDER_SEASON = gql`
@@ -65,6 +81,7 @@ export const GET_FFL_SEASON_FIXTURES = gql`
         awayClubSeasonId
       }
       byes
+      superbye
     }
   }
 `

@@ -33,6 +33,9 @@
             <option value="MINOR">MINOR</option>
             <option value="GRAND_FINAL">GRAND FINAL</option>
           </select>
+          <label class="text-xs text-text-muted flex items-center gap-1" title="All clubs submit a team; the round's top scorer earns 1 point">
+            <input type="checkbox" v-model="rnd.superbye" :disabled="rnd.locked" /> superbye
+          </label>
           <span v-if="rnd.locked" class="text-xs rounded-full bg-surface px-2 py-0.5 text-text-faint" title="Has submitted teams — fixtures are locked">🔒 locked</span>
           <button
             @click="removeRound(ri)" :disabled="rnd.locked"
@@ -40,7 +43,13 @@
           >Remove round</button>
         </div>
 
+        <!-- Superbye: every club submits, no head-to-head -->
+        <p v-if="rnd.superbye" class="pl-6 text-xs text-text-faint">
+          Superbye — all {{ clubs.length }} clubs submit a team; the highest scorer earns 1 point.
+        </p>
+
         <!-- Fixtures -->
+        <template v-if="!rnd.superbye">
         <div v-for="(f, fi) in rnd.fixtures" :key="fi" class="flex items-center gap-2 pl-6">
           <select v-model="f.home" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
             <option value="">home…</option>
@@ -64,6 +73,7 @@
             Bye: {{ byeClubs(rnd).map((c) => c.name).join(', ') }}
           </span>
         </div>
+        </template>
       </div>
 
       <!-- Add round + repeat -->
@@ -113,6 +123,7 @@ type StagedRound = {
   roundType: string
   locked: boolean
   fixtures: StagedFixture[]
+  superbye: boolean
 }
 
 const seasonId = ref(props.initialSeasonId ?? '')
@@ -157,6 +168,7 @@ watch(fixturesResult, (val) => {
     roundType: r.roundType || 'MINOR',
     locked: r.locked,
     fixtures: r.fixtures.map((f: any) => ({ home: f.homeClubSeasonId, away: f.awayClubSeasonId })),
+    superbye: (r.superbye?.length ?? 0) > 0,
   }))
 }, { immediate: true })
 
@@ -196,7 +208,7 @@ function addRound() {
   const aflRoundId = last ? nextAflRoundId(last.aflRoundId) : (aflRounds.value[0]?.id ?? '')
   rounds.value.push({
     key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
-    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [],
+    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [], superbye: false,
   })
 }
 
@@ -224,7 +236,7 @@ function repeat() {
     const aflRoundId = last ? nextAflRoundId(last.aflRoundId) : src.aflRoundId
     rounds.value.push({
       key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
-      aflRoundId, roundType: src.roundType, locked: false,
+      aflRoundId, roundType: src.roundType, locked: false, superbye: src.superbye,
       fixtures: src.fixtures.map((f) => repeatReverse.value ? { home: f.away, away: f.home } : { home: f.home, away: f.away }),
     })
   }
@@ -235,6 +247,7 @@ const validationError = computed(() => {
   for (const [i, r] of rounds.value.entries()) {
     if (r.locked) continue
     if (!r.aflRoundId) return `Round ${i + 1}: pick an AFL round.`
+    if (r.superbye) continue // all clubs submit; nothing else to validate
     const seen = new Set<string>()
     for (const f of r.fixtures) {
       if (!f.home || !f.away) return `Round ${i + 1}: every match needs both clubs.`
@@ -265,8 +278,10 @@ async function save() {
         name: r.name,
         aflRoundId: r.aflRoundId,
         roundType: r.roundType,
-        fixtures: r.fixtures.map((f) => ({ homeClubSeasonId: f.home, awayClubSeasonId: f.away })),
-        byes: byeClubs(r).map((c) => c.id),
+        // A superbye round: every club is in the superbye, no head-to-head or byes.
+        fixtures: r.superbye ? [] : r.fixtures.map((f) => ({ homeClubSeasonId: f.home, awayClubSeasonId: f.away })),
+        byes: r.superbye ? [] : byeClubs(r).map((c) => c.id),
+        superbye: r.superbye ? clubs.value.map((c) => c.id) : [],
       })),
     }
     await saveMut({ input })

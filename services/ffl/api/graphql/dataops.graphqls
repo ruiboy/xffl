@@ -50,6 +50,8 @@ type FFLFixtureRound {
   fixtures: [FFLFixturePairing!]!
   "club_season ids on a scoring bye this round."
   byes: [ID!]!
+  "club_season ids in this round's superbye (empty if none)."
+  superbye: [ID!]!
 }
 
 type FFLFixturePairing {
@@ -183,6 +185,8 @@ input SaveFFLRoundInput {
   fixtures: [SaveFFLFixtureInput!]!
   "club_season ids on a scoring bye this round."
   byes: [ID!]!
+  "club_season ids in this round's superbye (empty if none)."
+  superbye: [ID!]!
 }
 
 input SaveFFLFixtureInput {

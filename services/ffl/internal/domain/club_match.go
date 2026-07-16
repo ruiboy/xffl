@@ -303,4 +303,5 @@ type ClubMatchRepository interface {
 	Create(ctx context.Context, matchID int, clubSeasonID int, side string) (ClubMatch, error)
 	SoftDeleteByMatchID(ctx context.Context, matchID int) error
 	FindFinalByesBySeasonID(ctx context.Context, seasonID int) ([]ByeResult, error)
+	FindFinalSuperbyesBySeasonID(ctx context.Context, seasonID int) ([]SuperbyeClubMatch, error)
 }

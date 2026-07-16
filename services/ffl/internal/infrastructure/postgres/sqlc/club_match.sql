@@ -66,3 +66,11 @@ FROM ffl.club_match cm
 JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
 JOIN ffl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
 WHERE r.season_id = $1 AND cm.side = 'bye' AND cm.data_status = 'final' AND cm.deleted_at IS NULL;
+
+-- name: FindFinalFflSuperbyesBySeasonID :many
+SELECT cm.match_id, cm.id AS club_match_id, cm.club_season_id, COALESCE(cm.drv_score, 0) AS score, r.round_type
+FROM ffl.club_match cm
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL AND m.match_style = 'superbye'
+JOIN ffl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
+WHERE r.season_id = $1 AND cm.side = 'superbye' AND cm.data_status = 'final' AND cm.deleted_at IS NULL
+ORDER BY cm.match_id;

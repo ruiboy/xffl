@@ -121,18 +121,20 @@ type FFLClubMatch struct {
 }
 
 type FFLClubSeason struct {
-	ID                string                     `json:"id"`
-	Club              *FFLClub                   `json:"club"`
-	Season            *FFLSeason                 `json:"season"`
-	Played            int                        `json:"played"`
-	Won               int                        `json:"won"`
-	Lost              int                        `json:"lost"`
-	Drawn             int                        `json:"drawn"`
-	For               int                        `json:"for"`
-	Against           int                        `json:"against"`
-	Percentage        float64                    `json:"percentage"`
-	PremiershipPoints int                        `json:"premiershipPoints"`
-	Players           *FFLPlayerSeasonConnection `json:"players"`
+	ID                string     `json:"id"`
+	Club              *FFLClub   `json:"club"`
+	Season            *FFLSeason `json:"season"`
+	Played            int        `json:"played"`
+	Won               int        `json:"won"`
+	Lost              int        `json:"lost"`
+	Drawn             int        `json:"drawn"`
+	For               int        `json:"for"`
+	Against           int        `json:"against"`
+	Percentage        float64    `json:"percentage"`
+	PremiershipPoints int        `json:"premiershipPoints"`
+	// Points earned from superbyes (top-scorer bonus); included in premiershipPoints.
+	ExtraPoints int                        `json:"extraPoints"`
+	Players     *FFLPlayerSeasonConnection `json:"players"`
 }
 
 type FFLFixturePairing struct {
@@ -151,6 +153,8 @@ type FFLFixtureRound struct {
 	Fixtures []*FFLFixturePairing `json:"fixtures"`
 	// club_season ids on a scoring bye this round.
 	Byes []string `json:"byes"`
+	// club_season ids in this round's superbye (empty if none).
+	Superbye []string `json:"superbye"`
 }
 
 type FFLMatch struct {
@@ -256,8 +260,10 @@ type FFLRulesEra struct {
 }
 
 type FFLSeason struct {
-	ID        string           `json:"id"`
-	Name      string           `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// The scoring era (rules_id) in effect for this season.
+	RulesID   string           `json:"rulesId"`
 	Ladder    []*FFLClubSeason `json:"ladder"`
 	Rounds    []*FFLRound      `json:"rounds"`
 	AflSeason *AFLSeason       `json:"aflSeason,omitempty"`
@@ -358,6 +364,8 @@ type SaveFFLRoundInput struct {
 	Fixtures  []*SaveFFLFixtureInput `json:"fixtures"`
 	// club_season ids on a scoring bye this round.
 	Byes []string `json:"byes"`
+	// club_season ids in this round's superbye (empty if none).
+	Superbye []string `json:"superbye"`
 }
 
 type SetFFLTeamInput struct {

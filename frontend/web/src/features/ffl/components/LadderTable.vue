@@ -12,6 +12,7 @@
           <th class="py-2 px-2 font-medium text-right">F</th>
           <th class="py-2 px-2 font-medium text-right">A</th>
           <th class="py-2 px-2 font-medium text-right">%</th>
+          <th v-if="showExtra" class="py-2 px-2 font-medium text-right" title="Extra points (superbye bonus)">EP</th>
           <th class="py-2 px-2 font-medium text-right">Pts</th>
         </tr>
       </thead>
@@ -38,6 +39,7 @@
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.for }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.against }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.percentage.toFixed(1) }}</td>
+          <td v-if="showExtra" class="py-2 px-2 text-right tabular-nums text-text-muted">{{ entry.extraPoints || '' }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.premiershipPoints }}</td>
         </tr>
       </tbody>
@@ -46,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 
 interface LadderEntry {
@@ -59,7 +62,11 @@ interface LadderEntry {
   against: number
   percentage: number
   premiershipPoints: number
+  extraPoints?: number
 }
 
-defineProps<{ ladder: LadderEntry[] }>()
+const props = defineProps<{ ladder: LadderEntry[] }>()
+
+// Only surface the extra-points column for seasons that actually award them.
+const showExtra = computed(() => props.ladder.some((e) => (e.extraPoints ?? 0) > 0))
 </script>

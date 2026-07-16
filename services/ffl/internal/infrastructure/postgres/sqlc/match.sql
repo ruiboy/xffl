@@ -1,5 +1,6 @@
 -- name: FindMatchesByRoundID :many
 SELECT m.id, m.round_id,
+       COALESCE(m.match_style, '') AS match_style,
        COALESCE(home.id, 0) AS home_club_match_id,
        COALESCE(away.id, 0) AS away_club_match_id,
        COALESCE(m.venue, '') AS venue,

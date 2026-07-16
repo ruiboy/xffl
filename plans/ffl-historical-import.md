@@ -195,8 +195,17 @@ before scaling to all 20.
 ## Open questions / deferred
 - **Scoring byes are modelled** (single-sided `match_style='bye'` match + one
   `ClubMatch`); the club fields a team and its score counts toward `For` only — not
-  a played round, and no premiership points. The **superbye** — the one match variant
-  beyond regular home-vs-away — is still deferred (structural model TBD).
+  a played round, and no premiership points.
+- **Superbyes are modelled** (`match_style='superbye'` match + one `ClubMatch`
+  per club, side `'superbye'`): every club submits, each score counts toward `For`
+  (no played round), and the round's top scorer(s) earn **1 extra point**
+  (`club_season.drv_extra_points`, folded into total premiership points; ladder shows
+  an "EP" column). Ties share the point; an all-zero round awards none.
+- **Remaining gap** — entering teams for bye/superbye `club_match`es via the DataOps
+  "FFL Teams" tab is **not yet wired**: that round list is built from home/away
+  club_matches only, so `side='bye'`/`'superbye'` club_matches don't surface there.
+  The scoring/ladder logic is complete and tested; only the team-entry surface is
+  missing. Needs exposing those club_matches on `FFLMatch` + the DataOps round list.
 - Delta policy (what to do when evaluated ≠ posted) — decided in the second pass.
 - 1998–2005 — separate sourcing, separate effort.
 - Per-layer format cataloguing — expand parsers as new formats/teams are met

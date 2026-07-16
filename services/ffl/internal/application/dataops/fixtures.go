@@ -27,6 +27,7 @@ type RoundSpec struct {
 	Type       domain.RoundType
 	Fixtures   []FixtureSpec
 	Byes       []int // club_season ids on a (scoring) bye
+	Superbye   []int // club_season ids in the round's superbye (empty = none)
 }
 
 // FixtureRound is a round loaded for the builder: its fixtures and byes, plus
@@ -39,6 +40,7 @@ type FixtureRound struct {
 	Locked     bool
 	Fixtures   []FixtureSpec
 	Byes       []int
+	Superbye   []int
 }
 
 // LoadFixtures reads a season's rounds with their fixtures and byes for the
@@ -65,19 +67,27 @@ func (b *Builder) LoadFixtures(ctx context.Context, seasonID int) ([]FixtureRoun
 				return err
 			}
 			for _, m := range matches {
-				// FindByMatchID orders home before away; a bye has a single side.
 				cms, err := repos.ClubMatches.FindByMatchID(ctx, m.ID)
 				if err != nil {
 					return err
 				}
-				switch len(cms) {
-				case 2:
-					fr.Fixtures = append(fr.Fixtures, FixtureSpec{
-						HomeClubSeasonID: cms[0].ClubSeasonID,
-						AwayClubSeasonID: cms[1].ClubSeasonID,
-					})
-				case 1:
-					fr.Byes = append(fr.Byes, cms[0].ClubSeasonID)
+				switch m.MatchStyle {
+				case "superbye":
+					for _, cm := range cms {
+						fr.Superbye = append(fr.Superbye, cm.ClubSeasonID)
+					}
+				case "bye":
+					if len(cms) == 1 {
+						fr.Byes = append(fr.Byes, cms[0].ClubSeasonID)
+					}
+				default:
+					// Regular match: FindByMatchID orders home before away.
+					if len(cms) == 2 {
+						fr.Fixtures = append(fr.Fixtures, FixtureSpec{
+							HomeClubSeasonID: cms[0].ClubSeasonID,
+							AwayClubSeasonID: cms[1].ClubSeasonID,
+						})
+					}
 				}
 			}
 			out = append(out, fr)
@@ -208,6 +218,19 @@ func writeRoundFixtures(ctx context.Context, repos application.WriteRepos, round
 		}
 		if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, "bye"); err != nil {
 			return err
+		}
+	}
+	// A superbye is one match containing a club_match for every participating club.
+	if len(r.Superbye) > 0 {
+		superbyeStyle := "superbye"
+		m, err := repos.Matches.Create(ctx, roundID, &superbyeStyle)
+		if err != nil {
+			return err
+		}
+		for _, cs := range r.Superbye {
+			if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, "superbye"); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

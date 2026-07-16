@@ -16,14 +16,15 @@ const (
 )
 
 type Match struct {
-	ID        int
-	RoundID   int
-	RoundType RoundType
-	Home      ClubMatch
-	Away      ClubMatch
-	Venue     string
-	StartTime time.Time
-	Result    MatchResult
+	ID         int
+	RoundID    int
+	RoundType  RoundType
+	MatchStyle string // "" for regular home-vs-away, "bye", or "superbye"
+	Home       ClubMatch
+	Away       ClubMatch
+	Venue      string
+	StartTime  time.Time
+	Result     MatchResult
 }
 
 // Winner returns a pointer to the winning ClubMatch, or nil for a draw.

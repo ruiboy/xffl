@@ -299,6 +299,13 @@ func (r *mutationResolver) SaveFFLFixtures(ctx context.Context, input SaveFFLFix
 			}
 			spec.Byes = append(spec.Byes, cs)
 		}
+		for _, s := range ri.Superbye {
+			cs, err := fromID(s)
+			if err != nil {
+				return false, err
+			}
+			spec.Superbye = append(spec.Superbye, cs)
+		}
 		rounds[i] = spec
 	}
 	if err := r.Builder.SaveFixtures(ctx, seasonID, rounds); err != nil {
@@ -350,6 +357,10 @@ func (r *queryResolver) FflSeasonFixtures(ctx context.Context, seasonID string) 
 		for j, b := range rnd.Byes {
 			byes[j] = toID(b)
 		}
+		superbye := make([]string, len(rnd.Superbye))
+		for j, s := range rnd.Superbye {
+			superbye[j] = toID(s)
+		}
 		out[i] = &FFLFixtureRound{
 			RoundID:    toID(rnd.RoundID),
 			Name:       rnd.Name,
@@ -358,6 +369,7 @@ func (r *queryResolver) FflSeasonFixtures(ctx context.Context, seasonID string) 
 			Locked:     rnd.Locked,
 			Fixtures:   fixtures,
 			Byes:       byes,
+			Superbye:   superbye,
 		}
 	}
 	return out, nil

@@ -8,10 +8,11 @@ import (
 
 func TestCalculateLadder(t *testing.T) {
 	tests := []struct {
-		name    string
-		matches []Match
-		byes    []ByeResult
-		want    map[int]ClubSeason
+		name      string
+		matches   []Match
+		byes      []ByeResult
+		superbyes []SuperbyeMatch
+		want      map[int]ClubSeason
 	}{
 		{
 			name: "home win",
@@ -107,10 +108,67 @@ func TestCalculateLadder(t *testing.T) {
 			byes: []ByeResult{{ClubSeasonID: 3, Score: 850, RoundType: RoundTypeGrandFinal}},
 			want: map[int]ClubSeason{},
 		},
+		{
+			name: "superbye: every score counts to For, the top scorer earns one extra point",
+			superbyes: []SuperbyeMatch{{
+				RoundType: RoundTypeMinor,
+				Entries:   []SuperbyeEntry{{ClubSeasonID: 1, Score: 900}, {ClubSeasonID: 2, Score: 1100}, {ClubSeasonID: 3, Score: 800}},
+			}},
+			want: map[int]ClubSeason{
+				1: {ID: 1, For: 900},
+				2: {ID: 2, For: 1100, ExtraPoints: 1, PremiershipPoints: 1},
+				3: {ID: 3, For: 800},
+			},
+		},
+		{
+			name: "superbye: a tie for top shares the extra point",
+			superbyes: []SuperbyeMatch{{
+				RoundType: RoundTypeMinor,
+				Entries:   []SuperbyeEntry{{ClubSeasonID: 1, Score: 1000}, {ClubSeasonID: 2, Score: 1000}, {ClubSeasonID: 3, Score: 500}},
+			}},
+			want: map[int]ClubSeason{
+				1: {ID: 1, For: 1000, ExtraPoints: 1, PremiershipPoints: 1},
+				2: {ID: 2, For: 1000, ExtraPoints: 1, PremiershipPoints: 1},
+				3: {ID: 3, For: 500},
+			},
+		},
+		{
+			name: "superbye: no team scored, so no extra point is awarded",
+			superbyes: []SuperbyeMatch{{
+				RoundType: RoundTypeMinor,
+				Entries:   []SuperbyeEntry{{ClubSeasonID: 1, Score: 0}, {ClubSeasonID: 2, Score: 0}},
+			}},
+			want: map[int]ClubSeason{
+				1: {ID: 1},
+				2: {ID: 2},
+			},
+		},
+		{
+			name: "superbye adds its extra point on top of head-to-head points",
+			matches: []Match{
+				{Home: ClubMatch{ClubSeasonID: 1, StoredScore: 1000}, Away: ClubMatch{ClubSeasonID: 2, StoredScore: 900}},
+			},
+			superbyes: []SuperbyeMatch{{
+				RoundType: RoundTypeMinor,
+				Entries:   []SuperbyeEntry{{ClubSeasonID: 1, Score: 1200}, {ClubSeasonID: 2, Score: 800}},
+			}},
+			want: map[int]ClubSeason{
+				1: {ID: 1, Played: 1, Won: 1, For: 2200, Against: 900, ExtraPoints: 1, PremiershipPoints: 5},
+				2: {ID: 2, Played: 1, Lost: 1, For: 1700, Against: 1000},
+			},
+		},
+		{
+			name: "grand-final superbye is excluded from the ladder",
+			superbyes: []SuperbyeMatch{{
+				RoundType: RoundTypeGrandFinal,
+				Entries:   []SuperbyeEntry{{ClubSeasonID: 1, Score: 1200}, {ClubSeasonID: 2, Score: 800}},
+			}},
+			want: map[int]ClubSeason{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CalculateLadder(tt.matches, tt.byes)
+			got := CalculateLadder(tt.matches, tt.byes, tt.superbyes)
 			assert.Equal(t, tt.want, got)
 		})
 	}

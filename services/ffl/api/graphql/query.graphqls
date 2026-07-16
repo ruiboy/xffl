@@ -20,6 +20,8 @@ type Query {
 type FFLSeason {
   id: ID!
   name: String!
+  "The scoring era (rules_id) in effect for this season."
+  rulesId: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
   aflSeason: AFLSeason
@@ -61,6 +63,8 @@ type FFLClubSeason {
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+  "Points earned from superbyes (top-scorer bonus); included in premiershipPoints."
+  extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 

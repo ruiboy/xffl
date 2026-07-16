@@ -338,6 +338,11 @@ type FFLClubSeason
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+
+  """
+  Points earned from superbyes (top-scorer bonus); included in premiershipPoints.
+  """
+  extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
@@ -365,6 +370,9 @@ type FFLFixtureRound
 
   """club_season ids on a scoring bye this round."""
   byes: [ID!]!
+
+  """club_season ids in this round's superbye (empty if none)."""
+  superbye: [ID!]!
 }
 
 type FFLMatch
@@ -519,6 +527,9 @@ type FFLSeason
 {
   id: ID!
   name: String!
+
+  """The scoring era (rules_id) in effect for this season."""
+  rulesId: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
   aflSeason: AFLSeason
@@ -847,6 +858,9 @@ input SaveFFLRoundInput
 
   """club_season ids on a scoring bye this round."""
   byes: [ID!]!
+
+  """club_season ids in this round's superbye (empty if none)."""
+  superbye: [ID!]!
 }
 
 input SetFFLTeamInput

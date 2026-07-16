@@ -108,6 +108,7 @@ type ComplexityRoot struct {
 		Against           func(childComplexity int) int
 		Club              func(childComplexity int) int
 		Drawn             func(childComplexity int) int
+		ExtraPoints       func(childComplexity int) int
 		For               func(childComplexity int) int
 		ID                func(childComplexity int) int
 		Lost              func(childComplexity int) int
@@ -132,6 +133,7 @@ type ComplexityRoot struct {
 		Name       func(childComplexity int) int
 		RoundID    func(childComplexity int) int
 		RoundType  func(childComplexity int) int
+		Superbye   func(childComplexity int) int
 	}
 
 	FFLMatch struct {
@@ -233,6 +235,7 @@ type ComplexityRoot struct {
 		Ladder    func(childComplexity int) int
 		Name      func(childComplexity int) int
 		Rounds    func(childComplexity int) int
+		RulesID   func(childComplexity int) int
 	}
 
 	FFLSuggestedSubstitution struct {
@@ -638,6 +641,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLClubSeason.Drawn(childComplexity), true
+	case "FFLClubSeason.extraPoints":
+		if e.ComplexityRoot.FFLClubSeason.ExtraPoints == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLClubSeason.ExtraPoints(childComplexity), true
 	case "FFLClubSeason.for":
 		if e.ComplexityRoot.FFLClubSeason.For == nil {
 			break
@@ -753,6 +762,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLFixtureRound.RoundType(childComplexity), true
+	case "FFLFixtureRound.superbye":
+		if e.ComplexityRoot.FFLFixtureRound.Superbye == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLFixtureRound.Superbye(childComplexity), true
 
 	case "FFLMatch.awayClubMatch":
 		if e.ComplexityRoot.FFLMatch.AwayClubMatch == nil {
@@ -1172,6 +1187,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLSeason.Rounds(childComplexity), true
+	case "FFLSeason.rulesId":
+		if e.ComplexityRoot.FFLSeason.RulesID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLSeason.RulesID(childComplexity), true
 
 	case "FFLSuggestedSubstitution.kind":
 		if e.ComplexityRoot.FFLSuggestedSubstitution.Kind == nil {
@@ -1800,6 +1821,8 @@ type FFLFixtureRound {
   fixtures: [FFLFixturePairing!]!
   "club_season ids on a scoring bye this round."
   byes: [ID!]!
+  "club_season ids in this round's superbye (empty if none)."
+  superbye: [ID!]!
 }
 
 type FFLFixturePairing {
@@ -1933,6 +1956,8 @@ input SaveFFLRoundInput {
   fixtures: [SaveFFLFixtureInput!]!
   "club_season ids on a scoring bye this round."
   byes: [ID!]!
+  "club_season ids in this round's superbye (empty if none)."
+  superbye: [ID!]!
 }
 
 input SaveFFLFixtureInput {
@@ -2051,6 +2076,8 @@ enum FFLReorderDirection {
 type FFLSeason {
   id: ID!
   name: String!
+  "The scoring era (rules_id) in effect for this season."
+  rulesId: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
   aflSeason: AFLSeason
@@ -2092,6 +2119,8 @@ type FFLClubSeason {
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+  "Points earned from superbyes (top-scorer bonus); included in premiershipPoints."
+  extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
@@ -3821,6 +3850,8 @@ func (ec *executionContext) fieldContext_FFLClubSeason_season(_ context.Context,
 				return ec.fieldContext_FFLSeason_id(ctx, field)
 			case "name":
 				return ec.fieldContext_FFLSeason_name(ctx, field)
+			case "rulesId":
+				return ec.fieldContext_FFLSeason_rulesId(ctx, field)
 			case "ladder":
 				return ec.fieldContext_FFLSeason_ladder(ctx, field)
 			case "rounds":
@@ -4054,6 +4085,35 @@ func (ec *executionContext) _FFLClubSeason_premiershipPoints(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_FFLClubSeason_premiershipPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLClubSeason",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLClubSeason_extraPoints(ctx context.Context, field graphql.CollectedField, obj *FFLClubSeason) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLClubSeason_extraPoints,
+		func(ctx context.Context) (any, error) {
+			return obj.ExtraPoints, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLClubSeason_extraPoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FFLClubSeason",
 		Field:      field,
@@ -4368,6 +4428,35 @@ func (ec *executionContext) _FFLFixtureRound_byes(ctx context.Context, field gra
 }
 
 func (ec *executionContext) fieldContext_FFLFixtureRound_byes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLFixtureRound",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLFixtureRound_superbye(ctx context.Context, field graphql.CollectedField, obj *FFLFixtureRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLFixtureRound_superbye,
+		func(ctx context.Context) (any, error) {
+			return obj.Superbye, nil
+		},
+		nil,
+		ec.marshalNID2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLFixtureRound_superbye(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FFLFixtureRound",
 		Field:      field,
@@ -6339,6 +6428,8 @@ func (ec *executionContext) fieldContext_FFLRound_season(_ context.Context, fiel
 				return ec.fieldContext_FFLSeason_id(ctx, field)
 			case "name":
 				return ec.fieldContext_FFLSeason_name(ctx, field)
+			case "rulesId":
+				return ec.fieldContext_FFLSeason_rulesId(ctx, field)
 			case "ladder":
 				return ec.fieldContext_FFLSeason_ladder(ctx, field)
 			case "rounds":
@@ -6513,6 +6604,35 @@ func (ec *executionContext) fieldContext_FFLSeason_name(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _FFLSeason_rulesId(ctx context.Context, field graphql.CollectedField, obj *FFLSeason) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLSeason_rulesId,
+		func(ctx context.Context) (any, error) {
+			return obj.RulesID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLSeason_rulesId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLSeason",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FFLSeason_ladder(ctx context.Context, field graphql.CollectedField, obj *FFLSeason) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6559,6 +6679,8 @@ func (ec *executionContext) fieldContext_FFLSeason_ladder(_ context.Context, fie
 				return ec.fieldContext_FFLClubSeason_percentage(ctx, field)
 			case "premiershipPoints":
 				return ec.fieldContext_FFLClubSeason_premiershipPoints(ctx, field)
+			case "extraPoints":
+				return ec.fieldContext_FFLClubSeason_extraPoints(ctx, field)
 			case "players":
 				return ec.fieldContext_FFLClubSeason_players(ctx, field)
 			}
@@ -7845,6 +7967,8 @@ func (ec *executionContext) fieldContext_Query_fflSeasons(_ context.Context, fie
 				return ec.fieldContext_FFLSeason_id(ctx, field)
 			case "name":
 				return ec.fieldContext_FFLSeason_name(ctx, field)
+			case "rulesId":
+				return ec.fieldContext_FFLSeason_rulesId(ctx, field)
 			case "ladder":
 				return ec.fieldContext_FFLSeason_ladder(ctx, field)
 			case "rounds":
@@ -7887,6 +8011,8 @@ func (ec *executionContext) fieldContext_Query_fflSeason(ctx context.Context, fi
 				return ec.fieldContext_FFLSeason_id(ctx, field)
 			case "name":
 				return ec.fieldContext_FFLSeason_name(ctx, field)
+			case "rulesId":
+				return ec.fieldContext_FFLSeason_rulesId(ctx, field)
 			case "ladder":
 				return ec.fieldContext_FFLSeason_ladder(ctx, field)
 			case "rounds":
@@ -8152,6 +8278,8 @@ func (ec *executionContext) fieldContext_Query_fflClubSeason(ctx context.Context
 				return ec.fieldContext_FFLClubSeason_percentage(ctx, field)
 			case "premiershipPoints":
 				return ec.fieldContext_FFLClubSeason_premiershipPoints(ctx, field)
+			case "extraPoints":
+				return ec.fieldContext_FFLClubSeason_extraPoints(ctx, field)
 			case "players":
 				return ec.fieldContext_FFLClubSeason_players(ctx, field)
 			}
@@ -8556,6 +8684,8 @@ func (ec *executionContext) fieldContext_Query_fflSeasonFixtures(ctx context.Con
 				return ec.fieldContext_FFLFixtureRound_fixtures(ctx, field)
 			case "byes":
 				return ec.fieldContext_FFLFixtureRound_byes(ctx, field)
+			case "superbye":
+				return ec.fieldContext_FFLFixtureRound_superbye(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FFLFixtureRound", field.Name)
 		},
@@ -11307,7 +11437,7 @@ func (ec *executionContext) unmarshalInputSaveFFLRoundInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"roundId", "name", "aflRoundId", "roundType", "fixtures", "byes"}
+	fieldsInOrder := [...]string{"roundId", "name", "aflRoundId", "roundType", "fixtures", "byes", "superbye"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -11356,6 +11486,13 @@ func (ec *executionContext) unmarshalInputSaveFFLRoundInput(ctx context.Context,
 				return it, err
 			}
 			it.Byes = data
+		case "superbye":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("superbye"))
+			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Superbye = data
 		}
 	}
 	return it, nil
@@ -12216,6 +12353,11 @@ func (ec *executionContext) _FFLClubSeason(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "extraPoints":
+			out.Values[i] = ec._FFLClubSeason_extraPoints(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "players":
 			field := field
 
@@ -12362,6 +12504,11 @@ func (ec *executionContext) _FFLFixtureRound(ctx context.Context, sel ast.Select
 			}
 		case "byes":
 			out.Values[i] = ec._FFLFixtureRound_byes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "superbye":
+			out.Values[i] = ec._FFLFixtureRound_superbye(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -13395,6 +13542,11 @@ func (ec *executionContext) _FFLSeason(ctx context.Context, sel ast.SelectionSet
 			}
 		case "name":
 			out.Values[i] = ec._FFLSeason_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "rulesId":
+			out.Values[i] = ec._FFLSeason_rulesId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
