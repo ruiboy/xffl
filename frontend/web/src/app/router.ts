@@ -78,6 +78,11 @@ const router = createRouter({
       name: 'ffl-data-ops',
       component: () => import('@/features/data-ops/views/DataOpsView.vue'),
     },
+    {
+      path: '/ffl/admin',
+      name: 'ffl-admin',
+      component: () => import('@/features/admin/views/AdminView.vue'),
+    },
 
     // AFL routes
     {

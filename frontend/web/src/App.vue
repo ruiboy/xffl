@@ -66,6 +66,15 @@
           >
             <IconDataOps class="w-5 h-5" />
           </router-link>
+          <router-link
+            :to="{ name: 'ffl-admin' }"
+            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+            title="Admin"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 3.5a1 1 0 00-1 1v1.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0v-4.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM4 3.5a1 1 0 00-1 1v6.09a3.001 3.001 0 000 5.82V15.5a.99.99 0 00.02.2 1 1 0 001.96 0 .99.99 0 00.02-.2v-.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM16 3.5a1 1 0 00-1 1v.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0V10.41a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1z" />
+            </svg>
+          </router-link>
 
           <!-- Settings cog -->
           <div class="relative" ref="settingsContainer">
