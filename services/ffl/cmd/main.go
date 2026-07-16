@@ -111,8 +111,9 @@ func main() {
 		commands,
 	)
 	captures := dataops.NewForumCaptureBuffer(parser)
+	builder := dataops.NewBuilder(db)
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures, Builder: builder}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

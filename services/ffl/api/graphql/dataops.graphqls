@@ -20,6 +20,18 @@ extend type Mutation {
 
   "Clear the in-session forum capture buffer."
   clearFFLForumCaptures: Boolean!
+
+  "Create an FFL season (year + clubs). rules_id is auto-assigned from the year."
+  buildFFLSeason(input: BuildFFLSeasonInput!): FFLBuiltSeason!
+
+  "Create a round in a season."
+  addFFLRound(input: AddFFLRoundInput!): FFLBuiltRound!
+
+  "Create a regular home-vs-away fixture in a round (match + two club_matches)."
+  addFFLFixture(input: AddFFLFixtureInput!): FFLBuiltFixture!
+
+  "Generate a full home-and-away season (round-robin) over the given club_seasons."
+  generateFFLHomeAndAway(input: GenerateFFLHomeAndAwayInput!): [FFLBuiltRound!]!
 }
 
 extend type Query {
@@ -112,4 +124,54 @@ type FFLParsedPlayer {
   interchangePosition: String!
   score: Int
   notes: String!
+}
+
+input BuildFFLSeasonInput {
+  year: Int!
+  aflSeasonId: ID!
+  clubNames: [String!]!
+}
+
+type FFLBuiltSeason {
+  seasonId: ID!
+  rulesId: String!
+  clubSeasons: [FFLBuiltClubSeason!]!
+}
+
+type FFLBuiltClubSeason {
+  clubName: String!
+  clubSeasonId: ID!
+}
+
+input AddFFLRoundInput {
+  seasonId: ID!
+  name: String!
+  aflRoundId: ID!
+  "MINOR (default) or GRAND_FINAL."
+  roundType: String
+}
+
+type FFLBuiltRound {
+  roundId: ID!
+  name: String!
+}
+
+input AddFFLFixtureInput {
+  roundId: ID!
+  homeClubSeasonId: ID!
+  awayClubSeasonId: ID!
+}
+
+type FFLBuiltFixture {
+  matchId: ID!
+  homeClubMatchId: ID!
+  awayClubMatchId: ID!
+}
+
+input GenerateFFLHomeAndAwayInput {
+  seasonId: ID!
+  clubSeasonIds: [ID!]!
+  rounds: Int!
+  aflRoundStartId: ID!
+  namePrefix: String
 }

@@ -58,3 +58,8 @@ JOIN ffl.club_match home ON home.match_id = m.id AND home.side = 'home'
 JOIN ffl.club_match away ON away.match_id = m.id AND away.side = 'away'
      AND away.data_status = 'final' AND away.deleted_at IS NULL
 WHERE r.season_id = $1 AND m.deleted_at IS NULL;
+
+-- name: CreateMatch :one
+INSERT INTO ffl.match (round_id, match_style)
+VALUES ($1, sqlc.narg('match_style'))
+RETURNING id, round_id;

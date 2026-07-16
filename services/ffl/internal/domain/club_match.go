@@ -300,4 +300,5 @@ type ClubMatchRepository interface {
 	UpdateDataStatus(ctx context.Context, id int, status ClubMatchDataStatus) error
 	CountFinalByMatchID(ctx context.Context, matchID int) (int, error)
 	GetRulesID(ctx context.Context, clubMatchID int) (string, error)
+	Create(ctx context.Context, matchID int, clubSeasonID int, side string) (ClubMatch, error)
 }

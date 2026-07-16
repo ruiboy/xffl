@@ -9,6 +9,45 @@ import (
 	"context"
 )
 
+const createSeason = `-- name: CreateSeason :one
+INSERT INTO ffl.season (league_id, name, afl_season_id, rules_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, league_id, afl_season_id, rules_id
+`
+
+type CreateSeasonParams struct {
+	LeagueID    int32
+	Name        string
+	AflSeasonID int32
+	RulesID     string
+}
+
+type CreateSeasonRow struct {
+	ID          int32
+	Name        string
+	LeagueID    int32
+	AflSeasonID int32
+	RulesID     string
+}
+
+func (q *Queries) CreateSeason(ctx context.Context, arg CreateSeasonParams) (CreateSeasonRow, error) {
+	row := q.db.QueryRow(ctx, createSeason,
+		arg.LeagueID,
+		arg.Name,
+		arg.AflSeasonID,
+		arg.RulesID,
+	)
+	var i CreateSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.LeagueID,
+		&i.AflSeasonID,
+		&i.RulesID,
+	)
+	return i, err
+}
+
 const findAllSeasons = `-- name: FindAllSeasons :many
 SELECT id, name, league_id, afl_season_id, rules_id
 FROM ffl.season

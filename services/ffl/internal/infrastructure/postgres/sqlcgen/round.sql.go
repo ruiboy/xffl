@@ -9,6 +9,45 @@ import (
 	"context"
 )
 
+const createRound = `-- name: CreateRound :one
+INSERT INTO ffl.round (season_id, name, afl_round_id, round_type)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, season_id, afl_round_id, round_type
+`
+
+type CreateRoundParams struct {
+	SeasonID   int32
+	Name       string
+	AflRoundID int32
+	RoundType  string
+}
+
+type CreateRoundRow struct {
+	ID         int32
+	Name       string
+	SeasonID   int32
+	AflRoundID int32
+	RoundType  string
+}
+
+func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (CreateRoundRow, error) {
+	row := q.db.QueryRow(ctx, createRound,
+		arg.SeasonID,
+		arg.Name,
+		arg.AflRoundID,
+		arg.RoundType,
+	)
+	var i CreateRoundRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.SeasonID,
+		&i.AflRoundID,
+		&i.RoundType,
+	)
+	return i, err
+}
+
 const findRoundByAFLRoundID = `-- name: FindRoundByAFLRoundID :one
 SELECT id, name, season_id, afl_round_id
 FROM ffl.round

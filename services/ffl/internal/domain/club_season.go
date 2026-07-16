@@ -30,4 +30,5 @@ type ClubSeasonRepository interface {
 	FindByID(ctx context.Context, id int) (ClubSeason, error)
 	FindByClubAndSeason(ctx context.Context, clubID int, seasonID int) (ClubSeason, error)
 	Update(ctx context.Context, cs ClubSeason) error
+	Create(ctx context.Context, clubID int, seasonID int) (ClubSeason, error)
 }

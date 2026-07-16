@@ -38,4 +38,5 @@ type RoundRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]Round, error)
 	FindByID(ctx context.Context, id int) (Round, error)
 	FindByAFLRoundID(ctx context.Context, aflRoundID int) (Round, error)
+	Create(ctx context.Context, seasonID int, name string, aflRoundID int, roundType RoundType) (Round, error)
 }

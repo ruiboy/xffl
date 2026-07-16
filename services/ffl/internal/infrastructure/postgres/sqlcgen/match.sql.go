@@ -11,6 +11,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createMatch = `-- name: CreateMatch :one
+INSERT INTO ffl.match (round_id, match_style)
+VALUES ($1, $2)
+RETURNING id, round_id
+`
+
+type CreateMatchParams struct {
+	RoundID    int32
+	MatchStyle *string
+}
+
+type CreateMatchRow struct {
+	ID      int32
+	RoundID int32
+}
+
+func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (CreateMatchRow, error) {
+	row := q.db.QueryRow(ctx, createMatch, arg.RoundID, arg.MatchStyle)
+	var i CreateMatchRow
+	err := row.Scan(&i.ID, &i.RoundID)
+	return i, err
+}
+
 const findFinalFflMatchesBySeasonID = `-- name: FindFinalFflMatchesBySeasonID :many
 SELECT m.id, m.round_id,
        r.round_type,

@@ -21,6 +21,39 @@ func (q *Queries) CountFinalClubMatchesByMatchID(ctx context.Context, matchID in
 	return count, err
 }
 
+const createClubMatch = `-- name: CreateClubMatch :one
+INSERT INTO ffl.club_match (match_id, club_season_id, side)
+VALUES ($1, $2, $3)
+RETURNING id, match_id, club_season_id, side, data_status
+`
+
+type CreateClubMatchParams struct {
+	MatchID      int32
+	ClubSeasonID int32
+	Side         string
+}
+
+type CreateClubMatchRow struct {
+	ID           int32
+	MatchID      int32
+	ClubSeasonID int32
+	Side         string
+	DataStatus   string
+}
+
+func (q *Queries) CreateClubMatch(ctx context.Context, arg CreateClubMatchParams) (CreateClubMatchRow, error) {
+	row := q.db.QueryRow(ctx, createClubMatch, arg.MatchID, arg.ClubSeasonID, arg.Side)
+	var i CreateClubMatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.MatchID,
+		&i.ClubSeasonID,
+		&i.Side,
+		&i.DataStatus,
+	)
+	return i, err
+}
+
 const findClubMatchByID = `-- name: FindClubMatchByID :one
 SELECT id, match_id, club_season_id, data_status, notes, drv_score
 FROM ffl.club_match

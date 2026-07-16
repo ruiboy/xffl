@@ -57,4 +57,7 @@ type MatchRepository interface {
 	FindByIDs(ctx context.Context, ids []int) (map[int]Match, error)
 	FindFinalBySeasonID(ctx context.Context, seasonID int) ([]Match, error)
 	UpdateResult(ctx context.Context, matchID int, result MatchResult) error
+	// Create inserts a match in a round. matchStyle is nil for a regular
+	// home-vs-away match
+	Create(ctx context.Context, roundID int, matchStyle *string) (Match, error)
 }

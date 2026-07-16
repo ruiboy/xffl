@@ -15,3 +15,8 @@ WHERE id = $1 AND deleted_at IS NULL;
 SELECT id, name, season_id, afl_round_id
 FROM ffl.round
 WHERE afl_round_id = $1 AND deleted_at IS NULL;
+
+-- name: CreateRound :one
+INSERT INTO ffl.round (season_id, name, afl_round_id, round_type)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, season_id, afl_round_id, round_type;

@@ -11,16 +11,25 @@ import (
 type Querier interface {
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (bool, error)
 	CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error)
+	CreateClub(ctx context.Context, name string) (CreateClubRow, error)
+	CreateClubMatch(ctx context.Context, arg CreateClubMatchParams) (CreateClubMatchRow, error)
+	CreateClubSeason(ctx context.Context, arg CreateClubSeasonParams) (CreateClubSeasonRow, error)
+	CreateLeague(ctx context.Context, name string) (CreateLeagueRow, error)
+	CreateMatch(ctx context.Context, arg CreateMatchParams) (CreateMatchRow, error)
 	CreatePlayer(ctx context.Context, aflPlayerID int32) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
+	CreateRound(ctx context.Context, arg CreateRoundParams) (CreateRoundRow, error)
+	CreateSeason(ctx context.Context, arg CreateSeasonParams) (CreateSeasonRow, error)
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerMatchByID(ctx context.Context, id int32) error
 	DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error
 	DeletePlayerSeason(ctx context.Context, id int32) error
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
+	FindAllLeagues(ctx context.Context) ([]FindAllLeaguesRow, error)
 	FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
+	FindClubByName(ctx context.Context, name string) (FindClubByNameRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([]FindClubMatchesByIDsRow, error)
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)

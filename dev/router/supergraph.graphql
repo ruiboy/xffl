@@ -34,6 +34,14 @@ input AddAFLPlayerSeasonInput
   clubSeasonId: ID!
 }
 
+input AddFFLFixtureInput
+  @join__type(graph: FFL)
+{
+  roundId: ID!
+  homeClubSeasonId: ID!
+  awayClubSeasonId: ID!
+}
+
 input AddFFLPlayerToSeasonInput
   @join__type(graph: FFL)
 {
@@ -41,6 +49,17 @@ input AddFFLPlayerToSeasonInput
   aflPlayerSeasonId: ID!
   fromRoundId: ID
   costCents: Int
+}
+
+input AddFFLRoundInput
+  @join__type(graph: FFL)
+{
+  seasonId: ID!
+  name: String!
+  aflRoundId: ID!
+
+  """MINOR (default) or GRAND_FINAL."""
+  roundType: String
 }
 
 type AFLBye
@@ -221,6 +240,14 @@ enum AFLStatSummaryMethod
   MEDIAN @join__enumValue(graph: AFL)
 }
 
+input BuildFFLSeasonInput
+  @join__type(graph: FFL)
+{
+  year: Int!
+  aflSeasonId: ID!
+  clubNames: [String!]!
+}
+
 input CalculateFFLFantasyScoreInput
   @join__type(graph: FFL)
 {
@@ -275,6 +302,36 @@ enum FFLAFLPlayerMatchStatus
   played @join__enumValue(graph: FFL)
   dnp @join__enumValue(graph: FFL)
   bye @join__enumValue(graph: FFL)
+}
+
+type FFLBuiltClubSeason
+  @join__type(graph: FFL)
+{
+  clubName: String!
+  clubSeasonId: ID!
+}
+
+type FFLBuiltFixture
+  @join__type(graph: FFL)
+{
+  matchId: ID!
+  homeClubMatchId: ID!
+  awayClubMatchId: ID!
+}
+
+type FFLBuiltRound
+  @join__type(graph: FFL)
+{
+  roundId: ID!
+  name: String!
+}
+
+type FFLBuiltSeason
+  @join__type(graph: FFL)
+{
+  seasonId: ID!
+  rulesId: String!
+  clubSeasons: [FFLBuiltClubSeason!]!
 }
 
 type FFLClub
@@ -496,6 +553,16 @@ input FFLTeamPlayerInput
   displayOrder: Int!
 }
 
+input GenerateFFLHomeAndAwayInput
+  @join__type(graph: FFL)
+{
+  seasonId: ID!
+  clubSeasonIds: [ID!]!
+  rounds: Int!
+  aflRoundStartId: ID!
+  namePrefix: String
+}
+
 type ImportAFLMatchStatsResult
   @join__type(graph: AFL)
 {
@@ -643,6 +710,24 @@ type Mutation
 
   """Clear the in-session forum capture buffer."""
   clearFFLForumCaptures: Boolean! @join__field(graph: FFL)
+
+  """
+  Create an FFL season (year + clubs). rules_id is auto-assigned from the year.
+  """
+  buildFFLSeason(input: BuildFFLSeasonInput!): FFLBuiltSeason! @join__field(graph: FFL)
+
+  """Create a round in a season."""
+  addFFLRound(input: AddFFLRoundInput!): FFLBuiltRound! @join__field(graph: FFL)
+
+  """
+  Create a regular home-vs-away fixture in a round (match + two club_matches).
+  """
+  addFFLFixture(input: AddFFLFixtureInput!): FFLBuiltFixture! @join__field(graph: FFL)
+
+  """
+  Generate a full home-and-away season (round-robin) over the given club_seasons.
+  """
+  generateFFLHomeAndAway(input: GenerateFFLHomeAndAwayInput!): [FFLBuiltRound!]! @join__field(graph: FFL)
 }
 
 type PageInfo

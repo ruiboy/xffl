@@ -49,3 +49,8 @@ JOIN ffl.match m  ON m.id = cm.match_id
 JOIN ffl.round r  ON r.id = m.round_id
 JOIN ffl.season s ON s.id = r.season_id
 WHERE cm.id = $1 AND cm.deleted_at IS NULL;
+
+-- name: CreateClubMatch :one
+INSERT INTO ffl.club_match (match_id, club_season_id, side)
+VALUES ($1, $2, $3)
+RETURNING id, match_id, club_season_id, side, data_status;

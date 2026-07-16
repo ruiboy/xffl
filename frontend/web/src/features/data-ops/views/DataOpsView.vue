@@ -513,6 +513,11 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab: Season / fixture builder (historical import, slice 2c — skeleton) -->
+    <div v-if="activeTab === 'builder'">
+      <SeasonBuilder />
+    </div>
   </div>
 </template>
 
@@ -520,6 +525,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
+import SeasonBuilder from '../components/SeasonBuilder.vue'
 import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_FFL_CAPTURED_PAGES } from '../api/queries'
 import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, RECALCULATE_FFL_CLUB_MATCH_SCORE, CLEAR_FFL_FORUM_CAPTURES } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
@@ -546,6 +552,7 @@ const tabs = [
   { id: 'afl-stats', label: 'AFL Stats' },
   { id: 'calculate', label: 'Calculate' },
   { id: 'forum-capture', label: 'Forum Capture' },
+  { id: 'builder', label: 'Builder' },
 ]
 const activeTab = ref(initialTab)
 

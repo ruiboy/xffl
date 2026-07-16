@@ -12,7 +12,7 @@ See `plans/ideas.md` for full item descriptions where relevant.
 - [ ] FFL historical import (2006–2025) — human-in-the-loop capture (bookmarklet) + a scaffolding-first, layered import pipeline (fixtures → squads → trades → submitted teams); scores recomputed via per-season `Rules`, posted scores kept in notes for reconciliation. See [ffl-historical-import.md](ffl-historical-import.md)
   - [x] Slice 0 — nail down scoring eras (confirmed history in `rules_eras.go`; season→era tagging folded into slice 2, since seasons are created there)
   - [x] Slice 1 — capture + inspect (userscript → ingest → in-session parse; DataOps "Forum Capture" tab; validated end-to-end on real 2025 data)
-  - [ ] Slice 2 — fixtures importer (seasons/rounds/matches for one season; team registry)
+  - [x] Slice 2 — season + fixtures (manual builders, no forum parsing): write-side persistence (2a); season creation with year→`rules_id` (2b); fixture builder — round-robin generator + manual rounds/fixtures — backend + DataOps "Builder" tab skeleton (2c). Superbye/byes/finals deferred (added as-we-go). **UI needs `just supergraph-compose` to expose the new mutations.**
   - [ ] Slice 3 — squads importer + closed-set player resolution (memoized per season) + review
   - [ ] Slice 4 — trades importer (`PlayerSeason` from/to-round windows)
   - [ ] Slice 5 — submitted-teams importer (post classification + authoritative-post selection; commit via `ImportRoundTeams`, evaluated scoring + posted-to-notes)

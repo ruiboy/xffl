@@ -11,4 +11,5 @@ type Resolver struct {
 	Commands *application.Commands
 	DataOps  *dataops.DataOpsCommands
 	Captures *dataops.ForumCaptureBuffer
+	Builder  *dataops.Builder
 }

@@ -9,10 +9,16 @@ import (
 
 // WriteRepos provides repository access within a transaction.
 type WriteRepos struct {
+	Leagues       domain.LeagueRepository
+	Seasons       domain.SeasonRepository
+	Rounds        domain.RoundRepository
+	Matches       domain.MatchRepository
+	Clubs         domain.ClubRepository
+	ClubSeasons   domain.ClubSeasonRepository
+	ClubMatches   domain.ClubMatchRepository
 	Players       domain.PlayerRepository
 	PlayerSeasons domain.PlayerSeasonRepository
 	PlayerMatches domain.PlayerMatchRepository
-	ClubMatches   domain.ClubMatchRepository
 }
 
 // TxManager abstracts transactional execution.

@@ -6,6 +6,34 @@ export const CLEAR_FFL_FORUM_CAPTURES = gql`
   }
 `
 
+export const BUILD_FFL_SEASON = gql`
+  mutation BuildFFLSeason($input: BuildFFLSeasonInput!) {
+    buildFFLSeason(input: $input) {
+      seasonId
+      rulesId
+      clubSeasons { clubName clubSeasonId }
+    }
+  }
+`
+
+export const ADD_FFL_ROUND = gql`
+  mutation AddFFLRound($input: AddFFLRoundInput!) {
+    addFFLRound(input: $input) { roundId name }
+  }
+`
+
+export const ADD_FFL_FIXTURE = gql`
+  mutation AddFFLFixture($input: AddFFLFixtureInput!) {
+    addFFLFixture(input: $input) { matchId homeClubMatchId awayClubMatchId }
+  }
+`
+
+export const GENERATE_FFL_HOME_AND_AWAY = gql`
+  mutation GenerateFFLHomeAndAway($input: GenerateFFLHomeAndAwayInput!) {
+    generateFFLHomeAndAway(input: $input) { roundId name }
+  }
+`
+
 export const IMPORT_AFL_MATCH_STATS = gql`
   mutation ImportAFLMatchStats($matchId: ID!) {
     importAFLMatchStats(matchId: $matchId) {

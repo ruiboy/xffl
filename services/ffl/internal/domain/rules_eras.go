@@ -1,5 +1,10 @@
 package domain
 
+import (
+	"sort"
+	"strconv"
+)
+
 // Historical rules, one per scoring era. Each era is a standalone value — no
 // era is derived from another, so editing one can never silently shift another.
 // What has actually varied across eras is small (goal/tackle points, the star's
@@ -84,4 +89,25 @@ func init() {
 	for _, r := range []Rules{rules1998, rules1999, rules2000, rules2001, rules2011} {
 		rulesByID[r.ID] = r
 	}
+}
+
+// RulesForYear returns the ruleset id in effect for a season year — the latest
+// era that started on or before the year (era ids are their start years). A year
+// before every era falls back to the earliest era. Derived from the registry so
+// it can't drift from the defined eras.
+func RulesForYear(year int) string {
+	years := make([]int, 0, len(rulesByID))
+	for id := range rulesByID {
+		if y, err := strconv.Atoi(id); err == nil {
+			years = append(years, y)
+		}
+	}
+	sort.Ints(years)
+	chosen := years[0] // earliest, for years preceding all eras
+	for _, y := range years {
+		if y <= year {
+			chosen = y
+		}
+	}
+	return strconv.Itoa(chosen)
 }

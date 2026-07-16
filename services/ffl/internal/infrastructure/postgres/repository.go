@@ -26,6 +26,32 @@ func intToInt32Ptr(p *int) *int32 {
 	return &v
 }
 
+// --- League ---
+
+type LeagueRepository struct{ q *sqlcgen.Queries }
+
+func NewLeagueRepository(q *sqlcgen.Queries) *LeagueRepository { return &LeagueRepository{q: q} }
+
+func (r *LeagueRepository) FindAll(ctx context.Context) ([]domain.League, error) {
+	rows, err := r.q.FindAllLeagues(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.League, len(rows))
+	for i, row := range rows {
+		out[i] = domain.League{ID: int(row.ID), Name: row.Name}
+	}
+	return out, nil
+}
+
+func (r *LeagueRepository) Create(ctx context.Context, name string) (domain.League, error) {
+	row, err := r.q.CreateLeague(ctx, name)
+	if err != nil {
+		return domain.League{}, err
+	}
+	return domain.League{ID: int(row.ID), Name: row.Name}, nil
+}
+
 // --- Club ---
 
 type ClubRepository struct{ q *sqlcgen.Queries }
@@ -70,6 +96,25 @@ func (r *ClubRepository) FindByIDs(ctx context.Context, ids []int) (map[int]doma
 	return out, nil
 }
 
+func (r *ClubRepository) FindByName(ctx context.Context, name string) (domain.Club, error) {
+	row, err := r.q.FindClubByName(ctx, name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Club{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Club{}, err
+	}
+	return domain.Club{ID: int(row.ID), Name: row.Name}, nil
+}
+
+func (r *ClubRepository) Create(ctx context.Context, name string) (domain.Club, error) {
+	row, err := r.q.CreateClub(ctx, name)
+	if err != nil {
+		return domain.Club{}, err
+	}
+	return domain.Club{ID: int(row.ID), Name: row.Name}, nil
+}
+
 // --- Season ---
 
 type SeasonRepository struct{ q *sqlcgen.Queries }
@@ -92,6 +137,19 @@ func (r *SeasonRepository) FindAll(ctx context.Context) ([]domain.Season, error)
 
 func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season, error) {
 	row, err := r.q.FindSeasonByID(ctx, int32(id))
+	if err != nil {
+		return domain.Season{}, err
+	}
+	return domain.Season{ID: int(row.ID), Name: row.Name, LeagueID: int(row.LeagueID), AFLSeasonID: int(row.AflSeasonID), RulesID: row.RulesID}, nil
+}
+
+func (r *SeasonRepository) Create(ctx context.Context, leagueID int, name string, aflSeasonID int, rulesID string) (domain.Season, error) {
+	row, err := r.q.CreateSeason(ctx, sqlcgen.CreateSeasonParams{
+		LeagueID:    int32(leagueID),
+		Name:        name,
+		AflSeasonID: int32(aflSeasonID),
+		RulesID:     rulesID,
+	})
 	if err != nil {
 		return domain.Season{}, err
 	}
@@ -135,6 +193,19 @@ func (r *RoundRepository) FindByAFLRoundID(ctx context.Context, aflRoundID int) 
 		return domain.Round{}, err
 	}
 	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID)}, nil
+}
+
+func (r *RoundRepository) Create(ctx context.Context, seasonID int, name string, aflRoundID int, roundType domain.RoundType) (domain.Round, error) {
+	row, err := r.q.CreateRound(ctx, sqlcgen.CreateRoundParams{
+		SeasonID:   int32(seasonID),
+		Name:       name,
+		AflRoundID: int32(aflRoundID),
+		RoundType:  string(roundType),
+	})
+	if err != nil {
+		return domain.Round{}, err
+	}
+	return domain.Round{ID: int(row.ID), Name: row.Name, SeasonID: int(row.SeasonID), AFLRoundID: int(row.AflRoundID), Type: domain.RoundType(row.RoundType)}, nil
 }
 
 // --- Match ---
@@ -279,6 +350,17 @@ func (r *MatchRepository) hydrateClubMatch(ctx context.Context, cm *domain.ClubM
 	return nil
 }
 
+func (r *MatchRepository) Create(ctx context.Context, roundID int, matchStyle *string) (domain.Match, error) {
+	row, err := r.q.CreateMatch(ctx, sqlcgen.CreateMatchParams{
+		RoundID:    int32(roundID),
+		MatchStyle: matchStyle,
+	})
+	if err != nil {
+		return domain.Match{}, err
+	}
+	return domain.Match{ID: int(row.ID), RoundID: int(row.RoundID)}, nil
+}
+
 // --- ClubSeason ---
 
 type ClubSeasonRepository struct{ q *sqlcgen.Queries }
@@ -354,6 +436,18 @@ func (r *ClubSeasonRepository) Update(ctx context.Context, cs domain.ClubSeason)
 		DrvExtraPoints:       &ep,
 		DrvPremiershipPoints: &pp,
 	})
+}
+
+func (r *ClubSeasonRepository) Create(ctx context.Context, clubID, seasonID int) (domain.ClubSeason, error) {
+	row, err := r.q.CreateClubSeason(ctx, sqlcgen.CreateClubSeasonParams{
+		ClubID:   int32(clubID),
+		SeasonID: int32(seasonID),
+	})
+	if err != nil {
+		return domain.ClubSeason{}, err
+	}
+	// Ladder counters default to 0 on creation.
+	return domain.ClubSeason{ID: int(row.ID), ClubID: int(row.ClubID), SeasonID: int(row.SeasonID)}, nil
 }
 
 // --- ClubMatch ---
@@ -458,6 +552,18 @@ func (r *ClubMatchRepository) CountFinalByMatchID(ctx context.Context, matchID i
 
 func (r *ClubMatchRepository) GetRulesID(ctx context.Context, clubMatchID int) (string, error) {
 	return r.q.GetRulesIDByClubMatchID(ctx, int32(clubMatchID))
+}
+
+func (r *ClubMatchRepository) Create(ctx context.Context, matchID, clubSeasonID int, side string) (domain.ClubMatch, error) {
+	row, err := r.q.CreateClubMatch(ctx, sqlcgen.CreateClubMatchParams{
+		MatchID:      int32(matchID),
+		ClubSeasonID: int32(clubSeasonID),
+		Side:         side,
+	})
+	if err != nil {
+		return domain.ClubMatch{}, err
+	}
+	return domain.ClubMatch{ID: int(row.ID), MatchID: int(row.MatchID), ClubSeasonID: int(row.ClubSeasonID), DataStatus: domain.ClubMatchDataStatus(row.DataStatus)}, nil
 }
 
 // --- Player ---

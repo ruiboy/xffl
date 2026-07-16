@@ -36,10 +36,16 @@ func (db *DB) WithTx(ctx context.Context, fn func(repos application.WriteRepos) 
 
 	txQ := sqlcgen.New(tx)
 	repos := application.WriteRepos{
+		Leagues:       NewLeagueRepository(txQ),
+		Seasons:       NewSeasonRepository(txQ),
+		Rounds:        NewRoundRepository(txQ),
+		Matches:       NewMatchRepository(txQ),
+		Clubs:         NewClubRepository(txQ),
+		ClubSeasons:   NewClubSeasonRepository(txQ),
+		ClubMatches:   NewClubMatchRepository(txQ),
 		Players:       NewPlayerRepository(txQ),
 		PlayerSeasons: NewPlayerSeasonRepository(txQ),
 		PlayerMatches: NewPlayerMatchRepository(txQ),
-		ClubMatches:   NewClubMatchRepository(txQ),
 	}
 
 	if err := fn(repos); err != nil {

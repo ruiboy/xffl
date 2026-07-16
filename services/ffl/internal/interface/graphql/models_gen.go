@@ -40,11 +40,31 @@ type AFLSeason struct {
 
 func (AFLSeason) IsEntity() {}
 
+type AddFFLFixtureInput struct {
+	RoundID          string `json:"roundId"`
+	HomeClubSeasonID string `json:"homeClubSeasonId"`
+	AwayClubSeasonID string `json:"awayClubSeasonId"`
+}
+
 type AddFFLPlayerToSeasonInput struct {
 	ClubSeasonID      string  `json:"clubSeasonId"`
 	AflPlayerSeasonID string  `json:"aflPlayerSeasonId"`
 	FromRoundID       *string `json:"fromRoundId,omitempty"`
 	CostCents         *int    `json:"costCents,omitempty"`
+}
+
+type AddFFLRoundInput struct {
+	SeasonID   string `json:"seasonId"`
+	Name       string `json:"name"`
+	AflRoundID string `json:"aflRoundId"`
+	// MINOR (default) or GRAND_FINAL.
+	RoundType *string `json:"roundType,omitempty"`
+}
+
+type BuildFFLSeasonInput struct {
+	Year        int      `json:"year"`
+	AflSeasonID string   `json:"aflSeasonId"`
+	ClubNames   []string `json:"clubNames"`
 }
 
 type CalculateFFLFantasyScoreInput struct {
@@ -81,6 +101,28 @@ type DeclareFFLSubstitutionsInput struct {
 	ClubMatchID string           `json:"clubMatchId"`
 	Subs        []*FFLSubPairing `json:"subs"`
 	Interchange *FFLSubPairing   `json:"interchange,omitempty"`
+}
+
+type FFLBuiltClubSeason struct {
+	ClubName     string `json:"clubName"`
+	ClubSeasonID string `json:"clubSeasonId"`
+}
+
+type FFLBuiltFixture struct {
+	MatchID         string `json:"matchId"`
+	HomeClubMatchID string `json:"homeClubMatchId"`
+	AwayClubMatchID string `json:"awayClubMatchId"`
+}
+
+type FFLBuiltRound struct {
+	RoundID string `json:"roundId"`
+	Name    string `json:"name"`
+}
+
+type FFLBuiltSeason struct {
+	SeasonID    string                `json:"seasonId"`
+	RulesID     string                `json:"rulesId"`
+	ClubSeasons []*FFLBuiltClubSeason `json:"clubSeasons"`
 }
 
 type FFLClub struct {
@@ -238,6 +280,14 @@ type FFLTeamPlayerInput struct {
 	BackupPositions     *string `json:"backupPositions,omitempty"`
 	InterchangePosition *string `json:"interchangePosition,omitempty"`
 	DisplayOrder        int     `json:"displayOrder"`
+}
+
+type GenerateFFLHomeAndAwayInput struct {
+	SeasonID        string   `json:"seasonId"`
+	ClubSeasonIds   []string `json:"clubSeasonIds"`
+	Rounds          int      `json:"rounds"`
+	AflRoundStartID string   `json:"aflRoundStartId"`
+	NamePrefix      *string  `json:"namePrefix,omitempty"`
 }
 
 type IngestFFLForumPageInput struct {

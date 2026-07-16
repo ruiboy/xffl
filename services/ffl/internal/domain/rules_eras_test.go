@@ -47,6 +47,24 @@ func TestRulesEras(t *testing.T) {
 	}
 }
 
+func TestRulesForYear(t *testing.T) {
+	cases := map[int]string{
+		1997: "1998", // before all eras → earliest
+		1998: "1998",
+		1999: "1999",
+		2000: "2000",
+		2001: "2001",
+		2007: "2001", // between 2001 and 2011
+		2010: "2001",
+		2011: "2011",
+		2015: "2011",
+		2025: "2011",
+	}
+	for year, want := range cases {
+		assert.Equalf(t, want, RulesForYear(year), "year %d", year)
+	}
+}
+
 // Eras are independent standalone values: the 1998 star including hitouts must
 // not imply the current star does.
 func TestRulesEras_Isolated(t *testing.T) {
