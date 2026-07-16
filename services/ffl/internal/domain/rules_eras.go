@@ -1,8 +1,9 @@
 package domain
 
 import (
+	"fmt"
 	"sort"
-	"strconv"
+	"strings"
 )
 
 // Historical rules, one per scoring era. Each era is a standalone value — no
@@ -91,23 +92,38 @@ func init() {
 	}
 }
 
-// RulesForYear returns the ruleset id in effect for a season year — the latest
-// era that started on or before the year (era ids are their start years). A year
-// before every era falls back to the earliest era. Derived from the registry so
-// it can't drift from the defined eras.
-func RulesForYear(year int) string {
-	years := make([]int, 0, len(rulesByID))
-	for id := range rulesByID {
-		if y, err := strconv.Atoi(id); err == nil {
-			years = append(years, y)
+// AllRules returns every defined era, ascending by id (era ids are start years),
+// so callers such as the season builder can offer them for selection.
+func AllRules() []Rules {
+	out := make([]Rules, 0, len(rulesByID))
+	for _, r := range rulesByID {
+		out = append(out, r)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+// Describe summarises the parameters that distinguish this era from its
+// neighbours — the scoring and composition knobs that have actually varied —
+// as a short human label for a picker (e.g. "goals 5 · tackles 4 · bench 4 · interchange").
+func (r Rules) Describe() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "goals %d · tackles %d", r.Scoring.Points[StatGoals], r.Scoring.Points[StatTackles])
+	if r.Composition.BenchSize > 0 {
+		fmt.Fprintf(&b, " · bench %d", r.Composition.BenchSize)
+	} else {
+		b.WriteString(" · no bench")
+	}
+	if r.Composition.Interchange {
+		b.WriteString(" · interchange")
+	}
+	if star, ok := r.position(PositionStar); ok {
+		for _, s := range star.Stats {
+			if s == StatHitouts {
+				b.WriteString(" · star scores hitouts")
+				break
+			}
 		}
 	}
-	sort.Ints(years)
-	chosen := years[0] // earliest, for years preceding all eras
-	for _, y := range years {
-		if y <= year {
-			chosen = y
-		}
-	}
-	return strconv.Itoa(chosen)
+	return b.String()
 }

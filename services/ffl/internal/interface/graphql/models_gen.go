@@ -62,9 +62,13 @@ type AddFFLRoundInput struct {
 }
 
 type BuildFFLSeasonInput struct {
-	Year        int      `json:"year"`
-	AflSeasonID string   `json:"aflSeasonId"`
-	ClubNames   []string `json:"clubNames"`
+	// Free-text FFL season name (e.g. "2024", "2024 Winter").
+	SeasonName string `json:"seasonName"`
+	// The scoring era to apply (from fflRulesEras).
+	RulesID     string `json:"rulesId"`
+	AflSeasonID string `json:"aflSeasonId"`
+	// Existing clubs playing this season, by id.
+	ClubIds []string `json:"clubIds"`
 }
 
 type CalculateFFLFantasyScoreInput struct {
@@ -253,6 +257,12 @@ type FFLRound struct {
 	AflRound   *AFLRound   `json:"aflRound,omitempty"`
 	Season     *FFLSeason  `json:"season"`
 	Matches    []*FFLMatch `json:"matches"`
+}
+
+// A selectable scoring era: its rules_id and a human summary of what distinguishes it.
+type FFLRulesEra struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
 }
 
 type FFLSeason struct {

@@ -243,9 +243,10 @@ enum AFLStatSummaryMethod
 input BuildFFLSeasonInput
   @join__type(graph: FFL)
 {
-  year: Int!
+  seasonName: String!
+  rulesId: String!
   aflSeasonId: ID!
-  clubNames: [String!]!
+  clubIds: [ID!]!
 }
 
 input CalculateFFLFantasyScoreInput
@@ -509,6 +510,16 @@ type FFLRound
   aflRound: AFLRound
   season: FFLSeason!
   matches: [FFLMatch!]!
+}
+
+"""
+A selectable scoring era: its rules_id and a human summary of what distinguishes it.
+"""
+type FFLRulesEra
+  @join__type(graph: FFL)
+{
+  id: String!
+  label: String!
 }
 
 type FFLSeason
@@ -786,6 +797,11 @@ type Query
   Forum pages captured this session for preview (ephemeral; not persisted).
   """
   fflCapturedPages: [FFLPreviewedPage!]! @join__field(graph: FFL)
+
+  """
+  The scoring eras available to assign to a season (for the season builder).
+  """
+  fflRulesEras: [FFLRulesEra!]! @join__field(graph: FFL)
 }
 
 input RemoveFFLPlayerFromSeasonInput

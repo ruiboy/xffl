@@ -37,6 +37,15 @@ extend type Mutation {
 extend type Query {
   "Forum pages captured this session for preview (ephemeral; not persisted)."
   fflCapturedPages: [FFLPreviewedPage!]!
+
+  "The scoring eras available to assign to a season (for the season builder)."
+  fflRulesEras: [FFLRulesEra!]!
+}
+
+"A selectable scoring era: its rules_id and a human summary of what distinguishes it."
+type FFLRulesEra {
+  id: String!
+  label: String!
 }
 
 type ParseFFLTeamSubmissionResult {
@@ -127,9 +136,10 @@ type FFLParsedPlayer {
 }
 
 input BuildFFLSeasonInput {
-  year: Int!
+  seasonName: String!
+  rulesId: String!
   aflSeasonId: ID!
-  clubNames: [String!]!
+  clubIds: [ID!]!
 }
 
 type FFLBuiltSeason {

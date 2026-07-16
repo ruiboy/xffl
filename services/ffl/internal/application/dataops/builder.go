@@ -2,9 +2,7 @@ package dataops
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strconv"
 
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
@@ -20,12 +18,14 @@ func NewBuilder(tx application.TxManager) *Builder {
 	return &Builder{tx: tx}
 }
 
-// BuildSeasonParams: the year, the AFL season it maps to (resolved by the
-// caller), and the clubs playing this season.
+// BuildSeasonParams: the FFL season name (free text), the scoring era to apply
+// (chosen explicitly), the AFL season it maps to (resolved by the caller), and
+// the existing clubs playing this season (by id — clubs are pre-registered).
 type BuildSeasonParams struct {
-	Year        int
+	SeasonName  string
+	RulesID     string
 	AFLSeasonID int
-	ClubNames   []string
+	ClubIDs     []int
 }
 
 type BuiltClubSeason struct {
@@ -39,35 +39,38 @@ type BuiltSeason struct {
 	ClubSeasons []BuiltClubSeason
 }
 
-// BuildSeason creates the season — with `rules_id` auto-assigned from the year —
-// and a club_season per club (clubs are found-or-created by name), atomically.
+// BuildSeason creates the season — with the chosen `rules_id` — and a
+// club_season per selected (pre-existing) club, atomically.
 func (b *Builder) BuildSeason(ctx context.Context, params BuildSeasonParams) (BuiltSeason, error) {
+	if _, err := domain.RulesFor(params.RulesID); err != nil {
+		return BuiltSeason{}, err
+	}
 	var out BuiltSeason
 	err := b.tx.WithTx(ctx, func(repos application.WriteRepos) error {
 		leagueID, err := ensureLeague(ctx, repos)
 		if err != nil {
 			return err
 		}
-		rulesID := domain.RulesForYear(params.Year)
-		season, err := repos.Seasons.Create(ctx, leagueID, strconv.Itoa(params.Year), params.AFLSeasonID, rulesID)
+		season, err := repos.Seasons.Create(ctx, leagueID, params.SeasonName, params.AFLSeasonID, params.RulesID)
 		if err != nil {
 			return err
 		}
 		out.SeasonID = season.ID
-		out.RulesID = rulesID
-		for _, name := range params.ClubNames {
-			club, err := repos.Clubs.FindByName(ctx, name)
-			if errors.Is(err, domain.ErrNotFound) {
-				club, err = repos.Clubs.Create(ctx, name)
+		out.RulesID = params.RulesID
+		clubs, err := repos.Clubs.FindByIDs(ctx, params.ClubIDs)
+		if err != nil {
+			return err
+		}
+		for _, clubID := range params.ClubIDs {
+			club, ok := clubs[clubID]
+			if !ok {
+				return fmt.Errorf("club %d not found", clubID)
 			}
+			cs, err := repos.ClubSeasons.Create(ctx, clubID, season.ID)
 			if err != nil {
 				return err
 			}
-			cs, err := repos.ClubSeasons.Create(ctx, club.ID, season.ID)
-			if err != nil {
-				return err
-			}
-			out.ClubSeasons = append(out.ClubSeasons, BuiltClubSeason{ClubName: name, ClubSeasonID: cs.ID})
+			out.ClubSeasons = append(out.ClubSeasons, BuiltClubSeason{ClubName: club.Name, ClubSeasonID: cs.ID})
 		}
 		return nil
 	})

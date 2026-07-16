@@ -231,10 +231,19 @@ func (r *mutationResolver) BuildFFLSeason(ctx context.Context, input BuildFFLSea
 	if err != nil {
 		return nil, err
 	}
+	clubIDs := make([]int, len(input.ClubIds))
+	for i, id := range input.ClubIds {
+		v, err := fromID(id)
+		if err != nil {
+			return nil, err
+		}
+		clubIDs[i] = v
+	}
 	built, err := r.Builder.BuildSeason(ctx, dataops.BuildSeasonParams{
-		Year:        input.Year,
+		SeasonName:  input.SeasonName,
+		RulesID:     input.RulesID,
 		AFLSeasonID: aflSeasonID,
-		ClubNames:   input.ClubNames,
+		ClubIDs:     clubIDs,
 	})
 	if err != nil {
 		return nil, err
@@ -331,6 +340,16 @@ func (r *queryResolver) FflCapturedPages(ctx context.Context) ([]*FFLPreviewedPa
 	out := make([]*FFLPreviewedPage, 0, len(pages))
 	for _, pg := range pages {
 		out = append(out, toPreviewedPage(pg))
+	}
+	return out, nil
+}
+
+// FflRulesEras is the resolver for the fflRulesEras field.
+func (r *queryResolver) FflRulesEras(ctx context.Context) ([]*FFLRulesEra, error) {
+	rules := domain.AllRules()
+	out := make([]*FFLRulesEra, len(rules))
+	for i, rule := range rules {
+		out[i] = &FFLRulesEra{ID: rule.ID, Label: rule.Describe()}
 	}
 	return out, nil
 }

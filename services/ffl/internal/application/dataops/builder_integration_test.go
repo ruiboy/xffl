@@ -31,18 +31,22 @@ func TestMain(m *testing.M) {
 }
 
 // TestBuilder exercises the season/fixture builder through the real transaction
-// manager: build a season (year → rules_id), add a round, add a fixture.
+// manager: build a season (explicit rules_id + existing clubs), add a round, add a fixture.
 func TestBuilder(t *testing.T) {
 	ctx := context.Background()
 	builder := NewBuilder(postgres.NewDB(testPool))
 
+	eagles := createClub(ctx, t, "Builder Eagles")
+	lions := createClub(ctx, t, "Builder Lions")
+
 	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
-		Year:        2015,
+		SeasonName:  "2015",
+		RulesID:     "2011",
 		AFLSeasonID: 1,
-		ClubNames:   []string{"Builder Eagles", "Builder Lions"},
+		ClubIDs:     []int{eagles, lions},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "2011", built.RulesID, "2015 maps to the 2011 era")
+	assert.Equal(t, "2011", built.RulesID)
 	require.Len(t, built.ClubSeasons, 2)
 
 	round, err := builder.AddRound(ctx, built.SeasonID, "Round 1", 1, domain.RoundTypeMinor)
@@ -60,14 +64,24 @@ func TestBuilder(t *testing.T) {
 	assert.Equal(t, fixture.HomeClubMatchID, got.Home.ID)
 	assert.Equal(t, fixture.AwayClubMatchID, got.Away.ID)
 
-	// Re-building the same clubs in another season reuses the club rows.
+	// The same club can play another season (a new club_season row).
 	built2, err := builder.BuildSeason(ctx, BuildSeasonParams{
-		Year:        2016,
+		SeasonName:  "2016",
+		RulesID:     "2011",
 		AFLSeasonID: 2,
-		ClubNames:   []string{"Builder Eagles"},
+		ClubIDs:     []int{eagles},
 	})
 	require.NoError(t, err)
 	assert.Len(t, built2.ClubSeasons, 1)
+}
+
+// createClub inserts a club and returns its id — the season builder now takes
+// pre-existing clubs by id rather than creating them by name.
+func createClub(ctx context.Context, t *testing.T, name string) int {
+	t.Helper()
+	club, err := postgres.NewClubRepository(sqlcgen.New(testPool)).Create(ctx, name)
+	require.NoError(t, err)
+	return club.ID
 }
 
 // TestBuilder_GenerateHomeAndAway builds a full 6-round round-robin in one call.
@@ -75,10 +89,15 @@ func TestBuilder_GenerateHomeAndAway(t *testing.T) {
 	ctx := context.Background()
 	builder := NewBuilder(postgres.NewDB(testPool))
 
+	clubIDs := []int{
+		createClub(ctx, t, "Gen A"), createClub(ctx, t, "Gen B"),
+		createClub(ctx, t, "Gen C"), createClub(ctx, t, "Gen D"),
+	}
 	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
-		Year:        2017,
+		SeasonName:  "2017",
+		RulesID:     "2011",
 		AFLSeasonID: 3,
-		ClubNames:   []string{"Gen A", "Gen B", "Gen C", "Gen D"},
+		ClubIDs:     clubIDs,
 	})
 	require.NoError(t, err)
 
