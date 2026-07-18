@@ -231,103 +231,23 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 // RecalculateFflLadder rebuilds FFL ladder standings for the given season from all final matches.
 // Idempotent — safe to call multiple times.
 func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error {
-	matches, err := c.matches.FindFinalBySeasonID(ctx, seasonID)
+	results, err := c.clubMatches.FindFinalClubMatchesBySeasonID(ctx, seasonID)
 	if err != nil {
-		return fmt.Errorf("load final FFL matches: %w", err)
+		return fmt.Errorf("load final FFL club_matches: %w", err)
 	}
-	byes, err := c.clubMatches.FindFinalByesBySeasonID(ctx, seasonID)
-	if err != nil {
-		return fmt.Errorf("load final FFL byes: %w", err)
-	}
-	superbyeCMs, err := c.clubMatches.FindFinalSuperbyesBySeasonID(ctx, seasonID)
-	if err != nil {
-		return fmt.Errorf("load final FFL superbyes: %w", err)
-	}
-	superbyes := groupSuperbyes(superbyeCMs)
-	for _, cs := range domain.CalculateLadder(matches, byes, superbyes) {
+	for _, cs := range domain.CalculateLadder(results) {
 		if err := c.clubSeasons.Update(ctx, cs); err != nil {
 			slog.WarnContext(ctx, "update club season failed",
 				slog.Int("club_season_id", cs.ID), slog.Any("error", err))
 		}
 	}
-	for _, m := range matches {
-		homePts, awayPts := matchPremiershipPoints(m)
-		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Home.ID, homePts); err != nil {
+	for clubMatchID, pts := range domain.ClubMatchPremiershipPoints(results) {
+		if err := c.clubMatches.UpdatePremiershipPoints(ctx, clubMatchID, pts); err != nil {
 			slog.WarnContext(ctx, "update club_match premiership_points failed",
-				slog.Int("club_match_id", m.Home.ID), slog.Any("error", err))
-		}
-		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Away.ID, awayPts); err != nil {
-			slog.WarnContext(ctx, "update club_match premiership_points failed",
-				slog.Int("club_match_id", m.Away.ID), slog.Any("error", err))
-		}
-	}
-	// A superbye's top scorer(s) get one point recorded on their club_match.
-	for _, pts := range superbyePremiershipPoints(superbyeCMs) {
-		if err := c.clubMatches.UpdatePremiershipPoints(ctx, pts.clubMatchID, pts.points); err != nil {
-			slog.WarnContext(ctx, "update superbye club_match premiership_points failed",
-				slog.Int("club_match_id", pts.clubMatchID), slog.Any("error", err))
+				slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 		}
 	}
 	return nil
-}
-
-// groupSuperbyes folds loaded superbye club_matches into per-match domain values
-// for the ladder calculation.
-func groupSuperbyes(cms []domain.SuperbyeClubMatch) []domain.SuperbyeMatch {
-	byMatch := make(map[int]*domain.SuperbyeMatch)
-	order := make([]int, 0)
-	for _, cm := range cms {
-		sb, ok := byMatch[cm.MatchID]
-		if !ok {
-			sb = &domain.SuperbyeMatch{RoundType: cm.RoundType}
-			byMatch[cm.MatchID] = sb
-			order = append(order, cm.MatchID)
-		}
-		sb.Entries = append(sb.Entries, domain.SuperbyeEntry{ClubSeasonID: cm.ClubSeasonID, Score: cm.Score})
-	}
-	out := make([]domain.SuperbyeMatch, 0, len(order))
-	for _, id := range order {
-		out = append(out, *byMatch[id])
-	}
-	return out
-}
-
-type superbyePoints struct {
-	clubMatchID int
-	points      int
-}
-
-// superbyePremiershipPoints assigns 1 point to each superbye club_match that tied
-// for the top score in its match, and 0 to the rest.
-func superbyePremiershipPoints(cms []domain.SuperbyeClubMatch) []superbyePoints {
-	top := make(map[int]int) // matchID → max score
-	for _, cm := range cms {
-		if cm.Score > top[cm.MatchID] {
-			top[cm.MatchID] = cm.Score
-		}
-	}
-	out := make([]superbyePoints, len(cms))
-	for i, cm := range cms {
-		pts := 0
-		if top[cm.MatchID] > 0 && cm.Score == top[cm.MatchID] {
-			pts = 1
-		}
-		out[i] = superbyePoints{clubMatchID: cm.ClubMatchID, points: pts}
-	}
-	return out
-}
-
-func matchPremiershipPoints(m domain.Match) (home, away int) {
-	switch m.DeriveResult() {
-	case domain.MatchResultHomeWin:
-		return domain.PremiershipPointsWin, 0
-	case domain.MatchResultAwayWin:
-		return 0, domain.PremiershipPointsWin
-	case domain.MatchResultDraw:
-		return domain.PremiershipPointsDraw, domain.PremiershipPointsDraw
-	default:
-		return 0, 0
-	}
 }
 
 // AllAFLStatusesFinal returns true when every player_match in the club_match has

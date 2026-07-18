@@ -34,68 +34,9 @@ func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Creat
 	return i, err
 }
 
-const findFinalFflMatchesBySeasonID = `-- name: FindFinalFflMatchesBySeasonID :many
-SELECT m.id, m.round_id,
-       r.round_type,
-       home.id             AS home_club_match_id,
-       home.club_season_id AS home_club_season_id,
-       COALESCE(home.drv_score, 0) AS home_score,
-       away.id             AS away_club_match_id,
-       away.club_season_id AS away_club_season_id,
-       COALESCE(away.drv_score, 0) AS away_score
-FROM ffl.match m
-JOIN ffl.round r ON r.id = m.round_id
-JOIN ffl.club_match home ON home.match_id = m.id AND home.side = 'home'
-     AND home.data_status = 'final' AND home.deleted_at IS NULL
-JOIN ffl.club_match away ON away.match_id = m.id AND away.side = 'away'
-     AND away.data_status = 'final' AND away.deleted_at IS NULL
-WHERE r.season_id = $1 AND m.deleted_at IS NULL
-`
-
-type FindFinalFflMatchesBySeasonIDRow struct {
-	ID               int32
-	RoundID          int32
-	RoundType        string
-	HomeClubMatchID  int32
-	HomeClubSeasonID int32
-	HomeScore        int32
-	AwayClubMatchID  int32
-	AwayClubSeasonID int32
-	AwayScore        int32
-}
-
-func (q *Queries) FindFinalFflMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflMatchesBySeasonIDRow, error) {
-	rows, err := q.db.Query(ctx, findFinalFflMatchesBySeasonID, seasonID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindFinalFflMatchesBySeasonIDRow{}
-	for rows.Next() {
-		var i FindFinalFflMatchesBySeasonIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.RoundID,
-			&i.RoundType,
-			&i.HomeClubMatchID,
-			&i.HomeClubSeasonID,
-			&i.HomeScore,
-			&i.AwayClubMatchID,
-			&i.AwayClubSeasonID,
-			&i.AwayScore,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const findMatchByID = `-- name: FindMatchByID :one
 SELECT m.id, m.round_id,
+       COALESCE(m.match_style, '') AS match_style,
        COALESCE(home.id, 0) AS home_club_match_id,
        COALESCE(away.id, 0) AS away_club_match_id,
        COALESCE(m.venue, '') AS venue,
@@ -110,6 +51,7 @@ WHERE m.id = $1 AND m.deleted_at IS NULL
 type FindMatchByIDRow struct {
 	ID              int32
 	RoundID         int32
+	MatchStyle      string
 	HomeClubMatchID int32
 	AwayClubMatchID int32
 	Venue           string
@@ -123,6 +65,7 @@ func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.RoundID,
+		&i.MatchStyle,
 		&i.HomeClubMatchID,
 		&i.AwayClubMatchID,
 		&i.Venue,
@@ -134,6 +77,7 @@ func (q *Queries) FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow
 
 const findMatchesByIDs = `-- name: FindMatchesByIDs :many
 SELECT m.id, m.round_id,
+       COALESCE(m.match_style, '') AS match_style,
        COALESCE(home.id, 0) AS home_club_match_id,
        COALESCE(away.id, 0) AS away_club_match_id,
        COALESCE(m.venue, '') AS venue,
@@ -149,6 +93,7 @@ ORDER BY m.id
 type FindMatchesByIDsRow struct {
 	ID              int32
 	RoundID         int32
+	MatchStyle      string
 	HomeClubMatchID int32
 	AwayClubMatchID int32
 	Venue           string
@@ -168,6 +113,7 @@ func (q *Queries) FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatc
 		if err := rows.Scan(
 			&i.ID,
 			&i.RoundID,
+			&i.MatchStyle,
 			&i.HomeClubMatchID,
 			&i.AwayClubMatchID,
 			&i.Venue,

@@ -8,44 +8,38 @@ import (
 	"xffl/services/ffl/internal/domain"
 )
 
-// FixtureSpec is one home-vs-away pairing in a round, by club_season id.
-type FixtureSpec struct {
-	HomeClubSeasonID int
-	AwayClubSeasonID int
+// MatchSpec is one match in a round: its style and the club_seasons taking part.
+// The club_season ordering is meaningful for versus ([home, away]); a bye has one
+// club, a superbye lists every participating club.
+type MatchSpec struct {
+	Style         domain.MatchStyle
+	ClubSeasonIDs []int
 }
 
 // RoundSpec is the desired state of a single round. A nil RoundID means a new
-// round; a set RoundID targets an existing round in the season.
-//
-// Byes are the clubs sitting out the head-to-head this round: unlike an AFL bye
-// they still field a scoring team, so each becomes a single-sided bye match
-// (one club_match, no opponent).
+// round; a set RoundID targets an existing round in the season. A round is just
+// its list of matches — versus, bye and superbye are all matches, distinguished
+// by Style.
 type RoundSpec struct {
 	RoundID    *int
 	Name       string
 	AFLRoundID int
 	Type       domain.RoundType
-	Fixtures   []FixtureSpec
-	Byes       []int // club_season ids on a (scoring) bye
-	Superbye   []int // club_season ids in the round's superbye (empty = none)
+	Matches    []MatchSpec
 }
 
-// FixtureRound is a round loaded for the builder: its fixtures and byes, plus
-// whether it is locked (has submitted teams, so its fixtures are immutable).
+// FixtureRound is a round loaded for the builder: its matches, plus whether it is
+// locked (has submitted teams, so its fixtures are immutable).
 type FixtureRound struct {
 	RoundID    int
 	Name       string
 	AFLRoundID int
 	Type       domain.RoundType
 	Locked     bool
-	Fixtures   []FixtureSpec
-	Byes       []int
-	Superbye   []int
+	Matches    []MatchSpec
 }
 
-// LoadFixtures reads a season's rounds with their fixtures and byes for the
-// builder to edit. Byes (single-sided bye matches) are surfaced separately from
-// home-vs-away fixtures.
+// LoadFixtures reads a season's rounds and their matches for the builder to edit.
 func (b *Builder) LoadFixtures(ctx context.Context, seasonID int) ([]FixtureRound, error) {
 	var out []FixtureRound
 	err := b.tx.WithTx(ctx, func(repos application.WriteRepos) error {
@@ -67,28 +61,16 @@ func (b *Builder) LoadFixtures(ctx context.Context, seasonID int) ([]FixtureRoun
 				return err
 			}
 			for _, m := range matches {
+				// FindByMatchID orders home before away, so versus ids read [home, away].
 				cms, err := repos.ClubMatches.FindByMatchID(ctx, m.ID)
 				if err != nil {
 					return err
 				}
-				switch m.MatchStyle {
-				case "superbye":
-					for _, cm := range cms {
-						fr.Superbye = append(fr.Superbye, cm.ClubSeasonID)
-					}
-				case "bye":
-					if len(cms) == 1 {
-						fr.Byes = append(fr.Byes, cms[0].ClubSeasonID)
-					}
-				default:
-					// Regular match: FindByMatchID orders home before away.
-					if len(cms) == 2 {
-						fr.Fixtures = append(fr.Fixtures, FixtureSpec{
-							HomeClubSeasonID: cms[0].ClubSeasonID,
-							AwayClubSeasonID: cms[1].ClubSeasonID,
-						})
-					}
+				ids := make([]int, len(cms))
+				for i, cm := range cms {
+					ids[i] = cm.ClubSeasonID
 				}
+				fr.Matches = append(fr.Matches, MatchSpec{Style: m.MatchStyle, ClubSeasonIDs: ids})
 			}
 			out = append(out, fr)
 		}
@@ -104,8 +86,8 @@ func (b *Builder) LoadFixtures(ctx context.Context, seasonID int) ([]FixtureRoun
 // Reconciliation is round-granular and protects entered teams:
 //   - A round with submitted teams (any player_match) is immutable: it is left
 //     untouched, and removing it is refused.
-//   - An existing round without teams is replaced wholesale (its fixtures/byes
-//     are rebuilt from the spec) and its metadata updated.
+//   - An existing round without teams is replaced wholesale (its matches are
+//     rebuilt from the spec) and its metadata updated.
 //   - A new round (nil RoundID) is created.
 //   - An existing round absent from the spec is deleted (unless it has teams).
 func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []RoundSpec) error {
@@ -158,7 +140,7 @@ func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []Round
 				if err != nil {
 					return err
 				}
-				if err := writeRoundFixtures(ctx, repos, rnd.ID, r); err != nil {
+				if err := writeRoundMatches(ctx, repos, rnd.ID, r); err != nil {
 					return err
 				}
 				continue
@@ -173,7 +155,7 @@ func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []Round
 			if err := deleteRoundFixtures(ctx, repos, id); err != nil {
 				return err
 			}
-			if err := writeRoundFixtures(ctx, repos, id, r); err != nil {
+			if err := writeRoundMatches(ctx, repos, id, r); err != nil {
 				return err
 			}
 		}
@@ -195,43 +177,32 @@ func deleteRoundFixtures(ctx context.Context, repos application.WriteRepos, roun
 	return repos.Matches.SoftDeleteByRoundID(ctx, roundID)
 }
 
-// writeRoundFixtures creates the round's home-vs-away matches and single-sided
-// bye matches.
-func writeRoundFixtures(ctx context.Context, repos application.WriteRepos, roundID int, r RoundSpec) error {
-	for _, f := range r.Fixtures {
-		m, err := repos.Matches.Create(ctx, roundID, nil)
+// writeRoundMatches creates a round's matches, each with its style and a
+// club_match per participating club.
+func writeRoundMatches(ctx context.Context, repos application.WriteRepos, roundID int, r RoundSpec) error {
+	for _, ms := range r.Matches {
+		style := string(ms.Style)
+		m, err := repos.Matches.Create(ctx, roundID, &style)
 		if err != nil {
 			return err
 		}
-		if _, err := repos.ClubMatches.Create(ctx, m.ID, f.HomeClubSeasonID, "home"); err != nil {
-			return err
-		}
-		if _, err := repos.ClubMatches.Create(ctx, m.ID, f.AwayClubSeasonID, "away"); err != nil {
-			return err
-		}
-	}
-	byeStyle := "bye"
-	for _, cs := range r.Byes {
-		m, err := repos.Matches.Create(ctx, roundID, &byeStyle)
-		if err != nil {
-			return err
-		}
-		if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, "bye"); err != nil {
-			return err
-		}
-	}
-	// A superbye is one match containing a club_match for every participating club.
-	if len(r.Superbye) > 0 {
-		superbyeStyle := "superbye"
-		m, err := repos.Matches.Create(ctx, roundID, &superbyeStyle)
-		if err != nil {
-			return err
-		}
-		for _, cs := range r.Superbye {
-			if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, "superbye"); err != nil {
+		for i, cs := range ms.ClubSeasonIDs {
+			if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, sideFor(ms.Style, i)); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+// sideFor is the club_match side for the i-th club of a match: home/away for a
+// versus match, otherwise the style itself ('bye' / 'superbye').
+func sideFor(style domain.MatchStyle, index int) string {
+	if style == domain.MatchStyleVersus {
+		if index == 0 {
+			return "home"
+		}
+		return "away"
+	}
+	return string(style)
 }

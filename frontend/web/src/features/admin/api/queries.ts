@@ -76,12 +76,10 @@ export const GET_FFL_SEASON_FIXTURES = gql`
       aflRoundId
       roundType
       locked
-      fixtures {
-        homeClubSeasonId
-        awayClubSeasonId
+      matches {
+        style
+        clubSeasonIds
       }
-      byes
-      superbye
     }
   }
 `

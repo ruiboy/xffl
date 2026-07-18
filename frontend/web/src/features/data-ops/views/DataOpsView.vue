@@ -236,6 +236,10 @@
                     >
                       <img v-if="fflClubLogoUrl(row.clubName)" :src="fflClubLogoUrl(row.clubName)" :alt="row.clubName" class="w-5 h-5 object-contain" />
                       {{ row.clubName }}                    </router-link>
+                    <span
+                      v-if="row.matchStyle === 'bye' || row.matchStyle === 'superbye'"
+                      class="ml-2 inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs text-text-faint"
+                    >{{ row.matchStyle }}</span>
                   </td>
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
@@ -710,32 +714,25 @@ type FflClubRow = {
   clubName: string
   dataStatus: string
   score: number
+  matchStyle: string // '' | 'bye' | 'superbye'
 }
 
 const fflClubRows = computed<FflClubRow[]>(() => {
   if (!selectedRound.value) return []
   const rows: FflClubRow[] = []
+  // One row per club_match — covers home/away fixtures plus bye and superbye
+  // teams, which submit like any other club.
   for (const match of selectedRound.value.matches) {
-    if (match.homeClubMatch) {
+    for (const cm of match.clubMatches ?? []) {
       rows.push({
-        clubMatchId: match.homeClubMatch.id,
+        clubMatchId: cm.id,
         matchId: match.id,
         roundId: selectedRoundId.value,
-        clubSeasonId: match.homeClubMatch.clubSeasonId,
-        clubName: match.homeClubMatch.club.name,
-        dataStatus: match.homeClubMatch.dataStatus ?? 'no_data',
-        score: match.homeClubMatch.score ?? 0,
-      })
-    }
-    if (match.awayClubMatch) {
-      rows.push({
-        clubMatchId: match.awayClubMatch.id,
-        matchId: match.id,
-        roundId: selectedRoundId.value,
-        clubSeasonId: match.awayClubMatch.clubSeasonId,
-        clubName: match.awayClubMatch.club.name,
-        dataStatus: match.awayClubMatch.dataStatus ?? 'no_data',
-        score: match.awayClubMatch.score ?? 0,
+        clubSeasonId: cm.clubSeasonId,
+        clubName: cm.club.name,
+        dataStatus: cm.dataStatus ?? 'no_data',
+        score: cm.score ?? 0,
+        matchStyle: match.matchStyle ?? '',
       })
     }
   }

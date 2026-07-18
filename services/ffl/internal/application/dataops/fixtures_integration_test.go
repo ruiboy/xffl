@@ -30,6 +30,16 @@ func buildOddSeason(ctx context.Context, t *testing.T, name string, aflSeasonID 
 	return built.SeasonID, built.ClubSeasons[0].ClubSeasonID, built.ClubSeasons[1].ClubSeasonID, built.ClubSeasons[2].ClubSeasonID
 }
 
+func versusMatch(home, away int) MatchSpec {
+	return MatchSpec{Style: domain.MatchStyleVersus, ClubSeasonIDs: []int{home, away}}
+}
+func byeMatch(cs int) MatchSpec {
+	return MatchSpec{Style: domain.MatchStyleBye, ClubSeasonIDs: []int{cs}}
+}
+func superbyeMatch(csIDs ...int) MatchSpec {
+	return MatchSpec{Style: domain.MatchStyleSuperbye, ClubSeasonIDs: csIDs}
+}
+
 // roundClubMatches groups a round's club_matches by their match, so tests can
 // assert fixture (2 sides) vs bye (1 side) structure.
 func roundClubMatches(ctx context.Context, t *testing.T, roundID int) [][]domain.ClubMatch {
@@ -58,12 +68,12 @@ func clubSeasonSet(groups [][]domain.ClubMatch) map[int]bool {
 	return set
 }
 
-func onlyRoundID(ctx context.Context, t *testing.T, seasonID int) (int, int) {
+func onlyRoundID(ctx context.Context, t *testing.T, seasonID int) int {
 	t.Helper()
 	rounds, err := postgres.NewRoundRepository(sqlcgen.New(testPool)).FindBySeasonID(ctx, seasonID)
 	require.NoError(t, err)
 	require.Len(t, rounds, 1)
-	return rounds[0].ID, len(rounds)
+	return rounds[0].ID
 }
 
 func TestSaveFixtures_CreateWithBye(t *testing.T) {
@@ -71,18 +81,15 @@ func TestSaveFixtures_CreateWithBye(t *testing.T) {
 	builder := NewBuilder(postgres.NewDB(testPool))
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFcreate", 1)
 
-	err := builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csA, AwayClubSeasonID: csB}},
-		Byes:     []int{csC},
-	}})
-	require.NoError(t, err)
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
+	}}))
 
-	roundID, _ := onlyRoundID(ctx, t, seasonID)
+	roundID := onlyRoundID(ctx, t, seasonID)
 	groups := roundClubMatches(ctx, t, roundID)
 	require.Len(t, groups, 2, "one fixture + one bye = two matches")
 
-	// One match is a fixture (2 club_matches), one is a bye (1 club_match).
 	var fixture, bye []domain.ClubMatch
 	for _, g := range groups {
 		switch len(g) {
@@ -95,18 +102,41 @@ func TestSaveFixtures_CreateWithBye(t *testing.T) {
 	require.Len(t, fixture, 2)
 	require.Len(t, bye, 1)
 	assert.Equal(t, csC, bye[0].ClubSeasonID, "the odd club is on the bye")
+	assert.Equal(t, "bye", bye[0].Side)
+	assert.Equal(t, "home", fixture[0].Side)
+	assert.Equal(t, "away", fixture[1].Side)
 	assert.Equal(t, map[int]bool{csA: true, csB: true, csC: true}, clubSeasonSet(groups))
 
-	// The bye is persisted as a single-sided bye match/club_match.
-	var byeSides, byeStyles int
+	// The versus match carries the 'versus' style, and the bye its own.
+	var versusStyles, byeStyles int
 	require.NoError(t, testPool.QueryRow(ctx,
-		`SELECT count(*) FROM ffl.club_match WHERE side = 'bye' AND club_season_id = $1 AND deleted_at IS NULL`, csC,
-	).Scan(&byeSides))
-	assert.Equal(t, 1, byeSides)
+		`SELECT count(*) FROM ffl.match m JOIN ffl.round r ON r.id = m.round_id WHERE r.season_id = $1 AND m.match_style = 'versus' AND m.deleted_at IS NULL`, seasonID).Scan(&versusStyles))
+	assert.Equal(t, 1, versusStyles)
 	require.NoError(t, testPool.QueryRow(ctx,
-		`SELECT count(*) FROM ffl.match m JOIN ffl.round r ON r.id = m.round_id WHERE r.season_id = $1 AND m.match_style = 'bye' AND m.deleted_at IS NULL`, seasonID,
-	).Scan(&byeStyles))
+		`SELECT count(*) FROM ffl.match m JOIN ffl.round r ON r.id = m.round_id WHERE r.season_id = $1 AND m.match_style = 'bye' AND m.deleted_at IS NULL`, seasonID).Scan(&byeStyles))
 	assert.Equal(t, 1, byeStyles)
+}
+
+func TestSaveFixtures_LoadRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFroundtrip", 8)
+
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
+	}}))
+
+	loaded, err := builder.LoadFixtures(ctx, seasonID)
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	require.Len(t, loaded[0].Matches, 2)
+	byStyle := map[domain.MatchStyle][]int{}
+	for _, m := range loaded[0].Matches {
+		byStyle[m.Style] = m.ClubSeasonIDs
+	}
+	assert.Equal(t, []int{csA, csB}, byStyle[domain.MatchStyleVersus], "versus loads [home, away]")
+	assert.Equal(t, []int{csC}, byStyle[domain.MatchStyleBye])
 }
 
 func TestSaveFixtures_ReplaceRound(t *testing.T) {
@@ -116,18 +146,17 @@ func TestSaveFixtures_ReplaceRound(t *testing.T) {
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csA, AwayClubSeasonID: csB}}, Byes: []int{csC},
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
 	}}))
-	roundID, _ := onlyRoundID(ctx, t, seasonID)
+	roundID := onlyRoundID(ctx, t, seasonID)
 
 	// Re-save the same round with a different pairing and bye.
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		RoundID: &roundID, Name: "Round 1 (edited)", AFLRoundID: 11, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csB, AwayClubSeasonID: csC}}, Byes: []int{csA},
+		Matches: []MatchSpec{versusMatch(csB, csC), byeMatch(csA)},
 	}}))
 
-	// Still one round (updated in place), now B v C with A on the bye.
-	stillOne, _ := onlyRoundID(ctx, t, seasonID)
+	stillOne := onlyRoundID(ctx, t, seasonID)
 	assert.Equal(t, roundID, stillOne)
 	groups := roundClubMatches(ctx, t, roundID)
 	require.Len(t, groups, 2)
@@ -136,7 +165,6 @@ func TestSaveFixtures_ReplaceRound(t *testing.T) {
 			assert.Equal(t, csA, g[0].ClubSeasonID, "A now on the bye")
 		}
 	}
-	// The replaced (soft-deleted) rows are gone from the live set.
 	var live int
 	require.NoError(t, testPool.QueryRow(ctx,
 		`SELECT count(*) FROM ffl.club_match cm JOIN ffl.match m ON m.id = cm.match_id
@@ -151,10 +179,9 @@ func TestSaveFixtures_DeleteEmptyRound(t *testing.T) {
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csA, AwayClubSeasonID: csB}}, Byes: []int{csC},
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
 	}}))
 
-	// Saving an empty set removes the (team-less) round.
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, nil))
 	rounds, err := postgres.NewRoundRepository(sqlcgen.New(testPool)).FindBySeasonID(ctx, seasonID)
 	require.NoError(t, err)
@@ -168,9 +195,9 @@ func TestSaveFixtures_HasTeamsGuard(t *testing.T) {
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csA, AwayClubSeasonID: csB}}, Byes: []int{csC},
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
 	}}))
-	roundID, _ := onlyRoundID(ctx, t, seasonID)
+	roundID := onlyRoundID(ctx, t, seasonID)
 
 	// Enter a team into one of the round's club_matches.
 	groups := roundClubMatches(ctx, t, roundID)
@@ -190,41 +217,11 @@ func TestSaveFixtures_HasTeamsGuard(t *testing.T) {
 	// Re-saving it with changed fixtures is a no-op (immutable), not an error.
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		RoundID: &roundID, Name: "hacked", AFLRoundID: 99, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csB, AwayClubSeasonID: csC}}, Byes: []int{csA},
+		Matches: []MatchSpec{versusMatch(csB, csC), byeMatch(csA)},
 	}}))
 	after, err := postgres.NewRoundRepository(sqlcgen.New(testPool)).FindByID(ctx, roundID)
 	require.NoError(t, err)
 	assert.Equal(t, "Round 1", after.Name, "immutable round unchanged")
-}
-
-func TestFindFinalByesBySeasonID(t *testing.T) {
-	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
-	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFbyeladder", 5)
-
-	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
-		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Fixtures: []FixtureSpec{{HomeClubSeasonID: csA, AwayClubSeasonID: csB}}, Byes: []int{csC},
-	}}))
-	roundID, _ := onlyRoundID(ctx, t, seasonID)
-
-	// Find the bye club_match and finalise it with a score.
-	groups := roundClubMatches(ctx, t, roundID)
-	var byeClubMatchID int
-	for _, g := range groups {
-		if len(g) == 1 {
-			byeClubMatchID = g[0].ID
-		}
-	}
-	require.NotZero(t, byeClubMatchID)
-	_, err := testPool.Exec(ctx,
-		`UPDATE ffl.club_match SET data_status = 'final', drv_score = 850 WHERE id = $1`, byeClubMatchID)
-	require.NoError(t, err)
-
-	byes, err := postgres.NewClubMatchRepository(sqlcgen.New(testPool)).FindFinalByesBySeasonID(ctx, seasonID)
-	require.NoError(t, err)
-	require.Len(t, byes, 1)
-	assert.Equal(t, domain.ByeResult{ClubSeasonID: csC, Score: 850, RoundType: domain.RoundTypeMinor}, byes[0])
 }
 
 func TestSaveFixtures_Superbye(t *testing.T) {
@@ -234,22 +231,18 @@ func TestSaveFixtures_Superbye(t *testing.T) {
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
 		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Superbye: []int{csA, csB, csC},
+		Matches: []MatchSpec{superbyeMatch(csA, csB, csC)},
 	}}))
 
-	// Loads back as a superbye of all three clubs.
+	// Loads back as a single superbye match holding all three clubs.
 	loaded, err := builder.LoadFixtures(ctx, seasonID)
 	require.NoError(t, err)
 	require.Len(t, loaded, 1)
-	assert.Empty(t, loaded[0].Fixtures)
-	assert.ElementsMatch(t, []int{csA, csB, csC}, loaded[0].Superbye)
+	require.Len(t, loaded[0].Matches, 1)
+	assert.Equal(t, domain.MatchStyleSuperbye, loaded[0].Matches[0].Style)
+	assert.ElementsMatch(t, []int{csA, csB, csC}, loaded[0].Matches[0].ClubSeasonIDs)
 
-	// Persisted as one superbye match with a side='superbye' club_match per club.
-	var matchStyles, sides int
-	require.NoError(t, testPool.QueryRow(ctx,
-		`SELECT count(*) FROM ffl.match m JOIN ffl.round r ON r.id = m.round_id
-		 WHERE r.season_id = $1 AND m.match_style = 'superbye' AND m.deleted_at IS NULL`, seasonID).Scan(&matchStyles))
-	assert.Equal(t, 1, matchStyles)
+	var sides int
 	require.NoError(t, testPool.QueryRow(ctx,
 		`SELECT count(*) FROM ffl.club_match cm JOIN ffl.match m ON m.id = cm.match_id
 		 JOIN ffl.round r ON r.id = m.round_id
@@ -257,37 +250,42 @@ func TestSaveFixtures_Superbye(t *testing.T) {
 	assert.Equal(t, 3, sides)
 }
 
-func TestFindFinalSuperbyesBySeasonID(t *testing.T) {
+// The unified loader returns every final club_match tagged with its match style.
+func TestFindFinalClubMatchesBySeasonID(t *testing.T) {
 	ctx := context.Background()
 	builder := NewBuilder(postgres.NewDB(testPool))
-	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFsuperladder", 7)
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFfinal", 5)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
-		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
-		Superbye: []int{csA, csB, csC},
+		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
 	}}))
 
-	// Finalise each superbye club_match with a score.
-	scores := map[int]int{csA: 900, csB: 1100, csC: 800}
-	for cs, sc := range scores {
+	final := func(cs, score int) {
 		_, err := testPool.Exec(ctx,
-			`UPDATE ffl.club_match SET data_status = 'final', drv_score = $2
-			 WHERE side = 'superbye' AND club_season_id = $1`, cs, sc)
+			`UPDATE ffl.club_match SET data_status = 'final', drv_score = $2 WHERE club_season_id = $1 AND deleted_at IS NULL`, cs, score)
 		require.NoError(t, err)
 	}
+	final(csA, 1000)
+	final(csB, 900)
+	final(csC, 850)
 
-	rows, err := postgres.NewClubMatchRepository(sqlcgen.New(testPool)).FindFinalSuperbyesBySeasonID(ctx, seasonID)
+	rows, err := postgres.NewClubMatchRepository(sqlcgen.New(testPool)).FindFinalClubMatchesBySeasonID(ctx, seasonID)
 	require.NoError(t, err)
 	require.Len(t, rows, 3)
-	// All in one match, minor round, scores as set.
-	matchID := rows[0].MatchID
-	got := map[int]int{}
+
+	byCS := map[int]domain.ScoredClubMatch{}
 	for _, r := range rows {
-		assert.Equal(t, matchID, r.MatchID, "one superbye match")
-		assert.Equal(t, domain.RoundTypeMinor, r.RoundType)
-		got[r.ClubSeasonID] = r.Score
+		byCS[r.ClubSeasonID] = r
 	}
-	assert.Equal(t, scores, got)
+	assert.Equal(t, domain.MatchStyleVersus, byCS[csA].Style)
+	assert.Equal(t, 1000, byCS[csA].Score)
+	assert.Equal(t, domain.MatchStyleVersus, byCS[csB].Style)
+	assert.Equal(t, domain.MatchStyleBye, byCS[csC].Style)
+	assert.Equal(t, 850, byCS[csC].Score)
+	assert.Equal(t, domain.RoundTypeMinor, byCS[csC].RoundType)
+	assert.Equal(t, byCS[csA].MatchID, byCS[csB].MatchID, "A and B share the versus match")
+	assert.NotEqual(t, byCS[csA].MatchID, byCS[csC].MatchID, "the bye is a separate match")
 }
 
 // seedTeam inserts a minimal player_match so a club_match counts as having a team.

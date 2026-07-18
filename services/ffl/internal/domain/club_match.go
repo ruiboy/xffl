@@ -19,6 +19,7 @@ type ClubMatch struct {
 	ID            int
 	MatchID       int
 	ClubSeasonID  int
+	Side          string // 'home' | 'away' | 'bye' | 'superbye'
 	DataStatus    ClubMatchDataStatus
 	Notes         *string
 	StoredScore   int
@@ -302,6 +303,5 @@ type ClubMatchRepository interface {
 	GetRulesID(ctx context.Context, clubMatchID int) (string, error)
 	Create(ctx context.Context, matchID int, clubSeasonID int, side string) (ClubMatch, error)
 	SoftDeleteByMatchID(ctx context.Context, matchID int) error
-	FindFinalByesBySeasonID(ctx context.Context, seasonID int) ([]ByeResult, error)
-	FindFinalSuperbyesBySeasonID(ctx context.Context, seasonID int) ([]SuperbyeClubMatch, error)
+	FindFinalClubMatchesBySeasonID(ctx context.Context, seasonID int) ([]ScoredClubMatch, error)
 }

@@ -281,30 +281,19 @@ func (r *mutationResolver) SaveFFLFixtures(ctx context.Context, input SaveFFLFix
 		if ri.RoundType != nil && *ri.RoundType != "" {
 			spec.Type = domain.RoundType(*ri.RoundType)
 		}
-		for _, f := range ri.Fixtures {
-			home, err := fromID(f.HomeClubSeasonID)
-			if err != nil {
-				return false, err
+		for _, mi := range ri.Matches {
+			ids := make([]int, len(mi.ClubSeasonIds))
+			for j, id := range mi.ClubSeasonIds {
+				cs, err := fromID(id)
+				if err != nil {
+					return false, err
+				}
+				ids[j] = cs
 			}
-			away, err := fromID(f.AwayClubSeasonID)
-			if err != nil {
-				return false, err
-			}
-			spec.Fixtures = append(spec.Fixtures, dataops.FixtureSpec{HomeClubSeasonID: home, AwayClubSeasonID: away})
-		}
-		for _, b := range ri.Byes {
-			cs, err := fromID(b)
-			if err != nil {
-				return false, err
-			}
-			spec.Byes = append(spec.Byes, cs)
-		}
-		for _, s := range ri.Superbye {
-			cs, err := fromID(s)
-			if err != nil {
-				return false, err
-			}
-			spec.Superbye = append(spec.Superbye, cs)
+			spec.Matches = append(spec.Matches, dataops.MatchSpec{
+				Style:         domain.ParseMatchStyle(mi.Style),
+				ClubSeasonIDs: ids,
+			})
 		}
 		rounds[i] = spec
 	}
@@ -346,20 +335,13 @@ func (r *queryResolver) FflSeasonFixtures(ctx context.Context, seasonID string) 
 	}
 	out := make([]*FFLFixtureRound, len(rounds))
 	for i, rnd := range rounds {
-		fixtures := make([]*FFLFixturePairing, len(rnd.Fixtures))
-		for j, f := range rnd.Fixtures {
-			fixtures[j] = &FFLFixturePairing{
-				HomeClubSeasonID: toID(f.HomeClubSeasonID),
-				AwayClubSeasonID: toID(f.AwayClubSeasonID),
+		matches := make([]*FFLFixtureMatch, len(rnd.Matches))
+		for j, m := range rnd.Matches {
+			ids := make([]string, len(m.ClubSeasonIDs))
+			for k, cs := range m.ClubSeasonIDs {
+				ids[k] = toID(cs)
 			}
-		}
-		byes := make([]string, len(rnd.Byes))
-		for j, b := range rnd.Byes {
-			byes[j] = toID(b)
-		}
-		superbye := make([]string, len(rnd.Superbye))
-		for j, s := range rnd.Superbye {
-			superbye[j] = toID(s)
+			matches[j] = &FFLFixtureMatch{Style: string(m.Style), ClubSeasonIds: ids}
 		}
 		out[i] = &FFLFixtureRound{
 			RoundID:    toID(rnd.RoundID),
@@ -367,9 +349,7 @@ func (r *queryResolver) FflSeasonFixtures(ctx context.Context, seasonID string) 
 			AflRoundID: toID(rnd.AFLRoundID),
 			RoundType:  string(rnd.Type),
 			Locked:     rnd.Locked,
-			Fixtures:   fixtures,
-			Byes:       byes,
-			Superbye:   superbye,
+			Matches:    matches,
 		}
 	}
 	return out, nil

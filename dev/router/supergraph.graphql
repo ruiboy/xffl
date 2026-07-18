@@ -313,6 +313,11 @@ type FFLClubMatch
 {
   id: ID!
   clubSeasonId: ID!
+
+  """
+  This club_match's role in its match: 'home' | 'away' | 'bye' | 'superbye'.
+  """
+  side: String!
   roundId: ID
   aflRoundId: ID
   seasonId: ID
@@ -339,18 +344,19 @@ type FFLClubSeason
   percentage: Float!
   premiershipPoints: Int!
 
-  """
-  Points earned from superbyes (top-scorer bonus); included in premiershipPoints.
-  """
+  """Extra points earned eg from superbyes"""
   extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
-type FFLFixturePairing
+"""
+One match in a round: its style ('versus' | 'bye' | 'superbye') and the club_seasons in it (for versus, ordered [home, away]).
+"""
+type FFLFixtureMatch
   @join__type(graph: FFL)
 {
-  homeClubSeasonId: ID!
-  awayClubSeasonId: ID!
+  style: String!
+  clubSeasonIds: [ID!]!
 }
 
 """
@@ -366,13 +372,11 @@ type FFLFixtureRound
 
   """True when the round has submitted teams — its fixtures are immutable."""
   locked: Boolean!
-  fixtures: [FFLFixturePairing!]!
 
-  """club_season ids on a scoring bye this round."""
-  byes: [ID!]!
-
-  """club_season ids in this round's superbye (empty if none)."""
-  superbye: [ID!]!
+  """
+  The round's matches — versus, bye and superbye alike, distinguished by style.
+  """
+  matches: [FFLFixtureMatch!]!
 }
 
 type FFLMatch
@@ -383,8 +387,24 @@ type FFLMatch
   startTime: String
   result: String
   round: FFLRound!
+
+  """
+  Convenience sugar over clubMatches: the home side of a versus match (null otherwise).
+  """
   homeClubMatch: FFLClubMatch
+
+  """
+  Convenience sugar over clubMatches: the away side of a versus match (null otherwise).
+  """
   awayClubMatch: FFLClubMatch
+
+  """'versus', 'bye', or 'superbye'."""
+  matchStyle: String!
+
+  """
+  The canonical list of every club_match in this match, each tagged with its side. Home/away are sugar over this.
+  """
+  clubMatches: [FFLClubMatch!]!
 }
 
 type FFLParsedPlayer
@@ -830,18 +850,21 @@ type ResolvedPlayer
   confidence: Float!
 }
 
-input SaveFFLFixtureInput
-  @join__type(graph: FFL)
-{
-  homeClubSeasonId: ID!
-  awayClubSeasonId: ID!
-}
-
 input SaveFFLFixturesInput
   @join__type(graph: FFL)
 {
   seasonId: ID!
   rounds: [SaveFFLRoundInput!]!
+}
+
+input SaveFFLMatchInput
+  @join__type(graph: FFL)
+{
+  """'versus', 'bye', or 'superbye'."""
+  style: String!
+
+  """The club_seasons in this match; for versus, ordered [home, away]."""
+  clubSeasonIds: [ID!]!
 }
 
 input SaveFFLRoundInput
@@ -854,13 +877,7 @@ input SaveFFLRoundInput
 
   """MINOR (default) or GRAND_FINAL."""
   roundType: String
-  fixtures: [SaveFFLFixtureInput!]!
-
-  """club_season ids on a scoring bye this round."""
-  byes: [ID!]!
-
-  """club_season ids in this round's superbye (empty if none)."""
-  superbye: [ID!]!
+  matches: [SaveFFLMatchInput!]!
 }
 
 input SetFFLTeamInput

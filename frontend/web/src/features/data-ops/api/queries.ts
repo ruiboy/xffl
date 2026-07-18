@@ -34,8 +34,8 @@ export const GET_FFL_DATA_OPS = gql`
         aflRoundId
         matches {
           id
-          homeClubMatch { id clubSeasonId club { id name } dataStatus score }
-          awayClubMatch { id clubSeasonId club { id name } dataStatus score }
+          matchStyle
+          clubMatches { id clubSeasonId club { id name } dataStatus score }
         }
       }
     }

@@ -42,8 +42,14 @@ type FFLMatch {
   startTime: String
   result: String
   round: FFLRound!
+  "Convenience sugar over clubMatches: the home side of a versus match (null otherwise)."
   homeClubMatch: FFLClubMatch
+  "Convenience sugar over clubMatches: the away side of a versus match (null otherwise)."
   awayClubMatch: FFLClubMatch
+  "'versus', 'bye', or 'superbye'."
+  matchStyle: String!
+  "The canonical list of every club_match in this match, each tagged with its side. Home/away are sugar over this."
+  clubMatches: [FFLClubMatch!]!
 }
 
 type FFLClub {
@@ -63,7 +69,7 @@ type FFLClubSeason {
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
-  "Points earned from superbyes (top-scorer bonus); included in premiershipPoints."
+  "Extra points earned eg from superbyes"
   extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
@@ -71,6 +77,8 @@ type FFLClubSeason {
 type FFLClubMatch {
   id: ID!
   clubSeasonId: ID!
+  "This club_match's role in its match: 'home' | 'away' | 'bye' | 'superbye'."
+  side: String!
   roundId: ID
   aflRoundId: ID
   seasonId: ID

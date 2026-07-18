@@ -121,6 +121,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *FFLClubMatch {
 		ID:           toID(cm.ID),
 		ClubSeasonID: toID(cm.ClubSeasonID),
 		Club:         convertClub(club),
+		Side:         cm.Side,
 		DataStatus:   string(cm.DataStatus),
 		Notes:        cm.Notes,
 		Score:        cm.StoredScore,

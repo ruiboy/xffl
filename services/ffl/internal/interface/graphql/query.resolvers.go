@@ -152,6 +152,41 @@ func (r *fFLMatchResolver) AwayClubMatch(ctx context.Context, obj *FFLMatch) (*F
 	return convertClubMatch(cm, club), nil
 }
 
+// MatchStyle is the resolver for the matchStyle field.
+func (r *fFLMatchResolver) MatchStyle(ctx context.Context, obj *FFLMatch) (string, error) {
+	matchID, err := fromID(obj.ID)
+	if err != nil {
+		return "", err
+	}
+	match, err := LoadersFromCtx(ctx).MatchByID.Load(ctx, matchID)
+	if err != nil {
+		return "", err
+	}
+	return string(match.MatchStyle), nil
+}
+
+// ClubMatches is the resolver for the clubMatches field — every club_match in the
+// match, so bye and superbye teams can be entered like any other.
+func (r *fFLMatchResolver) ClubMatches(ctx context.Context, obj *FFLMatch) ([]*FFLClubMatch, error) {
+	matchID, err := fromID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	cms, err := r.Queries.GetClubMatches(ctx, matchID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*FFLClubMatch, len(cms))
+	for i, cm := range cms {
+		club, err := r.Queries.GetClubForClubSeason(ctx, cm.ClubSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = convertClubMatch(cm, club)
+	}
+	return out, nil
+}
+
 // AflPlayer is the resolver for the aflPlayer field. Returns a federation stub
 // so the router can resolve AFL-side fields (name, etc.) from the AFL subgraph
 // only when the client actually selects them.

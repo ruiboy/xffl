@@ -160,16 +160,23 @@ const rounds = ref<StagedRound[]>([])
 // Rebuild the staged model whenever the loaded fixtures change (season switch / save).
 watch(fixturesResult, (val) => {
   const loaded = val?.fflSeasonFixtures ?? []
-  rounds.value = loaded.map((r: any): StagedRound => ({
-    key: keySeq++,
-    roundId: r.roundId,
-    name: r.name,
-    aflRoundId: r.aflRoundId,
-    roundType: r.roundType || 'MINOR',
-    locked: r.locked,
-    fixtures: r.fixtures.map((f: any) => ({ home: f.homeClubSeasonId, away: f.awayClubSeasonId })),
-    superbye: (r.superbye?.length ?? 0) > 0,
-  }))
+  rounds.value = loaded.map((r: any): StagedRound => {
+    // The API models every match uniformly (style + clubSeasonIds). The editor
+    // keeps versus pairings and a superbye toggle; byes are re-derived from the
+    // leftover clubs, so bye matches from the API are ignored on load.
+    const versus = r.matches.filter((m: any) => m.style === 'versus')
+    const superbye = r.matches.some((m: any) => m.style === 'superbye')
+    return {
+      key: keySeq++,
+      roundId: r.roundId,
+      name: r.name,
+      aflRoundId: r.aflRoundId,
+      roundType: r.roundType || 'MINOR',
+      locked: r.locked,
+      fixtures: versus.map((m: any) => ({ home: m.clubSeasonIds[0], away: m.clubSeasonIds[1] })),
+      superbye,
+    }
+  })
 }, { immediate: true })
 
 function clubName(id: string) {
@@ -191,6 +198,20 @@ function remainingClubs(r: StagedRound) {
 // Clubs not in any fixture are on a (scoring) bye this round.
 function byeClubs(r: StagedRound) {
   return remainingClubs(r)
+}
+
+// Translate the editor's staged round into the API's uniform match list: a
+// superbye round is one superbye match of all clubs; otherwise versus matches
+// from the pairings plus a bye match for each leftover club.
+function roundMatches(r: StagedRound): { style: string; clubSeasonIds: string[] }[] {
+  if (r.superbye) {
+    return [{ style: 'superbye', clubSeasonIds: clubs.value.map((c) => c.id) }]
+  }
+  const matches = r.fixtures.map((f) => ({ style: 'versus', clubSeasonIds: [f.home, f.away] }))
+  for (const c of byeClubs(r)) {
+    matches.push({ style: 'bye', clubSeasonIds: [c.id] })
+  }
+  return matches
 }
 
 function aflRoundIndex(id: string) {
@@ -278,10 +299,7 @@ async function save() {
         name: r.name,
         aflRoundId: r.aflRoundId,
         roundType: r.roundType,
-        // A superbye round: every club is in the superbye, no head-to-head or byes.
-        fixtures: r.superbye ? [] : r.fixtures.map((f) => ({ homeClubSeasonId: f.home, awayClubSeasonId: f.away })),
-        byes: r.superbye ? [] : byeClubs(r).map((c) => c.id),
-        superbye: r.superbye ? clubs.value.map((c) => c.id) : [],
+        matches: roundMatches(r),
       })),
     }
     await saveMut({ input })

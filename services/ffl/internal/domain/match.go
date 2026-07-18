@@ -15,11 +15,35 @@ const (
 	MatchResultNoResult MatchResult = "no_result"
 )
 
+// MatchStyle classifies a match by shape — a regular home-vs-away contest, a
+// single-club scoring bye, or an all-club superbye. It is the single discriminator
+// the ladder and fixture builder dispatch on, so it is always one of these values.
+type MatchStyle string
+
+const (
+	MatchStyleVersus   MatchStyle = "versus"
+	MatchStyleBye      MatchStyle = "bye"
+	MatchStyleSuperbye MatchStyle = "superbye"
+)
+
+// ParseMatchStyle normalises a stored match_style into a known style. Empty or
+// unrecognised values are treated as versus, so callers never see a blank style.
+func ParseMatchStyle(s string) MatchStyle {
+	switch MatchStyle(s) {
+	case MatchStyleBye:
+		return MatchStyleBye
+	case MatchStyleSuperbye:
+		return MatchStyleSuperbye
+	default:
+		return MatchStyleVersus
+	}
+}
+
 type Match struct {
 	ID         int
 	RoundID    int
 	RoundType  RoundType
-	MatchStyle string // "" for regular home-vs-away, "bye", or "superbye"
+	MatchStyle MatchStyle
 	Home       ClubMatch
 	Away       ClubMatch
 	Venue      string
@@ -56,7 +80,6 @@ type MatchRepository interface {
 	FindByID(ctx context.Context, id int) (Match, error)
 	FindByIDWithDetails(ctx context.Context, id int) (Match, error)
 	FindByIDs(ctx context.Context, ids []int) (map[int]Match, error)
-	FindFinalBySeasonID(ctx context.Context, seasonID int) ([]Match, error)
 	UpdateResult(ctx context.Context, matchID int, result MatchResult) error
 	// Create inserts a match in a round. matchStyle is nil for a regular
 	// home-vs-away match
