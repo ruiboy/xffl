@@ -114,21 +114,19 @@ const breadcrumbs = computed(() => {
   ]
 })
 
+type RoundClubMatch = { id: string; club: { id: string } }
+
 const myMatch = computed(() => {
   if (!round.value || !selectedClubId.value) return null
-  return round.value.matches.find((m: { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }) =>
-    m.homeClubMatch?.club.id === selectedClubId.value ||
-    m.awayClubMatch?.club.id === selectedClubId.value
+  return round.value.matches.find((m: { clubMatches?: RoundClubMatch[] | null }) =>
+    (m.clubMatches ?? []).some((cm) => cm.club.id === selectedClubId.value)
   ) ?? null
 })
 
 const myClubMatchId = computed(() => {
   if (!myMatch.value || !selectedClubId.value) return null
-  const clubId = selectedClubId.value
-  const m = myMatch.value as { homeClubMatch?: { id: string; club: { id: string } } | null; awayClubMatch?: { id: string; club: { id: string } } | null }
-  if (m.homeClubMatch?.club.id === clubId) return m.homeClubMatch.id
-  if (m.awayClubMatch?.club.id === clubId) return m.awayClubMatch.id
-  return null
+  const m = myMatch.value as { clubMatches?: RoundClubMatch[] | null }
+  return (m.clubMatches ?? []).find((cm) => cm.club.id === selectedClubId.value)?.id ?? null
 })
 
 interface PlayerMatch {
@@ -147,8 +145,7 @@ interface ClubMatch {
 
 interface Match {
   id: string
-  homeClubMatch?: ClubMatch | null
-  awayClubMatch?: ClubMatch | null
+  clubMatches?: ClubMatch[] | null
 }
 
 const POSITION_LABELS: Record<string, string> = {
@@ -165,8 +162,7 @@ const topScorersByPosition = computed(() => {
 
   const grouped: Record<string, ScorerEntry[]> = {}
   for (const match of round.value.matches as Match[]) {
-    for (const side of [match.homeClubMatch, match.awayClubMatch]) {
-      if (!side) continue
+    for (const side of match.clubMatches ?? []) {
       for (const pm of side.playerMatches) {
         if (pm.aflStatus === 'played' && pm.position) {
           ;(grouped[pm.position] ??= []).push({ name: pm.player.aflPlayer.name, club: side.club.name, score: pm.score, position: pm.position, matchId: match.id, pmId: pm.id })

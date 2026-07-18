@@ -186,37 +186,11 @@ export const GET_FFL_ROUND = gql`
         venue
         startTime
         result
-        homeClubMatch {
+        matchStyle
+        clubMatches {
           id
-          club { id name }
-          score
-          dataStatus
-          suggestedSubstitutions { kind replacedPmId replacingPmId }
-          playerMatches {
-            id
-            playerSeasonId
-            player { aflPlayer { name } }
-            position
-            status
-            aflStatus
-            backupPositions
-            interchangePosition
-            score
-            playerSeason {
-              aflPlayerSeason {
-                id
-                clubSeason { club { name } }
-                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
-              }
-            }
-            aflPlayerMatch {
-              clubMatch { match { id } }
-              goals kicks handballs marks tackles hitouts
-            }
-          }
-        }
-        awayClubMatch {
-          id
+          side
+          clubSeasonId
           club { id name }
           score
           dataStatus
@@ -261,36 +235,10 @@ export const GET_FFL_MATCH = gql`
         aflRoundId
         season { id name rounds { id name } }
       }
-      homeClubMatch {
+      matchStyle
+      clubMatches {
         id
-        clubSeasonId
-        club { id name }
-        score
-        suggestedSubstitutions { kind replacedPmId replacingPmId }
-        playerMatches {
-          id
-          playerSeasonId
-          player { aflPlayer { name } }
-          position
-          status
-          aflStatus
-          backupPositions
-          interchangePosition
-          score
-          playerSeason {
-            aflPlayerSeason {
-              id
-              clubSeason { id club { name } }
-              stats { goals kicks handballs marks tackles hitouts games }
-            }
-          }
-          aflPlayerMatch {
-            goals kicks handballs marks tackles hitouts
-          }
-        }
-      }
-      awayClubMatch {
-        id
+        side
         clubSeasonId
         club { id name }
         score
