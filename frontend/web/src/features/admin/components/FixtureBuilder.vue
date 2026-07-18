@@ -63,14 +63,31 @@
           <button v-if="!rnd.locked" @click="rnd.fixtures.splice(fi, 1)" class="text-xs text-text-faint hover:text-red-400">✕</button>
         </div>
 
-        <div class="flex items-center gap-3 pl-6">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 pl-6">
           <button
             v-if="!rnd.locked"
-            @click="addMatch(rnd)" :disabled="remainingClubs(rnd).length < 2"
+            @click="addMatch(rnd)" :disabled="unassignedClubs(rnd).length < 2"
             class="text-xs px-2 py-1 rounded border border-border hover:bg-surface disabled:opacity-40"
           >+ match</button>
-          <span v-if="byeClubs(rnd).length" class="text-xs text-text-faint">
-            Bye: {{ byeClubs(rnd).map((c) => c.name).join(', ') }}
+
+          <!-- Explicit byes for this round -->
+          <span v-if="rnd.byes.length" class="flex items-center gap-1.5 text-xs">
+            <span class="text-text-muted">Bye</span>
+            <span v-for="id in rnd.byes" :key="id" class="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5">
+              {{ clubName(id) }}
+              <button v-if="!rnd.locked" @click="removeBye(rnd, id)" class="text-text-faint hover:text-red-400">✕</button>
+            </span>
+          </span>
+
+          <!-- Clubs in neither a match nor a bye: they don't feature this round. Click to give a bye. -->
+          <span v-if="!rnd.locked && unassignedClubs(rnd).length" class="flex items-center gap-1.5 text-xs text-text-faint">
+            <span>Not in round:</span>
+            <button
+              v-for="c in unassignedClubs(rnd)" :key="c.id"
+              @click="addBye(rnd, c.id)"
+              class="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 hover:bg-surface"
+              title="Give this club a bye"
+            >{{ c.name }} <span class="text-active">+ bye</span></button>
           </span>
         </div>
         </template>
@@ -123,6 +140,7 @@ type StagedRound = {
   roundType: string
   locked: boolean
   fixtures: StagedFixture[]
+  byes: string[] // club_season ids explicitly given a bye
   superbye: boolean
 }
 
@@ -162,9 +180,9 @@ watch(fixturesResult, (val) => {
   const loaded = val?.fflSeasonFixtures ?? []
   rounds.value = loaded.map((r: any): StagedRound => {
     // The API models every match uniformly (style + clubSeasonIds). The editor
-    // keeps versus pairings and a superbye toggle; byes are re-derived from the
-    // leftover clubs, so bye matches from the API are ignored on load.
+    // keeps versus pairings, explicit byes, and a superbye toggle.
     const versus = r.matches.filter((m: any) => m.style === 'versus')
+    const byes = r.matches.filter((m: any) => m.style === 'bye').map((m: any) => m.clubSeasonIds[0])
     const superbye = r.matches.some((m: any) => m.style === 'superbye')
     return {
       key: keySeq++,
@@ -174,6 +192,7 @@ watch(fixturesResult, (val) => {
       roundType: r.roundType || 'MINOR',
       locked: r.locked,
       fixtures: versus.map((m: any) => ({ home: m.clubSeasonIds[0], away: m.clubSeasonIds[1] })),
+      byes,
       superbye,
     }
   })
@@ -183,33 +202,41 @@ function clubName(id: string) {
   return clubs.value.find((c) => c.id === id)?.name ?? id
 }
 
+// Clubs already placed in a fixture or given a bye this round.
 function usedClubIds(r: StagedRound): Set<string> {
   const s = new Set<string>()
   for (const f of r.fixtures) {
     if (f.home) s.add(f.home)
     if (f.away) s.add(f.away)
   }
+  for (const id of r.byes) s.add(id)
   return s
 }
-function remainingClubs(r: StagedRound) {
+// Clubs in neither a match nor a bye — they simply don't feature this round
+// (e.g. a Grand Final round with only the two finalists).
+function unassignedClubs(r: StagedRound) {
   const used = usedClubIds(r)
   return clubs.value.filter((c) => !used.has(c.id))
 }
-// Clubs not in any fixture are on a (scoring) bye this round.
-function byeClubs(r: StagedRound) {
-  return remainingClubs(r)
+
+function addBye(r: StagedRound, clubId: string) {
+  if (!r.byes.includes(clubId)) r.byes.push(clubId)
+}
+function removeBye(r: StagedRound, clubId: string) {
+  r.byes = r.byes.filter((id) => id !== clubId)
 }
 
 // Translate the editor's staged round into the API's uniform match list: a
-// superbye round is one superbye match of all clubs; otherwise versus matches
-// from the pairings plus a bye match for each leftover club.
+// superbye is one superbye match of all clubs; otherwise versus matches from the
+// pairings plus a bye match per explicitly-chosen bye. Unassigned clubs are sent
+// as nothing — they don't feature this round.
 function roundMatches(r: StagedRound): { style: string; clubSeasonIds: string[] }[] {
   if (r.superbye) {
     return [{ style: 'superbye', clubSeasonIds: clubs.value.map((c) => c.id) }]
   }
   const matches = r.fixtures.map((f) => ({ style: 'versus', clubSeasonIds: [f.home, f.away] }))
-  for (const c of byeClubs(r)) {
-    matches.push({ style: 'bye', clubSeasonIds: [c.id] })
+  for (const id of r.byes) {
+    matches.push({ style: 'bye', clubSeasonIds: [id] })
   }
   return matches
 }
@@ -229,13 +256,13 @@ function addRound() {
   const aflRoundId = last ? nextAflRoundId(last.aflRoundId) : (aflRounds.value[0]?.id ?? '')
   rounds.value.push({
     key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
-    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [], superbye: false,
+    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [], byes: [], superbye: false,
   })
 }
 
 function addMatch(r: StagedRound) {
-  const rem = remainingClubs(r)
-  if (rem.length >= 2) r.fixtures.push({ home: rem[0].id, away: rem[1].id })
+  const free = unassignedClubs(r)
+  if (free.length >= 2) r.fixtures.push({ home: free[0].id, away: free[1].id })
 }
 
 function removeRound(i: number) {
@@ -259,6 +286,7 @@ function repeat() {
       key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
       aflRoundId, roundType: src.roundType, locked: false, superbye: src.superbye,
       fixtures: src.fixtures.map((f) => repeatReverse.value ? { home: f.away, away: f.home } : { home: f.home, away: f.away }),
+      byes: [...src.byes],
     })
   }
 }
@@ -277,6 +305,10 @@ const validationError = computed(() => {
         if (seen.has(id)) return `Round ${i + 1}: ${clubName(id)} appears twice.`
         seen.add(id)
       }
+    }
+    for (const id of r.byes) {
+      if (seen.has(id)) return `Round ${i + 1}: ${clubName(id)} is in a match and a bye.`
+      seen.add(id)
     }
   }
   return ''

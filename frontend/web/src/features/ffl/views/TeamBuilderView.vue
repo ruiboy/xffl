@@ -874,9 +874,13 @@ const breadcrumbs = computed(() => {
     { label: round.value.name, to: { name: 'ffl-round', params: { roundId: bootstrapRoundId.value } } },
   ]
   if (currentMatch.value) {
-    const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
-    const away = currentMatch.value.awayClubMatch?.club.name ?? '?'
-    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { matchId: currentMatch.value.id } } })
+    const m = currentMatch.value
+    const cms = m.clubMatches ?? []
+    let label: string
+    if (m.matchStyle === 'bye') label = `${cms[0]?.club.name ?? '?'} (Bye)`
+    else if (m.matchStyle === 'superbye') label = 'Superbye'
+    else label = `${cms[0]?.club.name ?? '?'} v ${cms[1]?.club.name ?? '?'}`
+    crumbs.push({ label, to: { name: 'ffl-match', params: { matchId: m.id } } })
   }
   return crumbs
 })
@@ -893,17 +897,17 @@ const nextRound = computed(() => {
   return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
 })
 
-type RoundMatchEntry = { homeClubMatch?: { id: string; clubSeasonId: string } | null; awayClubMatch?: { id: string; clubSeasonId: string } | null }
+type RoundMatchEntry = { clubMatches?: { id: string; clubSeasonId: string }[] | null }
 
 function clubMatchIdForRound(roundId: string): string | null {
   const roundData = round.value?.season.rounds.find((r: { id: string }) => r.id === roundId)
   if (!roundData) return null
   const csId = bootstrapClubSeasonId.value
-  const m: RoundMatchEntry | undefined = roundData.matches?.find((m: RoundMatchEntry) =>
-    m.homeClubMatch?.clubSeasonId === csId || m.awayClubMatch?.clubSeasonId === csId
-  )
-  if (!m) return null
-  return m.homeClubMatch?.clubSeasonId === csId ? (m.homeClubMatch?.id ?? null) : (m.awayClubMatch?.id ?? null)
+  for (const m of (roundData.matches ?? []) as RoundMatchEntry[]) {
+    const cm = (m.clubMatches ?? []).find((cm) => cm.clubSeasonId === csId)
+    if (cm) return cm.id
+  }
+  return null
 }
 
 const prevClubMatchId = computed(() => prevRound.value ? clubMatchIdForRound(prevRound.value.id) : null)
@@ -911,17 +915,14 @@ const nextClubMatchId = computed(() => nextRound.value ? clubMatchIdForRound(nex
 
 const currentMatch = computed(() => {
   if (!round.value) return null
-  return round.value.matches.find((m: { homeClubMatch?: { id: string } | null; awayClubMatch?: { id: string } | null }) =>
-    m.homeClubMatch?.id === props.clubMatchId || m.awayClubMatch?.id === props.clubMatchId
+  return round.value.matches.find((m: { clubMatches?: { id: string }[] | null }) =>
+    (m.clubMatches ?? []).some((cm) => cm.id === props.clubMatchId)
   ) ?? null
 })
 
 const clubMatch = computed(() => {
   if (!currentMatch.value) return null
-  const m = currentMatch.value
-  if (m.homeClubMatch?.id === props.clubMatchId) return m.homeClubMatch
-  if (m.awayClubMatch?.id === props.clubMatchId) return m.awayClubMatch
-  return null
+  return (currentMatch.value.clubMatches ?? []).find((cm: { id: string }) => cm.id === props.clubMatchId) ?? null
 })
 
 const playerMatchBySeasonId = computed(() => {

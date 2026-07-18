@@ -176,8 +176,7 @@ export const GET_FFL_ROUND = gql`
           name
           aflRoundId
           matches {
-            homeClubMatch { id clubSeasonId }
-            awayClubMatch { id clubSeasonId }
+            clubMatches { id clubSeasonId }
           }
         }
       }

@@ -50,33 +50,18 @@
             </router-link>
           </template>
 
-          <!-- Free Agents + DataOps -->
+          <!-- Free Agents -->
           <router-link
             v-if="isFfl"
             :to="{ name: 'ffl-free-agents' }"
-            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
+            class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
             title="Free Agents"
           >
-            <IconFreeAgents class="w-5 h-5" />
-          </router-link>
-          <router-link
-            :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
-            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
-            title="Data Ops"
-          >
-            <IconDataOps class="w-5 h-5" />
-          </router-link>
-          <router-link
-            :to="{ name: 'ffl-admin' }"
-            class="text-text-muted hover:text-text transition-colors translate-y-0.5"
-            title="Admin"
-          >
-            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 3.5a1 1 0 00-1 1v1.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0v-4.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM4 3.5a1 1 0 00-1 1v6.09a3.001 3.001 0 000 5.82V15.5a.99.99 0 00.02.2 1 1 0 001.96 0 .99.99 0 00.02-.2v-.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM16 3.5a1 1 0 00-1 1v.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0V10.41a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1z" />
-            </svg>
+            <IconFreeAgents class="w-4 h-4" />
+            Free Agents
           </router-link>
 
-          <!-- Settings cog -->
+          <!-- Settings / tools menu -->
           <div class="relative" ref="settingsContainer">
             <button
               @click="settingsOpen = !settingsOpen"
@@ -92,6 +77,25 @@
               v-if="settingsOpen"
               class="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-surface-raised shadow-lg py-2 z-50"
             >
+              <router-link
+                :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
+                @click="settingsOpen = false"
+                class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+              >
+                <IconDataOps class="w-4 h-4" />
+                Data Ops
+              </router-link>
+              <router-link
+                :to="{ name: 'ffl-admin' }"
+                @click="settingsOpen = false"
+                class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 3.5a1 1 0 00-1 1v1.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0v-4.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM4 3.5a1 1 0 00-1 1v6.09a3.001 3.001 0 000 5.82V15.5a.99.99 0 00.02.2 1 1 0 001.96 0 .99.99 0 00.02-.2v-.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM16 3.5a1 1 0 00-1 1v.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0V10.41a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1z" />
+                </svg>
+                Admin
+              </router-link>
+              <div class="my-1 border-t border-border"></div>
               <div class="px-3 py-1.5 flex items-center justify-between">
                 <span class="text-sm text-text-muted">Dark mode</span>
                 <button

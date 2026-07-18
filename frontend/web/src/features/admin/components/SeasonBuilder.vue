@@ -1,7 +1,6 @@
 <template>
-  <!-- Create an FFL season: name + scoring era + the clubs playing it. -->
-  <section class="rounded-lg border border-border p-4 space-y-3">
-    <h3 class="text-sm font-semibold">Create season</h3>
+  <!-- Create an FFL season: name + scoring era + the clubs playing it. Framed by its dialog. -->
+  <div class="space-y-3">
     <div class="flex flex-wrap items-start gap-4">
       <label class="text-sm">
         <span class="block text-text-muted mb-1">FFL season name</span>
@@ -45,7 +44,7 @@
         {{ built.clubSeasons.map((c) => c.clubName).join(', ') }}
       </span>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">

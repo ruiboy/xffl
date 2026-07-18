@@ -512,8 +512,8 @@ const initialRound = (route.query.round as string) || ''
 
 // ---- Tabs ----
 const tabs = [
-  { id: 'team-submission', label: 'FFL Teams' },
-  { id: 'afl-stats', label: 'AFL Stats' },
+  { id: 'team-submission', label: 'Import FFL Teams' },
+  { id: 'afl-stats', label: 'Import AFL Stats' },
   { id: 'forum-capture', label: 'Forum Capture' },
 ]
 const activeTab = ref(initialTab)

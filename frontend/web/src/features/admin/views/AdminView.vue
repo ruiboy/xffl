@@ -23,15 +23,31 @@
     <!-- Tab: Seasons                                -->
     <!-- ═══════════════════════════════════════════ -->
     <div v-if="activeTab === 'seasons'" class="space-y-6">
-      <SeasonsList ref="seasonsList" />
-      <SeasonBuilder @created="onSeasonCreated" />
+      <SeasonsList ref="seasonsList" @create="showCreate = true" @edit-fixtures="onEditFixtures" />
+    </div>
+
+    <!-- Create season dialog -->
+    <div
+      v-if="showCreate"
+      class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-24"
+      @click.self="showCreate = false"
+    >
+      <div class="w-full max-w-2xl rounded-lg border border-border bg-surface shadow-xl">
+        <div class="flex items-center justify-between border-b border-border px-4 py-3">
+          <h3 class="text-sm font-semibold">Create season</h3>
+          <button @click="showCreate = false" class="text-text-faint hover:text-text" title="Close">✕</button>
+        </div>
+        <div class="p-4">
+          <SeasonBuilder @created="onSeasonCreated" />
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Tab: Fixtures                               -->
     <!-- ═══════════════════════════════════════════ -->
     <div v-if="activeTab === 'fixtures'">
-      <FixtureBuilder :initial-season-id="createdSeasonId" />
+      <FixtureBuilder :initial-season-id="fixtureSeasonId" />
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -93,13 +109,19 @@ const tabs = [
 ]
 const activeTab = ref((route.query.tab as string) || 'seasons')
 
-// Hand a just-created season to the fixture builder, refresh the list, and jump
-// to the Fixtures tab so it opens ready to edit.
-const createdSeasonId = ref<string | null>(null)
+// Create season is a dialog off the Seasons list; the season a row's "Edit"
+// link opens is handed to the fixture builder.
+const showCreate = ref(false)
+const fixtureSeasonId = ref<string | null>(null)
 const seasonsList = ref<{ refetch: () => void } | null>(null)
-function onSeasonCreated(seasonId: string) {
-  createdSeasonId.value = seasonId
+
+function onSeasonCreated() {
+  showCreate.value = false
   seasonsList.value?.refetch()
+}
+
+function onEditFixtures(seasonId: string) {
+  fixtureSeasonId.value = seasonId
   activeTab.value = 'fixtures'
 }
 
