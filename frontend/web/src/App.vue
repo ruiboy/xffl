@@ -61,6 +61,15 @@
             Free Agents
           </router-link>
 
+          <!-- Player search — navigates to any player's season page -->
+          <button
+            @click="playerSearchOpen = true"
+            class="text-text-muted hover:text-text transition-colors"
+            title="Find player"
+          >
+            <IconSearch class="w-4 h-4" />
+          </button>
+
           <!-- Settings / tools menu -->
           <div class="relative" ref="settingsContainer">
             <button
@@ -115,6 +124,8 @@
     <main class="max-w-5xl mx-auto px-6 py-8">
       <router-view />
     </main>
+
+    <PlayerSearch :show="playerSearchOpen" @close="playerSearchOpen = false" />
   </div>
 </template>
 
@@ -133,8 +144,12 @@ import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import IconAdmin from '@/features/admin/components/icons/IconAdmin.vue'
+import IconSearch from '@/components/icons/IconSearch.vue'
+import PlayerSearch from '@/components/PlayerSearch.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
+
+const playerSearchOpen = ref(false)
 
 const route = useRoute()
 const router = useRouter()
