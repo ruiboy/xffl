@@ -17,17 +17,3 @@ export const SAVE_FFL_FIXTURES = gql`
     saveFFLFixtures(input: $input)
   }
 `
-
-// ---- Calculate (ladder recompute) ----
-
-export const RECALCULATE_AFL_LADDER = gql`
-  mutation RecalculateAFLLadder($seasonId: ID!) {
-    recalculateAFLLadder(seasonId: $seasonId)
-  }
-`
-
-export const RECALCULATE_FFL_LADDER = gql`
-  mutation RecalculateFFLLadder($seasonId: ID!) {
-    recalculateFFLLadder(seasonId: $seasonId)
-  }
-`
