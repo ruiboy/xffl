@@ -48,6 +48,10 @@ type Querier interface {
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
 	FindPlayerSeasonsByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDWithPlayerRow, error)
 	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
+	// Every season the player has data for, most recent first. Ordered the same
+	// way as FindLatestPlayerSeasonByPlayerID: by the latest match start_dt within
+	// each season, because afl.season.id ordering is not chronological.
+	FindPlayerSeasonsByPlayerID(ctx context.Context, playerID int32) ([]int32, error)
 	FindPlayerSeasonsBySeasonID(ctx context.Context, arg FindPlayerSeasonsBySeasonIDParams) ([]int32, error)
 	FindPlayersByExactName(ctx context.Context, name string) ([]FindPlayersByExactNameRow, error)
 	FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error)

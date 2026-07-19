@@ -407,7 +407,18 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
   query GetAFLPlayerSeasonStats($id: ID!) {
     aflPlayerSeason(id: $id) {
       id
-      player { id name }
+      player {
+        id
+        name
+        playerSeasons {
+          id
+          clubSeason {
+            id
+            club { id name }
+            season { id name }
+          }
+        }
+      }
       clubSeason {
         id
         club { id name }

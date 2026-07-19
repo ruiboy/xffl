@@ -141,6 +141,44 @@ func (q *Queries) FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]Fi
 	return items, nil
 }
 
+const findPlayerSeasonsByPlayerID = `-- name: FindPlayerSeasonsByPlayerID :many
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY (
+  SELECT MAX(m.start_dt)
+  FROM afl.round r
+  JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+  WHERE r.season_id = cs.season_id AND r.deleted_at IS NULL
+) DESC NULLS LAST, cs.season_id DESC
+`
+
+// Every season the player has data for, most recent first. Ordered the same
+// way as FindLatestPlayerSeasonByPlayerID: by the latest match start_dt within
+// each season, because afl.season.id ordering is not chronological.
+func (q *Queries) FindPlayerSeasonsByPlayerID(ctx context.Context, playerID int32) ([]int32, error) {
+	rows, err := q.db.Query(ctx, findPlayerSeasonsByPlayerID, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int32{}
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPlayerSeasonsBySeasonID = `-- name: FindPlayerSeasonsBySeasonID :many
 SELECT ps.id
 FROM afl.player_season ps

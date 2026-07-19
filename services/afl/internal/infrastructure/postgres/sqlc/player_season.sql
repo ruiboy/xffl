@@ -49,6 +49,23 @@ ORDER BY (
 ) DESC NULLS LAST, cs.season_id DESC
 LIMIT 1;
 
+-- name: FindPlayerSeasonsByPlayerID :many
+-- Every season the player has data for, most recent first. Ordered the same
+-- way as FindLatestPlayerSeasonByPlayerID: by the latest match start_dt within
+-- each season, because afl.season.id ordering is not chronological.
+SELECT ps.id
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+WHERE ps.player_id = $1
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+ORDER BY (
+  SELECT MAX(m.start_dt)
+  FROM afl.round r
+  JOIN afl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
+  WHERE r.season_id = cs.season_id AND r.deleted_at IS NULL
+) DESC NULLS LAST, cs.season_id DESC;
+
 -- name: FindPlayerSeasonsBySeasonID :many
 SELECT ps.id
 FROM afl.player_season ps

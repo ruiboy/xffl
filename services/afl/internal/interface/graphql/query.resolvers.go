@@ -148,6 +148,24 @@ func (r *aFLMatchResolver) AwayClubMatch(ctx context.Context, obj *AFLMatch) (*A
 	return convertClubMatch(cm, club), nil
 }
 
+// PlayerSeasons is the resolver for the playerSeasons field.
+func (r *aFLPlayerResolver) PlayerSeasons(ctx context.Context, obj *AFLPlayer) ([]*AFLPlayerSeason, error) {
+	playerID, err := fromID(obj.ID)
+	if err != nil {
+		return []*AFLPlayerSeason{}, nil
+	}
+	// Ordering is owned by the query (most recent season first) and preserved here.
+	playerSeasons, err := r.Queries.GetPlayerSeasonsByPlayerID(ctx, playerID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*AFLPlayerSeason, len(playerSeasons))
+	for i, ps := range playerSeasons {
+		result[i] = &AFLPlayerSeason{ID: toID(ps.ID)}
+	}
+	return result, nil
+}
+
 // ClubMatch is the resolver for the clubMatch field.
 func (r *aFLPlayerMatchResolver) ClubMatch(ctx context.Context, obj *AFLPlayerMatch) (*AFLClubMatch, error) {
 	cmID, err := fromID(obj.ClubMatchID)
@@ -539,6 +557,9 @@ func (r *Resolver) AFLClubSeason() AFLClubSeasonResolver { return &aFLClubSeason
 // AFLMatch returns AFLMatchResolver implementation.
 func (r *Resolver) AFLMatch() AFLMatchResolver { return &aFLMatchResolver{r} }
 
+// AFLPlayer returns AFLPlayerResolver implementation.
+func (r *Resolver) AFLPlayer() AFLPlayerResolver { return &aFLPlayerResolver{r} }
+
 // AFLPlayerMatch returns AFLPlayerMatchResolver implementation.
 func (r *Resolver) AFLPlayerMatch() AFLPlayerMatchResolver { return &aFLPlayerMatchResolver{r} }
 
@@ -557,6 +578,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type aFLClubMatchResolver struct{ *Resolver }
 type aFLClubSeasonResolver struct{ *Resolver }
 type aFLMatchResolver struct{ *Resolver }
+type aFLPlayerResolver struct{ *Resolver }
 type aFLPlayerMatchResolver struct{ *Resolver }
 type aFLPlayerSeasonResolver struct{ *Resolver }
 type aFLRoundResolver struct{ *Resolver }

@@ -939,6 +939,31 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	return out, nil
 }
 
+// FindByPlayerID returns every season the player has data for, most recent
+// first. The SQL owns the ordering, so the ids are re-read in that order rather
+// than in whatever order the bulk lookup returns them.
+func (r *PlayerSeasonRepository) FindByPlayerID(ctx context.Context, playerID int) ([]domain.PlayerSeason, error) {
+	ids, err := r.q.FindPlayerSeasonsByPlayerID(ctx, int32(playerID))
+	if err != nil {
+		return nil, err
+	}
+	intIDs := make([]int, len(ids))
+	for i, id := range ids {
+		intIDs[i] = int(id)
+	}
+	byID, err := r.FindByIDs(ctx, intIDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeason, 0, len(intIDs))
+	for _, id := range intIDs {
+		if ps, ok := byID[id]; ok {
+			out = append(out, ps)
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerSeasonRepository) FindLatestByPlayerID(ctx context.Context, playerID int) (domain.PlayerSeason, bool, error) {
 	id, err := r.q.FindLatestPlayerSeasonByPlayerID(ctx, int32(playerID))
 	if err != nil {

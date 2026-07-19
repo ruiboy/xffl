@@ -16,6 +16,20 @@
             :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: playerSeason.clubSeason.id } }"
             class="text-sm text-text-muted mt-0.5 hover:text-text transition-colors"
           >{{ playerSeason.clubSeason.club.name }}</router-link>
+          <!-- Other AFL seasons for this player, most recent first. -->
+          <div v-if="otherSeasons.length > 0" class="flex flex-wrap items-center gap-2 mt-2">
+            <router-link
+              v-for="s in otherSeasons"
+              :key="s.id"
+              :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: s.id } }"
+              class="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+              :title="`${s.clubName} · ${s.seasonName}`"
+            >
+              <img :src="aflClubLogoUrl(s.clubName)" class="w-4 h-4 object-contain" />
+              <span>{{ s.seasonName }}</span>
+            </router-link>
+          </div>
+
           <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-5 mt-2">
             <div v-for="(event, i) in stintEvents" :key="i" class="flex items-center gap-2">
               <img :src="fflClubLogoUrl(event.clubName)" class="w-5 h-5 object-contain" />
@@ -204,9 +218,14 @@ const { result: fflResult } = useQuery(
   () => ({ aflPlayerSeasonId: props.aflPlayerSeasonId }),
 )
 
+interface PlayerSeasonLink {
+  id: string
+  clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
+}
+
 const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   id: string
-  player: { id: string; name: string }
+  player: { id: string; name: string; playerSeasons: PlayerSeasonLink[] }
   clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
   matches: AFLPlayerMatch[]
   statsAll: AFLStatSummary | null
@@ -214,6 +233,19 @@ const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   statsMedian: AFLStatSummary | null
 } | null)
 const notFound = useNotFound(playerSeason, loading, error)
+
+// The player's other AFL seasons — the one being viewed is dropped, since it's
+// already the page you're on. Server orders these most recent first.
+const otherSeasons = computed(() => {
+  const all = playerSeason.value?.player.playerSeasons ?? []
+  return all
+    .filter(ps => ps.id !== playerSeason.value?.id)
+    .map(ps => ({
+      id: ps.id,
+      clubName: ps.clubSeason.club.name,
+      seasonName: ps.clubSeason.season.name,
+    }))
+})
 const stints = computed(() => fflResult.value?.fflPlayerSeasonsByAflPlayerSeason ?? [])
 
 const breadcrumbs = computed(() => {
