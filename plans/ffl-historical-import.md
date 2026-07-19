@@ -1,213 +1,151 @@
 # FFL Historical Import (2006–2025)
 
-Phase 25, second task. Backfill historical FFL data from the Tapatalk forum
-(`ffltkf`), which holds seasons **2006–2025** (one sub-forum per season). Scores
-are **recomputed** from AFL data via each season's `Rules`; the forum is the
-source of *what teams did*, not of scores.
+Backfill historical FFL data from the Tapatalk forum (`ffltkf`), which holds
+seasons **2006–2025** (one sub-forum per season), working **backwards from 2025**
+and stopping wherever the source data runs out.
 
-1998–2005 predate the forum and will be sourced separately (email/paper/none) —
-out of scope here.
+**Tooling is Phase 25; the import itself is Phase 26.** Phase 26 is not pure data
+entry — each season may need importer changes as new formats appear, so it stays a
+code phase with a data-entry track.
 
-## Core principles
+1998–2005 predate the forum and would need separate sourcing — out of scope.
 
-- **The forum gives team selections and structure; scoring is recomputed.** We
-  already have AFL stats for 2006–2025 and per-season `Rules`, so a player's
-  fantasy score = `Rules.Score(position, aflStats)`. Posted forum scores are
-  **kept, not trusted**: written to `club_match.notes` / `player_match.notes`
-  (labelled `posted:NN`), used only for reconciliation. Evaluated vs posted
-  deltas are a deliberate **second pass**.
-- **Scaffolding before teams.** Fixtures, squads, and trades are imported before
-  weekly submitted teams — this is a hard dependency (below), and it makes the
-  hardest problem (player-name resolution) tractable.
-- **Human-in-the-loop capture defeats bot detection.** No server-side scraping.
-  A bookmarklet run in your authenticated browser captures each page; the backend
-  never touches the forum.
+## Core principle
 
-## Prerequisite: nail down the scoring eras
-Recomputed scores are only as correct as the `Rules`, and the current era
-definitions in `rules_eras.go` are **approximations** — both the per-era
-parameters (points, positions, bench, interchange) and the season each change took
-effect. Before the import can produce trustworthy scores — and before
-reconciliation against posted scores / the score-only spreadsheets means anything —
-confirm:
-- the **exact per-era parameters**, and
-- the **exact season → era mapping**, then tag every `ffl.season.rules_id`.
+**The forum says what teams did; scores are recomputed.** We have AFL stats for
+2006–2025 and per-season `Rules`, so a player's fantasy score =
+`Rules.Score(position, aflStats)`. Every score we find — forum-posted or from the
+spreadsheet — is a **reference, not a source**: it goes to `club_match.notes` /
+`player_match.notes` as `posted:NN`, never to `drv_score`, which stays derived from
+`player_match` rows. (Writing a reference score into `drv_score` would be silently
+wiped by `recalculateFFLClubMatchScore` anyway.)
 
-This is a hard dependency: wrong eras → wrong recomputed scores → false
-reconciliation deltas. Era model lives in [ffl-scoring-rules.md](ffl-scoring-rules.md).
+## Sources
 
-## Forum artifact → schema (why the order is forced)
+| Source | Gives |
+|---|---|
+| **Manual builders** (built) | season, club_seasons, rounds, fixtures, finals |
+| **Spreadsheet** (pasted) | rounds + fixtures + club-level reference scores |
+| **Forum** | squads and every submitted team, H&A and finals alike |
 
-| Forum artifact | Becomes | Notes |
-|---|---|---|
-| **Fixtures** (who played who, which round) | `Match` + two `ClubMatch` | A submitted team is a `PlayerMatch` on a `ClubMatch` — no fixture, nothing to attach to. |
-| **Squads** (a team's full player list) | `PlayerSeason` per `ClubSeason` | Also where clubs first appear per season (the team registry). |
-| **Trades** (ins/outs + effective round) | `PlayerSeason.from_round_id` / `to_round_id` | A trade *is* closing one PlayerSeason and opening another at a round boundary — already modelled. |
-| **Submitted teams** (weekly selection) | `PlayerMatch` (scored via `Rules`) | Needs both a `ClubMatch` and a resolvable `PlayerSeason`. |
+Squads and trades were once scoped as an XML import from external software; **no
+such export exists**. Squads come from a forum thread instead — a separate parser
+from the four team-submission formats in `forum/parser.go`. Trades are **always
+manual**: low volume, inconsistent format, and `addFFLPlayerToSeason` /
+`removeFFLPlayerFromSeason` already take `fromRoundId` / `toRoundId`, so there is no
+write path to build.
 
-**Import order: fixtures → squads → trades → submitted teams.**
+## Per-season workflow
 
-### The payoff — squads-first solves player resolution
-The scariest problem is resolving messy names ("LDU NM", "B King GCS") against
-~800 AFL players. Squads-first collapses it to a **closed set**: a submitted team
-can only name players on that club's squad that round (~25–30 players). Resolve
-each squad member **once per season** (with trade windows); weekly teams then
-auto-resolve against the squad. This de-risks the whole backfill.
+Repeated for each season, newest first:
 
-### Volume works in our favour
-Scaffolding is low-volume — fixtures ≈ 1 post/season, squads ≈ one per club/season,
-trades ≈ periodic. Dozens of posts per season enable the expensive layer (~2,300
-weekly submitted teams across all seasons), which then largely auto-resolves.
+1. **Season + clubs** — manual. Creates the season with its `rules_id` and a
+   `ClubSeason` per club.
+2. **Squads** for all clubs — parse the season's thread, else enter manually. Does
+   *not* require rounds to exist; only trades do.
+3. **Fixtures** for the minor rounds — spreadsheet paste where available, else the
+   manual builder.
+4. **One minor round of teams** for all clubs — including bye and superbye
+   club_matches, which field teams like any other.
+5. **Trades** — manual, via the squad page. Applied between rounds, so the incoming
+   player's `PlayerSeason` window opens on the round they first play. A squad without
+   its trades makes every team after the first trade window unresolvable.
+6. **Repeat 4–5 for every minor round.**
+7. **Verify after the last minor round** — ladder plus per-round, per-club scores.
+   Report discrepancies in both.
+8. **Finals** — create the rounds manually, import the teams.
+9. **Verify finals** scores and results.
+10. **Close the season**, move to the next.
 
-## Shared infrastructure
+### Why squads before teams
+Resolving messy names ("LDU NM", "B King GCS") against ~800 AFL players is the
+scariest problem. A squad collapses it to a **closed set** — a submitted team can
+only name players on that club's squad that round (~25–30). Resolve each squad
+member once per season; weekly teams then largely auto-resolve. It does not remove
+fuzzy matching, it moves it from ~2,300 submitted teams to ~300 squad entries per
+season.
 
-### Capture — userscript (primary)
-A **userscript** (Violentmonkey / Tampermonkey / Greasemonkey), not a bookmarklet.
-The reason: getting the data *out* to `http://localhost` is the hard part — a
-bookmarklet's `fetch()` from the `https` forum is blocked by mixed-content + CORS.
-A userscript's privileged **`GM_xmlhttpRequest`** (with an `@connect localhost`
-grant) bypasses both, so it can read the DOM **and POST straight to the local
-ingest endpoint — no copy/paste at all.**
+## Phase 25 — remaining slices
 
-- The forum's JSON-LD blob is **truncated** — ignore it. Full post bodies live in
-  the DOM: `div.post` → `div.content` (with `<br>`/table markup), and the author
-  is reliably attached (`POST_AUTHOR` / `span[itemprop=name]`).
-- `@match` the forum; the script auto-runs on each page, injects a **"Capture this
-  round"** button (and inline confirmation, e.g. "✓ round 3, 4 teams saved"),
-  walks `div.post` for `{topicId, postId, author, timestamp, html}`, and POSTs the
-  page payload to the ingest endpoint.
-- **Navigation stays human** — you click through threads/pages in your real
-  logged-in session, one page at a time. The script only captures the page you're
-  on; it never fetches pages itself (auto-walking pagination would look robotic and
-  risk tripping bot detection).
-- **Multi-page threads**: capture each page; posts are staged by `(topicId, postId)`,
-  so a round's pages accumulate and dedupe naturally.
-- You confirm **season + round** at capture time (season pre-filled from the
-  breadcrumb; round titles are freeform — e.g. "SheepDog Trials" — so not reliably
-  parseable).
+Slices 0–2 are done: scoring eras confirmed in `rules_eras.go`; capture (userscript
+→ ingest → in-session preview); season creation and the fixture builder, including
+byes, superbye and finals.
 
-**Fallback (zero-install):** a bookmarklet that writes the same JSON payload to the
-**clipboard**, pasted into a DataOps "capture" box. Same ingest, one paste per page —
-for when the extension isn't wanted.
+3. **Squad importer** — squads-thread parser + **bulk resolution-review UI**. The
+   per-post `FflPlayerLinkModal` path is not it. Also needs a raw-text passthrough in
+   the capture preview: `ForumCaptureBuffer.Ingest` currently discards raw HTML and
+   keeps only parsed output, so an unparseable thread shows nothing to work from.
+4. **Submitted-teams importer** — commit via the existing `ImportRoundTeams`, plus:
+   - a **season-scoped author→club_season registry**. This does *not* fall out of
+     season setup: `buildFFLSeason` takes `clubIds` and never sees a forum author
+     name, and `forum.TeamForAuthor` is a hardcoded four-author map with no season
+     dimension. Without it, `parseFFLTeamSubmission`'s `teamName` is typed by hand
+     once per post, ~2,300 times.
+   - **post classification** — team submission vs banter; submitted vs scored.
+   - **authoritative-post selection** — multiple posts per author per round (team,
+     then scored, then edits); default to the latest scored post, allow override.
+   - the **per-match evaluated-vs-reference delta view**. This ships here, not later:
+     the eras in `rules_eras.go` are reviewed but never verified against data, and
+     deltas are the only proof a season's `rules_id` is right. Importing a full season
+     without them risks 22 rounds scored on the wrong era, undetected.
+5. **Spreadsheet fixture importer** — pasted season sheet → rounds, fixtures, and
+   reference club scores to `notes`. Deliberately after 3–4: 2025's clubs and full
+   fixture are already entered by hand, so this is first needed for 2024 — and by
+   then we will have seen a real sheet rather than guessing at its format.
 
-### Staging (ephemeral)
-Captured posts are held **in-session only** — no staging table. If a session ends,
-re-capture the page (cheap: one click in the userscript). Idempotency lives at the
-**commit** layer: re-importing a round is diff-based (via `SetTeam`), so re-running
-is always safe. Durable progress is the committed data, not the staging — see
-Progress tracking below.
+**No coverage dashboard is built.** Progress lives in the Phase 26 sprint doc,
+cross-checked against committed data with SQL. Once Phase 26 closes it is not needed
+again, so it does not earn a permanent product surface.
 
-### Team registry + escape hatch
-Forum author → FFL club, **per season** (clubs come and go: Grand Pooh Bears,
-Buckleys, …). Falls out of the fixtures/squads step. An unknown author posting a
-team-shaped post is **flagged for mapping or skip**, never crashes the run.
+### Phase 26 progress table
 
-## Import layers
+One row per season, following the workflow steps above. The doc is the working
+record; SQL against `match` / `player_season` / `player_match` is what confirms it.
 
-**Only submitted teams come from the forum.** The scaffolding (season, fixtures,
-squads) is built manually or from structured sources — no fuzzy fixture/season
-parsing. This is deliberate: fixtures especially need a **permanent** builder
-because finals are constructed as-we-go *every* season, forever — not a one-off
-backfill tool.
+| Season | Clubs | Squads | Fixtures | Rounds done | Ladder ✓ | Finals | Closed |
+|---|---|---|---|---|---|---|---|
+| 2025 | ✓ | | ✓ | 0 / 22 | | | |
+| 2024 | | | | | | | |
 
-1. **Season** (manual) — enter a **season name**, pick the **scoring era**
-   explicitly (from `fflRulesEras`, pre-selected from the AFL season's year but
-   overridable), the **AFL season**, and the **clubs** (checklist of existing clubs
-   by id). Creates the season with the chosen `rules_id` and a `ClubSeason` per club.
-2. **Fixtures** (manual **builder page** in Admin) — a staged, round-by-round editor
-   saved atomically via `saveFFLFixtures` (reconcile: create / replace / delete;
-   rounds with submitted teams are locked/immutable). Per round you add enough
-   matches to cover the clubs; any leftover club is a **scoring bye** (a single-sided
-   `match_style='bye'` match + one `ClubMatch`, so the club still fields a team and
-   its score counts toward the season aggregate — no premiership points). Tools:
-   **Repeat rounds X–Y** (optionally reversing home/away, auto-incrementing the AFL
-   round) to fill the H&A season, and **add finals rounds individually as they happen**.
-   The **superbye** (the one match variant beyond regular home-vs-away) is still deferred.
-   This page is a lasting product feature, used live each finals series.
-3. **Squads** → `PlayerSeason` rows, resolved to AFL players once per season.
-   - **XML import** for recent years (consistent format from external software) —
-     preferred where available: it front-loads the *closed-set* squad that makes
-     team-import resolution easy.
-   - **As-we-go** fallback for older years: players are added on first appearance
-     during team import, topped up via the existing squad-maintenance page.
-   - Trades are `PlayerSeason` `from/to_round_id` windows, set via the squad page.
-4. **Submitted teams** (forum) → `PlayerMatch` via the existing `ImportRoundTeams`.
-   - Must **classify posts**: team-submission vs banter/analysis (verbose threads
-     contain many non-team posts) — heuristic on position-section structure, then
-     human confirm. And submitted (no scores) vs scored (per-player/total present).
-   - Multiple posts per author per round (team, then scored, edits): capture all,
-     default-select the latest/scored post as authoritative, review overrides.
+Import across as many sessions as needed: done = in the database, so the committed
+data is always the real answer if the table drifts.
 
-## Scoring & posted scores
-Reuse `ImportRoundTeams` (already wired): it writes `posted:NN` per player and the
-posted total to notes, and gets the **evaluated** score from `SetTeam` → `Rules`.
-So each club_match ends with: submitted team composition, evaluated `drv_score`,
-and the posted score preserved in `notes`.
+## Reconciliation
 
-## Reconciliation (deferred second pass)
-- **Per club_match**: evaluated `drv_score` vs posted (from notes) → surface deltas;
-  decide handling later (parser bug? posted typo? AFL-stat mismatch?).
-- **Final, end-to-end**: reconcile evaluated season/round totals against the
-  **score-only spreadsheets** (an independent source of truth) after all imports.
+Two independent references may exist per club_match — the forum-posted score and the
+spreadsheet score, both in `notes`. `drv_score` stays the evaluated truth.
 
-## Progress tracking (derived, not maintained)
-Progress is durable because **the committed data is the record** — not a checklist,
-and not the sprint doc (far too coarse for ~20 seasons × ~22 rounds × clubs). A
-**coverage dashboard** in DataOps derives status by querying the real tables:
-- **Fixtures** present for a season/round? (`match` rows) — defines the expected cells.
-- **Squad** imported for a club/season? (`player_season` rows)
-- **Submitted team** present for a `club_match`? (`player_match` rows), with an
-  evaluated `drv_score` and a posted score in `notes`?
+- **Per club_match** — evaluated vs each reference; surface deltas (parser bug?
+  posted typo? AFL-stat mismatch?).
+- **Ladder at the end of the minor round** — computed vs the spreadsheet's. This is
+  the only end-to-end check of the **superbye extra-points** fold and bye handling,
+  which are otherwise covered by unit tests alone. Treat it as a per-season gate.
+- **Finals** — scores and progression.
 
-"Missing" = no rows; "partial" = fixture but no team, or a team with unresolved
-players / no posted score. Ephemeral staging is fine: you never lose your place
-because done = in the database. Import across as many sessions as needed; reopen
-the dashboard to see what's left.
+Delta *policy* (what to do when evaluated ≠ posted) is decided case by case as they
+appear, not up front.
 
-## Reuse (already exists)
-- `forum.Parser.Parse(teamName, post)` — 4 formats, author supplies the team name.
-- `dataops.ImportRoundTeams` — posted→notes, evaluated via `SetTeam`/`Rules`.
-- DataOps player-link UI (`FflPlayerLinkModal`) — basis for resolution review.
-- Live-scoring write path exists; **season/fixture write-side persistence does not
-  yet** (reads only) and is built in slice 2.
+## Reference
 
-## Delivery slices
-0. **Nail down the eras** (done) — confirmed per-era parameters in `rules_eras.go`;
-   season→era tagging folds into slice 2 (season creation auto-assigns `rules_id`).
-1. **Capture + inspect** (done) — userscript → ingest → in-session parse/view.
-2. **Season + fixtures** — the scaffolding, built manually (no forum parsing):
-   - **2a** write-side persistence (season, club_season, round, match, club_match
-     creates: sqlc + repos + domain).
-   - **2b** season creation (year + clubs → season with auto `rules_id` + club_seasons).
-   - **2c** fixture builder page (rounds + matches; round-robin copy-fill; byes,
-     superbye, finals added as-we-go).
-3. **Squads** — XML import (recent years, closed-set) + as-we-go/manual top-up
-   (older years); resolution against the closed squad set.
-4. **Trades** — `PlayerSeason` from/to-round windows (via the squad page).
-5. **Submitted-teams importer** — post classification + authoritative-post selection,
-   commit via `ImportRoundTeams`, evaluated scoring + posted-to-notes.
-6. **Coverage dashboard** (derived from imported data) + **reconciliation**
-   (per-match deltas, then spreadsheet).
+**Match model.** A match is a `match_style` (`versus` | `bye` | `superbye`) plus its
+`club_match`es (each with a `side`): versus = 2, bye = 1, superbye = N. A bye scores
+toward `For` only — not a played round, no premiership points. Superbye: each score →
+`For`, top scorer(s) earn 1 extra point (`drv_extra_points`, ladder "EP" column);
+ties share, all-zero awards none. Bye and superbye teams are entered through the same
+Import / Mark Final flow as any club.
 
-Prove the whole chain on **one season** (ideally a recent, well-formatted one)
-before scaling to all 20.
+**Capture.** A userscript (`dev/userscripts/ffl-forum-capture.user.js`) reads the DOM
+and POSTs to the local ingest endpoint via `GM_xmlhttpRequest` — a bookmarklet can't,
+because `fetch()` from the https forum to localhost is blocked by mixed-content and
+CORS. Navigation stays human: it only captures the page you are on, never walks
+pagination. Captured posts are held **in-session only**; re-capture is one click, and
+idempotency lives at the commit layer (`SetTeam` is diff-based, so re-importing a
+round is always safe).
 
-## Open questions / deferred
-- **Scoring byes are modelled** (single-sided `match_style='bye'` match + one
-  `ClubMatch`); the club fields a team and its score counts toward `For` only — not
-  a played round, and no premiership points.
-- **One match model.** A match is a `match_style` (`versus` | `bye` | `superbye`,
-  a typed always-populated discriminator) plus its participating `club_match`es
-  (each with a `side`). Versus = 2, bye = 1, superbye = N. The ladder folds one
-  loaded type (`ScoredClubMatch`) by style; the builder API is a uniform
-  `matches: [{ style, clubSeasonIds }]` per round. Superbye scoring: each score → `For`
-  (no played round), top scorer(s) earn **1 extra point** (`drv_extra_points`, folded
-  into total premiership points; ladder "EP" column). Ties share; all-zero awards none.
-- **Bye/superbye team entry is wired**: `FFLMatch` exposes `matchStyle` + `clubMatches`
-  (all sides), and the DataOps "FFL Teams" tab lists every `club_match` in the round
-  (with a bye/superbye badge), so those teams are entered via the same Import / Mark
-  Final flow as any club.
-- Delta policy (what to do when evaluated ≠ posted) — decided in the second pass.
+**Escape hatch.** An unknown author, format or player never crashes a run — it is
+flagged for mapping or skip. Parsers are extended as new formats are met.
+
+## Open questions
 - 1998–2005 — separate sourcing, separate effort.
-- Per-layer format cataloguing — expand parsers as new formats/teams are met
-  (escape hatch keeps a run from stalling on an unknown format).
+- How far back the forum threads and spreadsheets stay usable — discovered season by
+  season, not decided up front.

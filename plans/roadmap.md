@@ -4,12 +4,12 @@ Committed phases — active and next. Completed phases 1–24 are in `plans/hist
 
 ---
 
-## Phase 25: FFL Scoring & Historical Import
+## Phase 25: FFL Scoring & Historical Import Setup
 
 **Goal:** Make FFL scoring pluggable per season, then backfill historical FFL teams from forum data with era-correct scoring.
 
 - [x] Pluggable FFL scoring formula — per-season `Rules` value object with `Scoring` and `Composition` facets (`ffl.season.rules_id`) + generic scoring engine; refactor-to-parity first, then historical eras defined in `rules_eras.go`. Supersedes the `ScoringStrategy` interface / `scoring_strategy` column originally scoped here — parameterised rules replaced one implementation per variant. See [ffl-scoring-rules.md](ffl-scoring-rules.md)
-- [ ] FFL historical import (2006–2025) — human-in-the-loop capture (userscript → ingest → parse) feeding a layered pipeline (fixtures → squads → trades → submitted teams), with scores recomputed via per-season `Rules` and posted scores kept in notes for reconciliation. Replaces the one-time-CLI approach originally scoped. Slices 0–2 done (eras, capture, season + fixtures); 3–6 remain (squads, trades, submitted teams, coverage + reconciliation). See [ffl-historical-import.md](ffl-historical-import.md)
+- [ ] FFL historical import **tooling** — human-in-the-loop capture (userscript → ingest → parse) feeding a layered pipeline (fixtures → squads → trades → submitted teams), with scores recomputed via per-season `Rules` and every score found kept in notes as a reference. Replaces the one-time-CLI approach originally scoped. Slices 0–2 done (eras, capture, season + fixtures); 3–5 remain (squads, submitted teams, spreadsheet fixtures). Running the import is Phase 26. See [ffl-historical-import.md](ffl-historical-import.md)
 - [ ] Deletion semantics fast-follow (ADR-020 step 1) — `ffl.player_match.club_match_id` from `ON DELETE CASCADE` to `RESTRICT`, so a fixture delete slipping past the `hasTeams` guard fails loudly instead of silently destroying submitted teams. See [ADR-020](../ai/decisions/adr-020-deletion-semantics.md)
 
 Emerged during the phase rather than being scoped up front — byes and superbyes were deferred from slice 2 and added as-we-go, and the rest came out of using the fixture builder:
@@ -21,10 +21,21 @@ Emerged during the phase rather than being scoped up front — byes and superbye
 
 Not-found and player navigation, arising from use rather than plan:
 
-- [x] Not-found handling — single-entity queries resolve unknown and unparseable ids to null instead of erroring (`pgx.ErrNoRows` → `domain.ErrNotFound` through repo and resolver), a shared `NotFound` page across the FFL and AFL views, and a catch-all route for unmatched paths. Remaining unreached call paths and the typecheck gate are Phase 27
+- [x] Not-found handling — single-entity queries resolve unknown and unparseable ids to null instead of erroring (`pgx.ErrNoRows` → `domain.ErrNotFound` through repo and resolver), a shared `NotFound` page across the FFL and AFL views, and a catch-all route for unmatched paths. Remaining unreached call paths and the typecheck gate are Phase 28
 - [x] Player navigation — header player search jumping to any player's season page, and a player's other seasons linked as year + club chips from their season page
 
-## Phase 26: Event Reliability (REV-1)
+## Phase 26: FFL Historical Import (2006–2025)
+
+**Goal:** Run the Phase 25 importers across the seasons, backwards from 2025, stopping wherever the source data runs out. Not pure data entry — each season may need importer changes as new formats appear.
+
+Per season, repeated: season + clubs → squads → minor-round fixtures → teams round by round, applying trades between rounds → verify ladder and per-round scores → finals → verify → close. See [ffl-historical-import.md](ffl-historical-import.md).
+
+- [ ] Progress table in the sprint doc, one row per season, cross-checked against committed data with SQL — no dashboard is built, the need ends with this phase
+- [ ] 2025 first, proving the whole chain end to end before scaling
+- [ ] Importer fixes as new squad/team/spreadsheet formats appear
+- [ ] Reconciliation: per-match evaluated-vs-reference deltas, ladder at end of minor round, finals results
+
+## Phase 27: Event Reliability (REV-1)
 
 **Goal:** Event processing fails loudly and recoverably — remove the silent-permanent-death mode found by the 2026-07 review (`doc/review-findings.md` §6, the one `critical` finding).
 
@@ -34,7 +45,7 @@ Not-found and player navigation, arising from use rather than plan:
 - [ ] Verify FFL and Search listener goroutines (`ffl/cmd/main.go`, `search/cmd/main.go`) surface listener death — no warn-and-continue
 - [ ] Integration test: kill the listener connection mid-run; assert events resume after reconnect
 
-## Phase 27: Lookup Error Handling & Type Gate
+## Phase 28: Lookup Error Handling & Type Gate
 
 **Goal:** Finish the not-found work started in Phase 25 (`2fe2762`, `e677fc1`) and make the frontend typecheck a blocking gate. Nothing here is reachable from a routed page today — these are the same latent trap that produced the same bug three times, so they're closed together rather than one page at a time.
 
