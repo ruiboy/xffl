@@ -390,9 +390,12 @@ func (r *queryResolver) FflSeasons(ctx context.Context) ([]*FFLSeason, error) {
 func (r *queryResolver) FflSeason(ctx context.Context, id string) (*FFLSeason, error) {
 	parsed, err := fromID(id)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	season, err := r.Queries.GetSeason(ctx, parsed)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -403,9 +406,12 @@ func (r *queryResolver) FflSeason(ctx context.Context, id string) (*FFLSeason, e
 func (r *queryResolver) FflRound(ctx context.Context, id string) (*FFLRound, error) {
 	parsed, err := fromID(id)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	round, err := r.Queries.GetRound(ctx, parsed)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -416,9 +422,12 @@ func (r *queryResolver) FflRound(ctx context.Context, id string) (*FFLRound, err
 func (r *queryResolver) FflMatch(ctx context.Context, id string) (*FFLMatch, error) {
 	parsed, err := fromID(id)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	match, err := r.Queries.GetMatch(ctx, parsed)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -457,9 +466,12 @@ func (r *queryResolver) FflClub(ctx context.Context, id string) (*FFLClub, error
 func (r *queryResolver) FflClubSeason(ctx context.Context, id string) (*FFLClubSeason, error) {
 	csID, err := fromID(id)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	cs, err := r.Queries.GetClubSeason(ctx, csID)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -516,9 +528,12 @@ func (r *queryResolver) FflRoundByAflRound(ctx context.Context, aflRoundID strin
 func (r *queryResolver) FflClubMatch(ctx context.Context, id string) (*FFLClubMatch, error) {
 	cmID, err := fromID(id)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	cm, err := r.Queries.GetClubMatch(ctx, cmID)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@
     <div v-if="openMenuKey" class="fixed inset-0 z-40" @click="closeMenu" />
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Team" />
     <template v-else-if="round">
       <div class="mb-6">
         <Breadcrumb v-if="currentRound" :items="breadcrumbs" />
@@ -756,6 +757,8 @@ import IconCopy from '../components/icons/IconCopy.vue'
 import IconMenu from '../components/icons/IconMenu.vue'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
@@ -821,6 +824,9 @@ const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
   () => ({ id: props.clubMatchId }),
   { errorPolicy: 'all' },
 )
+
+const bootstrapClubMatch = computed(() => clubMatchBootstrap.value?.fflClubMatch ?? null)
+const notFound = useNotFound(bootstrapClubMatch, bootstrapLoading, ref(null))
 
 const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.roundId ?? '')
 const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
@@ -1210,7 +1216,7 @@ function formatTeamText(): string {
       const club = clubAbbrev(slot.player!.club)
       const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
       const isIc = isInterchangeSlot(slot)
-      const posLabel = isIc ? '*' : slot.positions.filter(Boolean).map(positionShort).join('/')
+      const posLabel = isIc ? '*' : slot.positions.filter((p): p is NonNullable<typeof p> => p != null).map(positionShort).join('/')
       const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
       const score = showScore ? ` ${benchScoreDisplay(slot)}` : ''
       lines.push(`${slot.player!.name}${club ? ` (${club})` : ''} ${posLabel}${tag ? ` ${tag}` : ''}${score}`)

@@ -56,7 +56,7 @@
                       :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: row.clubSeasonId } }"
                       class="inline-flex items-center gap-1.5 hover:text-text transition-colors"
                     >
-                      <img :src="clubLogoUrl(row.clubName)" class="w-4 h-4 object-contain" />
+                      <img :src="clubLogoUrl(row.clubName ?? '')" class="w-4 h-4 object-contain" />
                       {{ row.clubName }}
                     </router-link>
                     <span v-else>{{ row.clubName ?? '—' }}</span>

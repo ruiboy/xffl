@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Round" />
     <template v-else-if="round">
       <Breadcrumb :items="breadcrumbs" />
 
@@ -69,6 +70,8 @@ import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import MatchSummary from '../components/MatchSummary.vue'
 import RoundNav from '../components/RoundNav.vue'
@@ -81,6 +84,7 @@ const { setSelectedRound: setAflSelectedRound } = useAflState()
 const { result, loading, error } = useQuery(GET_FFL_ROUND, () => ({ id: props.roundId }))
 
 const round = computed(() => result.value?.fflRound ?? null)
+const notFound = useNotFound(round, loading, error)
 const season = computed(() => round.value?.season ?? null)
 
 // Visiting a round makes it "stick" for cross-domain navigation (header

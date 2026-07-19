@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading match…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Match" />
     <template v-else-if="match">
       <div class="mb-6">
         <Breadcrumb v-if="round" :items="breadcrumbs" />
@@ -73,6 +74,8 @@ import SquadTable from '../components/SquadTable.vue'
 import MatchSideHeader from '../components/MatchSideHeader.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { useFflState } from '../composables/useFflState'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 
 const props = defineProps<{ matchId: string }>()
 
@@ -81,6 +84,7 @@ const { selectedClubId } = useFflState()
 const { result, loading, error } = useQuery(GET_FFL_MATCH, () => ({ id: props.matchId }))
 
 const match = computed(() => result.value?.fflMatch ?? null)
+const notFound = useNotFound(match, loading, error)
 const round = computed(() => match.value?.round ?? null)
 const matchStyle = computed<string>(() => match.value?.matchStyle ?? 'versus')
 const clubMatches = computed<any[]>(() => match.value?.clubMatches ?? [])

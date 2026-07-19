@@ -1,6 +1,6 @@
 type Query {
   fflSeasons: [FFLSeason!]!
-  fflSeason(id: ID!): FFLSeason!
+  fflSeason(id: ID!): FFLSeason
   fflRound(id: ID!): FFLRound
   fflMatch(id: ID!): FFLMatch
 

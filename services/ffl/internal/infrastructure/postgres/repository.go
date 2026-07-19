@@ -137,6 +137,9 @@ func (r *SeasonRepository) FindAll(ctx context.Context) ([]domain.Season, error)
 
 func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season, error) {
 	row, err := r.q.FindSeasonByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Season{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Season{}, err
 	}
@@ -178,6 +181,9 @@ func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]d
 
 func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, error) {
 	row, err := r.q.FindRoundByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Round{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Round{}, err
 	}
@@ -252,6 +258,9 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 
 func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, error) {
 	row, err := r.q.FindMatchByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Match{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Match{}, err
 	}
@@ -397,6 +406,9 @@ func (r *ClubSeasonRepository) FindBySeasonID(ctx context.Context, seasonID int)
 
 func (r *ClubSeasonRepository) FindByID(ctx context.Context, id int) (domain.ClubSeason, error) {
 	row, err := r.q.FindClubSeasonByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ClubSeason{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.ClubSeason{}, err
 	}
@@ -478,6 +490,9 @@ func (r *ClubMatchRepository) FindByMatchID(ctx context.Context, matchID int) ([
 
 func (r *ClubMatchRepository) FindByID(ctx context.Context, id int) (domain.ClubMatch, error) {
 	row, err := r.q.FindClubMatchByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ClubMatch{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.ClubMatch{}, err
 	}

@@ -1,5 +1,7 @@
 <template>
   <div>
+    <NotFound v-if="notFound" entity="Squad" />
+    <template v-else>
     <Breadcrumb v-if="clubSeason" :items="breadcrumbs" />
     <div class="mb-6 flex items-center">
       <h1 class="text-2xl font-bold flex items-center gap-3">
@@ -304,6 +306,7 @@
         </div>
       </div>
     </Teleport>
+    </template>
   </div>
 </template>
 
@@ -311,6 +314,8 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation, useApolloClient } from '@vue/apollo-composable'
 import { useTheme } from '@/composables/useTheme'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { heatStyle } from '@/utils/heatmap'
 import { statCols, starScore, type StatSummary, type StatKey } from '../utils/playerStats'
 import StatCell from '../components/StatCell.vue'
@@ -355,6 +360,7 @@ const { result: squadResult, loading: squadLoading, error: squadError, refetch: 
 )
 
 const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
+const notFound = useNotFound(clubSeason, squadLoading, squadError)
 
 // Live round club match — only fetched when viewing your own club
 const { result: liveRoundMatchesResult } = useQuery(

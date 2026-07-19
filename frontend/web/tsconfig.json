@@ -20,10 +20,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Paths */
-    "baseUrl": ".",
+    /* Paths — resolved relative to this file; baseUrl is deprecated in TS 6+ */
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

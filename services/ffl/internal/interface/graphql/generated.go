@@ -2061,7 +2061,7 @@ enum FFLReorderDirection {
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
   fflSeasons: [FFLSeason!]!
-  fflSeason(id: ID!): FFLSeason!
+  fflSeason(id: ID!): FFLSeason
   fflRound(id: ID!): FFLRound
   fflMatch(id: ID!): FFLMatch
 
@@ -8069,9 +8069,9 @@ func (ec *executionContext) _Query_fflSeason(ctx context.Context, field graphql.
 			return ec.Resolvers.Query().FflSeason(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNFFLSeason2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSeason,
+		ec.marshalOFFLSeason2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSeason,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -14150,16 +14150,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "fflSeason":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_fflSeason(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -16416,6 +16413,13 @@ func (ec *executionContext) marshalOFFLRound2ᚖxfflᚋservicesᚋfflᚋinternal
 		return graphql.Null
 	}
 	return ec._FFLRound(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOFFLSeason2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSeason(ctx context.Context, sel ast.SelectionSet, v *FFLSeason) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FFLSeason(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFFLSubPairing2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFFLSubPairing(ctx context.Context, v any) (*FFLSubPairing, error) {

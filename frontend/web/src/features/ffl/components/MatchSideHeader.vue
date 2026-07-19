@@ -28,7 +28,7 @@
       <p class="text-xs font-semibold text-sky-400 mb-1">Improve your score:</p>
       <ul class="space-y-0.5">
         <li
-          v-for="s in side.clubMatch.suggestedSubstitutions"
+          v-for="s in side.clubMatch?.suggestedSubstitutions ?? []"
           :key="s.replacingPmId"
           class="flex items-start gap-1.5 text-sm text-sky-300"
         >
