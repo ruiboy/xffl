@@ -54,6 +54,19 @@ func (q *Queries) CreateClubMatch(ctx context.Context, arg CreateClubMatchParams
 	return i, err
 }
 
+const deleteClubMatchByID = `-- name: DeleteClubMatchByID :exec
+DELETE FROM ffl.club_match WHERE id = $1
+`
+
+// Drops a club from a match outright. The fixture builder only edits rounds with
+// no submitted teams, so there is nothing here worth keeping — and a soft delete
+// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+// later blocks the same club from rejoining the match against.
+func (q *Queries) DeleteClubMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteClubMatchByID, id)
+	return err
+}
+
 const findClubMatchByID = `-- name: FindClubMatchByID :one
 SELECT id, match_id, club_season_id, side, data_status, notes, drv_score
 FROM ffl.club_match
@@ -130,10 +143,12 @@ func (q *Queries) FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([
 }
 
 const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
-SELECT id, match_id, club_season_id, side, data_status, notes, drv_score
-FROM ffl.club_match
-WHERE match_id = $1 AND deleted_at IS NULL
-ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END
+SELECT cm.id, cm.match_id, cm.club_season_id, cm.side, cm.data_status, cm.notes, cm.drv_score
+FROM ffl.club_match cm
+JOIN ffl.club_season cs ON cs.id = cm.club_season_id
+JOIN ffl.club c ON c.id = cs.club_id
+WHERE cm.match_id = $1 AND cm.deleted_at IS NULL
+ORDER BY CASE WHEN cm.side = 'home' THEN 0 ELSE 1 END, c.name
 `
 
 type FindClubMatchesByMatchIDRow struct {
@@ -146,6 +161,9 @@ type FindClubMatchesByMatchIDRow struct {
 	DrvScore     *int32
 }
 
+// Home first so a versus match reads [home, away]; club name breaks the tie for
+// styles where every side is equal, so a bye/superbye lists alphabetically
+// instead of in whatever order the rows happen to come back in.
 func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error) {
 	rows, err := q.db.Query(ctx, findClubMatchesByMatchID, matchID)
 	if err != nil {
@@ -236,19 +254,6 @@ func (q *Queries) GetRulesIDByClubMatchID(ctx context.Context, id int32) (string
 	var rules_id string
 	err := row.Scan(&rules_id)
 	return rules_id, err
-}
-
-const deleteClubMatchByID = `-- name: DeleteClubMatchByID :exec
-DELETE FROM ffl.club_match WHERE id = $1
-`
-
-// Drops a club from a match outright. The fixture builder only edits rounds with
-// no submitted teams, so there is nothing here worth keeping — and a soft delete
-// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
-// later blocks the same club from rejoining the match against.
-func (q *Queries) DeleteClubMatchByID(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, deleteClubMatchByID, id)
-	return err
 }
 
 const updateClubMatchDataStatus = `-- name: UpdateClubMatchDataStatus :exec

@@ -1,8 +1,13 @@
+-- Home first so a versus match reads [home, away]; club name breaks the tie for
+-- styles where every side is equal, so a bye/superbye lists alphabetically
+-- instead of in whatever order the rows happen to come back in.
 -- name: FindClubMatchesByMatchID :many
-SELECT id, match_id, club_season_id, side, data_status, notes, drv_score
-FROM ffl.club_match
-WHERE match_id = $1 AND deleted_at IS NULL
-ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END;
+SELECT cm.id, cm.match_id, cm.club_season_id, cm.side, cm.data_status, cm.notes, cm.drv_score
+FROM ffl.club_match cm
+JOIN ffl.club_season cs ON cs.id = cm.club_season_id
+JOIN ffl.club c ON c.id = cs.club_id
+WHERE cm.match_id = $1 AND cm.deleted_at IS NULL
+ORDER BY CASE WHEN cm.side = 'home' THEN 0 ELSE 1 END, c.name;
 
 -- name: FindClubMatchByID :one
 SELECT id, match_id, club_season_id, side, data_status, notes, drv_score

@@ -250,6 +250,44 @@ func TestSaveFixtures_Superbye(t *testing.T) {
 	assert.Equal(t, 3, sides)
 }
 
+// A superbye's clubs come back in name order. Every side is 'superbye', so
+// without a tie-break the rows arrive in whatever order Postgres returns them,
+// and the round/match views render them differently between loads.
+func TestSaveFixtures_SuperbyeOrdersClubsAlphabetically(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+
+	// Created — and passed to the spec — deliberately out of alphabetical order.
+	zulu := createClub(ctx, t, "SForder Zulu")
+	alpha := createClub(ctx, t, "SForder Alpha")
+	mike := createClub(ctx, t, "SForder Mike")
+	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
+		SeasonName: "SForder", RulesID: "2011", AFLSeasonID: 12, ClubIDs: []int{zulu, alpha, mike},
+	})
+	require.NoError(t, err)
+
+	all := make([]int, len(built.ClubSeasons))
+	for i, cs := range built.ClubSeasons {
+		all[i] = cs.ClubSeasonID
+	}
+	require.NoError(t, builder.SaveFixtures(ctx, built.SeasonID, []RoundSpec{{
+		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{superbyeMatch(all...)},
+	}}))
+
+	groups := roundClubMatches(ctx, t, onlyRoundID(ctx, t, built.SeasonID))
+	require.Len(t, groups, 1, "one superbye match")
+	names := make([]string, 0, len(groups[0]))
+	for _, cm := range groups[0] {
+		var n string
+		require.NoError(t, testPool.QueryRow(ctx,
+			`SELECT c.name FROM ffl.club_season cs JOIN ffl.club c ON c.id = cs.club_id WHERE cs.id = $1`,
+			cm.ClubSeasonID).Scan(&n))
+		names = append(names, n)
+	}
+	assert.Equal(t, []string{"SForder Alpha", "SForder Mike", "SForder Zulu"}, names)
+}
+
 // The unified loader returns every final club_match tagged with its match style.
 func TestFindFinalClubMatchesBySeasonID(t *testing.T) {
 	ctx := context.Background()

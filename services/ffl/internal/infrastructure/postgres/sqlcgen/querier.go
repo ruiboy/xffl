@@ -21,6 +21,17 @@ type Querier interface {
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
 	CreateRound(ctx context.Context, arg CreateRoundParams) (CreateRoundRow, error)
 	CreateSeason(ctx context.Context, arg CreateSeasonParams) (CreateSeasonRow, error)
+	// Drops a club from a match outright. The fixture builder only edits rounds with
+	// no submitted teams, so there is nothing here worth keeping — and a soft delete
+	// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+	// later blocks the same club from rejoining the match against.
+	DeleteClubMatchByID(ctx context.Context, id int32) error
+	DeleteMatchByID(ctx context.Context, id int32) error
+	// Matches are removed outright rather than soft-deleted: the fixture builder
+	// only edits rounds with no submitted teams, so a dropped match holds nothing
+	// worth keeping, and tombstones would accumulate on every save. club_match rows
+	// follow via ON DELETE CASCADE.
+	DeleteMatchesByRoundID(ctx context.Context, roundID int32) error
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerMatchByID(ctx context.Context, id int32) error
 	DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error
@@ -33,6 +44,9 @@ type Querier interface {
 	FindClubByName(ctx context.Context, name string) (FindClubByNameRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([]FindClubMatchesByIDsRow, error)
+	// Home first so a versus match reads [home, away]; club name breaks the tie for
+	// styles where every side is equal, so a bye/superbye lists alphabetically
+	// instead of in whatever order the rows happen to come back in.
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)
 	FindClubSeasonByClubAndSeason(ctx context.Context, arg FindClubSeasonByClubAndSeasonParams) (FindClubSeasonByClubAndSeasonRow, error)
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
@@ -58,17 +72,6 @@ type Querier interface {
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error)
-	// Drops a club from a match outright. The fixture builder only edits rounds with
-	// no submitted teams, so there is nothing here worth keeping — and a soft delete
-	// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
-	// later blocks the same club from rejoining the match against.
-	DeleteClubMatchByID(ctx context.Context, id int32) error
-	DeleteMatchByID(ctx context.Context, id int32) error
-	// Matches are removed outright rather than soft-deleted: the fixture builder
-	// only edits rounds with no submitted teams, so a dropped match holds nothing
-	// worth keeping, and tombstones would accumulate on every save. club_match rows
-	// follow via ON DELETE CASCADE.
-	DeleteMatchesByRoundID(ctx context.Context, roundID int32) error
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
 	SoftDeleteRound(ctx context.Context, id int32) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error

@@ -18,3 +18,4 @@ See `plans/ideas.md` for full item descriptions where relevant.
   - [ ] Slice 5 — submitted-teams importer (post classification + authoritative-post selection; commit via `ImportRoundTeams`, evaluated scoring + posted-to-notes)
   - [ ] Slice 6 — coverage dashboard (derived) + reconciliation (per-match deltas, then spreadsheet)
 - [ ] Deletion semantics fast-follow (ADR-020 step 1) — change `ffl.player_match.club_match_id` from `ON DELETE CASCADE` to `RESTRICT`, so a fixture delete that slips past the `hasTeams` guard fails loudly instead of silently destroying submitted teams. Remaining steps (`deleted_at` audit, partial unique indexes, removing the other 23 cascades) are a later slice. See [ADR-020](../ai/decisions/adr-020-deletion-semantics.md)
+- [ ] Move Admin > Calculate tab to Data Ops > Calculate
