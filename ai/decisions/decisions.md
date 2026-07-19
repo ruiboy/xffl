@@ -23,3 +23,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 017 | Accepted | ✅ | `vikstrous/dataloadgen` as the convention for all resolver entity lookups; resolvers never call single-item repo methods by ID; per-request `Loaders` struct in context; batch functions delegate to repository `FindByIDs` |
 | 018 | Accepted | ✅ | Twirp for synchronous cross-service RPC; port interface in application layer; proto in `contracts/proto/`, generated stubs in `contracts/gen/`; `buf` for codegen |
 | 019 | Accepted | ✅ | vitest for pure frontend logic (algorithms, stat maths) as colocated `*.test.ts`; component behaviour stays in Playwright e2e |
+| 020 | Proposed | ✅ | Repositories delete aggregate children explicitly; FKs are RESTRICT (no `ON DELETE CASCADE`); `deleted_at` opt-in per entity with a reason; unique constraints on soft-deleted tables must be partial |

@@ -58,15 +58,25 @@ type Querier interface {
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error)
+	// Drops a club from a match outright. The fixture builder only edits rounds with
+	// no submitted teams, so there is nothing here worth keeping — and a soft delete
+	// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+	// later blocks the same club from rejoining the match against.
+	DeleteClubMatchByID(ctx context.Context, id int32) error
+	DeleteMatchByID(ctx context.Context, id int32) error
+	// Matches are removed outright rather than soft-deleted: the fixture builder
+	// only edits rounds with no submitted teams, so a dropped match holds nothing
+	// worth keeping, and tombstones would accumulate on every save. club_match rows
+	// follow via ON DELETE CASCADE.
+	DeleteMatchesByRoundID(ctx context.Context, roundID int32) error
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
-	SoftDeleteClubMatchesByMatchID(ctx context.Context, matchID int32) error
-	SoftDeleteMatchesByRoundID(ctx context.Context, roundID int32) error
 	SoftDeleteRound(ctx context.Context, id int32) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error
 	UpdateClubMatchNotes(ctx context.Context, arg UpdateClubMatchNotesParams) error
 	UpdateClubMatchPremiershipPoints(ctx context.Context, arg UpdateClubMatchPremiershipPointsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
+	UpdateClubMatchSide(ctx context.Context, arg UpdateClubMatchSideParams) error
 	UpdateDrvAFLStatus(ctx context.Context, arg UpdateDrvAFLStatusParams) error
 	UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error
 	UpdateFflMatchResult(ctx context.Context, arg UpdateFflMatchResultParams) error

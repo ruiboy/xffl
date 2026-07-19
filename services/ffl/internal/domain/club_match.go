@@ -302,6 +302,9 @@ type ClubMatchRepository interface {
 	CountFinalByMatchID(ctx context.Context, matchID int) (int, error)
 	GetRulesID(ctx context.Context, clubMatchID int) (string, error)
 	Create(ctx context.Context, matchID int, clubSeasonID int, side string) (ClubMatch, error)
-	SoftDeleteByMatchID(ctx context.Context, matchID int) error
+	UpdateSide(ctx context.Context, id int, side string) error
+	// A club dropped from a match is removed outright: uni_ffl_club_match ignores
+	// deleted_at, so a tombstone would block that club rejoining the match.
+	DeleteByID(ctx context.Context, id int) error
 	FindFinalClubMatchesBySeasonID(ctx context.Context, seasonID int) ([]ScoredClubMatch, error)
 }

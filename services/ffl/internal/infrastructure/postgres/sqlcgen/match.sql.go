@@ -185,14 +185,26 @@ func (q *Queries) FindMatchesByRoundID(ctx context.Context, roundID int32) ([]Fi
 	return items, nil
 }
 
-const softDeleteMatchesByRoundID = `-- name: SoftDeleteMatchesByRoundID :exec
-UPDATE ffl.match
-SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-WHERE round_id = $1 AND deleted_at IS NULL
+const deleteMatchByID = `-- name: DeleteMatchByID :exec
+DELETE FROM ffl.match WHERE id = $1
 `
 
-func (q *Queries) SoftDeleteMatchesByRoundID(ctx context.Context, roundID int32) error {
-	_, err := q.db.Exec(ctx, softDeleteMatchesByRoundID, roundID)
+func (q *Queries) DeleteMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteMatchByID, id)
+	return err
+}
+
+const deleteMatchesByRoundID = `-- name: DeleteMatchesByRoundID :exec
+
+DELETE FROM ffl.match WHERE round_id = $1
+`
+
+// Matches are removed outright rather than soft-deleted: the fixture builder
+// only edits rounds with no submitted teams, so a dropped match holds nothing
+// worth keeping, and tombstones would accumulate on every save. club_match rows
+// follow via ON DELETE CASCADE.
+func (q *Queries) DeleteMatchesByRoundID(ctx context.Context, roundID int32) error {
+	_, err := q.db.Exec(ctx, deleteMatchesByRoundID, roundID)
 	return err
 }
 

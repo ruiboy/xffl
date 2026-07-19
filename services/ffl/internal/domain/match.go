@@ -84,5 +84,9 @@ type MatchRepository interface {
 	// Create inserts a match in a round. matchStyle is nil for a regular
 	// home-vs-away match
 	Create(ctx context.Context, roundID int, matchStyle *string) (Match, error)
-	SoftDeleteByRoundID(ctx context.Context, roundID int) error
+	// Matches dropped by the fixture builder are removed outright — they only
+	// ever belong to rounds with no submitted teams. Their club_matches follow
+	// via ON DELETE CASCADE.
+	DeleteByRoundID(ctx context.Context, roundID int) error
+	DeleteByID(ctx context.Context, id int) error
 }

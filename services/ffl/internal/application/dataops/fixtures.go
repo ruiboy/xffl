@@ -86,8 +86,10 @@ func (b *Builder) LoadFixtures(ctx context.Context, seasonID int) ([]FixtureRoun
 // Reconciliation is round-granular and protects entered teams:
 //   - A round with submitted teams (any player_match) is immutable: it is left
 //     untouched, and removing it is refused.
-//   - An existing round without teams is replaced wholesale (its matches are
-//     rebuilt from the spec) and its metadata updated.
+//   - An existing round without teams is reconciled match-by-match against the
+//     spec — unchanged matches keep their rows, edited ones are updated in place,
+//     and only genuinely added/removed matches are inserted/soft-deleted. Round
+//     metadata is updated only when it changed.
 //   - A new round (nil RoundID) is created.
 //   - An existing round absent from the spec is deleted (unless it has teams).
 func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []RoundSpec) error {
@@ -149,13 +151,13 @@ func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []Round
 			if hasTeams[id] {
 				continue // immutable — teams entered
 			}
-			if err := repos.Rounds.Update(ctx, id, r.Name, r.AFLRoundID, r.Type); err != nil {
-				return err
+			old := existingByID[id]
+			if old.Name != r.Name || old.AFLRoundID != r.AFLRoundID || old.Type != r.Type {
+				if err := repos.Rounds.Update(ctx, id, r.Name, r.AFLRoundID, r.Type); err != nil {
+					return err
+				}
 			}
-			if err := deleteRoundFixtures(ctx, repos, id); err != nil {
-				return err
-			}
-			if err := writeRoundMatches(ctx, repos, id, r); err != nil {
+			if err := reconcileRoundMatches(ctx, repos, id, r.Matches); err != nil {
 				return err
 			}
 		}
@@ -163,33 +165,179 @@ func (b *Builder) SaveFixtures(ctx context.Context, seasonID int, rounds []Round
 	})
 }
 
-// deleteRoundFixtures soft-deletes every match (and its club_matches) in a round.
+// deleteRoundFixtures removes every match in a round; club_matches follow via
+// ON DELETE CASCADE.
 func deleteRoundFixtures(ctx context.Context, repos application.WriteRepos, roundID int) error {
+	return repos.Matches.DeleteByRoundID(ctx, roundID)
+}
+
+// writeRoundMatches creates every match of a brand-new round.
+func writeRoundMatches(ctx context.Context, repos application.WriteRepos, roundID int, r RoundSpec) error {
+	for _, ms := range r.Matches {
+		if err := createMatch(ctx, repos, roundID, ms); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// createMatch inserts one match plus a club_match per participating club.
+func createMatch(ctx context.Context, repos application.WriteRepos, roundID int, ms MatchSpec) error {
+	style := string(ms.Style)
+	m, err := repos.Matches.Create(ctx, roundID, &style)
+	if err != nil {
+		return err
+	}
+	for i, cs := range ms.ClubSeasonIDs {
+		if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, sideFor(ms.Style, i)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// existingMatch is a round's stored match with its club_matches (home-first for
+// versus), used to reconcile against the desired spec without churning rows.
+type existingMatch struct {
+	matchID int
+	style   domain.MatchStyle
+	cms     []domain.ClubMatch
+}
+
+// reconcileRoundMatches brings a round's matches into line with the spec while
+// preserving unchanged rows. It pairs each desired match with a stored one —
+// preferring an identical match (no writes at all), then any stored match of the
+// same style (reused in place) — creates the leftovers, and soft-deletes any
+// stored match the spec no longer wants. This replaces the previous
+// delete-everything-then-reinsert approach, so a save that changes nothing (or
+// only edits a pairing) no longer churns every match and club_match row.
+func reconcileRoundMatches(ctx context.Context, repos application.WriteRepos, roundID int, desired []MatchSpec) error {
 	matches, err := repos.Matches.FindByRoundID(ctx, roundID)
 	if err != nil {
 		return err
 	}
-	for _, m := range matches {
-		if err := repos.ClubMatches.SoftDeleteByMatchID(ctx, m.ID); err != nil {
-			return err
-		}
-	}
-	return repos.Matches.SoftDeleteByRoundID(ctx, roundID)
-}
-
-// writeRoundMatches creates a round's matches, each with its style and a
-// club_match per participating club.
-func writeRoundMatches(ctx context.Context, repos application.WriteRepos, roundID int, r RoundSpec) error {
-	for _, ms := range r.Matches {
-		style := string(ms.Style)
-		m, err := repos.Matches.Create(ctx, roundID, &style)
+	existing := make([]existingMatch, len(matches))
+	for i, m := range matches {
+		cms, err := repos.ClubMatches.FindByMatchID(ctx, m.ID)
 		if err != nil {
 			return err
 		}
-		for i, cs := range ms.ClubSeasonIDs {
-			if _, err := repos.ClubMatches.Create(ctx, m.ID, cs, sideFor(ms.Style, i)); err != nil {
+		existing[i] = existingMatch{matchID: m.ID, style: m.MatchStyle, cms: cms}
+	}
+	used := make([]bool, len(existing))
+	paired := make([]bool, len(desired))
+
+	// Pass 1: identical matches — reuse with zero writes.
+	for di, d := range desired {
+		for ei := range existing {
+			if used[ei] || !matchesExactly(existing[ei], d) {
+				continue
+			}
+			used[ei], paired[di] = true, true
+			break
+		}
+	}
+	// Pass 2: reuse a stored match of the same style, editing its club_matches.
+	for di, d := range desired {
+		if paired[di] {
+			continue
+		}
+		for ei := range existing {
+			if used[ei] || existing[ei].style != d.Style {
+				continue
+			}
+			if err := reconcileClubMatches(ctx, repos, existing[ei], d); err != nil {
 				return err
 			}
+			used[ei], paired[di] = true, true
+			break
+		}
+	}
+	// Pass 3: create desired matches with no stored counterpart.
+	for di, d := range desired {
+		if paired[di] {
+			continue
+		}
+		if err := createMatch(ctx, repos, roundID, d); err != nil {
+			return err
+		}
+	}
+	// Pass 4: drop stored matches the spec no longer wants (club_matches cascade).
+	for ei := range existing {
+		if used[ei] {
+			continue
+		}
+		if err := repos.Matches.DeleteByID(ctx, existing[ei].matchID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// matchesExactly reports whether a stored match already equals the spec. Versus
+// and bye compare club_seasons in order (home vs away is meaningful); a superbye
+// compares membership as a set (its clubs are unordered).
+func matchesExactly(ex existingMatch, d MatchSpec) bool {
+	if ex.style != d.Style || len(ex.cms) != len(d.ClubSeasonIDs) {
+		return false
+	}
+	if d.Style == domain.MatchStyleSuperbye {
+		set := make(map[int]bool, len(ex.cms))
+		for _, cm := range ex.cms {
+			set[cm.ClubSeasonID] = true
+		}
+		for _, id := range d.ClubSeasonIDs {
+			if !set[id] {
+				return false
+			}
+		}
+		return true
+	}
+	for i, cm := range ex.cms {
+		if cm.ClubSeasonID != d.ClubSeasonIDs[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// reconcileClubMatches edits a reused match's club_matches to match the spec,
+// keyed on the club rather than the slot: a club that is staying keeps its row
+// and only has its side rewritten, clubs no longer in the match are deleted, and
+// newly added clubs are inserted.
+//
+// Keying on the club is what makes a home/away swap safe. Repointing rows by
+// slot instead would rewrite club_season_id, and setting the home row to the
+// club already sitting in the away row trips uni_ffl_club_match
+// (club_season_id, match_id) mid-transaction. Swapping the sides of two rows
+// touches no unique column at all.
+func reconcileClubMatches(ctx context.Context, repos application.WriteRepos, ex existingMatch, d MatchSpec) error {
+	desiredSide := make(map[int]string, len(d.ClubSeasonIDs))
+	for i, cs := range d.ClubSeasonIDs {
+		desiredSide[cs] = sideFor(d.Style, i)
+	}
+	kept := make(map[int]bool, len(ex.cms))
+	for _, cm := range ex.cms {
+		side, wanted := desiredSide[cm.ClubSeasonID]
+		if !wanted {
+			if err := repos.ClubMatches.DeleteByID(ctx, cm.ID); err != nil {
+				return err
+			}
+			continue
+		}
+		kept[cm.ClubSeasonID] = true
+		if cm.Side != side {
+			if err := repos.ClubMatches.UpdateSide(ctx, cm.ID, side); err != nil {
+				return err
+			}
+		}
+	}
+	for _, cs := range d.ClubSeasonIDs {
+		if kept[cs] {
+			continue
+		}
+		if _, err := repos.ClubMatches.Create(ctx, ex.matchID, cs, desiredSide[cs]); err != nil {
+			return err
 		}
 	}
 	return nil

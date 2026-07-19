@@ -288,6 +288,110 @@ func TestFindFinalClubMatchesBySeasonID(t *testing.T) {
 	assert.NotEqual(t, byCS[csA].MatchID, byCS[csC].MatchID, "the bye is a separate match")
 }
 
+// clubMatchIDsByClubSeason maps each live club_season in a round to its
+// club_match row id, so tests can assert which rows survive a re-save.
+func clubMatchIDsByClubSeason(ctx context.Context, t *testing.T, roundID int) map[int]int {
+	t.Helper()
+	out := map[int]int{}
+	for _, g := range roundClubMatches(ctx, t, roundID) {
+		for _, cm := range g {
+			out[cm.ClubSeasonID] = cm.ID
+		}
+	}
+	return out
+}
+
+// rowCounts returns how many match and club_match rows a round holds in total,
+// tombstones included. Fixture edits remove rows outright, so these counts track
+// the live fixture exactly — any drift is churn.
+func rowCounts(ctx context.Context, t *testing.T, roundID int) (matches, clubMatches int) {
+	t.Helper()
+	require.NoError(t, testPool.QueryRow(ctx,
+		`SELECT count(*) FROM ffl.match WHERE round_id = $1`, roundID).Scan(&matches))
+	require.NoError(t, testPool.QueryRow(ctx,
+		`SELECT count(*) FROM ffl.club_match cm JOIN ffl.match m ON m.id = cm.match_id
+		 WHERE m.round_id = $1`, roundID).Scan(&clubMatches))
+	return matches, clubMatches
+}
+
+// Re-saving an unchanged round reuses every row — no soft-delete/reinsert churn.
+func TestSaveFixtures_ResaveIdenticalNoChurn(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFnochurn", 7)
+
+	spec := []RoundSpec{{
+		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
+	}}
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, spec))
+	roundID := onlyRoundID(ctx, t, seasonID)
+	before := clubMatchIDsByClubSeason(ctx, t, roundID)
+
+	// Re-save the exact same fixtures (now targeting the existing round).
+	spec[0].RoundID = &roundID
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, spec))
+
+	after := clubMatchIDsByClubSeason(ctx, t, roundID)
+	assert.Equal(t, before, after, "identical re-save reuses every club_match row")
+	m, cm := rowCounts(ctx, t, roundID)
+	assert.Equal(t, 2, m, "still just the versus + bye match, no churn")
+	assert.Equal(t, 3, cm, "still just the 3 club_match rows, no churn")
+}
+
+// Editing one match leaves the other match's rows untouched, and the edited
+// match is repointed in place rather than rebuilt.
+func TestSaveFixtures_EditPreservesUnchangedMatch(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	a := createClub(ctx, t, "SFpreserve A")
+	b := createClub(ctx, t, "SFpreserve B")
+	c := createClub(ctx, t, "SFpreserve C")
+	d := createClub(ctx, t, "SFpreserve D")
+	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
+		SeasonName: "SFpreserve", RulesID: "2011", AFLSeasonID: 9, ClubIDs: []int{a, b, c, d},
+	})
+	require.NoError(t, err)
+	seasonID := built.SeasonID
+	csA := built.ClubSeasons[0].ClubSeasonID
+	csB := built.ClubSeasons[1].ClubSeasonID
+	csC := built.ClubSeasons[2].ClubSeasonID
+	csD := built.ClubSeasons[3].ClubSeasonID
+
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csA, csB), versusMatch(csC, csD)},
+	}}))
+	roundID := onlyRoundID(ctx, t, seasonID)
+	before := clubMatchIDsByClubSeason(ctx, t, roundID)
+
+	// Swap home/away in the first match only; leave the second untouched.
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		RoundID: &roundID, Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csB, csA), versusMatch(csC, csD)},
+	}}))
+	after := clubMatchIDsByClubSeason(ctx, t, roundID)
+
+	// The untouched match keeps both club_match rows exactly.
+	assert.Equal(t, before[csC], after[csC], "unchanged match's C row reused")
+	assert.Equal(t, before[csD], after[csD], "unchanged match's D row reused")
+	// The swapped match keeps each club on its own row — only the sides moved.
+	assert.Equal(t, before[csA], after[csA], "A's row reused, side flipped")
+	assert.Equal(t, before[csB], after[csB], "B's row reused, side flipped")
+	sides := map[int]string{}
+	for _, g := range roundClubMatches(ctx, t, roundID) {
+		for _, cm := range g {
+			sides[cm.ClubSeasonID] = cm.Side
+		}
+	}
+	assert.Equal(t, "home", sides[csB], "B is now home")
+	assert.Equal(t, "away", sides[csA], "A is now away")
+
+	m, cm := rowCounts(ctx, t, roundID)
+	assert.Equal(t, 2, m, "still two matches, no churn")
+	assert.Equal(t, 4, cm, "still four club_match rows, no churn")
+}
+
 // seedTeam inserts a minimal player_match so a club_match counts as having a team.
 func seedTeam(ctx context.Context, t *testing.T, pool *pgxpool.Pool, clubMatchID, clubSeasonID int) {
 	t.Helper()

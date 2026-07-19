@@ -238,14 +238,16 @@ func (q *Queries) GetRulesIDByClubMatchID(ctx context.Context, id int32) (string
 	return rules_id, err
 }
 
-const softDeleteClubMatchesByMatchID = `-- name: SoftDeleteClubMatchesByMatchID :exec
-UPDATE ffl.club_match
-SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-WHERE match_id = $1 AND deleted_at IS NULL
+const deleteClubMatchByID = `-- name: DeleteClubMatchByID :exec
+DELETE FROM ffl.club_match WHERE id = $1
 `
 
-func (q *Queries) SoftDeleteClubMatchesByMatchID(ctx context.Context, matchID int32) error {
-	_, err := q.db.Exec(ctx, softDeleteClubMatchesByMatchID, matchID)
+// Drops a club from a match outright. The fixture builder only edits rounds with
+// no submitted teams, so there is nothing here worth keeping — and a soft delete
+// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+// later blocks the same club from rejoining the match against.
+func (q *Queries) DeleteClubMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteClubMatchByID, id)
 	return err
 }
 
@@ -314,5 +316,21 @@ type UpdateClubMatchScoreParams struct {
 
 func (q *Queries) UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error {
 	_, err := q.db.Exec(ctx, updateClubMatchScore, arg.ID, arg.DrvScore)
+	return err
+}
+
+const updateClubMatchSide = `-- name: UpdateClubMatchSide :exec
+UPDATE ffl.club_match
+SET side = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchSideParams struct {
+	ID   int32
+	Side string
+}
+
+func (q *Queries) UpdateClubMatchSide(ctx context.Context, arg UpdateClubMatchSideParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchSide, arg.ID, arg.Side)
 	return err
 }

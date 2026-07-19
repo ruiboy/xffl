@@ -300,10 +300,13 @@ func (r *MatchRepository) UpdateResult(ctx context.Context, matchID int, result 
 	})
 }
 
-func (r *MatchRepository) SoftDeleteByRoundID(ctx context.Context, roundID int) error {
-	return r.q.SoftDeleteMatchesByRoundID(ctx, int32(roundID))
+func (r *MatchRepository) DeleteByRoundID(ctx context.Context, roundID int) error {
+	return r.q.DeleteMatchesByRoundID(ctx, int32(roundID))
 }
 
+func (r *MatchRepository) DeleteByID(ctx context.Context, id int) error {
+	return r.q.DeleteMatchByID(ctx, int32(id))
+}
 
 func (r *MatchRepository) FindByIDWithDetails(ctx context.Context, id int) (domain.Match, error) {
 	match, err := r.FindByID(ctx, id)
@@ -543,8 +546,15 @@ func (r *ClubMatchRepository) UpdateDataStatus(ctx context.Context, id int, stat
 	})
 }
 
-func (r *ClubMatchRepository) SoftDeleteByMatchID(ctx context.Context, matchID int) error {
-	return r.q.SoftDeleteClubMatchesByMatchID(ctx, int32(matchID))
+func (r *ClubMatchRepository) UpdateSide(ctx context.Context, id int, side string) error {
+	return r.q.UpdateClubMatchSide(ctx, sqlcgen.UpdateClubMatchSideParams{
+		ID:   int32(id),
+		Side: side,
+	})
+}
+
+func (r *ClubMatchRepository) DeleteByID(ctx context.Context, id int) error {
+	return r.q.DeleteClubMatchByID(ctx, int32(id))
 }
 
 func (r *ClubMatchRepository) FindFinalClubMatchesBySeasonID(ctx context.Context, seasonID int) ([]domain.ScoredClubMatch, error) {
