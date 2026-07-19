@@ -4,6 +4,7 @@
 
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Club season" />
     <template v-else-if="clubSeason">
 
       <div class="mb-6 flex items-center gap-3">
@@ -64,6 +65,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_CLUB_SEASON } from '@/features/ffl/api/queries'
 import Breadcrumb from '@/features/ffl/components/Breadcrumb.vue'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -102,6 +105,7 @@ interface ClubSeason {
 }
 
 const clubSeason = computed(() => result.value?.aflClubSeason as ClubSeason | null ?? null)
+const notFound = useNotFound(clubSeason, loading, error)
 
 const statCols = [
   { key: 'kicks'     as const, label: 'K' },

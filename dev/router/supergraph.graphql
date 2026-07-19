@@ -774,7 +774,7 @@ type Query
   @join__type(graph: FFL)
 {
   aflSeasons: [AFLSeason!]! @join__field(graph: AFL)
-  aflSeason(id: ID!): AFLSeason! @join__field(graph: AFL)
+  aflSeason(id: ID!): AFLSeason @join__field(graph: AFL)
   aflRound(id: ID!): AFLRound @join__field(graph: AFL)
   aflMatch(id: ID!): AFLMatch @join__field(graph: AFL)
   aflClubs: [AFLClub!]! @join__field(graph: AFL)

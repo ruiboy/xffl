@@ -1,6 +1,6 @@
 type Query {
   aflSeasons: [AFLSeason!]!
-  aflSeason(id: ID!): AFLSeason!
+  aflSeason(id: ID!): AFLSeason
   aflRound(id: ID!): AFLRound
   aflMatch(id: ID!): AFLMatch
 

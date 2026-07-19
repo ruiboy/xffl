@@ -1330,7 +1330,7 @@ input ResolveAFLPlayerMatchInput {
 `, BuiltIn: false},
 	{Name: "../../../api/graphql/query.graphqls", Input: `type Query {
   aflSeasons: [AFLSeason!]!
-  aflSeason(id: ID!): AFLSeason!
+  aflSeason(id: ID!): AFLSeason
   aflRound(id: ID!): AFLRound
   aflMatch(id: ID!): AFLMatch
 
@@ -5567,9 +5567,9 @@ func (ec *executionContext) _Query_aflSeason(ctx context.Context, field graphql.
 			return ec.Resolvers.Query().AflSeason(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNAFLSeason2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLSeason,
+		ec.marshalOAFLSeason2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLSeason,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -10016,16 +10016,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "aflSeason":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_aflSeason(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -11574,6 +11571,13 @@ func (ec *executionContext) marshalOAFLRound2ᚖxfflᚋservicesᚋaflᚋinternal
 		return graphql.Null
 	}
 	return ec._AFLRound(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAFLSeason2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLSeason(ctx context.Context, sel ast.SelectionSet, v *AFLSeason) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AFLSeason(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAFLStatSummary2ᚖxfflᚋservicesᚋaflᚋinternalᚋinterfaceᚋgraphqlᚐAFLStatSummary(ctx context.Context, sel ast.SelectionSet, v *AFLStatSummary) graphql.Marshaler {

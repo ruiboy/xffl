@@ -4,6 +4,7 @@
 
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Player season" />
     <template v-else-if="playerSeason">
 
       <!-- Header -->
@@ -176,6 +177,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_PLAYER_SEASON_STATS, GET_FFL_PLAYER_STINTS } from '../api/queries'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -210,6 +213,7 @@ const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   statsLastN: AFLStatSummary | null
   statsMedian: AFLStatSummary | null
 } | null)
+const notFound = useNotFound(playerSeason, loading, error)
 const stints = computed(() => fflResult.value?.fflPlayerSeasonsByAflPlayerSeason ?? [])
 
 const breadcrumbs = computed(() => {

@@ -119,6 +119,15 @@ const router = createRouter({
       component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
     },
+
+    // Unmatched paths. Entity-level 404s are handled inside each view (the
+    // route matches, the id just doesn't resolve); this catches the rest.
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/components/NotFound.vue'),
+      props: { entity: 'Page' },
+    },
   ],
 })
 

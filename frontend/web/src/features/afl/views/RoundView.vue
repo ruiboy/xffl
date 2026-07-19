@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Round" />
     <template v-else-if="data">
       <Breadcrumb :items="[{ label: 'AFL' }, { label: data.season.name, to: { name: 'afl-home' } }]" />
       <h1 class="text-2xl font-bold mb-6">
@@ -57,6 +58,8 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_ROUND } from '../api/queries'
 import { GET_FFL_ROUND_ID_BY_AFL_ROUND } from '@/features/ffl/api/queries'
 import { useAflState } from '../composables/useAflState'
@@ -93,6 +96,8 @@ const data = computed(() => {
   if (!round) return null
   return { season: round.season, round }
 })
+
+const notFound = useNotFound(data, loading, error)
 
 const statCategories = [
   { key: 'kicks', label: 'Kicks' },

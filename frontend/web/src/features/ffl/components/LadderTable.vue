@@ -9,10 +9,10 @@
           <th class="py-2 px-2 font-medium text-right">W</th>
           <th class="py-2 px-2 font-medium text-right">L</th>
           <th class="py-2 px-2 font-medium text-right">D</th>
+          <th v-if="showExtra" class="py-2 px-2 font-medium text-right" title="Extra points (superbye bonus)">+</th>
           <th class="py-2 px-2 font-medium text-right">F</th>
           <th class="py-2 px-2 font-medium text-right">A</th>
           <th class="py-2 px-2 font-medium text-right">%</th>
-          <th v-if="showExtra" class="py-2 px-2 font-medium text-right" title="Extra points (superbye bonus)">EP</th>
           <th class="py-2 px-2 font-medium text-right">Pts</th>
         </tr>
       </thead>
@@ -36,10 +36,10 @@
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.won }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.lost }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.drawn }}</td>
+          <td v-if="showExtra" class="py-2 px-2 text-right tabular-nums text-text-muted">{{ entry.extraPoints || '' }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.for }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.against }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.percentage.toFixed(1) }}</td>
-          <td v-if="showExtra" class="py-2 px-2 text-right tabular-nums text-text-muted">{{ entry.extraPoints || '' }}</td>
           <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.premiershipPoints }}</td>
         </tr>
       </tbody>

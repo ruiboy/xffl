@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading match…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Match" />
     <template v-else-if="match">
       <div class="mb-6">
         <Breadcrumb v-if="matchData" :items="breadcrumbs" />
@@ -57,6 +58,8 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_MATCH } from '../api/queries'
 import { UPDATE_PLAYER_MATCH } from '../api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -80,6 +83,8 @@ const matchData = computed(() => {
     seasonName: m.round.season.name as string,
   }
 })
+
+const notFound = useNotFound(matchData, loading, error)
 
 const breadcrumbs = computed(() => {
   if (!matchData.value) return []

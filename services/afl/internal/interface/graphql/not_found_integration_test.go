@@ -27,11 +27,11 @@ func TestSingleEntityQueries_ReturnNullForUnknownID(t *testing.T) {
 		field string
 		query string
 	}{
-		{"fflSeason", `{ fflSeason(id: "` + missingID + `") { id } }`},
-		{"fflRound", `{ fflRound(id: "` + missingID + `") { id } }`},
-		{"fflMatch", `{ fflMatch(id: "` + missingID + `") { id } }`},
-		{"fflClubSeason", `{ fflClubSeason(id: "` + missingID + `") { id } }`},
-		{"fflClubMatch", `{ fflClubMatch(id: "` + missingID + `") { id } }`},
+		{"aflSeason", `{ aflSeason(id: "` + missingID + `") { id } }`},
+		{"aflRound", `{ aflRound(id: "` + missingID + `") { id } }`},
+		{"aflMatch", `{ aflMatch(id: "` + missingID + `") { id } }`},
+		{"aflClubSeason", `{ aflClubSeason(id: "` + missingID + `") { id } }`},
+		{"aflPlayerSeason", `{ aflPlayerSeason(id: "` + missingID + `") { id } }`},
 	}
 
 	for _, tc := range cases {
@@ -46,35 +46,8 @@ func TestSingleEntityQueries_ReturnNullForUnknownID(t *testing.T) {
 	}
 }
 
-// TestListQuery_ReturnsEmptyForUnresolvableID covers the list-shaped sibling of
-// the above. fflPlayerSeasonsByAflPlayerSeason is a non-null list, so it can't
-// signal absence with null — an unknown or unparseable id yields an empty list.
-// It shares the AFL player-season page with aflPlayerSeason, so an error here
-// surfaces on a page that is otherwise handling not-found correctly.
-func TestListQuery_ReturnsEmptyForUnresolvableID(t *testing.T) {
-	pool := connectDB(t)
-	seedTestData(t, pool)
-	server := setupTestServer(t, pool)
-	defer server.Close()
-
-	for _, id := range []string{"99999999", "banana"} {
-		t.Run("id "+id+" yields an empty list, not an error", func(t *testing.T) {
-			result := execQuery(t, server, `{
-				fflPlayerSeasonsByAflPlayerSeason(aflPlayerSeasonId: "`+id+`") { id }
-			}`)
-			require.Empty(t, result.Errors)
-
-			var data struct {
-				FflPlayerSeasonsByAflPlayerSeason []struct{ ID string } `json:"fflPlayerSeasonsByAflPlayerSeason"`
-			}
-			require.NoError(t, json.Unmarshal(result.Data, &data))
-			assert.Empty(t, data.FflPlayerSeasonsByAflPlayerSeason)
-		})
-	}
-}
-
 // TestSingleEntityQueries_ReturnNullForMalformedID covers the other route into
-// the not-found page: an id that isn't parseable at all (e.g. /ffl/matches/banana).
+// the not-found page: an id that isn't parseable at all (e.g. /afl/matches/banana).
 // From the user's side that is the same "no such page", so it must not error either.
 func TestSingleEntityQueries_ReturnNullForMalformedID(t *testing.T) {
 	pool := connectDB(t)
@@ -86,11 +59,11 @@ func TestSingleEntityQueries_ReturnNullForMalformedID(t *testing.T) {
 		field string
 		query string
 	}{
-		{"fflSeason", `{ fflSeason(id: "banana") { id } }`},
-		{"fflRound", `{ fflRound(id: "banana") { id } }`},
-		{"fflMatch", `{ fflMatch(id: "banana") { id } }`},
-		{"fflClubSeason", `{ fflClubSeason(id: "banana") { id } }`},
-		{"fflClubMatch", `{ fflClubMatch(id: "banana") { id } }`},
+		{"aflSeason", `{ aflSeason(id: "banana") { id } }`},
+		{"aflRound", `{ aflRound(id: "banana") { id } }`},
+		{"aflMatch", `{ aflMatch(id: "banana") { id } }`},
+		{"aflClubSeason", `{ aflClubSeason(id: "banana") { id } }`},
+		{"aflPlayerSeason", `{ aflPlayerSeason(id: "banana") { id } }`},
 	}
 
 	for _, tc := range cases {

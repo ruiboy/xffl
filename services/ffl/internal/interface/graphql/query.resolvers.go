@@ -512,7 +512,7 @@ func (r *queryResolver) FflPlayer(ctx context.Context, id string) (*FFLPlayer, e
 func (r *queryResolver) FflRoundByAflRound(ctx context.Context, aflRoundID string) (*FFLRound, error) {
 	id, err := fromID(aflRoundID)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	round, err := r.Queries.GetRoundByAFLRoundID(ctx, id)
 	if errors.Is(err, domain.ErrNotFound) {
@@ -565,7 +565,9 @@ func (r *queryResolver) FflClubMatch(ctx context.Context, id string) (*FFLClubMa
 func (r *queryResolver) FflPlayerSeasonsByAflPlayerSeason(ctx context.Context, aflPlayerSeasonID string) ([]*FFLPlayerSeason, error) {
 	aflPsID, err := fromID(aflPlayerSeasonID)
 	if err != nil {
-		return nil, err
+		// The field is a non-null list, so absence is an empty list, not null.
+		// An unparseable id means "no such player season" — same as no stints.
+		return []*FFLPlayerSeason{}, nil
 	}
 	playerSeasons, err := r.Queries.GetPlayerSeasonsByAFLPlayerSeasonID(ctx, aflPsID)
 	if err != nil {

@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Season" />
     <template v-else-if="season">
       <Breadcrumb :items="[{ label: 'AFL' }]" />
       <h1 class="text-2xl font-bold mb-6">{{ season.name }}</h1>
@@ -24,6 +25,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_SEASON } from '../api/queries'
 import { useAflState } from '../composables/useAflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -40,4 +43,5 @@ const { result, loading, error } = useQuery(
 )
 
 const season = computed(() => result.value?.aflSeason ?? null)
+const notFound = useNotFound(season, loading, error)
 </script>
