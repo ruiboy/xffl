@@ -172,6 +172,42 @@ func TestSaveFixtures_ReplaceRound(t *testing.T) {
 	assert.Equal(t, 3, live, "2 fixture sides + 1 bye")
 }
 
+// Rounds load in season order, not creation order: a round added later but
+// mapped to an earlier AFL round still sorts first. The builder never sets
+// match.start_dt, so without the afl_round_id tie-break these fall back to
+// insertion order and a late addition lands at the bottom of the fixture list.
+func TestLoadFixtures_OrdersRoundsByAFLRound(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SForderrounds", 13)
+
+	// Created first, but late in the season.
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Round 20", AFLRoundID: 20, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
+	}}))
+	lateID := onlyRoundID(ctx, t, seasonID)
+
+	// Added afterwards, but earlier in the season.
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{
+		{
+			RoundID: &lateID, Name: "Round 20", AFLRoundID: 20, Type: domain.RoundTypeMinor,
+			Matches: []MatchSpec{versusMatch(csA, csB), byeMatch(csC)},
+		},
+		{
+			Name: "Round 19", AFLRoundID: 19, Type: domain.RoundTypeMinor,
+			Matches: []MatchSpec{versusMatch(csA, csC), byeMatch(csB)},
+		},
+	}))
+
+	loaded, err := builder.LoadFixtures(ctx, seasonID)
+	require.NoError(t, err)
+	require.Len(t, loaded, 2)
+	assert.Equal(t, []int{19, 20}, []int{loaded[0].AFLRoundID, loaded[1].AFLRoundID},
+		"earlier AFL round first, though its FFL round was created second")
+	assert.Equal(t, "Round 19", loaded[0].Name)
+}
+
 func TestSaveFixtures_DeleteEmptyRound(t *testing.T) {
 	ctx := context.Background()
 	builder := NewBuilder(postgres.NewDB(testPool))
