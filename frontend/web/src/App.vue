@@ -82,9 +82,7 @@
                 @click="settingsOpen = false"
                 class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
               >
-                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 3.5a1 1 0 00-1 1v1.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0v-4.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM4 3.5a1 1 0 00-1 1v6.09a3.001 3.001 0 000 5.82V15.5a.99.99 0 00.02.2 1 1 0 001.96 0 .99.99 0 00.02-.2v-.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM16 3.5a1 1 0 00-1 1v.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0V10.41a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1z" />
-                </svg>
+                <IconAdmin class="w-4 h-4" />
                 Admin
               </router-link>
               <router-link
@@ -134,6 +132,7 @@ import SeasonSelector from '@/components/SeasonSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
+import IconAdmin from '@/features/admin/components/icons/IconAdmin.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 
