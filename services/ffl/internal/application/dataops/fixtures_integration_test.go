@@ -286,6 +286,68 @@ func TestSaveFixtures_Superbye(t *testing.T) {
 	assert.Equal(t, 3, sides)
 }
 
+// One round can mix all three styles: a match is a match, so nothing requires a
+// round to be entirely head-to-head or entirely superbye.
+func TestSaveFixtures_MixedStylesInOneRound(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	ids := make([]int, 5)
+	for i, n := range []string{"A", "B", "C", "D", "E"} {
+		ids[i] = createClub(ctx, t, "SFmixed "+n)
+	}
+	built, err := builder.BuildSeason(ctx, BuildSeasonParams{
+		SeasonName: "SFmixed", RulesID: "2011", AFLSeasonID: 15, ClubIDs: ids,
+	})
+	require.NoError(t, err)
+	cs := make([]int, len(built.ClubSeasons))
+	for i, c := range built.ClubSeasons {
+		cs[i] = c.ClubSeasonID
+	}
+
+	require.NoError(t, builder.SaveFixtures(ctx, built.SeasonID, []RoundSpec{{
+		Name: "Round 1", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{
+			versusMatch(cs[0], cs[1]),
+			byeMatch(cs[2]),
+			superbyeMatch(cs[3], cs[4]),
+		},
+	}}))
+
+	loaded, err := builder.LoadFixtures(ctx, built.SeasonID)
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	require.Len(t, loaded[0].Matches, 3)
+
+	byStyle := map[domain.MatchStyle][]int{}
+	for _, m := range loaded[0].Matches {
+		byStyle[m.Style] = m.ClubSeasonIDs
+	}
+	assert.Equal(t, []int{cs[0], cs[1]}, byStyle[domain.MatchStyleVersus], "versus loads [home, away]")
+	assert.Equal(t, []int{cs[2]}, byStyle[domain.MatchStyleBye])
+	assert.ElementsMatch(t, []int{cs[3], cs[4]}, byStyle[domain.MatchStyleSuperbye])
+}
+
+// A superbye need not include every club — the builder defaults to all, but the
+// selection is editable, and only the enrolled clubs get a club_match.
+func TestSaveFixtures_PartialSuperbye(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder(postgres.NewDB(testPool))
+	seasonID, csA, _, csC := buildOddSeason(ctx, t, "SFpartial", 14)
+
+	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
+		Name: "Superbye round", AFLRoundID: 10, Type: domain.RoundTypeMinor,
+		Matches: []MatchSpec{superbyeMatch(csA, csC)}, // the middle club sits it out
+	}}))
+
+	loaded, err := builder.LoadFixtures(ctx, seasonID)
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	require.Len(t, loaded[0].Matches, 1)
+	assert.Equal(t, domain.MatchStyleSuperbye, loaded[0].Matches[0].Style)
+	assert.ElementsMatch(t, []int{csA, csC}, loaded[0].Matches[0].ClubSeasonIDs,
+		"only the enrolled clubs take part")
+}
+
 // A superbye's clubs come back in name order. Every side is 'superbye', so
 // without a tie-break the rows arrive in whatever order Postgres returns them,
 // and the round/match views render them differently between loads.

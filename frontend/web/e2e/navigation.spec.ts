@@ -46,20 +46,31 @@ test.describe('Navigation — Phase 21', () => {
     })
   })
 
-  test.describe('NAV-4: DataOps icon always visible in header', () => {
-    test('DataOps icon is visible in header on FFL home', async ({ page }) => {
+  // Data Ops moved out of the header and into the Settings menu when the nav was
+  // decluttered — it is reachable from every route, but behind one click.
+  test.describe('NAV-4: Data Ops is reachable from the Settings menu', () => {
+    test('Data Ops is not a bare header icon', async ({ page }) => {
       await setupFflSession(page)
-      await expect(page.getByTitle('Data Ops')).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Data Ops' })).not.toBeVisible()
     })
 
-    test('DataOps icon is visible in header on AFL home', async ({ page }) => {
+    test('Settings menu offers Data Ops on FFL home', async ({ page }) => {
+      await setupFflSession(page)
+      await page.getByTitle('Settings').click()
+      await expect(page.getByRole('link', { name: 'Data Ops' })).toBeVisible()
+    })
+
+    test('Settings menu offers Data Ops on AFL home', async ({ page }) => {
       await setupAflSession(page)
-      await expect(page.getByTitle('Data Ops')).toBeVisible()
+      await page.getByTitle('Settings').click()
+      await expect(page.getByRole('link', { name: 'Data Ops' })).toBeVisible()
     })
 
-    test('DataOps icon navigates to data-ops page', async ({ page }) => {
+    test('Data Ops navigates to the data-ops page', async ({ page }) => {
       await setupFflSession(page)
-      await expect(page.getByTitle('Data Ops')).toHaveAttribute('href', /\/ffl\/data-ops/)
+      await page.getByTitle('Settings').click()
+      await page.getByRole('link', { name: 'Data Ops' }).click()
+      await expect(page).toHaveURL(/\/ffl\/data-ops/)
     })
   })
 

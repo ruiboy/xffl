@@ -15,14 +15,15 @@
 
     <template v-else>
       <!-- Rounds -->
-      <div v-for="(rnd, ri) in rounds" :key="rnd.key" class="rounded-lg border border-border bg-surface-raised p-3 space-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs text-text-faint w-6">{{ ri + 1 }}</span>
+      <div v-for="(rnd, ri) in rounds" :key="rnd.key" data-testid="round" class="rounded-lg border border-border bg-surface-raised">
+        <!-- Header: what this round is -->
+        <div class="flex flex-wrap items-center gap-2 p-3">
+          <span class="w-5 shrink-0 text-xs tabular-nums text-text-faint">{{ ri + 1 }}</span>
           <input
-            v-model="rnd.name" :disabled="rnd.locked"
+            v-model="rnd.name" :disabled="rnd.locked" placeholder="Round name"
             class="w-40 rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60"
           />
-          <label class="text-xs text-text-muted flex items-center gap-1">
+          <label class="flex items-center gap-1.5 text-xs text-text-muted">
             AFL
             <select v-model="rnd.aflRoundId" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
               <option value="">—</option>
@@ -30,67 +31,118 @@
             </select>
           </label>
           <select v-model="rnd.roundType" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
-            <option value="MINOR">MINOR</option>
-            <option value="GRAND_FINAL">GRAND FINAL</option>
+            <option value="MINOR">Minor</option>
+            <option value="GRAND_FINAL">Grand final</option>
           </select>
-          <label class="text-xs text-text-muted flex items-center gap-1" title="All clubs submit a team; the round's top scorer earns 1 point">
-            <input type="checkbox" v-model="rnd.superbye" :disabled="rnd.locked" /> superbye
-          </label>
-          <span v-if="rnd.locked" class="text-xs rounded-full bg-surface px-2 py-0.5 text-text-faint" title="Has submitted teams — fixtures are locked">🔒 locked</span>
-          <button
-            @click="removeRound(ri)" :disabled="rnd.locked"
-            class="ml-auto text-xs px-2 py-1 rounded border border-border hover:bg-surface disabled:opacity-40"
-          >Remove round</button>
-        </div>
-
-        <!-- Superbye: every club submits, no head-to-head -->
-        <p v-if="rnd.superbye" class="pl-6 text-xs text-text-faint">
-          Superbye — all {{ clubs.length }} clubs submit a team; the highest scorer earns 1 point.
-        </p>
-
-        <!-- Fixtures -->
-        <template v-if="!rnd.superbye">
-        <div v-for="(f, fi) in rnd.fixtures" :key="fi" class="flex items-center gap-2 pl-6">
-          <select v-model="f.home" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
-            <option value="">home…</option>
-            <option v-for="c in clubs" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-          <span class="text-text-faint text-xs">v</span>
-          <select v-model="f.away" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
-            <option value="">away…</option>
-            <option v-for="c in clubs" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-          <button v-if="!rnd.locked" @click="rnd.fixtures.splice(fi, 1)" class="text-xs text-text-faint hover:text-red-400">✕</button>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 pl-6">
-          <button
-            v-if="!rnd.locked"
-            @click="addMatch(rnd)" :disabled="unassignedClubs(rnd).length < 2"
-            class="text-xs px-2 py-1 rounded border border-border hover:bg-surface disabled:opacity-40"
-          >+ match</button>
-
-          <!-- Explicit byes for this round -->
-          <span v-if="rnd.byes.length" class="flex items-center gap-1.5 text-xs">
-            <span class="text-text-muted">Bye</span>
-            <span v-for="id in rnd.byes" :key="id" class="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5">
-              {{ clubName(id) }}
-              <button v-if="!rnd.locked" @click="removeBye(rnd, id)" class="text-text-faint hover:text-red-400">✕</button>
-            </span>
-          </span>
-
-          <!-- Clubs in neither a match nor a bye: they don't feature this round. Click to give a bye. -->
-          <span v-if="!rnd.locked && unassignedClubs(rnd).length" class="flex items-center gap-1.5 text-xs text-text-faint">
-            <span>Not in round:</span>
+          <div class="ml-auto flex items-center gap-2">
+            <span
+              v-if="rnd.locked"
+              class="rounded-full bg-surface px-2 py-0.5 text-xs text-text-faint"
+              title="Has submitted teams — fixtures are locked"
+            >🔒 Locked</span>
             <button
-              v-for="c in unassignedClubs(rnd)" :key="c.id"
-              @click="addBye(rnd, c.id)"
-              class="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 hover:bg-surface"
-              title="Give this club a bye"
-            >{{ c.name }} <span class="text-active">+ bye</span></button>
-          </span>
+              @click="removeRound(ri)" :disabled="rnd.locked"
+              class="rounded border border-border px-2 py-1 text-xs hover:bg-surface disabled:opacity-40"
+            >Remove</button>
+          </div>
         </div>
-        </template>
+
+        <!-- Body: matches are the round. Byes and the superbye are what's left
+             over, so they sit below and stay quiet until they hold something. -->
+        <div class="space-y-3 border-t border-border p-3">
+          <!-- Matches: the one thing you do most, so it leads and owns the -->
+          <!-- only button that looks like a button. -->
+          <div class="space-y-1.5">
+            <div v-for="(f, fi) in rnd.fixtures" :key="fi" data-testid="match" class="flex items-center gap-2">
+              <select v-model="f.home" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
+                <option value="">home…</option>
+                <option v-for="c in pickable(rnd, f.home)" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+              <span class="text-xs text-text-faint">v</span>
+              <select v-model="f.away" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
+                <option value="">away…</option>
+                <option v-for="c in pickable(rnd, f.away)" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+              <button
+                v-if="!rnd.locked" @click="rnd.fixtures.splice(fi, 1)"
+                class="text-xs text-text-faint hover:text-red-400" title="Remove match"
+              >✕</button>
+            </div>
+            <button
+              v-if="!rnd.locked"
+              @click="addMatch(rnd)" :disabled="unassignedClubs(rnd).length < 2"
+              class="rounded border border-border px-3 py-1.5 text-sm hover:bg-surface disabled:opacity-40"
+            >+ Add match</button>
+          </div>
+
+          <!-- Clubs credited a bye: they score For but play nobody. -->
+          <div v-if="rnd.byes.length" data-testid="byes" class="flex gap-3 pt-1">
+            <span class="w-16 shrink-0 pt-0.5 text-xs uppercase tracking-wide text-text-faint">Byes</span>
+            <div class="flex flex-1 flex-wrap gap-1.5">
+              <span
+                v-for="id in rnd.byes" :key="id" data-testid="bye-club"
+                class="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-0.5 text-xs"
+              >
+                {{ clubName(id) }}
+                <button
+                  v-if="!rnd.locked" @click="removeBye(rnd, id)"
+                  class="text-text-faint hover:text-red-400" title="Remove bye"
+                >✕</button>
+              </span>
+            </div>
+          </div>
+
+          <!-- The superbye: these clubs each submit, and the best of them takes a point. -->
+          <div v-if="rnd.superbyeClubs.length" data-testid="superbye" class="flex gap-3 pt-1">
+            <span class="w-16 shrink-0 pt-0.5 text-xs uppercase tracking-wide text-text-faint">Superbye</span>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap gap-1.5">
+                <span
+                  v-for="id in rnd.superbyeClubs" :key="id" data-testid="superbye-club"
+                  class="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-0.5 text-xs"
+                >
+                  {{ clubName(id) }}
+                  <button
+                    v-if="!rnd.locked" @click="removeFromSuperbye(rnd, id)"
+                    class="text-text-faint hover:text-red-400" title="Remove from superbye"
+                  >✕</button>
+                </span>
+              </div>
+              <p class="text-xs text-text-faint">
+                These {{ rnd.superbyeClubs.length }} each submit a team; the highest scorer earns 1 point.
+              </p>
+            </div>
+          </div>
+
+          <!-- Whatever is left over. Plain sentence, link-styled names: the two
+               group actions cover the usual cases, a name covers the odd one. -->
+          <p
+            v-if="!rnd.locked && unassignedClubs(rnd).length"
+            data-testid="unplaced"
+            class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 pt-1 text-xs text-text-faint"
+          >
+            <span>Not placed:</span>
+            <template v-for="(c, ci) in unassignedClubs(rnd)" :key="c.id">
+              <button
+                @click="addBye(rnd, c.id)"
+                data-testid="unplaced-club"
+                class="underline decoration-dotted underline-offset-2 hover:text-active"
+                title="Give this club a bye"
+              >{{ c.name }}</button><span v-if="ci < unassignedClubs(rnd).length - 1">,</span>
+            </template>
+            <span class="text-text-faint/60">— click a club to give it a bye, or</span>
+            <button
+              @click="byeAll(rnd)" data-testid="bye-all"
+              class="underline underline-offset-2 hover:text-active"
+            >bye all</button>
+            <span v-if="unassignedClubs(rnd).length > 1" class="text-text-faint/60">/</span>
+            <button
+              v-if="unassignedClubs(rnd).length > 1"
+              @click="addSuperbye(rnd)" data-testid="superbye-all"
+              class="underline underline-offset-2 hover:text-active"
+            >superbye all</button>
+          </p>
+        </div>
       </div>
 
       <!-- Add round + repeat -->
@@ -141,7 +193,7 @@ type StagedRound = {
   locked: boolean
   fixtures: StagedFixture[]
   byes: string[] // club_season ids explicitly given a bye
-  superbye: boolean
+  superbyeClubs: string[] // club_season ids in the round's superbye, if it has one
 }
 
 const seasonId = ref(props.initialSeasonId ?? '')
@@ -183,7 +235,7 @@ watch(fixturesResult, (val) => {
     // keeps versus pairings, explicit byes, and a superbye toggle.
     const versus = r.matches.filter((m: any) => m.style === 'versus')
     const byes = r.matches.filter((m: any) => m.style === 'bye').map((m: any) => m.clubSeasonIds[0])
-    const superbye = r.matches.some((m: any) => m.style === 'superbye')
+    const superbye = r.matches.find((m: any) => m.style === 'superbye')
     return {
       key: keySeq++,
       roundId: r.roundId,
@@ -193,7 +245,7 @@ watch(fixturesResult, (val) => {
       locked: r.locked,
       fixtures: versus.map((m: any) => ({ home: m.clubSeasonIds[0], away: m.clubSeasonIds[1] })),
       byes,
-      superbye,
+      superbyeClubs: superbye ? [...superbye.clubSeasonIds] : [],
     }
   })
 }, { immediate: true })
@@ -210,6 +262,7 @@ function usedClubIds(r: StagedRound): Set<string> {
     if (f.away) s.add(f.away)
   }
   for (const id of r.byes) s.add(id)
+  for (const id of r.superbyeClubs) s.add(id)
   return s
 }
 // Clubs in neither a match nor a bye — they simply don't feature this round
@@ -219,11 +272,37 @@ function unassignedClubs(r: StagedRound) {
   return clubs.value.filter((c) => !used.has(c.id))
 }
 
+// A match dropdown offers the clubs still free, plus whatever it already holds —
+// so a filled match stays readable without listing clubs placed elsewhere.
+function pickable(r: StagedRound, currentId: string) {
+  const free = unassignedClubs(r)
+  if (!currentId || free.some((c) => c.id === currentId)) return free
+  const current = clubs.value.find((c) => c.id === currentId)
+  return current ? [current, ...free] : free
+}
+
 function addBye(r: StagedRound, clubId: string) {
   if (!r.byes.includes(clubId)) r.byes.push(clubId)
 }
+function byeAll(r: StagedRound) {
+  for (const c of unassignedClubs(r)) addBye(r, c.id)
+}
 function removeBye(r: StagedRound, clubId: string) {
   r.byes = r.byes.filter((id) => id !== clubId)
+}
+
+// A round has a superbye when any club is in it — there is no separate mode. The
+// common case (the whole competition in one) is the "put all" shortcut.
+function addToSuperbye(r: StagedRound, clubId: string) {
+  if (!r.superbyeClubs.includes(clubId)) r.superbyeClubs.push(clubId)
+}
+function removeFromSuperbye(r: StagedRound, clubId: string) {
+  r.superbyeClubs = r.superbyeClubs.filter((id) => id !== clubId)
+}
+// Adding a superbye enrols everyone not already playing — the usual case is the
+// whole competition. Clubs can then be dropped, or added back from Not playing.
+function addSuperbye(r: StagedRound) {
+  for (const c of unassignedClubs(r)) addToSuperbye(r, c.id)
 }
 
 // Translate the editor's staged round into the API's uniform match list: a
@@ -231,12 +310,12 @@ function removeBye(r: StagedRound, clubId: string) {
 // pairings plus a bye match per explicitly-chosen bye. Unassigned clubs are sent
 // as nothing — they don't feature this round.
 function roundMatches(r: StagedRound): { style: string; clubSeasonIds: string[] }[] {
-  if (r.superbye) {
-    return [{ style: 'superbye', clubSeasonIds: clubs.value.map((c) => c.id) }]
-  }
   const matches = r.fixtures.map((f) => ({ style: 'versus', clubSeasonIds: [f.home, f.away] }))
   for (const id of r.byes) {
     matches.push({ style: 'bye', clubSeasonIds: [id] })
+  }
+  if (r.superbyeClubs.length) {
+    matches.push({ style: 'superbye', clubSeasonIds: [...r.superbyeClubs] })
   }
   return matches
 }
@@ -256,10 +335,12 @@ function addRound() {
   const aflRoundId = last ? nextAflRoundId(last.aflRoundId) : (aflRounds.value[0]?.id ?? '')
   rounds.value.push({
     key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
-    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [], byes: [], superbye: false,
+    aflRoundId, roundType: 'MINOR', locked: false, fixtures: [], byes: [], superbyeClubs: [],
   })
 }
 
+// Seed the new match with the first two free clubs — usually right, and always
+// faster to correct than to fill from empty.
 function addMatch(r: StagedRound) {
   const free = unassignedClubs(r)
   if (free.length >= 2) r.fixtures.push({ home: free[0].id, away: free[1].id })
@@ -284,9 +365,10 @@ function repeat() {
     const aflRoundId = last ? nextAflRoundId(last.aflRoundId) : src.aflRoundId
     rounds.value.push({
       key: keySeq++, roundId: null, name: `Round ${rounds.value.length + 1}`,
-      aflRoundId, roundType: src.roundType, locked: false, superbye: src.superbye,
+      aflRoundId, roundType: src.roundType, locked: false,
       fixtures: src.fixtures.map((f) => repeatReverse.value ? { home: f.away, away: f.home } : { home: f.home, away: f.away }),
       byes: [...src.byes],
+      superbyeClubs: [...src.superbyeClubs],
     })
   }
 }
@@ -296,7 +378,7 @@ const validationError = computed(() => {
   for (const [i, r] of rounds.value.entries()) {
     if (r.locked) continue
     if (!r.aflRoundId) return `Round ${i + 1}: pick an AFL round.`
-    if (r.superbye) continue // all clubs submit; nothing else to validate
+    // A club takes part in a round exactly once, whichever way it takes part.
     const seen = new Set<string>()
     for (const f of r.fixtures) {
       if (!f.home || !f.away) return `Round ${i + 1}: every match needs both clubs.`
@@ -309,6 +391,14 @@ const validationError = computed(() => {
     for (const id of r.byes) {
       if (seen.has(id)) return `Round ${i + 1}: ${clubName(id)} is in a match and a bye.`
       seen.add(id)
+    }
+    for (const id of r.superbyeClubs) {
+      if (seen.has(id)) return `Round ${i + 1}: ${clubName(id)} is in the superbye and a match or bye.`
+      seen.add(id)
+    }
+    // One club alone has no field to top — that's a bye, not a superbye.
+    if (r.superbyeClubs.length === 1) {
+      return `Round ${i + 1}: a superbye needs at least two clubs — give ${clubName(r.superbyeClubs[0])} a bye instead.`
     }
   }
   return ''

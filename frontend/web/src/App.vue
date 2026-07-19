@@ -78,14 +78,6 @@
               class="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-surface-raised shadow-lg py-2 z-50"
             >
               <router-link
-                :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
-                @click="settingsOpen = false"
-                class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
-              >
-                <IconDataOps class="w-4 h-4" />
-                Data Ops
-              </router-link>
-              <router-link
                 :to="{ name: 'ffl-admin' }"
                 @click="settingsOpen = false"
                 class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
@@ -94,6 +86,14 @@
                   <path d="M10 3.5a1 1 0 00-1 1v1.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0v-4.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM4 3.5a1 1 0 00-1 1v6.09a3.001 3.001 0 000 5.82V15.5a.99.99 0 00.02.2 1 1 0 001.96 0 .99.99 0 00.02-.2v-.09a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1zM16 3.5a1 1 0 00-1 1v.09a3.001 3.001 0 000 5.82V15.5a1 1 0 102 0V10.41a3.001 3.001 0 000-5.82V4.5a1 1 0 00-1-1z" />
                 </svg>
                 Admin
+              </router-link>
+              <router-link
+                  :to="{ name: 'ffl-data-ops', query: { tab: 'team-submission', round: fflSelectedRoundId || undefined } }"
+                  @click="settingsOpen = false"
+                  class="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+              >
+                <IconDataOps class="w-4 h-4" />
+                Data Ops
               </router-link>
               <div class="my-1 border-t border-border"></div>
               <div class="px-3 py-1.5 flex items-center justify-between">

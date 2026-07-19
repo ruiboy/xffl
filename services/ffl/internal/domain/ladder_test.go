@@ -113,6 +113,19 @@ func TestCalculateLadder(t *testing.T) {
 			},
 		},
 		{
+			name: "superbye: only the enrolled clubs count, and the point goes to the best of them",
+			results: []ScoredClubMatch{
+				// Club 3 sits this superbye out, so it earns nothing — even though
+				// its 1200 would have been the round's best score.
+				{MatchID: 1, ClubMatchID: 11, ClubSeasonID: 1, Score: 900, Style: MatchStyleSuperbye, RoundType: RoundTypeMinor},
+				{MatchID: 1, ClubMatchID: 12, ClubSeasonID: 2, Score: 700, Style: MatchStyleSuperbye, RoundType: RoundTypeMinor},
+			},
+			want: map[int]ClubSeason{
+				1: {ID: 1, For: 900, ExtraPoints: 1, PremiershipPoints: 1},
+				2: {ID: 2, For: 700},
+			},
+		},
+		{
 			name: "superbye: a tie for top shares the extra point",
 			results: []ScoredClubMatch{
 				{MatchID: 1, ClubMatchID: 11, ClubSeasonID: 1, Score: 1000, Style: MatchStyleSuperbye, RoundType: RoundTypeMinor},
