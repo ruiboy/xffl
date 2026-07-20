@@ -67,9 +67,11 @@ season.
 
 ## Phase 25 — remaining slices
 
-All import code lives in `histimport` packages (`application/histimport`,
-`infrastructure/histimport`) with a one-way dependency rule so it can be excised after
-Phase 26 — see [ADR-021](../ai/decisions/adr-021-histimport-containment.md).
+Import code follows the two-axis convention: parsers live in a source-named
+infrastructure package (the squads-thread parser is a `forum` format; the fixture
+sheet reader lives under `infrastructure/spreadsheet`), their ports sit in
+`application/ports.go` beside `TeamParser`, and import operations are orchestrated
+in `application/dataops`.
 
 Slices 0–2 are done: scoring eras confirmed in `rules_eras.go`; capture (userscript
 → ingest → in-session preview); season creation and the fixture builder, including

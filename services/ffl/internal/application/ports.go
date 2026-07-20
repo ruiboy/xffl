@@ -92,3 +92,27 @@ type ParsedPlayerRow struct {
 	Score               *int   // nil if not present in the post
 	Notes               string
 }
+
+// SquadThreadParser parses a squads thread — many clubs, ~30 members each — into
+// per-club squads. This is a distinct forum format from the four team-submission
+// formats handled by TeamParser.
+type SquadThreadParser interface {
+	ParseSquads(ctx context.Context, text string) ([]ParsedSquad, error)
+}
+
+// ParsedSquad is one club's squad as read from the thread. ClubName is the FFL
+// club name exactly as written in the header line — resolving it to a
+// club_season is a later step, not the parser's job.
+type ParsedSquad struct {
+	ClubName string // FFL club name as written (e.g. "Cheetahs", "RUIBOYS")
+	Members  []ParsedSquadMember
+}
+
+// ParsedSquadMember is one player line from a squads thread:
+// "<rank> <name> <price> <club>", e.g. "1 Darcy Fogarty 0.6 Adel".
+type ParsedSquadMember struct {
+	Rank      int
+	Name      string
+	ClubHint  string // AFL club code as written in the thread (e.g. "Adel", "WB")
+	CostCents *int   // squad price in cents ("0.6" → 60); nil if absent/unparseable
+}
