@@ -1,0 +1,159 @@
+Fixtures
+
+1
+THC	452	vs	Ruiboys	372
+Cheetahs	370	vs	Slashers	326
+n/a 1			n/a 2
+
+
+2
+Cheetahs	377	vs	THC	388
+Slashers	390	vs	Ruiboys	388
+n/a 1			n/a 2
+
+
+3
+Ruiboys	361	vs	Cheetahs	341
+THC	424	vs	Slashers	362
+n/a 1			n/a 2
+
+
+4
+Slashers	341	vs	Cheetahs	437
+Ruiboys	425	vs	THC	332
+n/a 1			n/a 2
+
+
+5
+Ruiboys	328	vs	Slashers	425
+THC	401	vs	Cheetahs	420
+n/a 1			n/a 2
+
+
+6
+Slashers	323	vs	THC	373
+Cheetahs	356	vs	Ruiboys	361
+n/a 1			n/a 2
+
+
+7
+THC	439	vs	Ruiboys	312
+Cheetahs	419	vs	Slashers	342
+n/a 1			n/a 2
+
+
+8
+Cheetahs	374	vs	THC	374
+Slashers	378	vs	Ruiboys	331
+n/a 1			n/a 2
+
+
+9
+Ruiboys	370	vs	Cheetahs	380
+THC	379	vs	Slashers	391
+n/a 1			n/a 2
+
+
+10
+Slashers	339	vs	Cheetahs	385
+Ruiboys	406	vs	THC	391
+n/a 1			n/a 2
+
+
+11
+Ruiboys	452	vs	Slashers	377
+THC	432	vs	Cheetahs	344
+n/a 1			n/a 2
+
+
+12
+Slashers	310	vs	THC	424
+Cheetahs	383	vs	Ruiboys	389
+n/a 1			n/a 2
+
+
+13
+THC	334	vs	Ruiboys	414
+Cheetahs	356	vs	Slashers	300
+n/a 1			n/a 2
+
+
+14
+Cheetahs	327	vs	THC	441
+Slashers	366	vs	Ruiboys	404
+n/a 1			n/a 2
+
+
+15
+Ruiboys	401	vs	Cheetahs	347
+THC	363	vs	Slashers	357
+n/a 1			n/a 2
+
+
+16
+Slashers	371	vs	Cheetahs	359
+Ruiboys	426	vs	THC	358
+n/a 1			n/a 2
+
+
+17
+Ruiboys	415	vs	Slashers	416
+THC	434	vs	Cheetahs	390
+n/a 1			n/a 2
+
+
+18
+Slashers	379	vs	THC	388
+Cheetahs	418	vs	Ruiboys	441
+n/a 1			n/a 2
+
+
+19			Super Bye
+Slashers	377	vs	THC	406
+Cheetahs	376	vs	Ruiboys	411
+n/a 1			n/a 2
+
+
+20
+Slashers	296	vs	Cheetahs	416
+Ruiboys	422	vs	THC	419
+n/a 1			n/a 2
+
+
+21
+Ruiboys	440	vs	Slashers	250
+THC	364	vs	Cheetahs	390
+n/a 1			n/a 2
+
+
+22
+Slashers	332	vs	THC	400
+Cheetahs	250	vs	Ruiboys	426
+n/a 1			n/a 2
+
+
+Semi-Final
+		vs
+Grand Final
+Ruiboys	366	vs	THC	356
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

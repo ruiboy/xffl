@@ -67,6 +67,10 @@ season.
 
 ## Phase 25 — remaining slices
 
+All import code lives in `histimport` packages (`application/histimport`,
+`infrastructure/histimport`) with a one-way dependency rule so it can be excised after
+Phase 26 — see [ADR-021](../ai/decisions/adr-021-histimport-containment.md).
+
 Slices 0–2 are done: scoring eras confirmed in `rules_eras.go`; capture (userscript
 → ingest → in-session preview); season creation and the fixture builder, including
 byes, superbye and finals.
@@ -75,7 +79,12 @@ byes, superbye and finals.
    per-post `FflPlayerLinkModal` path is not it. Also needs a raw-text passthrough in
    the capture preview: `ForumCaptureBuffer.Ingest` currently discards raw HTML and
    keeps only parsed output, so an unparseable thread shows nothing to work from.
-4. **Submitted-teams importer** — commit via the existing `ImportRoundTeams`, plus:
+4. **Spreadsheet fixture importer** — pasted season sheet → rounds, fixtures, and
+   reference club scores to `notes`. Fixtures are upstream of teams in the per-season
+   workflow (step 3 before step 4), so the tool that builds them lands before the
+   submitted-teams importer. 2025's clubs and full fixture are already entered by hand,
+   so this is first *needed* for 2024, but it is built here.
+5. **Submitted-teams importer** — commit via the existing `ImportRoundTeams`, plus:
    - a **season-scoped author→club_season registry**. This does *not* fall out of
      season setup: `buildFFLSeason` takes `clubIds` and never sees a forum author
      name, and `forum.TeamForAuthor` is a hardcoded four-author map with no season
@@ -88,10 +97,6 @@ byes, superbye and finals.
      the eras in `rules_eras.go` are reviewed but never verified against data, and
      deltas are the only proof a season's `rules_id` is right. Importing a full season
      without them risks 22 rounds scored on the wrong era, undetected.
-5. **Spreadsheet fixture importer** — pasted season sheet → rounds, fixtures, and
-   reference club scores to `notes`. Deliberately after 3–4: 2025's clubs and full
-   fixture are already entered by hand, so this is first needed for 2024 — and by
-   then we will have seen a real sheet rather than guessing at its format.
 
 **No coverage dashboard is built.** Progress lives in the Phase 26 sprint doc,
 cross-checked against committed data with SQL. Once Phase 26 closes it is not needed

@@ -24,3 +24,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 018 | Accepted | ✅ | Twirp for synchronous cross-service RPC; port interface in application layer; proto in `contracts/proto/`, generated stubs in `contracts/gen/`; `buf` for codegen |
 | 019 | Accepted | ✅ | vitest for pure frontend logic (algorithms, stat maths) as colocated `*.test.ts`; component behaviour stays in Playwright e2e |
 | 020 | Proposed | ✅ | Repositories delete aggregate children explicitly; FKs are RESTRICT (no `ON DELETE CASCADE`); `deleted_at` opt-in per entity with a reason; unique constraints on soft-deleted tables must be partial |
+| 021 | Accepted | ✅ | Historical-import tooling contained in `histimport` packages per layer; one-way dependency (production never imports `histimport`); excisable in one cut after Phase 26 |
