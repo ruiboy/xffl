@@ -241,6 +241,7 @@ export const GET_FFL_MATCH = gql`
         clubSeasonId
         club { id name }
         score
+        dataStatus
         suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id

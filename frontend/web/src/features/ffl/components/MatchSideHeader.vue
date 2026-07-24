@@ -14,11 +14,12 @@
         <span v-else>{{ side.label }}</span>
       </h2>
     </div>
-    <p class="text-sm text-text-muted mb-3">
-      Score: <span class="font-semibold text-text">{{ side.clubMatch?.score ?? 0 }}</span>
+    <p class="mb-3 flex items-baseline gap-2">
+      <span class="text-2xl font-bold tabular-nums text-text">{{ side.clubMatch?.score ?? 0 }}</span>
+      <span v-if="count" class="text-base font-normal text-text-muted">from {{ count }}</span>
       <span
         v-if="matchStyle === 'superbye' && topScore > 0 && (side.clubMatch?.score ?? 0) === topScore"
-        class="ml-2 text-xs font-medium rounded-full bg-green-500/15 text-green-500 px-2 py-0.5"
+        class="text-xs font-medium rounded-full bg-green-500/15 text-green-500 px-2 py-0.5"
       >top scorer · +1</span>
     </p>
     <div
@@ -41,17 +42,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { progressCount } from '../utils/teamCount'
 import IconTeamBuilder from './icons/IconTeamBuilder.vue'
 
 interface PlayerMatch {
   id: string
   player: { aflPlayer: { name: string } }
+  status?: string | null
+  aflStatus?: string | null
+  backupPositions?: string | null
+  interchangePosition?: string | null
 }
 interface ClubMatch {
   id: string
   club: { id: string; name: string }
   score: number
+  dataStatus?: string | null
   suggestedSubstitutions?: { kind: string; replacedPmId: string; replacingPmId: string }[]
   playerMatches: PlayerMatch[]
 }
@@ -62,6 +70,9 @@ const props = defineProps<{
   matchStyle: string
   topScore: number
 }>()
+
+// On-field team-size indicator (with a *), dropped once this side is final.
+const count = computed(() => progressCount(props.side.clubMatch))
 
 function playerName(pmId: string): string {
   return props.side.clubMatch?.playerMatches.find((pm) => pm.id === pmId)?.player.aflPlayer.name ?? pmId

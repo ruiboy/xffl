@@ -32,9 +32,6 @@
         </h1>
 
         <p v-if="match.venue" class="text-sm text-text-muted mt-1">{{ match.venue }}</p>
-        <p v-if="matchStyle === 'versus' && match.result" class="text-lg font-semibold mt-2">
-          {{ clubMatches[0]?.score }} – {{ clubMatches[1]?.score }}
-        </p>
       </div>
 
       <!-- Versus & bye: headers on one row so the two tables below start aligned. -->
