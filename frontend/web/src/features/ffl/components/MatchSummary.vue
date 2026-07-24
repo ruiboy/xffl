@@ -3,21 +3,30 @@
     class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors cursor-pointer"
     @click="router.push(to)"
   >
-    <!-- Versus: A [score] v [score] B -->
-    <div v-if="style === 'versus'" class="flex items-center gap-3 font-medium">
-      <img v-if="home" :src="clubLogoUrl(home.club.name)" :alt="home.club.name" class="w-8 h-8 object-contain shrink-0" />
-      <span :class="winner === 'home' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
-        {{ home?.club.name ?? '—' }}
-      </span>
-      <BuildButton v-if="buildTeamTo && isMyClub(home)" :to="buildTeamTo" />
-      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ home?.score }}</span>
-      <span class="text-text-faint">v</span>
-      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}</span>
-      <img v-if="away" :src="clubLogoUrl(away.club.name)" :alt="away.club.name" class="w-8 h-8 object-contain shrink-0" />
-      <span :class="winner === 'away' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
-        {{ away?.club.name ?? '—' }}
-      </span>
-      <BuildButton v-if="buildTeamTo && isMyClub(away)" :to="buildTeamTo" />
+    <!-- Versus: home left · scores centred · away right (logos on the outer edges) -->
+    <div v-if="style === 'versus'" class="flex flex-1 items-center gap-3 font-medium text-lg min-w-0">
+      <!-- Home: logo, name -->
+      <div class="flex flex-1 items-center gap-3 min-w-0">
+        <img v-if="home" :src="clubLogoUrl(home.club.name)" :alt="home.club.name" class="w-8 h-8 object-contain shrink-0" />
+        <span class="truncate" :class="winner === 'home' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
+          {{ home?.club.name ?? '—' }}
+        </span>
+        <BuildButton v-if="buildTeamTo && isMyClub(home)" :to="buildTeamTo" />
+      </div>
+      <!-- Scores: equal-width boxes flank the 'v' so it stays centred regardless of score widths -->
+      <div class="flex items-center gap-3 shrink-0">
+        <span v-if="hasScores" class="tabular-nums text-base w-10 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ home?.score }}</span>
+        <span class="text-text-faint">v</span>
+        <span v-if="hasScores" class="tabular-nums text-base w-10 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}</span>
+      </div>
+      <!-- Away: name, logo -->
+      <div class="flex flex-1 items-center justify-end gap-3 min-w-0">
+        <BuildButton v-if="buildTeamTo && isMyClub(away)" :to="buildTeamTo" />
+        <span class="truncate text-right" :class="winner === 'away' ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">
+          {{ away?.club.name ?? '—' }}
+        </span>
+        <img v-if="away" :src="clubLogoUrl(away.club.name)" :alt="away.club.name" class="w-8 h-8 object-contain shrink-0" />
+      </div>
     </div>
 
     <!-- Bye: a single club, no opponent -->

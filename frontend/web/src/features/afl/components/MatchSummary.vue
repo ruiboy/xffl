@@ -3,22 +3,32 @@
     :to="to"
     class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors"
   >
-    <div class="flex items-center gap-3 font-medium">
-      <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'home' }">
-        {{ match.homeClubMatch?.club.name ?? '—' }}
-      </span>
-      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
-        {{ match.homeClubMatch?.score }}
-      </span>
-      <span class="text-text-faint">v</span>
-      <span v-if="hasScores" class="tabular-nums text-sm" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
-        {{ match.awayClubMatch?.score }}
-      </span>
-      <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain" />
-      <span :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'away' }">
-        {{ match.awayClubMatch?.club.name ?? '—' }}
-      </span>
+    <!-- Versus: home left · scores centred · away right (logos on the outer edges) -->
+    <div class="flex flex-1 items-center gap-3 font-medium text-lg min-w-0">
+      <!-- Home: logo, name -->
+      <div class="flex flex-1 items-center gap-3 min-w-0">
+        <img v-if="homeLogo" :src="homeLogo" :alt="match.homeClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
+        <span class="truncate" :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'home' }">
+          {{ match.homeClubMatch?.club.name ?? '—' }}
+        </span>
+      </div>
+      <!-- Scores: equal-width boxes flank the 'v' so it stays centred regardless of score widths -->
+      <div class="flex items-center gap-3 shrink-0">
+        <span v-if="hasScores" class="tabular-nums text-base w-10 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+          {{ match.homeClubMatch?.score }}
+        </span>
+        <span class="text-text-faint">v</span>
+        <span v-if="hasScores" class="tabular-nums text-base w-10 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">
+          {{ match.awayClubMatch?.score }}
+        </span>
+      </div>
+      <!-- Away: name, logo -->
+      <div class="flex flex-1 items-center justify-end gap-3 min-w-0">
+        <span class="truncate text-right" :class="{ 'underline decoration-green-500 decoration-2 underline-offset-4': winner === 'away' }">
+          {{ match.awayClubMatch?.club.name ?? '—' }}
+        </span>
+        <img v-if="awayLogo" :src="awayLogo" :alt="match.awayClubMatch?.club.name" class="w-8 h-8 object-contain shrink-0" />
+      </div>
     </div>
   </router-link>
 </template>
