@@ -8,6 +8,7 @@ export interface CountablePlayerMatch {
   aflStatus?: string | null
   backupPositions?: string | null
   interchangePosition?: string | null
+  position?: string | null
 }
 
 export interface CountableClubMatch {
@@ -15,16 +16,25 @@ export interface CountableClubMatch {
   playerMatches?: CountablePlayerMatch[] | null
 }
 
-// playedCount counts a team's on-field contributors — 18 is a full team. It counts
-// played or bye starters plus any bench player subbed/interchanged on, and excludes
-// un-activated bench and DNPs.
+// contributes reports whether a player counts toward the on-field team: a played or
+// bye starter, or a bench player subbed/interchanged on. Un-activated bench and DNPs
+// do not count.
+function contributes(pm: CountablePlayerMatch): boolean {
+  if (pm.status === 'subbed_in' || pm.status === 'interchanged_in') return true // activated bench
+  if (pm.backupPositions != null || pm.interchangePosition != null) return false // un-activated bench
+  return pm.aflStatus === 'played' || pm.aflStatus === 'bye'
+}
+
+// playedCount counts a team's on-field contributors — 18 is a full team.
 export function playedCount(playerMatches: CountablePlayerMatch[] | null | undefined): number {
   if (!playerMatches) return 0
-  return playerMatches.filter((pm) => {
-    if (pm.status === 'subbed_in' || pm.status === 'interchanged_in') return true // activated bench
-    if (pm.backupPositions != null || pm.interchangePosition != null) return false // un-activated bench
-    return pm.aflStatus === 'played' || pm.aflStatus === 'bye'
-  }).length
+  return playerMatches.filter(contributes).length
+}
+
+// hasStar reports whether the team's star (the 'star' position) is among the
+// counted on-field contributors.
+export function hasStar(clubMatch: CountableClubMatch | null | undefined): boolean {
+  return (clubMatch?.playerMatches ?? []).some((pm) => pm.position === 'star' && contributes(pm))
 }
 
 // progressCount is the count to display as an in-progress indicator (rendered with a

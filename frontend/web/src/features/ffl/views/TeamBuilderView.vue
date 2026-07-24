@@ -218,19 +218,21 @@
             </div>
             <div class="flex items-center justify-end gap-3">
               <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
-              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+              <span class="text-xl font-bold tabular-nums">{{ grandTotal }}</span>
             </div>
           </div>
-          <div v-else class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-text-heading">Team</h2>
-            <div class="flex items-center gap-3">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-text-heading">Team</h2>
               <span
                 v-if="!readonly && projectedTotal > 0"
                 class="rounded-md bg-sky-500/15 ring-1 ring-sky-400/40 px-2.5 py-0.5 text-sm tabular-nums text-sky-400"
                 :title="`Estimated total from ${statSourceTitle.toLowerCase()}`"
               >Projected ~{{ projectedTotal }}</span>
+            </div>
+            <div class="flex items-center justify-end gap-3">
               <PlayedCount :club-match="clubMatch" class="text-xs" />
-              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+              <span class="text-xl font-bold tabular-nums">{{ grandTotal }}</span>
             </div>
           </div>
         </div>

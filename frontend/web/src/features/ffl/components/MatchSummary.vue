@@ -17,9 +17,9 @@
       <!-- Scores: equal-width boxes flank the 'v' so it stays centred regardless of score widths.
            A parenthesised count of on-field players who have played sits after each score. -->
       <div class="flex items-center gap-3 shrink-0">
-        <span v-if="hasScores" class="tabular-nums text-base w-16 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'"><PlayedCount :club-match="home" class="text-xs mr-2" />{{ home?.score }}</span>
+        <span v-if="hasScores" class="tabular-nums text-base w-24 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'"><PlayedCount :club-match="home" class="text-xs mr-2" />{{ home?.score }}</span>
         <span class="text-text-faint">v</span>
-        <span v-if="hasScores" class="tabular-nums text-base w-16 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}<PlayedCount :club-match="away" class="text-xs ml-2" /></span>
+        <span v-if="hasScores" class="tabular-nums text-base w-24 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}<PlayedCount :club-match="away" class="text-xs ml-2" /></span>
       </div>
       <!-- Away: name, logo -->
       <div class="flex flex-1 items-center justify-end gap-3 min-w-0">
@@ -32,22 +32,22 @@
     </div>
 
     <!-- Bye: a single club, no opponent -->
-    <div v-else-if="style === 'bye'" class="flex items-center gap-3 font-medium">
+    <div v-else-if="style === 'bye'" class="flex items-center gap-3 font-medium text-lg">
       <img v-if="home" :src="clubLogoUrl(home.club.name)" :alt="home.club.name" class="w-8 h-8 object-contain shrink-0" />
       <span>{{ home?.club.name ?? '—' }}</span>
       <span class="text-xs font-medium rounded-full bg-surface px-2 py-0.5 text-text-faint">Bye</span>
       <BuildButton v-if="buildTeamTo && isMyClub(home)" :to="buildTeamTo" />
-      <span v-if="hasScores" class="tabular-nums text-sm font-semibold text-text-muted">{{ home?.score }}</span>
+      <span v-if="hasScores" class="tabular-nums text-base font-semibold text-text-muted">{{ home?.score }}</span>
     </div>
 
     <!-- Superbye: every club, top scorer highlighted -->
-    <div v-else class="flex items-center gap-x-4 gap-y-1.5 flex-wrap font-medium">
+    <div v-else class="flex items-center gap-x-4 gap-y-1.5 flex-wrap font-medium text-lg">
       <span class="text-xs font-medium rounded-full bg-surface px-2 py-0.5 text-text-faint shrink-0">Superbye</span>
       <span v-for="cm in clubMatches" :key="cm.id" class="flex items-center gap-1.5">
-        <img :src="clubLogoUrl(cm.club.name)" :alt="cm.club.name" class="w-6 h-6 object-contain shrink-0" />
+        <img :src="clubLogoUrl(cm.club.name)" :alt="cm.club.name" class="w-8 h-8 object-contain shrink-0" />
         <span :class="isTop(cm) ? 'underline decoration-green-500 decoration-2 underline-offset-4' : ''">{{ cm.club.name }}</span>
         <BuildButton v-if="buildTeamTo && isMyClub(cm)" :to="buildTeamTo" />
-        <span v-if="hasScores" class="tabular-nums text-sm text-text-muted">{{ cm.score }}</span>
+        <span v-if="hasScores" class="tabular-nums text-base text-text-muted">{{ cm.score }}</span>
       </span>
     </div>
   </div>

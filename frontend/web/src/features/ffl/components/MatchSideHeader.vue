@@ -2,7 +2,7 @@
   <div class="mb-3">
     <div class="flex items-center gap-2 mb-3">
       <img v-if="side.clubMatch" :src="clubLogoUrl(side.clubMatch.club.name)" :alt="side.clubMatch.club.name" class="w-8 h-8 object-contain shrink-0" />
-      <h2 class="text-lg font-semibold min-w-0">
+      <h2 class="text-2xl font-semibold min-w-0">
         <router-link
           v-if="side.clubMatch"
           :to="{ name: side.clubMatch.club.id === selectedClubId ? 'ffl-club-match-edit' : 'ffl-club-match', params: { clubMatchId: side.clubMatch.id } }"
