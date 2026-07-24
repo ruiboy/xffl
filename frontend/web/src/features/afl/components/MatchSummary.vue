@@ -2,6 +2,7 @@
   <router-link
     :to="to"
     class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors"
+    :style="rowStyle"
   >
     <!-- Versus: home left · scores centred · away right (logos on the outer edges) -->
     <div class="flex flex-1 items-center gap-3 font-medium text-lg min-w-0">
@@ -36,6 +37,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { clubColorRgba } from '../utils/clubColors'
 
 interface ClubMatch {
   id: string
@@ -57,6 +59,17 @@ const props = defineProps<{
 
 const homeLogo = computed(() => props.match.homeClubMatch ? clubLogoUrl(props.match.homeClubMatch.club.name) : '')
 const awayLogo = computed(() => props.match.awayClubMatch ? clubLogoUrl(props.match.awayClubMatch.club.name) : '')
+
+// Tint the row with each club's colour, fading in from its side so the middle
+// stays neutral — just to relieve the visual monotony of the list.
+const rowStyle = computed(() => {
+  const homeTint = clubColorRgba(props.match.homeClubMatch?.club.name, 0.18)
+  const awayTint = clubColorRgba(props.match.awayClubMatch?.club.name, 0.18)
+  if (!homeTint && !awayTint) return {}
+  return {
+    backgroundImage: `linear-gradient(to right, ${homeTint ?? 'transparent'}, transparent 42%, transparent 58%, ${awayTint ?? 'transparent'})`,
+  }
+})
 
 const hasScores = computed(() =>
   props.match.result === 'home_win' || props.match.result === 'away_win' || props.match.result === 'draw'

@@ -1,6 +1,7 @@
 <template>
   <div
     class="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3 hover:border-border-strong transition-colors cursor-pointer"
+    :style="rowStyle"
     @click="router.push(to)"
   >
     <!-- Versus: home left · scores centred · away right (logos on the outer edges) -->
@@ -56,6 +57,7 @@ import { computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { clubColorRgba } from '../utils/clubColors'
 import IconTeamBuilder from './icons/IconTeamBuilder.vue'
 
 interface ClubMatch {
@@ -92,6 +94,17 @@ const style = computed(() => props.match.matchStyle ?? 'versus')
 const clubMatches = computed<ClubMatch[]>(() => props.match.clubMatches ?? [])
 const home = computed(() => clubMatches.value[0] ?? null)
 const away = computed(() => clubMatches.value[1] ?? null)
+
+// Experimental: tint the row with each club's colour, fading in from its side so
+// the middle stays neutral. Just to relieve the visual monotony of the list.
+const rowStyle = computed(() => {
+  const homeTint = clubColorRgba(clubMatches.value[0]?.club.name, 0.18)
+  const awayTint = clubColorRgba(clubMatches.value[1]?.club.name, 0.18)
+  if (!homeTint && !awayTint) return {}
+  return {
+    backgroundImage: `linear-gradient(to right, ${homeTint ?? 'transparent'}, transparent 42%, transparent 58%, ${awayTint ?? 'transparent'})`,
+  }
+})
 
 const hasScores = computed(() => clubMatches.value.some((cm) => (cm.score ?? 0) > 0))
 const topScore = computed(() => Math.max(0, ...clubMatches.value.map((cm) => cm.score ?? 0)))
