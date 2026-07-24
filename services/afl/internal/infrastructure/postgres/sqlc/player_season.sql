@@ -77,3 +77,15 @@ WHERE cs.season_id = @season_id
   AND p.deleted_at IS NULL
   AND (sqlc.narg('name_query')::text IS NULL OR p.name ILIKE '%' || sqlc.narg('name_query') || '%')
 ORDER BY p.name ASC, ps.id ASC;
+
+-- name: FindPlayerSeasonsBySeasonIDWithClub :many
+SELECT ps.id AS player_season_id, p.id AS player_id, p.name AS player_name, COALESCE(c.name, '') AS club_name
+FROM afl.player_season ps
+JOIN afl.club_season cs ON cs.id = ps.club_season_id
+JOIN afl.player p ON p.id = ps.player_id
+LEFT JOIN afl.club c ON c.id = cs.club_id AND c.deleted_at IS NULL
+WHERE cs.season_id = @season_id
+  AND ps.deleted_at IS NULL
+  AND cs.deleted_at IS NULL
+  AND p.deleted_at IS NULL
+ORDER BY p.name ASC, ps.id ASC;

@@ -28,6 +28,7 @@ type PreviewedPost struct {
 	PostID     string
 	Author     string
 	Team       string // parser format; "" if the author is unknown (escape hatch)
+	Text       string // raw HTML converted to text, kept so an unparseable post (e.g. a squads thread) is still workable
 	Players    []application.ParsedPlayerRow
 	ParseError string
 }
@@ -63,8 +64,11 @@ func (b *ForumCaptureBuffer) Ingest(ctx context.Context, params CapturedPagePara
 	page := PreviewedPage{Season: params.Season, RoundTitle: params.RoundTitle, TopicID: params.TopicID}
 	for _, post := range params.Posts {
 		pp := PreviewedPost{PostID: post.PostID, Author: post.Author, Team: b.forum.TeamForAuthor(post.Author)}
+		// Always keep the plain text: an unparseable post (unknown author, or a
+		// non-team thread like a squads paste) shows nothing without it.
+		pp.Text = b.forum.HTMLToText(post.HTML)
 		if pp.Team != "" {
-			rows, err := b.forum.Parse(ctx, pp.Team, b.forum.HTMLToText(post.HTML))
+			rows, err := b.forum.Parse(ctx, pp.Team, pp.Text)
 			if err != nil {
 				pp.ParseError = err.Error()
 			} else {

@@ -9,6 +9,10 @@ service PlayerLookup {
   rpc LookupPlayerSeason(LookupPlayerSeasonRequest) returns (LookupPlayerSeasonResponse);
   rpc LookupPlayerMatch(LookupPlayerMatchRequest) returns (LookupPlayerMatchResponse);
   rpc LookupByeInfo(LookupByeInfoRequest) returns (LookupByeInfoResponse);
+  // LookupPlayerSeasonsBySeasonID returns every player_season in an AFL season with
+  // its name and club, for building a candidate pool to fuzzy-match imported names
+  // against (e.g. the FFL squad importer).
+  rpc LookupPlayerSeasonsBySeasonID(LookupPlayerSeasonsBySeasonIDRequest) returns (LookupPlayerSeasonsBySeasonIDResponse);
 }
 
 message LookupPlayersRequest {
@@ -84,4 +88,19 @@ message ByePlayerInfo {
 
 message LookupByeInfoResponse {
   repeated ByePlayerInfo players = 1;
+}
+
+message LookupPlayerSeasonsBySeasonIDRequest {
+  int32 afl_season_id = 1;
+}
+
+message LookupPlayerSeasonsBySeasonIDResponse {
+  repeated PlayerSeasonWithClub players = 1;
+}
+
+message PlayerSeasonWithClub {
+  int32  player_season_id = 1;
+  int32  player_id        = 2;
+  string name             = 3;
+  string club_name        = 4;
 }

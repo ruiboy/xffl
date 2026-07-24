@@ -109,6 +109,7 @@ func main() {
 		parser,
 		dispatcher,
 		commands,
+		forum.NewSquadParser(),
 	)
 	captures := dataops.NewForumCaptureBuffer(parser)
 	builder := dataops.NewBuilder(db)

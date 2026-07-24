@@ -49,6 +49,23 @@ func (s *playerLookupServer) LookupPlayerSeason(ctx context.Context, req *aflv1.
 	return &aflv1.LookupPlayerSeasonResponse{PlayerId: int32(ps.PlayerID)}, nil
 }
 
+func (s *playerLookupServer) LookupPlayerSeasonsBySeasonID(ctx context.Context, req *aflv1.LookupPlayerSeasonsBySeasonIDRequest) (*aflv1.LookupPlayerSeasonsBySeasonIDResponse, error) {
+	players, err := s.playerSeasons.FindBySeasonIDWithClub(ctx, int(req.AflSeasonId))
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]*aflv1.PlayerSeasonWithClub, len(players))
+	for i, p := range players {
+		infos[i] = &aflv1.PlayerSeasonWithClub{
+			PlayerSeasonId: int32(p.PlayerSeasonID),
+			PlayerId:       int32(p.PlayerID),
+			Name:           p.Name,
+			ClubName:       p.ClubName,
+		}
+	}
+	return &aflv1.LookupPlayerSeasonsBySeasonIDResponse{Players: infos}, nil
+}
+
 func (s *playerLookupServer) LookupPlayerMatch(ctx context.Context, req *aflv1.LookupPlayerMatchRequest) (*aflv1.LookupPlayerMatchResponse, error) {
 	switch k := req.Key.(type) {
 	case *aflv1.LookupPlayerMatchRequest_ByIds:

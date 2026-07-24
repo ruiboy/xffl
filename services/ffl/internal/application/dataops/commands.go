@@ -56,16 +56,18 @@ type DataOpsCommands struct {
 	playerLookup   application.PlayerLookup
 	playerResolver application.PlayerResolver
 	teamParser     application.TeamParser
+	squadParser    application.SquadThreadParser
 	dispatcher     sharedevents.Dispatcher
 	commands       *application.Commands
 }
 
-func NewDataOpsCommands(tx application.TxManager, lookup application.PlayerLookup, resolver application.PlayerResolver, parser application.TeamParser, dispatcher sharedevents.Dispatcher, commands *application.Commands) *DataOpsCommands {
+func NewDataOpsCommands(tx application.TxManager, lookup application.PlayerLookup, resolver application.PlayerResolver, parser application.TeamParser, dispatcher sharedevents.Dispatcher, commands *application.Commands, squadParser application.SquadThreadParser) *DataOpsCommands {
 	return &DataOpsCommands{
 		tx:             tx,
 		playerLookup:   lookup,
 		playerResolver: resolver,
 		teamParser:     parser,
+		squadParser:    squadParser,
 		dispatcher:     dispatcher,
 		commands:       commands,
 	}

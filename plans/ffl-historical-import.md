@@ -87,11 +87,12 @@ byes, superbye and finals.
    submitted-teams importer. 2025's clubs and full fixture are already entered by hand,
    so this is first *needed* for 2024, but it is built here.
 5. **Submitted-teams importer** — commit via the existing `ImportRoundTeams`, plus:
-   - a **season-scoped author→club_season registry**. This does *not* fall out of
-     season setup: `buildFFLSeason` takes `clubIds` and never sees a forum author
-     name, and `forum.TeamForAuthor` is a hardcoded four-author map with no season
-     dimension. Without it, `parseFFLTeamSubmission`'s `teamName` is typed by hand
-     once per post, ~2,300 times.
+   - **club attribution per post**. A post's club is *not* reliably its author's —
+     anyone can post another club's team on their behalf. So the club is read from
+     the post itself (the team name/declaration it carries); if the post does not
+     make it clear, stop and ask, or infer it from the named players' `club_season`
+     in the prior round. (The existing `forum.TeamForAuthor` map is a weak default
+     hint at best, not a source of truth; there is no author→club registry.)
    - **post classification** — team submission vs banter; submitted vs scored.
    - **authoritative-post selection** — multiple posts per author per round (team,
      then scored, then edits); default to the latest scored post, allow override.

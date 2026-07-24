@@ -73,6 +73,10 @@ func (s *stubPlayerLookup) LookupByeInfo(_ context.Context, aflPSIDs []int, _ in
 	return out, nil
 }
 
+func (s *stubPlayerLookup) LookupPlayerSeasonsBySeasonID(_ context.Context, _ int) ([]application.PlayerCandidate, error) {
+	return s.candidates, nil
+}
+
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *dataops.DataOpsCommands) *httptest.Server {
 	t.Helper()
 
@@ -158,6 +162,7 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 		forum.NewParser(),
 		memevents.New(),
 		testCommands,
+		forum.NewSquadParser(),
 	)
 
 	server := setupDataOpsServer(t, pool, dataOps)
@@ -338,6 +343,7 @@ func TestMarkFFLTeamSubmitted(t *testing.T) {
 		forum.NewParser(),
 		memevents.New(),
 		cmds,
+		forum.NewSquadParser(),
 	)
 	server := setupDataOpsServer(t, pool, dataOps)
 	defer server.Close()
@@ -403,6 +409,7 @@ func TestMarkFFLTeamFinal(t *testing.T) {
 		forum.NewParser(),
 		memevents.New(),
 		cmds,
+		forum.NewSquadParser(),
 	)
 	server := setupDataOpsServer(t, pool, dataOps)
 	defer server.Close()

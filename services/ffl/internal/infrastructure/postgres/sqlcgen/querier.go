@@ -69,6 +69,12 @@ type Querier interface {
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
 	FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
+	// Rounds run in season order. start_dt is the real key, but the fixture builder
+	// never sets it (an FFL round's timing comes from the AFL round it maps to, and
+	// that lives in the afl schema, which this one does not join to), so every
+	// builder-made round ties on NULL. afl_round_id breaks that tie: a season's AFL
+	// rounds are created in sequence, so ascending id is season order. Falling back
+	// to r.id alone would sort by creation, putting a round added late last.
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
 	GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error)

@@ -908,6 +908,23 @@ func (r *PlayerSeasonRepository) FindByClubSeasonIDWithPlayer(ctx context.Contex
 	return out, nil
 }
 
+func (r *PlayerSeasonRepository) FindBySeasonIDWithClub(ctx context.Context, seasonID int) ([]domain.PlayerSeasonWithClub, error) {
+	rows, err := r.q.FindPlayerSeasonsBySeasonIDWithClub(ctx, int32(seasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonWithClub, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonWithClub{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			PlayerID:       int(row.PlayerID),
+			Name:           row.PlayerName,
+			ClubName:       row.ClubName,
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerSeasonRepository) FindIDsBySeasonID(ctx context.Context, seasonID int, nameQuery *string) ([]int, error) {
 	rows, err := r.q.FindPlayerSeasonsBySeasonID(ctx, sqlcgen.FindPlayerSeasonsBySeasonIDParams{
 		SeasonID:  int32(seasonID),
