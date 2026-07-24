@@ -1,8 +1,8 @@
 <template>
   <div class="mb-3">
-    <div class="flex items-center gap-2 mb-1">
-      <img v-if="side.clubMatch" :src="clubLogoUrl(side.clubMatch.club.name)" :alt="side.clubMatch.club.name" class="w-8 h-8 object-contain" />
-      <h2 class="text-lg font-semibold">
+    <div class="flex items-center gap-2 mb-3">
+      <img v-if="side.clubMatch" :src="clubLogoUrl(side.clubMatch.club.name)" :alt="side.clubMatch.club.name" class="w-8 h-8 object-contain shrink-0" />
+      <h2 class="text-lg font-semibold min-w-0">
         <router-link
           v-if="side.clubMatch"
           :to="{ name: side.clubMatch.club.id === selectedClubId ? 'ffl-club-match-edit' : 'ffl-club-match', params: { clubMatchId: side.clubMatch.id } }"
@@ -13,15 +13,15 @@
         </router-link>
         <span v-else>{{ side.label }}</span>
       </h2>
-    </div>
-    <p class="mb-3 flex items-baseline gap-2">
-      <span class="text-2xl font-bold tabular-nums text-text">{{ side.clubMatch?.score ?? 0 }}</span>
-      <span v-if="count" class="text-base font-normal text-text-muted">from {{ count }}</span>
       <span
         v-if="matchStyle === 'superbye' && topScore > 0 && (side.clubMatch?.score ?? 0) === topScore"
-        class="text-xs font-medium rounded-full bg-green-500/15 text-green-500 px-2 py-0.5"
+        class="text-xs font-medium rounded-full bg-green-500/15 text-green-500 px-2 py-0.5 shrink-0"
       >top scorer · +1</span>
-    </p>
+      <span class="ml-auto flex items-baseline gap-2 shrink-0">
+        <PlayedCount :club-match="side.clubMatch" class="text-sm" />
+        <span class="text-2xl font-bold tabular-nums text-text">{{ side.clubMatch?.score ?? 0 }}</span>
+      </span>
+    </div>
     <div
       v-if="side.clubMatch?.club.id === selectedClubId && (side.clubMatch?.suggestedSubstitutions?.length ?? 0) > 0"
       class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3"
@@ -42,9 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
-import { progressCount } from '../utils/teamCount'
+import PlayedCount from './PlayedCount.vue'
 import IconTeamBuilder from './icons/IconTeamBuilder.vue'
 
 interface PlayerMatch {
@@ -70,9 +69,6 @@ const props = defineProps<{
   matchStyle: string
   topScore: number
 }>()
-
-// On-field team-size indicator (with a *), dropped once this side is final.
-const count = computed(() => progressCount(props.side.clubMatch))
 
 function playerName(pmId: string): string {
   return props.side.clubMatch?.playerMatches.find((pm) => pm.id === pmId)?.player.aflPlayer.name ?? pmId

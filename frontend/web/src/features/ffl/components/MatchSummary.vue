@@ -17,9 +17,9 @@
       <!-- Scores: equal-width boxes flank the 'v' so it stays centred regardless of score widths.
            A parenthesised count of on-field players who have played sits after each score. -->
       <div class="flex items-center gap-3 shrink-0">
-        <span v-if="hasScores" class="tabular-nums text-base w-16 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'"><span v-if="homeCount" class="text-xs font-normal text-text-faint mr-2">({{ homeCount }})</span>{{ home?.score }}</span>
+        <span v-if="hasScores" class="tabular-nums text-base w-16 text-right" :class="winner === 'home' ? 'font-bold text-text' : 'font-semibold text-text-muted'"><PlayedCount :club-match="home" class="text-xs mr-2" />{{ home?.score }}</span>
         <span class="text-text-faint">v</span>
-        <span v-if="hasScores" class="tabular-nums text-base w-16 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}<span v-if="awayCount" class="text-xs font-normal text-text-faint ml-2">({{ awayCount }})</span></span>
+        <span v-if="hasScores" class="tabular-nums text-base w-16 text-left" :class="winner === 'away' ? 'font-bold text-text' : 'font-semibold text-text-muted'">{{ away?.score }}<PlayedCount :club-match="away" class="text-xs ml-2" /></span>
       </div>
       <!-- Away: name, logo -->
       <div class="flex flex-1 items-center justify-end gap-3 min-w-0">
@@ -59,7 +59,7 @@ import { useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { clubColorRgba } from '../utils/clubColors'
-import { progressCount } from '../utils/teamCount'
+import PlayedCount from './PlayedCount.vue'
 import IconTeamBuilder from './icons/IconTeamBuilder.vue'
 
 interface PlayerMatch {
@@ -119,10 +119,6 @@ const rowStyle = computed(() => {
 
 const hasScores = computed(() => clubMatches.value.some((cm) => (cm.score ?? 0) > 0))
 const topScore = computed(() => Math.max(0, ...clubMatches.value.map((cm) => cm.score ?? 0)))
-
-// On-field team-size indicator (shown with a *), dropped once a side is final.
-const homeCount = computed(() => progressCount(home.value))
-const awayCount = computed(() => progressCount(away.value))
 
 const winner = computed(() => {
   if (style.value !== 'versus' || !hasScores.value) return null

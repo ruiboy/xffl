@@ -1,13 +1,16 @@
 // Shared logic for the "on-field team size" indicator shown next to a team's score.
 
-interface CountablePlayerMatch {
+// A full FFL team is 18 on-field players — the denominator for the played count.
+export const TEAM_SIZE = 18
+
+export interface CountablePlayerMatch {
   status?: string | null
   aflStatus?: string | null
   backupPositions?: string | null
   interchangePosition?: string | null
 }
 
-interface CountableClubMatch {
+export interface CountableClubMatch {
   dataStatus?: string | null
   playerMatches?: CountablePlayerMatch[] | null
 }

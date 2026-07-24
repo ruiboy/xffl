@@ -229,7 +229,7 @@
                 class="rounded-md bg-sky-500/15 ring-1 ring-sky-400/40 px-2.5 py-0.5 text-sm tabular-nums text-sky-400"
                 :title="`Estimated total from ${statSourceTitle.toLowerCase()}`"
               >Projected ~{{ projectedTotal }}</span>
-              <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
+              <PlayedCount :club-match="clubMatch" class="text-xs" />
               <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
             </div>
           </div>
@@ -743,6 +743,7 @@ import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import { MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED } from '../../data-ops/api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
+import PlayedCount from '../components/PlayedCount.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
