@@ -19,7 +19,16 @@ test.describe('FFL Match', () => {
   })
 
   test('displays fantasy scores', async ({ page }) => {
-    await expect(page.getByText('Score:')).toHaveCount(2)
+    // Each team header shows its total: Ruiboys 85, The Howling Cows 72.
+    await expect(page.getByText('85', { exact: true })).toBeVisible()
+    await expect(page.getByText('72', { exact: true })).toBeVisible()
+  })
+
+  test('displays on-field player count next to each score', async ({ page }) => {
+    // Each side has one played starter (Jordan Dawson / Henry Smith) → (1/18),
+    // shown while the team is not final, with the full text on hover.
+    await expect(page.getByText('(1/18)')).toHaveCount(2)
+    await expect(page.locator('[title="1 of 18 played"]')).toHaveCount(2)
   })
 
   test('displays squad table with player columns', async ({ page }) => {
