@@ -305,7 +305,7 @@ type FixtureImportRoundInput struct {
 	Name string `json:"name"`
 	// The AFL round this maps to.
 	AflRoundID string `json:"aflRoundId"`
-	// MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder.
+	// MINOR (default), SEMI_FINAL or GRAND_FINAL. Finals skip bye creation; superbyes are left to the manual builder.
 	RoundType *string               `json:"roundType,omitempty"`
 	Fixtures  []*ParsedFixtureInput `json:"fixtures"`
 }
@@ -469,7 +469,7 @@ type SaveFFLRoundInput struct {
 	RoundID    *string `json:"roundId,omitempty"`
 	Name       string  `json:"name"`
 	AflRoundID string  `json:"aflRoundId"`
-	// MINOR (default) or GRAND_FINAL.
+	// MINOR (default), SEMI_FINAL or GRAND_FINAL.
 	RoundType *string              `json:"roundType,omitempty"`
 	Matches   []*SaveFFLMatchInput `json:"matches"`
 }

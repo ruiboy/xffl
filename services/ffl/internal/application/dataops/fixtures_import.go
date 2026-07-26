@@ -145,10 +145,13 @@ func planFixtureImport(rounds []FixtureImportRound, seasonClubSeasonIDs []int, n
 				refs = append(refs, refScore{RoundName: r.Name, ClubSeasonID: away, Score: *fx.AwayScore})
 			}
 		}
-		// Every season club not playing this round gets a bye match.
-		for _, cs := range seasonClubSeasonIDs {
-			if !used[cs] {
-				spec.Matches = append(spec.Matches, MatchSpec{Style: domain.MatchStyleBye, ClubSeasonIDs: []int{cs}})
+		// Home-and-away rounds give every club not playing a bye; finals do not —
+		// clubs missing from a final are eliminated, not on a bye.
+		if r.Type == domain.RoundTypeMinor {
+			for _, cs := range seasonClubSeasonIDs {
+				if !used[cs] {
+					spec.Matches = append(spec.Matches, MatchSpec{Style: domain.MatchStyleBye, ClubSeasonIDs: []int{cs}})
+				}
 			}
 		}
 		specs = append(specs, spec)

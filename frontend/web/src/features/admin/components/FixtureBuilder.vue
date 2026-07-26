@@ -15,7 +15,11 @@
 
     <template v-else>
       <!-- Rounds -->
-      <div v-for="(rnd, ri) in rounds" :key="rnd.key" data-testid="round" class="rounded-lg border border-border bg-surface-raised">
+      <div
+        v-for="(rnd, ri) in rounds" :key="rnd.key" data-testid="round"
+        class="rounded-lg border bg-surface-raised"
+        :class="looksLikeUnsetFinal(rnd) ? 'border-yellow-500/60 ring-1 ring-yellow-500/30' : 'border-border'"
+      >
         <!-- Header: what this round is -->
         <div class="flex flex-wrap items-center gap-2 p-3">
           <span class="w-5 shrink-0 text-xs tabular-nums text-text-faint">{{ ri + 1 }}</span>
@@ -30,10 +34,20 @@
               <option v-for="ar in aflRounds" :key="ar.id" :value="ar.id">{{ ar.name }}</option>
             </select>
           </label>
-          <select v-model="rnd.roundType" :disabled="rnd.locked" class="rounded border border-border bg-surface px-2 py-1 text-sm disabled:opacity-60">
+          <select
+            v-model="rnd.roundType" :disabled="rnd.locked"
+            class="rounded border bg-surface px-2 py-1 text-sm disabled:opacity-60"
+            :class="looksLikeUnsetFinal(rnd) ? 'border-yellow-500/60' : 'border-border'"
+          >
             <option value="MINOR">Minor</option>
+            <option value="SEMI_FINAL">Semi-final</option>
             <option value="GRAND_FINAL">Grand final</option>
           </select>
+          <span
+            v-if="looksLikeUnsetFinal(rnd)"
+            class="inline-flex items-center gap-1 text-xs text-yellow-500"
+            title="This round's name isn't a number — it's probably a final. Set its type."
+          >⚠ Probably a final — set its type</span>
           <div class="ml-auto flex items-center gap-2">
             <span
               v-if="rnd.locked"
@@ -249,6 +263,14 @@ watch(fixturesResult, (val) => {
     }
   })
 }, { immediate: true })
+
+// A round whose name carries no number is probably a final ("Grand Final",
+// "Semi Final") rather than a home-and-away round ("Round 7", "7"). Flag it while
+// it is still typed MINOR so the user sets its round type; clears once typed.
+function looksLikeUnsetFinal(r: StagedRound): boolean {
+  const name = r.name.trim()
+  return name !== '' && !/\d/.test(name) && r.roundType === 'MINOR'
+}
 
 function clubName(id: string) {
   return clubs.value.find((c) => c.id === id)?.name ?? id

@@ -65,6 +65,28 @@ func TestPlanFixtureImport(t *testing.T) {
 	})
 }
 
+func TestPlanFixtureImport_FinalsGetNoByes(t *testing.T) {
+	nameToCS := map[string]int{"thc": 1, "ruiboys": 2, "cheetahs": 3, "slashers": 4}
+	seasonCS := []int{1, 2, 3, 4}
+
+	rounds := []FixtureImportRound{{
+		Name:       "Grand Final",
+		AFLRoundID: 30,
+		Type:       domain.RoundTypeGrandFinal,
+		Fixtures: []application.ParsedFixture{
+			{HomeClub: "THC", AwayClub: "Ruiboys"},
+		},
+	}}
+
+	specs, _, unresolved := planFixtureImport(rounds, seasonCS, nameToCS)
+	require.Empty(t, unresolved)
+	require.Len(t, specs, 1)
+
+	for _, m := range specs[0].Matches {
+		assert.NotEqual(t, domain.MatchStyleBye, m.Style, "a final must not fabricate byes for the eliminated clubs")
+	}
+}
+
 func TestPlanFixtureImport_UnresolvedClubBlocks(t *testing.T) {
 	nameToCS := map[string]int{"thc": 1, "ruiboys": 2}
 	rounds := []FixtureImportRound{{

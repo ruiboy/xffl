@@ -15,23 +15,22 @@ type Round struct {
 	Type       RoundType
 }
 
-// RoundType classifies an FFL round as home-and-away ("minor") or the grand
-// final. FFL models no finals lead-up rounds by type — everything but the grand
-// final (the super-bye round included) is MINOR.
+// RoundType classifies an FFL round as home-and-away ("minor") or a final (semi
+// or grand). The super-bye round is a home-and-away round and stays MINOR.
 //
-// The home-and-away ladder is built from MINOR rounds only; the grand final is
-// excluded.
+// The home-and-away ladder is built from MINOR rounds only; finals are excluded.
 type RoundType string
 
 const (
 	RoundTypeMinor      RoundType = "MINOR"
+	RoundTypeSemiFinal  RoundType = "SEMI_FINAL"
 	RoundTypeGrandFinal RoundType = "GRAND_FINAL"
 )
 
-// IsFinal reports whether the round is the grand final (the only finals round
-// FFL distinguishes). Finals do not count toward the home-and-away ladder.
+// IsFinal reports whether the round is a final (semi or grand). Finals do not
+// count toward the home-and-away ladder.
 func (rt RoundType) IsFinal() bool {
-	return rt == RoundTypeGrandFinal
+	return rt == RoundTypeSemiFinal || rt == RoundTypeGrandFinal
 }
 
 type RoundRepository interface {

@@ -2225,7 +2225,7 @@ input FixtureImportRoundInput {
   name: String!
   "The AFL round this maps to."
   aflRoundId: ID!
-  "MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder."
+  "MINOR (default), SEMI_FINAL or GRAND_FINAL. Finals skip bye creation; superbyes are left to the manual builder."
   roundType: String
   fixtures: [ParsedFixtureInput!]!
 }
@@ -2320,7 +2320,7 @@ input SaveFFLRoundInput {
   roundId: ID
   name: String!
   aflRoundId: ID!
-  "MINOR (default) or GRAND_FINAL."
+  "MINOR (default), SEMI_FINAL or GRAND_FINAL."
   roundType: String
   matches: [SaveFFLMatchInput!]!
 }

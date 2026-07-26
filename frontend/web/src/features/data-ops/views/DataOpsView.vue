@@ -667,8 +667,11 @@
           <div
             v-for="(rd, ri) in fixtureRounds"
             :key="ri"
-            class="rounded-xl border border-border p-5"
-            :class="rd.include ? 'bg-surface-raised' : 'bg-surface-raised/40 opacity-60'"
+            class="rounded-xl border p-5"
+            :class="[
+              rd.include ? 'bg-surface-raised' : 'bg-surface-raised/40 opacity-60',
+              fixtureRoundLooksFinal(rd) ? 'border-yellow-500/60 ring-1 ring-yellow-500/30' : 'border-border',
+            ]"
           >
             <!-- Round header -->
             <div class="flex flex-wrap items-center gap-3 mb-3">
@@ -678,12 +681,26 @@
                 <span v-if="rd.label" class="text-xs font-normal text-text-faint">{{ rd.label }}</span>
               </label>
               <span class="text-xs text-text-faint">{{ rd.fixtures.length }} fixtures</span>
+              <span
+                v-if="fixtureRoundLooksFinal(rd)"
+                class="inline-flex items-center gap-1 text-xs text-yellow-500"
+                title="This round's name has no number — it's probably a final. Set its type."
+              >⚠ Probably a final — set its type</span>
               <div class="ml-auto flex items-center gap-2">
                 <input
                   v-model="rd.name"
                   placeholder="Round name"
                   class="w-36 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
                 />
+                <select
+                  v-model="rd.roundType"
+                  class="rounded-lg border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                  :class="fixtureRoundLooksFinal(rd) ? 'border-yellow-500/60' : 'border-border'"
+                >
+                  <option value="MINOR">Minor</option>
+                  <option value="SEMI_FINAL">Semi-final</option>
+                  <option value="GRAND_FINAL">Grand final</option>
+                </select>
                 <select
                   v-model="rd.aflRoundId"
                   class="rounded-lg border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
@@ -1494,8 +1511,17 @@ type FixtureReviewRound = {
   label: string
   name: string       // editable FFL round name
   aflRoundId: string // reviewer-mapped AFL round
+  roundType: string  // MINOR | SEMI_FINAL | GRAND_FINAL
   include: boolean
   fixtures: ReviewFixture[]
+}
+
+// A parsed round whose name carries no number is probably a final rather than a
+// home-and-away round — flag it while still typed MINOR so the reviewer sets the
+// type (and byes aren't fabricated for it). Clears once typed.
+function fixtureRoundLooksFinal(r: FixtureReviewRound): boolean {
+  const name = r.name.trim()
+  return name !== '' && !/\d/.test(name) && r.roundType === 'MINOR'
 }
 
 const fixturePhase = ref<'input' | 'review'>('input')
@@ -1578,7 +1604,8 @@ async function onParseFixtures() {
       label: r.label,
       name: r.round > 0 ? `Round ${r.round}` : (r.label || 'Finals'),
       aflRoundId: autoMapAflRound(r.round),
-      include: r.round > 0, // finals (round 0) left to the manual builder — off by default
+      roundType: 'MINOR', // reviewer sets finals; the highlight prompts non-numbered rounds
+      include: true,
       fixtures: r.fixtures.map((fx: any) => ({ ...fx })),
     }))
     fixturePhase.value = 'review'
@@ -1598,6 +1625,7 @@ async function onImportFixtures() {
     const rounds = includedFixtureRounds.value.map(r => ({
       name: r.name,
       aflRoundId: r.aflRoundId,
+      roundType: r.roundType,
       fixtures: r.fixtures.map(fx => ({
         homeClub: fx.homeClub,
         homeScore: fx.homeScore,
