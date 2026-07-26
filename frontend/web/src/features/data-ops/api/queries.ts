@@ -81,6 +81,26 @@ export const GET_FFL_CAPTURED_PAGES = gql`
   }
 `
 
+// A season's context for the fixture importer: its club_seasons (for resolving
+// the sheet's club names) and the AFL season's rounds (to map each parsed round).
+export const GET_FFL_FIXTURE_IMPORT_SEASON = gql`
+  query GetFFLFixtureImportSeason($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      name
+      ladder {
+        id
+        club { id name }
+      }
+      aflSeason {
+        id
+        name
+        rounds { id name }
+      }
+    }
+  }
+`
+
 export const SEARCH_AFL_PLAYERS = gql`
   query SearchAFLPlayers($query: String!) {
     aflPlayerSearch(query: $query) {

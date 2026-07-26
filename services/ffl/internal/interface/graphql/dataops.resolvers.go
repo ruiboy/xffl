@@ -396,6 +396,76 @@ func (r *mutationResolver) ImportFFLSquad(ctx context.Context, input ImportFFLSq
 	return result, nil
 }
 
+// ParseFFLFixtureSheet is the resolver for the parseFFLFixtureSheet field.
+func (r *mutationResolver) ParseFFLFixtureSheet(ctx context.Context, input ParseFFLFixtureSheetInput) (*ParseFFLFixtureSheetResult, error) {
+	parsed, err := r.Builder.ParseFixtureSheet(ctx, input.Sheet)
+	if err != nil {
+		return nil, err
+	}
+	rounds := make([]*ParsedFixtureRound, len(parsed))
+	for i, pr := range parsed {
+		fixtures := make([]*ParsedFixture, len(pr.Fixtures))
+		for j, fx := range pr.Fixtures {
+			fixtures[j] = &ParsedFixture{
+				HomeClub:  fx.HomeClub,
+				HomeScore: fx.HomeScore,
+				AwayClub:  fx.AwayClub,
+				AwayScore: fx.AwayScore,
+			}
+		}
+		rounds[i] = &ParsedFixtureRound{Round: pr.Round, Label: pr.Label, Fixtures: fixtures}
+	}
+	return &ParseFFLFixtureSheetResult{Rounds: rounds}, nil
+}
+
+// ImportFFLFixtures is the resolver for the importFFLFixtures field.
+func (r *mutationResolver) ImportFFLFixtures(ctx context.Context, input ImportFFLFixturesInput) (*ImportFFLFixturesResult, error) {
+	seasonID, err := fromID(input.SeasonID)
+	if err != nil {
+		return nil, err
+	}
+	rounds := make([]dataops.FixtureImportRound, len(input.Rounds))
+	for i, ri := range input.Rounds {
+		aflRoundID, err := fromID(ri.AflRoundID)
+		if err != nil {
+			return nil, err
+		}
+		roundType := domain.RoundTypeMinor
+		if ri.RoundType != nil && *ri.RoundType != "" {
+			roundType = domain.RoundType(*ri.RoundType)
+		}
+		fixtures := make([]application.ParsedFixture, len(ri.Fixtures))
+		for j, fx := range ri.Fixtures {
+			fixtures[j] = application.ParsedFixture{
+				HomeClub:  fx.HomeClub,
+				HomeScore: fx.HomeScore,
+				AwayClub:  fx.AwayClub,
+				AwayScore: fx.AwayScore,
+			}
+		}
+		rounds[i] = dataops.FixtureImportRound{
+			Name:       ri.Name,
+			AFLRoundID: aflRoundID,
+			Type:       roundType,
+			Fixtures:   fixtures,
+		}
+	}
+
+	res, err := r.Builder.ImportFixtures(ctx, dataops.ImportFixturesParams{SeasonID: seasonID, Rounds: rounds})
+	if err != nil {
+		return nil, err
+	}
+	unresolved := res.Unresolved
+	if unresolved == nil {
+		unresolved = []string{}
+	}
+	return &ImportFFLFixturesResult{
+		RoundsCreated: res.RoundsCreated,
+		ScoresWritten: res.ScoresWritten,
+		Unresolved:    unresolved,
+	}, nil
+}
+
 // FflCapturedPages is the resolver for the fflCapturedPages field.
 func (r *queryResolver) FflCapturedPages(ctx context.Context) ([]*FFLPreviewedPage, error) {
 	pages := r.Captures.Pages()

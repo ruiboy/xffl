@@ -3,7 +3,6 @@ package dataops
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"xffl/services/ffl/internal/application"
 	"xffl/services/ffl/internal/domain"
@@ -97,7 +96,7 @@ func (b *Builder) loadSeasonClubs(ctx context.Context, seasonID int) ([]int, map
 		for _, cs := range css {
 			ids = append(ids, cs.ID)
 			if club, ok := clubs[cs.ClubID]; ok {
-				nameToCS[normalizeClub(club.Name)] = cs.ID
+				nameToCS[canonicalClub(club.Name)] = cs.ID
 			}
 		}
 		return nil
@@ -126,8 +125,8 @@ func planFixtureImport(rounds []FixtureImportRound, seasonClubSeasonIDs []int, n
 		spec := RoundSpec{Name: r.Name, AFLRoundID: r.AFLRoundID, Type: r.Type}
 		used := map[int]bool{}
 		for _, fx := range r.Fixtures {
-			home, homeOK := nameToCS[normalizeClub(fx.HomeClub)]
-			away, awayOK := nameToCS[normalizeClub(fx.AwayClub)]
+			home, homeOK := nameToCS[canonicalClub(fx.HomeClub)]
+			away, awayOK := nameToCS[canonicalClub(fx.AwayClub)]
 			if !homeOK {
 				noteUnresolved(fx.HomeClub)
 			}
@@ -203,10 +202,4 @@ func (b *Builder) writeReferenceScores(ctx context.Context, seasonID int, refs [
 
 func refKey(roundName string, clubSeasonID int) string {
 	return fmt.Sprintf("%s\x00%d", roundName, clubSeasonID)
-}
-
-// normalizeClub folds club-name spelling differences (case, surrounding space) so
-// the sheet's names line up with the registered club names.
-func normalizeClub(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
 }

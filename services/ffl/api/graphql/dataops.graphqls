@@ -32,6 +32,12 @@ extend type Mutation {
 
   "Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped."
   importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]!
+
+  "Parse a pasted season fixture sheet into rounds + fixtures with reference scores. No DB writes."
+  parseFFLFixtureSheet(input: ParseFFLFixtureSheetInput!): ParseFFLFixtureSheetResult!
+
+  "Confirm reviewed fixture rounds: build the season's rounds/fixtures (inferring byes) and record spreadsheet reference scores. Refuses the whole import if any club name is unresolved."
+  importFFLFixtures(input: ImportFFLFixturesInput!): ImportFFLFixturesResult!
 }
 
 extend type Query {
@@ -152,6 +158,62 @@ input ConfirmedFFLSquadMemberInput {
   aflPlayerSeasonId: ID!
   name: String!
   costCents: Int
+}
+
+input ParseFFLFixtureSheetInput {
+  "The pasted season fixture sheet (tab-separated, one region per round)."
+  sheet: String!
+}
+
+type ParseFFLFixtureSheetResult {
+  rounds: [ParsedFixtureRound!]!
+}
+
+"One round as read from the sheet, before the reviewer maps it to an AFL round."
+type ParsedFixtureRound {
+  "The printed round number; 0 for a labelled finals round with no number."
+  round: Int!
+  "Any text beside the number, or a finals name ('Super Bye', 'Grand Final')."
+  label: String!
+  fixtures: [ParsedFixture!]!
+}
+
+"One fixture line: two clubs (names as written) and their reference scores (null when the sheet is blank)."
+type ParsedFixture {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+input ImportFFLFixturesInput {
+  seasonId: ID!
+  "The complete set of rounds to build — the season fixture is reconciled to this, so omitting a round removes it."
+  rounds: [FixtureImportRoundInput!]!
+}
+
+input FixtureImportRoundInput {
+  "The FFL round name the reviewer assigned (e.g. 'Round 1')."
+  name: String!
+  "The AFL round this maps to."
+  aflRoundId: ID!
+  "MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder."
+  roundType: String
+  fixtures: [ParsedFixtureInput!]!
+}
+
+input ParsedFixtureInput {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+type ImportFFLFixturesResult {
+  roundsCreated: Int!
+  scoresWritten: Int!
+  "Club names from the sheet that did not map to a club_season; when non-empty nothing was written."
+  unresolved: [String!]!
 }
 
 input MarkFFLTeamFinalInput {

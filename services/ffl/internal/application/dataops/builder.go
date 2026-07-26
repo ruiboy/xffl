@@ -11,11 +11,19 @@ import (
 // Builder creates the season scaffolding:
 // the season + its club_seasons here; fixtures via the fixture builder.
 type Builder struct {
-	tx application.TxManager
+	tx            application.TxManager
+	fixtureParser application.FixtureSheetParser
 }
 
-func NewBuilder(tx application.TxManager) *Builder {
-	return &Builder{tx: tx}
+func NewBuilder(tx application.TxManager, fixtureParser application.FixtureSheetParser) *Builder {
+	return &Builder{tx: tx, fixtureParser: fixtureParser}
+}
+
+// ParseFixtureSheet parses a pasted season fixture sheet into rounds + fixtures
+// carrying their reference scores. No DB writes — the caller reviews the result,
+// maps each round to an AFL round, and calls ImportFixtures to confirm.
+func (b *Builder) ParseFixtureSheet(ctx context.Context, sheet string) ([]application.ParsedFixtureRound, error) {
+	return b.fixtureParser.ParseFixtures(ctx, sheet)
 }
 
 // BuildSeasonParams: the FFL season name (free text), the scoring era to apply

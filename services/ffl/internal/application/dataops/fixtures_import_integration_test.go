@@ -13,6 +13,7 @@ import (
 	"xffl/services/ffl/internal/domain"
 	"xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/spreadsheet"
 )
 
 // TestImportFixtures_BuildsFixturesAndReferenceScores drives the whole Slice 4
@@ -20,7 +21,7 @@ import (
 // inferred bye for the odd club), and stamp the reference scores onto notes.
 func TestImportFixtures_BuildsFixturesAndReferenceScores(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	// buildOddSeason names the clubs "<name> A/B/C"; ImportFixtures resolves by name.
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "ImpFix", 2)
 
@@ -60,7 +61,7 @@ func TestImportFixtures_BuildsFixturesAndReferenceScores(t *testing.T) {
 // name with no club_season blocks the whole import rather than dropping a fixture.
 func TestImportFixtures_UnresolvedClubWritesNothing(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, _, _, _ := buildOddSeason(ctx, t, "ImpUnres", 3)
 
 	res, err := builder.ImportFixtures(ctx, ImportFixturesParams{

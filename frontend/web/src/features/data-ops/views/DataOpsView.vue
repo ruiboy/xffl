@@ -592,6 +592,130 @@
       />
     </div>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Tab: Import Fixtures                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="activeTab === 'fixtures'">
+      <!-- Season selector (local to this tab) -->
+      <div class="mb-5 max-w-2xl">
+        <label class="block text-xs font-medium text-text-muted mb-1">Season</label>
+        <select
+          v-model="fixtureSeasonId"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+        >
+          <option v-if="!fflSeasonOptions.length" value="">Loading…</option>
+          <option v-for="s in fflSeasonOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+
+      <div v-if="loadingFixtureSeason" class="text-text-faint">Loading…</div>
+      <div v-else-if="fixtureSeasonError" class="text-red-400">{{ fixtureSeasonError.message }}</div>
+      <template v-else-if="fixtureSeason">
+        <!-- Paste + parse -->
+        <div v-if="fixturePhase === 'input'" class="space-y-4 max-w-2xl">
+          <p class="text-sm text-text-muted">
+            Paste <span class="font-medium text-text">{{ fixtureSeason.name }}</span>’s fixture sheet.
+            Rounds and pairings are read from it; club-level scores are kept as reference notes. Map each round to an AFL round, then import.
+          </p>
+          <div>
+            <label class="block text-xs font-medium text-text-muted mb-1">Fixture sheet</label>
+            <textarea
+              v-model="fixtureSheet"
+              rows="16"
+              placeholder="Paste the tab-separated fixture sheet here…"
+              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
+            />
+          </div>
+          <p v-if="fixtureParseError" class="text-sm text-red-400">{{ fixtureParseError }}</p>
+          <div class="flex justify-end">
+            <button
+              @click="onParseFixtures"
+              :disabled="!canParseFixtures || parsingFixtures"
+              class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >{{ parsingFixtures ? 'Reading…' : 'Read Fixtures' }}</button>
+          </div>
+        </div>
+
+        <!-- Review -->
+        <div v-else-if="fixturePhase === 'review'" class="space-y-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              @click="fixturePhase = 'input'"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >← Back</button>
+            <span class="text-sm text-text-muted">
+              {{ includedFixtureRounds.length }} of {{ fixtureRounds.length }} rounds selected
+            </span>
+            <div class="ml-auto flex items-center gap-3">
+              <span v-if="fixtureImportResult" class="text-xs text-green-500">
+                {{ fixtureImportResult.roundsCreated }} rounds · {{ fixtureImportResult.scoresWritten }} reference scores
+              </span>
+              <span v-if="fixtureImportError" class="text-xs text-red-400">{{ fixtureImportError }}</span>
+              <button
+                @click="onImportFixtures"
+                :disabled="!canImportFixtures || importingFixtures"
+                class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >{{ importingFixtures ? 'Importing…' : 'Import Fixtures' }}</button>
+            </div>
+          </div>
+
+          <p v-if="fixtureUnresolved.length" class="text-sm text-red-400">
+            Unresolved club names — nothing was written. Fix the spelling in the sheet or register the club:
+            {{ fixtureUnresolved.join(', ') }}
+          </p>
+
+          <div
+            v-for="(rd, ri) in fixtureRounds"
+            :key="ri"
+            class="rounded-xl border border-border p-5"
+            :class="rd.include ? 'bg-surface-raised' : 'bg-surface-raised/40 opacity-60'"
+          >
+            <!-- Round header -->
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+              <label class="flex items-center gap-2 text-sm font-semibold text-text">
+                <input type="checkbox" v-model="rd.include" class="accent-active" />
+                {{ rd.round > 0 ? `Round ${rd.round}` : 'Finals' }}
+                <span v-if="rd.label" class="text-xs font-normal text-text-faint">{{ rd.label }}</span>
+              </label>
+              <span class="text-xs text-text-faint">{{ rd.fixtures.length }} fixtures</span>
+              <div class="ml-auto flex items-center gap-2">
+                <input
+                  v-model="rd.name"
+                  placeholder="Round name"
+                  class="w-36 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                />
+                <select
+                  v-model="rd.aflRoundId"
+                  class="rounded-lg border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                  :class="rd.include && !rd.aflRoundId ? 'border-red-400' : 'border-border'"
+                >
+                  <option value="">Map to AFL round…</option>
+                  <option v-for="ar in fixtureAflRounds" :key="ar.id" :value="ar.id">{{ ar.name }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fixtures -->
+            <table class="w-full">
+              <tbody>
+                <tr v-for="(fx, fi) in rd.fixtures" :key="fi" class="border-b border-border last:border-0">
+                  <td class="py-2 pr-3 text-right text-sm" :class="clubResolves(fx.homeClub) ? 'text-text' : 'text-red-400'">
+                    {{ fx.homeClub }}
+                  </td>
+                  <td class="py-2 px-2 text-right text-sm tabular-nums text-text-muted w-px">{{ fx.homeScore ?? '' }}</td>
+                  <td class="py-2 px-1 text-center text-xs text-text-faint select-none w-px">vs</td>
+                  <td class="py-2 px-2 text-left text-sm tabular-nums text-text-muted w-px">{{ fx.awayScore ?? '' }}</td>
+                  <td class="py-2 pl-3 text-sm" :class="clubResolves(fx.awayClub) ? 'text-text' : 'text-red-400'">
+                    {{ fx.awayClub }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </div>
+
     <!-- Tab: Forum Capture (historical import, slice 1) -->
     <div v-if="activeTab === 'forum-capture'" class="space-y-4">
       <div class="flex items-center justify-between gap-4">
@@ -682,10 +806,11 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_FFL_CAPTURED_PAGES, GET_AFL_SEASON_CLUB_SEASONS } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_FFL_CLUB_MATCH_SCORE, CLEAR_FFL_FORUM_CAPTURES, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, PARSE_FFL_SQUAD_THREAD, IMPORT_FFL_SQUAD } from '../api/mutations'
+import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_FFL_CAPTURED_PAGES, GET_AFL_SEASON_CLUB_SEASONS, GET_FFL_FIXTURE_IMPORT_SEASON } from '../api/queries'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_FFL_CLUB_MATCH_SCORE, CLEAR_FFL_FORUM_CAPTURES, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, PARSE_FFL_SQUAD_THREAD, IMPORT_FFL_SQUAD, PARSE_FFL_FIXTURE_SHEET, IMPORT_FFL_FIXTURES } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_FFL_SEASONS } from '@/features/ffl/api/queries'
+import { canonicalClub } from '../utils/clubAliases'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -710,6 +835,7 @@ const tabs = [
   { id: 'afl-stats', label: 'Import AFL Stats' },
   { id: 'calculate', label: 'Calculate' },
   { id: 'squads', label: 'Import FFL Squads' },
+  { id: 'fixtures', label: 'Import FFL Fixtures' },
   { id: 'forum-capture', label: 'FFL Round Forum Capture' },
 ]
 const activeTab = ref(initialTab)
@@ -1356,6 +1482,142 @@ function onSquadMemberLinked(data: { aflPlayerSeasonId: string; resolvedName: st
     m.confidence = 1
   }
   squadLinkTarget.value = null
+}
+
+// ════════════════════════════════════════════
+// Import Fixtures (historical import, slice 4)
+// ════════════════════════════════════════════
+
+type ReviewFixture = { homeClub: string; homeScore: number | null; awayClub: string; awayScore: number | null }
+type FixtureReviewRound = {
+  round: number
+  label: string
+  name: string       // editable FFL round name
+  aflRoundId: string // reviewer-mapped AFL round
+  include: boolean
+  fixtures: ReviewFixture[]
+}
+
+const fixturePhase = ref<'input' | 'review'>('input')
+const fixtureSheet = ref('')
+const parsingFixtures = ref(false)
+const fixtureParseError = ref('')
+const fixtureRounds = ref<FixtureReviewRound[]>([])
+const importingFixtures = ref(false)
+const fixtureImportError = ref('')
+const fixtureImportResult = ref<{ roundsCreated: number; scoresWritten: number } | null>(null)
+const fixtureUnresolved = ref<string[]>([])
+
+// Season selection (local to this tab), and its club_seasons + AFL rounds.
+const fixtureSeasonId = ref(liveSeasonId.value)
+watch(liveSeasonId, (val) => { if (val && !fixtureSeasonId.value) fixtureSeasonId.value = val }, { immediate: true })
+
+const { result: fixtureSeasonResult, loading: loadingFixtureSeason, error: fixtureSeasonError } = useQuery(
+  GET_FFL_FIXTURE_IMPORT_SEASON,
+  () => ({ id: fixtureSeasonId.value }),
+  () => ({ enabled: !!fixtureSeasonId.value }),
+)
+const fixtureSeason = computed(() => fixtureSeasonResult.value?.fflSeason ?? null)
+const fixtureAflRounds = computed(() => fixtureSeason.value?.aflSeason?.rounds ?? [])
+
+// Canonical club keys registered for the season, for pre-import resolution hints.
+// Alias-aware (via clubAliases) so the hint matches the backend's resolution.
+const fixtureClubNames = computed(() => {
+  const set = new Set<string>()
+  for (const cs of fixtureSeason.value?.ladder ?? []) set.add(canonicalClub(cs.club.name))
+  return set
+})
+function clubResolves(name: string): boolean {
+  return fixtureClubNames.value.has(canonicalClub(name))
+}
+
+const canParseFixtures = computed(() => !!fixtureSeasonId.value && fixtureSheet.value.trim().length > 0)
+
+const includedFixtureRounds = computed(() => fixtureRounds.value.filter(r => r.include))
+const canImportFixtures = computed(() =>
+  includedFixtureRounds.value.length > 0 && includedFixtureRounds.value.every(r => !!r.aflRoundId),
+)
+
+// Best-effort map of a parsed round to an AFL round by matching the round number
+// against the AFL round name; the reviewer adjusts anything it misses.
+function autoMapAflRound(round: number): string {
+  if (round <= 0) return ''
+  const match = fixtureAflRounds.value.find((ar: any) => {
+    const name = ar.name.toLowerCase()
+    return name === `round ${round}` || new RegExp(`\\b${round}\\b`).test(name)
+  })
+  return match?.id ?? ''
+}
+
+// Switching season abandons any in-progress review.
+watch(fixtureSeasonId, () => {
+  fixturePhase.value = 'input'
+  fixtureSheet.value = ''
+  fixtureRounds.value = []
+  fixtureParseError.value = ''
+  fixtureImportResult.value = null
+  fixtureImportError.value = ''
+  fixtureUnresolved.value = []
+})
+
+const { mutate: parseFixturesMutation } = useMutation(PARSE_FFL_FIXTURE_SHEET)
+const { mutate: importFixturesMutation } = useMutation(IMPORT_FFL_FIXTURES)
+
+async function onParseFixtures() {
+  fixtureParseError.value = ''
+  fixtureImportResult.value = null
+  fixtureImportError.value = ''
+  fixtureUnresolved.value = []
+  parsingFixtures.value = true
+  try {
+    const res = await parseFixturesMutation({ input: { sheet: fixtureSheet.value } })
+    const data = res?.data?.parseFFLFixtureSheet
+    if (!data) throw new Error('No result returned')
+    fixtureRounds.value = data.rounds.map((r: any) => ({
+      round: r.round,
+      label: r.label,
+      name: r.round > 0 ? `Round ${r.round}` : (r.label || 'Finals'),
+      aflRoundId: autoMapAflRound(r.round),
+      include: r.round > 0, // finals (round 0) left to the manual builder — off by default
+      fixtures: r.fixtures.map((fx: any) => ({ ...fx })),
+    }))
+    fixturePhase.value = 'review'
+  } catch (e: any) {
+    fixtureParseError.value = e.message ?? 'Parse failed'
+  } finally {
+    parsingFixtures.value = false
+  }
+}
+
+async function onImportFixtures() {
+  fixtureImportError.value = ''
+  fixtureImportResult.value = null
+  fixtureUnresolved.value = []
+  importingFixtures.value = true
+  try {
+    const rounds = includedFixtureRounds.value.map(r => ({
+      name: r.name,
+      aflRoundId: r.aflRoundId,
+      fixtures: r.fixtures.map(fx => ({
+        homeClub: fx.homeClub,
+        homeScore: fx.homeScore,
+        awayClub: fx.awayClub,
+        awayScore: fx.awayScore,
+      })),
+    }))
+    const res = await importFixturesMutation({ input: { seasonId: fixtureSeasonId.value, rounds } })
+    const data = res?.data?.importFFLFixtures
+    if (!data) throw new Error('No result returned')
+    if (data.unresolved?.length) {
+      fixtureUnresolved.value = data.unresolved
+      return
+    }
+    fixtureImportResult.value = { roundsCreated: data.roundsCreated, scoresWritten: data.scoresWritten }
+  } catch (e: any) {
+    fixtureImportError.value = e?.graphQLErrors?.[0]?.message ?? e.message ?? 'Import failed'
+  } finally {
+    importingFixtures.value = false
+  }
 }
 
 // ════════════════════════════════════════════

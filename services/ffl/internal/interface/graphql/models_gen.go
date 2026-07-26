@@ -300,6 +300,29 @@ type FFLTeamPlayerInput struct {
 	DisplayOrder        int     `json:"displayOrder"`
 }
 
+type FixtureImportRoundInput struct {
+	// The FFL round name the reviewer assigned (e.g. 'Round 1').
+	Name string `json:"name"`
+	// The AFL round this maps to.
+	AflRoundID string `json:"aflRoundId"`
+	// MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder.
+	RoundType *string               `json:"roundType,omitempty"`
+	Fixtures  []*ParsedFixtureInput `json:"fixtures"`
+}
+
+type ImportFFLFixturesInput struct {
+	SeasonID string `json:"seasonId"`
+	// The complete set of rounds to build — the season fixture is reconciled to this, so omitting a round removes it.
+	Rounds []*FixtureImportRoundInput `json:"rounds"`
+}
+
+type ImportFFLFixturesResult struct {
+	RoundsCreated int `json:"roundsCreated"`
+	ScoresWritten int `json:"scoresWritten"`
+	// Club names from the sheet that did not map to a club_season; when non-empty nothing was written.
+	Unresolved []string `json:"unresolved"`
+}
+
 type ImportFFLSquadInput struct {
 	// The FFL club_season the reviewer assigned this squad to.
 	ClubSeasonID string `json:"clubSeasonId"`
@@ -330,6 +353,15 @@ type PageInfo struct {
 	TotalCount  *int    `json:"totalCount,omitempty"`
 }
 
+type ParseFFLFixtureSheetInput struct {
+	// The pasted season fixture sheet (tab-separated, one region per round).
+	Sheet string `json:"sheet"`
+}
+
+type ParseFFLFixtureSheetResult struct {
+	Rounds []*ParsedFixtureRound `json:"rounds"`
+}
+
 type ParseFFLSquadThreadInput struct {
 	// The AFL season whose players form the resolution candidate pool.
 	AflSeasonID string `json:"aflSeasonId"`
@@ -351,6 +383,30 @@ type ParseFFLTeamSubmissionInput struct {
 type ParseFFLTeamSubmissionResult struct {
 	ResolvedPlayers []*ResolvedPlayer `json:"resolvedPlayers"`
 	NeedsReview     []int             `json:"needsReview"`
+}
+
+// One fixture line: two clubs (names as written) and their reference scores (null when the sheet is blank).
+type ParsedFixture struct {
+	HomeClub  string `json:"homeClub"`
+	HomeScore *int   `json:"homeScore,omitempty"`
+	AwayClub  string `json:"awayClub"`
+	AwayScore *int   `json:"awayScore,omitempty"`
+}
+
+type ParsedFixtureInput struct {
+	HomeClub  string `json:"homeClub"`
+	HomeScore *int   `json:"homeScore,omitempty"`
+	AwayClub  string `json:"awayClub"`
+	AwayScore *int   `json:"awayScore,omitempty"`
+}
+
+// One round as read from the sheet, before the reviewer maps it to an AFL round.
+type ParsedFixtureRound struct {
+	// The printed round number; 0 for a labelled finals round with no number.
+	Round int `json:"round"`
+	// Any text beside the number, or a finals name ('Super Bye', 'Grand Final').
+	Label    string           `json:"label"`
+	Fixtures []*ParsedFixture `json:"fixtures"`
 }
 
 type Query struct {

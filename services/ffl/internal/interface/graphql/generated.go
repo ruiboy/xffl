@@ -245,6 +245,12 @@ type ComplexityRoot struct {
 		ReplacingPmID func(childComplexity int) int
 	}
 
+	ImportFFLFixturesResult struct {
+		RoundsCreated func(childComplexity int) int
+		ScoresWritten func(childComplexity int) int
+		Unresolved    func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddFFLPlayerToSeason         func(childComplexity int, input AddFFLPlayerToSeasonInput) int
 		BuildFFLSeason               func(childComplexity int, input BuildFFLSeasonInput) int
@@ -252,10 +258,12 @@ type ComplexityRoot struct {
 		ClearFFLForumCaptures        func(childComplexity int) int
 		ConfirmFFLTeamSubmission     func(childComplexity int, input ConfirmFFLTeamSubmissionInput) int
 		DeclareFFLSubstitutions      func(childComplexity int, input DeclareFFLSubstitutionsInput) int
+		ImportFFLFixtures            func(childComplexity int, input ImportFFLFixturesInput) int
 		ImportFFLSquad               func(childComplexity int, input ImportFFLSquadInput) int
 		IngestFFLForumPage           func(childComplexity int, input IngestFFLForumPageInput) int
 		MarkFFLTeamFinal             func(childComplexity int, input MarkFFLTeamFinalInput) int
 		MarkFFLTeamSubmitted         func(childComplexity int, input MarkFFLTeamFinalInput) int
+		ParseFFLFixtureSheet         func(childComplexity int, input ParseFFLFixtureSheetInput) int
 		ParseFFLSquadThread          func(childComplexity int, input ParseFFLSquadThreadInput) int
 		ParseFFLTeamSubmission       func(childComplexity int, input ParseFFLTeamSubmissionInput) int
 		RecalculateFFLClubMatchScore func(childComplexity int, clubMatchID string) int
@@ -273,6 +281,10 @@ type ComplexityRoot struct {
 		TotalCount  func(childComplexity int) int
 	}
 
+	ParseFFLFixtureSheetResult struct {
+		Rounds func(childComplexity int) int
+	}
+
 	ParseFFLSquadThreadResult struct {
 		Squads func(childComplexity int) int
 	}
@@ -280,6 +292,19 @@ type ComplexityRoot struct {
 	ParseFFLTeamSubmissionResult struct {
 		NeedsReview     func(childComplexity int) int
 		ResolvedPlayers func(childComplexity int) int
+	}
+
+	ParsedFixture struct {
+		AwayClub  func(childComplexity int) int
+		AwayScore func(childComplexity int) int
+		HomeClub  func(childComplexity int) int
+		HomeScore func(childComplexity int) int
+	}
+
+	ParsedFixtureRound struct {
+		Fixtures func(childComplexity int) int
+		Label    func(childComplexity int) int
+		Round    func(childComplexity int) int
 	}
 
 	Query struct {
@@ -409,6 +434,8 @@ type MutationResolver interface {
 	SaveFFLFixtures(ctx context.Context, input SaveFFLFixturesInput) (bool, error)
 	ParseFFLSquadThread(ctx context.Context, input ParseFFLSquadThreadInput) (*ParseFFLSquadThreadResult, error)
 	ImportFFLSquad(ctx context.Context, input ImportFFLSquadInput) ([]*FFLPlayerSeason, error)
+	ParseFFLFixtureSheet(ctx context.Context, input ParseFFLFixtureSheetInput) (*ParseFFLFixtureSheetResult, error)
+	ImportFFLFixtures(ctx context.Context, input ImportFFLFixturesInput) (*ImportFFLFixturesResult, error)
 }
 type QueryResolver interface {
 	FflSeasons(ctx context.Context) ([]*FFLSeason, error)
@@ -1247,6 +1274,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.FFLSuggestedSubstitution.ReplacingPmID(childComplexity), true
 
+	case "ImportFFLFixturesResult.roundsCreated":
+		if e.ComplexityRoot.ImportFFLFixturesResult.RoundsCreated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ImportFFLFixturesResult.RoundsCreated(childComplexity), true
+	case "ImportFFLFixturesResult.scoresWritten":
+		if e.ComplexityRoot.ImportFFLFixturesResult.ScoresWritten == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ImportFFLFixturesResult.ScoresWritten(childComplexity), true
+	case "ImportFFLFixturesResult.unresolved":
+		if e.ComplexityRoot.ImportFFLFixturesResult.Unresolved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ImportFFLFixturesResult.Unresolved(childComplexity), true
+
 	case "Mutation.addFFLPlayerToSeason":
 		if e.ComplexityRoot.Mutation.AddFFLPlayerToSeason == nil {
 			break
@@ -1308,6 +1354,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeclareFFLSubstitutions(childComplexity, args["input"].(DeclareFFLSubstitutionsInput)), true
+	case "Mutation.importFFLFixtures":
+		if e.ComplexityRoot.Mutation.ImportFFLFixtures == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_importFFLFixtures_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ImportFFLFixtures(childComplexity, args["input"].(ImportFFLFixturesInput)), true
 	case "Mutation.importFFLSquad":
 		if e.ComplexityRoot.Mutation.ImportFFLSquad == nil {
 			break
@@ -1352,6 +1409,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.MarkFFLTeamSubmitted(childComplexity, args["input"].(MarkFFLTeamFinalInput)), true
+	case "Mutation.parseFFLFixtureSheet":
+		if e.ComplexityRoot.Mutation.ParseFFLFixtureSheet == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_parseFFLFixtureSheet_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ParseFFLFixtureSheet(childComplexity, args["input"].(ParseFFLFixtureSheetInput)), true
 	case "Mutation.parseFFLSquadThread":
 		if e.ComplexityRoot.Mutation.ParseFFLSquadThread == nil {
 			break
@@ -1471,6 +1539,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.PageInfo.TotalCount(childComplexity), true
 
+	case "ParseFFLFixtureSheetResult.rounds":
+		if e.ComplexityRoot.ParseFFLFixtureSheetResult.Rounds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParseFFLFixtureSheetResult.Rounds(childComplexity), true
+
 	case "ParseFFLSquadThreadResult.squads":
 		if e.ComplexityRoot.ParseFFLSquadThreadResult.Squads == nil {
 			break
@@ -1490,6 +1565,50 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ParseFFLTeamSubmissionResult.ResolvedPlayers(childComplexity), true
+
+	case "ParsedFixture.awayClub":
+		if e.ComplexityRoot.ParsedFixture.AwayClub == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixture.AwayClub(childComplexity), true
+	case "ParsedFixture.awayScore":
+		if e.ComplexityRoot.ParsedFixture.AwayScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixture.AwayScore(childComplexity), true
+	case "ParsedFixture.homeClub":
+		if e.ComplexityRoot.ParsedFixture.HomeClub == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixture.HomeClub(childComplexity), true
+	case "ParsedFixture.homeScore":
+		if e.ComplexityRoot.ParsedFixture.HomeScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixture.HomeScore(childComplexity), true
+
+	case "ParsedFixtureRound.fixtures":
+		if e.ComplexityRoot.ParsedFixtureRound.Fixtures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixtureRound.Fixtures(childComplexity), true
+	case "ParsedFixtureRound.label":
+		if e.ComplexityRoot.ParsedFixtureRound.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixtureRound.Label(childComplexity), true
+	case "ParsedFixtureRound.round":
+		if e.ComplexityRoot.ParsedFixtureRound.Round == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ParsedFixtureRound.Round(childComplexity), true
 
 	case "Query.fflCapturedPages":
 		if e.ComplexityRoot.Query.FflCapturedPages == nil {
@@ -1811,11 +1930,15 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputFFLPlayerSeasonFilter,
 		ec.unmarshalInputFFLSubPairing,
 		ec.unmarshalInputFFLTeamPlayerInput,
+		ec.unmarshalInputFixtureImportRoundInput,
+		ec.unmarshalInputImportFFLFixturesInput,
 		ec.unmarshalInputImportFFLSquadInput,
 		ec.unmarshalInputIngestFFLForumPageInput,
 		ec.unmarshalInputMarkFFLTeamFinalInput,
+		ec.unmarshalInputParseFFLFixtureSheetInput,
 		ec.unmarshalInputParseFFLSquadThreadInput,
 		ec.unmarshalInputParseFFLTeamSubmissionInput,
+		ec.unmarshalInputParsedFixtureInput,
 		ec.unmarshalInputRemoveFFLPlayerFromSeasonInput,
 		ec.unmarshalInputSaveFFLFixturesInput,
 		ec.unmarshalInputSaveFFLMatchInput,
@@ -1937,6 +2060,12 @@ extend type Mutation {
 
   "Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped."
   importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]!
+
+  "Parse a pasted season fixture sheet into rounds + fixtures with reference scores. No DB writes."
+  parseFFLFixtureSheet(input: ParseFFLFixtureSheetInput!): ParseFFLFixtureSheetResult!
+
+  "Confirm reviewed fixture rounds: build the season's rounds/fixtures (inferring byes) and record spreadsheet reference scores. Refuses the whole import if any club name is unresolved."
+  importFFLFixtures(input: ImportFFLFixturesInput!): ImportFFLFixturesResult!
 }
 
 extend type Query {
@@ -2057,6 +2186,62 @@ input ConfirmedFFLSquadMemberInput {
   aflPlayerSeasonId: ID!
   name: String!
   costCents: Int
+}
+
+input ParseFFLFixtureSheetInput {
+  "The pasted season fixture sheet (tab-separated, one region per round)."
+  sheet: String!
+}
+
+type ParseFFLFixtureSheetResult {
+  rounds: [ParsedFixtureRound!]!
+}
+
+"One round as read from the sheet, before the reviewer maps it to an AFL round."
+type ParsedFixtureRound {
+  "The printed round number; 0 for a labelled finals round with no number."
+  round: Int!
+  "Any text beside the number, or a finals name ('Super Bye', 'Grand Final')."
+  label: String!
+  fixtures: [ParsedFixture!]!
+}
+
+"One fixture line: two clubs (names as written) and their reference scores (null when the sheet is blank)."
+type ParsedFixture {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+input ImportFFLFixturesInput {
+  seasonId: ID!
+  "The complete set of rounds to build — the season fixture is reconciled to this, so omitting a round removes it."
+  rounds: [FixtureImportRoundInput!]!
+}
+
+input FixtureImportRoundInput {
+  "The FFL round name the reviewer assigned (e.g. 'Round 1')."
+  name: String!
+  "The AFL round this maps to."
+  aflRoundId: ID!
+  "MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder."
+  roundType: String
+  fixtures: [ParsedFixtureInput!]!
+}
+
+input ParsedFixtureInput {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+type ImportFFLFixturesResult {
+  roundsCreated: Int!
+  scoresWritten: Int!
+  "Club names from the sheet that did not map to a club_season; when non-empty nothing was written."
+  unresolved: [String!]!
 }
 
 input MarkFFLTeamFinalInput {
@@ -2639,6 +2824,17 @@ func (ec *executionContext) field_Mutation_declareFFLSubstitutions_args(ctx cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_importFFLFixtures_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNImportFFLFixturesInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLFixturesInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_importFFLSquad_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2676,6 +2872,17 @@ func (ec *executionContext) field_Mutation_markFFLTeamSubmitted_args(ctx context
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMarkFFLTeamFinalInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐMarkFFLTeamFinalInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_parseFFLFixtureSheet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseFFLFixtureSheetInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLFixtureSheetInput)
 	if err != nil {
 		return nil, err
 	}
@@ -7128,6 +7335,93 @@ func (ec *executionContext) fieldContext_FFLSuggestedSubstitution_replacingPmId(
 	return fc, nil
 }
 
+func (ec *executionContext) _ImportFFLFixturesResult_roundsCreated(ctx context.Context, field graphql.CollectedField, obj *ImportFFLFixturesResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportFFLFixturesResult_roundsCreated,
+		func(ctx context.Context) (any, error) {
+			return obj.RoundsCreated, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportFFLFixturesResult_roundsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportFFLFixturesResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportFFLFixturesResult_scoresWritten(ctx context.Context, field graphql.CollectedField, obj *ImportFFLFixturesResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportFFLFixturesResult_scoresWritten,
+		func(ctx context.Context) (any, error) {
+			return obj.ScoresWritten, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportFFLFixturesResult_scoresWritten(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportFFLFixturesResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportFFLFixturesResult_unresolved(ctx context.Context, field graphql.CollectedField, obj *ImportFFLFixturesResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportFFLFixturesResult_unresolved,
+		func(ctx context.Context) (any, error) {
+			return obj.Unresolved, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportFFLFixturesResult_unresolved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportFFLFixturesResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_addFFLPlayerToSeason(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8155,6 +8449,100 @@ func (ec *executionContext) fieldContext_Mutation_importFFLSquad(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_parseFFLFixtureSheet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_parseFFLFixtureSheet,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ParseFFLFixtureSheet(ctx, fc.Args["input"].(ParseFFLFixtureSheetInput))
+		},
+		nil,
+		ec.marshalNParseFFLFixtureSheetResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLFixtureSheetResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_parseFFLFixtureSheet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "rounds":
+				return ec.fieldContext_ParseFFLFixtureSheetResult_rounds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ParseFFLFixtureSheetResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_parseFFLFixtureSheet_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_importFFLFixtures(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_importFFLFixtures,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ImportFFLFixtures(ctx, fc.Args["input"].(ImportFFLFixturesInput))
+		},
+		nil,
+		ec.marshalNImportFFLFixturesResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLFixturesResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_importFFLFixtures(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "roundsCreated":
+				return ec.fieldContext_ImportFFLFixturesResult_roundsCreated(ctx, field)
+			case "scoresWritten":
+				return ec.fieldContext_ImportFFLFixturesResult_scoresWritten(ctx, field)
+			case "unresolved":
+				return ec.fieldContext_ImportFFLFixturesResult_unresolved(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImportFFLFixturesResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_importFFLFixtures_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *PageInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8237,6 +8625,43 @@ func (ec *executionContext) fieldContext_PageInfo_totalCount(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParseFFLFixtureSheetResult_rounds(ctx context.Context, field graphql.CollectedField, obj *ParseFFLFixtureSheetResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParseFFLFixtureSheetResult_rounds,
+		func(ctx context.Context) (any, error) {
+			return obj.Rounds, nil
+		},
+		nil,
+		ec.marshalNParsedFixtureRound2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureRoundᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParseFFLFixtureSheetResult_rounds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParseFFLFixtureSheetResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "round":
+				return ec.fieldContext_ParsedFixtureRound_round(ctx, field)
+			case "label":
+				return ec.fieldContext_ParsedFixtureRound_label(ctx, field)
+			case "fixtures":
+				return ec.fieldContext_ParsedFixtureRound_fixtures(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ParsedFixtureRound", field.Name)
 		},
 	}
 	return fc, nil
@@ -8356,6 +8781,219 @@ func (ec *executionContext) fieldContext_ParseFFLTeamSubmissionResult_needsRevie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixture_homeClub(ctx context.Context, field graphql.CollectedField, obj *ParsedFixture) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixture_homeClub,
+		func(ctx context.Context) (any, error) {
+			return obj.HomeClub, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixture_homeClub(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixture",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixture_homeScore(ctx context.Context, field graphql.CollectedField, obj *ParsedFixture) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixture_homeScore,
+		func(ctx context.Context) (any, error) {
+			return obj.HomeScore, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixture_homeScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixture",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixture_awayClub(ctx context.Context, field graphql.CollectedField, obj *ParsedFixture) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixture_awayClub,
+		func(ctx context.Context) (any, error) {
+			return obj.AwayClub, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixture_awayClub(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixture",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixture_awayScore(ctx context.Context, field graphql.CollectedField, obj *ParsedFixture) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixture_awayScore,
+		func(ctx context.Context) (any, error) {
+			return obj.AwayScore, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixture_awayScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixture",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixtureRound_round(ctx context.Context, field graphql.CollectedField, obj *ParsedFixtureRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixtureRound_round,
+		func(ctx context.Context) (any, error) {
+			return obj.Round, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixtureRound_round(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixtureRound",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixtureRound_label(ctx context.Context, field graphql.CollectedField, obj *ParsedFixtureRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixtureRound_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixtureRound_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixtureRound",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParsedFixtureRound_fixtures(ctx context.Context, field graphql.CollectedField, obj *ParsedFixtureRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParsedFixtureRound_fixtures,
+		func(ctx context.Context) (any, error) {
+			return obj.Fixtures, nil
+		},
+		nil,
+		ec.marshalNParsedFixture2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParsedFixtureRound_fixtures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParsedFixtureRound",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "homeClub":
+				return ec.fieldContext_ParsedFixture_homeClub(ctx, field)
+			case "homeScore":
+				return ec.fieldContext_ParsedFixture_homeScore(ctx, field)
+			case "awayClub":
+				return ec.fieldContext_ParsedFixture_awayClub(ctx, field)
+			case "awayScore":
+				return ec.fieldContext_ParsedFixture_awayScore(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ParsedFixture", field.Name)
 		},
 	}
 	return fc, nil
@@ -11974,6 +12612,94 @@ func (ec *executionContext) unmarshalInputFFLTeamPlayerInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputFixtureImportRoundInput(ctx context.Context, obj any) (FixtureImportRoundInput, error) {
+	var it FixtureImportRoundInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "aflRoundId", "roundType", "fixtures"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "aflRoundId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aflRoundId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AflRoundID = data
+		case "roundType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roundType"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoundType = data
+		case "fixtures":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fixtures"))
+			data, err := ec.unmarshalNParsedFixtureInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Fixtures = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputImportFFLFixturesInput(ctx context.Context, obj any) (ImportFFLFixturesInput, error) {
+	var it ImportFFLFixturesInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"seasonId", "rounds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "seasonId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seasonId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SeasonID = data
+		case "rounds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rounds"))
+			data, err := ec.unmarshalNFixtureImportRoundInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFixtureImportRoundInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rounds = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputImportFFLSquadInput(ctx context.Context, obj any) (ImportFFLSquadInput, error) {
 	var it ImportFFLSquadInput
 	if obj == nil {
@@ -12113,6 +12839,36 @@ func (ec *executionContext) unmarshalInputMarkFFLTeamFinalInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputParseFFLFixtureSheetInput(ctx context.Context, obj any) (ParseFFLFixtureSheetInput, error) {
+	var it ParseFFLFixtureSheetInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"sheet"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "sheet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sheet"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Sheet = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputParseFFLSquadThreadInput(ctx context.Context, obj any) (ParseFFLSquadThreadInput, error) {
 	var it ParseFFLSquadThreadInput
 	if obj == nil {
@@ -12196,6 +12952,57 @@ func (ec *executionContext) unmarshalInputParseFFLTeamSubmissionInput(ctx contex
 				return it, err
 			}
 			it.Post = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputParsedFixtureInput(ctx context.Context, obj any) (ParsedFixtureInput, error) {
+	var it ParsedFixtureInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"homeClub", "homeScore", "awayClub", "awayScore"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "homeClub":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("homeClub"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HomeClub = data
+		case "homeScore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("homeScore"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HomeScore = data
+		case "awayClub":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awayClub"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwayClub = data
+		case "awayScore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awayScore"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwayScore = data
 		}
 	}
 	return it, nil
@@ -14666,6 +15473,55 @@ func (ec *executionContext) _FFLSuggestedSubstitution(ctx context.Context, sel a
 	return out
 }
 
+var importFFLFixturesResultImplementors = []string{"ImportFFLFixturesResult"}
+
+func (ec *executionContext) _ImportFFLFixturesResult(ctx context.Context, sel ast.SelectionSet, obj *ImportFFLFixturesResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, importFFLFixturesResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImportFFLFixturesResult")
+		case "roundsCreated":
+			out.Values[i] = ec._ImportFFLFixturesResult_roundsCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scoresWritten":
+			out.Values[i] = ec._ImportFFLFixturesResult_scoresWritten(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unresolved":
+			out.Values[i] = ec._ImportFFLFixturesResult_unresolved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -14818,6 +15674,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "parseFFLFixtureSheet":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_parseFFLFixtureSheet(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "importFFLFixtures":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_importFFLFixtures(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14861,6 +15731,45 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
 		case "totalCount":
 			out.Values[i] = ec._PageInfo_totalCount(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var parseFFLFixtureSheetResultImplementors = []string{"ParseFFLFixtureSheetResult"}
+
+func (ec *executionContext) _ParseFFLFixtureSheetResult(ctx context.Context, sel ast.SelectionSet, obj *ParseFFLFixtureSheetResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, parseFFLFixtureSheetResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ParseFFLFixtureSheetResult")
+		case "rounds":
+			out.Values[i] = ec._ParseFFLFixtureSheetResult_rounds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14941,6 +15850,103 @@ func (ec *executionContext) _ParseFFLTeamSubmissionResult(ctx context.Context, s
 			}
 		case "needsReview":
 			out.Values[i] = ec._ParseFFLTeamSubmissionResult_needsReview(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var parsedFixtureImplementors = []string{"ParsedFixture"}
+
+func (ec *executionContext) _ParsedFixture(ctx context.Context, sel ast.SelectionSet, obj *ParsedFixture) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, parsedFixtureImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ParsedFixture")
+		case "homeClub":
+			out.Values[i] = ec._ParsedFixture_homeClub(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "homeScore":
+			out.Values[i] = ec._ParsedFixture_homeScore(ctx, field, obj)
+		case "awayClub":
+			out.Values[i] = ec._ParsedFixture_awayClub(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "awayScore":
+			out.Values[i] = ec._ParsedFixture_awayScore(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var parsedFixtureRoundImplementors = []string{"ParsedFixtureRound"}
+
+func (ec *executionContext) _ParsedFixtureRound(ctx context.Context, sel ast.SelectionSet, obj *ParsedFixtureRound) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, parsedFixtureRoundImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ParsedFixtureRound")
+		case "round":
+			out.Values[i] = ec._ParsedFixtureRound_round(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._ParsedFixtureRound_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fixtures":
+			out.Values[i] = ec._ParsedFixtureRound_fixtures(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16673,6 +17679,26 @@ func (ec *executionContext) marshalNFieldSet2string(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalNFixtureImportRoundInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFixtureImportRoundInputᚄ(ctx context.Context, v any) ([]*FixtureImportRoundInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*FixtureImportRoundInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFixtureImportRoundInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFixtureImportRoundInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFixtureImportRoundInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐFixtureImportRoundInput(ctx context.Context, v any) (*FixtureImportRoundInput, error) {
+	res, err := ec.unmarshalInputFixtureImportRoundInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16733,6 +17759,25 @@ func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNImportFFLFixturesInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLFixturesInput(ctx context.Context, v any) (ImportFFLFixturesInput, error) {
+	res, err := ec.unmarshalInputImportFFLFixturesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNImportFFLFixturesResult2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLFixturesResult(ctx context.Context, sel ast.SelectionSet, v ImportFFLFixturesResult) graphql.Marshaler {
+	return ec._ImportFFLFixturesResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNImportFFLFixturesResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLFixturesResult(ctx context.Context, sel ast.SelectionSet, v *ImportFFLFixturesResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImportFFLFixturesResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNImportFFLSquadInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐImportFFLSquadInput(ctx context.Context, v any) (ImportFFLSquadInput, error) {
@@ -16806,6 +17851,25 @@ func (ec *executionContext) marshalNPageInfo2ᚖxfflᚋservicesᚋfflᚋinternal
 	return ec._PageInfo(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNParseFFLFixtureSheetInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLFixtureSheetInput(ctx context.Context, v any) (ParseFFLFixtureSheetInput, error) {
+	res, err := ec.unmarshalInputParseFFLFixtureSheetInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNParseFFLFixtureSheetResult2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLFixtureSheetResult(ctx context.Context, sel ast.SelectionSet, v ParseFFLFixtureSheetResult) graphql.Marshaler {
+	return ec._ParseFFLFixtureSheetResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNParseFFLFixtureSheetResult2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLFixtureSheetResult(ctx context.Context, sel ast.SelectionSet, v *ParseFFLFixtureSheetResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ParseFFLFixtureSheetResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNParseFFLSquadThreadInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParseFFLSquadThreadInput(ctx context.Context, v any) (ParseFFLSquadThreadInput, error) {
 	res, err := ec.unmarshalInputParseFFLSquadThreadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16842,6 +17906,78 @@ func (ec *executionContext) marshalNParseFFLTeamSubmissionResult2ᚖxfflᚋservi
 		return graphql.Null
 	}
 	return ec._ParseFFLTeamSubmissionResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNParsedFixture2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureᚄ(ctx context.Context, sel ast.SelectionSet, v []*ParsedFixture) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNParsedFixture2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixture(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNParsedFixture2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixture(ctx context.Context, sel ast.SelectionSet, v *ParsedFixture) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ParsedFixture(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNParsedFixtureInput2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureInputᚄ(ctx context.Context, v any) ([]*ParsedFixtureInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ParsedFixtureInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNParsedFixtureInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNParsedFixtureInput2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureInput(ctx context.Context, v any) (*ParsedFixtureInput, error) {
+	res, err := ec.unmarshalInputParsedFixtureInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNParsedFixtureRound2ᚕᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureRoundᚄ(ctx context.Context, sel ast.SelectionSet, v []*ParsedFixtureRound) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNParsedFixtureRound2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureRound(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNParsedFixtureRound2ᚖxfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐParsedFixtureRound(ctx context.Context, sel ast.SelectionSet, v *ParsedFixtureRound) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ParsedFixtureRound(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRemoveFFLPlayerFromSeasonInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐRemoveFFLPlayerFromSeasonInput(ctx context.Context, v any) (RemoveFFLPlayerFromSeasonInput, error) {
@@ -16991,6 +18127,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNUpdateFFLPlayerSeasonInput2xfflᚋservicesᚋfflᚋinternalᚋinterfaceᚋgraphqlᚐUpdateFFLPlayerSeasonInput(ctx context.Context, v any) (UpdateFFLPlayerSeasonInput, error) {

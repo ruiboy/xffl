@@ -13,13 +13,14 @@ import (
 	"xffl/services/ffl/internal/domain"
 	"xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/spreadsheet"
 )
 
 // buildOddSeason creates a 3-club season (odd → one bye) and returns its id and
 // the three club_season ids.
 func buildOddSeason(ctx context.Context, t *testing.T, name string, aflSeasonID int) (seasonID, csA, csB, csC int) {
 	t.Helper()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	a := createClub(ctx, t, name+" A")
 	b := createClub(ctx, t, name+" B")
 	c := createClub(ctx, t, name+" C")
@@ -78,7 +79,7 @@ func onlyRoundID(ctx context.Context, t *testing.T, seasonID int) int {
 
 func TestSaveFixtures_CreateWithBye(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFcreate", 1)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -119,7 +120,7 @@ func TestSaveFixtures_CreateWithBye(t *testing.T) {
 
 func TestSaveFixtures_LoadRoundTrip(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFroundtrip", 8)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -141,7 +142,7 @@ func TestSaveFixtures_LoadRoundTrip(t *testing.T) {
 
 func TestSaveFixtures_ReplaceRound(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFreplace", 2)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -178,7 +179,7 @@ func TestSaveFixtures_ReplaceRound(t *testing.T) {
 // insertion order and a late addition lands at the bottom of the fixture list.
 func TestLoadFixtures_OrdersRoundsByAFLRound(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SForderrounds", 13)
 
 	// Created first, but late in the season.
@@ -210,7 +211,7 @@ func TestLoadFixtures_OrdersRoundsByAFLRound(t *testing.T) {
 
 func TestSaveFixtures_DeleteEmptyRound(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFdelete", 3)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -226,7 +227,7 @@ func TestSaveFixtures_DeleteEmptyRound(t *testing.T) {
 
 func TestSaveFixtures_HasTeamsGuard(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFguard", 4)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -262,7 +263,7 @@ func TestSaveFixtures_HasTeamsGuard(t *testing.T) {
 
 func TestSaveFixtures_Superbye(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFsuper", 6)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -290,7 +291,7 @@ func TestSaveFixtures_Superbye(t *testing.T) {
 // round to be entirely head-to-head or entirely superbye.
 func TestSaveFixtures_MixedStylesInOneRound(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	ids := make([]int, 5)
 	for i, n := range []string{"A", "B", "C", "D", "E"} {
 		ids[i] = createClub(ctx, t, "SFmixed "+n)
@@ -331,7 +332,7 @@ func TestSaveFixtures_MixedStylesInOneRound(t *testing.T) {
 // selection is editable, and only the enrolled clubs get a club_match.
 func TestSaveFixtures_PartialSuperbye(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, _, csC := buildOddSeason(ctx, t, "SFpartial", 14)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -353,7 +354,7 @@ func TestSaveFixtures_PartialSuperbye(t *testing.T) {
 // and the round/match views render them differently between loads.
 func TestSaveFixtures_SuperbyeOrdersClubsAlphabetically(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 
 	// Created — and passed to the spec — deliberately out of alphabetical order.
 	zulu := createClub(ctx, t, "SForder Zulu")
@@ -389,7 +390,7 @@ func TestSaveFixtures_SuperbyeOrdersClubsAlphabetically(t *testing.T) {
 // The unified loader returns every final club_match tagged with its match style.
 func TestFindFinalClubMatchesBySeasonID(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFfinal", 5)
 
 	require.NoError(t, builder.SaveFixtures(ctx, seasonID, []RoundSpec{{
@@ -453,7 +454,7 @@ func rowCounts(ctx context.Context, t *testing.T, roundID int) (matches, clubMat
 // Re-saving an unchanged round reuses every row — no soft-delete/reinsert churn.
 func TestSaveFixtures_ResaveIdenticalNoChurn(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	seasonID, csA, csB, csC := buildOddSeason(ctx, t, "SFnochurn", 7)
 
 	spec := []RoundSpec{{
@@ -479,7 +480,7 @@ func TestSaveFixtures_ResaveIdenticalNoChurn(t *testing.T) {
 // match is repointed in place rather than rebuilt.
 func TestSaveFixtures_EditPreservesUnchangedMatch(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 	a := createClub(ctx, t, "SFpreserve A")
 	b := createClub(ctx, t, "SFpreserve B")
 	c := createClub(ctx, t, "SFpreserve C")

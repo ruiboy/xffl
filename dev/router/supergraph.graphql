@@ -598,6 +598,22 @@ input FFLTeamPlayerInput
   displayOrder: Int!
 }
 
+input FixtureImportRoundInput
+  @join__type(graph: FFL)
+{
+  """The FFL round name the reviewer assigned (e.g. 'Round 1')."""
+  name: String!
+
+  """The AFL round this maps to."""
+  aflRoundId: ID!
+
+  """
+  MINOR (default) or GRAND_FINAL; superbye/finals nuance is left to the manual builder.
+  """
+  roundType: String
+  fixtures: [ParsedFixtureInput!]!
+}
+
 type ImportAFLMatchStatsResult
   @join__type(graph: AFL)
 {
@@ -608,6 +624,29 @@ type ImportAFLMatchStatsResult
   awayPlayerCount: Int!
   unmatchedPlayers: [UnmatchedAFLPlayer!]!
   match: AFLMatch!
+}
+
+input ImportFFLFixturesInput
+  @join__type(graph: FFL)
+{
+  seasonId: ID!
+
+  """
+  The complete set of rounds to build — the season fixture is reconciled to this, so omitting a round removes it.
+  """
+  rounds: [FixtureImportRoundInput!]!
+}
+
+type ImportFFLFixturesResult
+  @join__type(graph: FFL)
+{
+  roundsCreated: Int!
+  scoresWritten: Int!
+
+  """
+  Club names from the sheet that did not map to a club_season; when non-empty nothing was written.
+  """
+  unresolved: [String!]!
 }
 
 input ImportFFLSquadInput
@@ -774,6 +813,16 @@ type Mutation
   Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped.
   """
   importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]! @join__field(graph: FFL)
+
+  """
+  Parse a pasted season fixture sheet into rounds + fixtures with reference scores. No DB writes.
+  """
+  parseFFLFixtureSheet(input: ParseFFLFixtureSheetInput!): ParseFFLFixtureSheetResult! @join__field(graph: FFL)
+
+  """
+  Confirm reviewed fixture rounds: build the season's rounds/fixtures (inferring byes) and record spreadsheet reference scores. Refuses the whole import if any club name is unresolved.
+  """
+  importFFLFixtures(input: ImportFFLFixturesInput!): ImportFFLFixturesResult! @join__field(graph: FFL)
 }
 
 type PageInfo
@@ -783,6 +832,58 @@ type PageInfo
   hasNextPage: Boolean!
   endCursor: String
   totalCount: Int
+}
+
+"""
+One fixture line: two clubs (names as written) and their reference scores (null when the sheet is blank).
+"""
+type ParsedFixture
+  @join__type(graph: FFL)
+{
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+input ParsedFixtureInput
+  @join__type(graph: FFL)
+{
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+"""
+One round as read from the sheet, before the reviewer maps it to an AFL round.
+"""
+type ParsedFixtureRound
+  @join__type(graph: FFL)
+{
+  """
+  The printed round number; 0 for a labelled finals round with no number.
+  """
+  round: Int!
+
+  """
+  Any text beside the number, or a finals name ('Super Bye', 'Grand Final').
+  """
+  label: String!
+  fixtures: [ParsedFixture!]!
+}
+
+input ParseFFLFixtureSheetInput
+  @join__type(graph: FFL)
+{
+  """The pasted season fixture sheet (tab-separated, one region per round)."""
+  sheet: String!
+}
+
+type ParseFFLFixtureSheetResult
+  @join__type(graph: FFL)
+{
+  rounds: [ParsedFixtureRound!]!
 }
 
 input ParseFFLSquadThreadInput

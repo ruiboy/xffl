@@ -14,6 +14,7 @@ import (
 	"xffl/services/ffl/internal/domain"
 	"xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/spreadsheet"
 	"xffl/services/ffl/internal/testutil"
 )
 
@@ -34,7 +35,7 @@ func TestMain(m *testing.M) {
 // manager: build a season (explicit rules_id + existing clubs), add a round, add a fixture.
 func TestBuilder(t *testing.T) {
 	ctx := context.Background()
-	builder := NewBuilder(postgres.NewDB(testPool))
+	builder := NewBuilder(postgres.NewDB(testPool), spreadsheet.NewFixtureParser())
 
 	eagles := createClub(ctx, t, "Builder Eagles")
 	lions := createClub(ctx, t, "Builder Lions")

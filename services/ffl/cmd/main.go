@@ -17,6 +17,7 @@ import (
 	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/spreadsheet"
 	"xffl/services/ffl/internal/infrastructure/rpc"
 	fflevents "xffl/services/ffl/internal/interface/events"
 	gql "xffl/services/ffl/internal/interface/graphql"
@@ -112,7 +113,7 @@ func main() {
 		forum.NewSquadParser(),
 	)
 	captures := dataops.NewForumCaptureBuffer(parser)
-	builder := dataops.NewBuilder(db)
+	builder := dataops.NewBuilder(db, spreadsheet.NewFixtureParser())
 
 	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures, Builder: builder}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))

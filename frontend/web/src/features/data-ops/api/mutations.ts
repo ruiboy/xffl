@@ -135,6 +135,33 @@ export const IMPORT_FFL_SQUAD = gql`
   }
 `
 
+export const PARSE_FFL_FIXTURE_SHEET = gql`
+  mutation ParseFFLFixtureSheet($input: ParseFFLFixtureSheetInput!) {
+    parseFFLFixtureSheet(input: $input) {
+      rounds {
+        round
+        label
+        fixtures {
+          homeClub
+          homeScore
+          awayClub
+          awayScore
+        }
+      }
+    }
+  }
+`
+
+export const IMPORT_FFL_FIXTURES = gql`
+  mutation ImportFFLFixtures($input: ImportFFLFixturesInput!) {
+    importFFLFixtures(input: $input) {
+      roundsCreated
+      scoresWritten
+      unresolved
+    }
+  }
+`
+
 export const MARK_FFL_TEAM_FINAL = gql`
   mutation MarkFFLTeamFinal($input: MarkFFLTeamFinalInput!) {
     markFFLTeamFinal(input: $input)
