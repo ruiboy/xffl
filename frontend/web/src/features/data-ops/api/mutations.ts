@@ -105,6 +105,36 @@ export const CONFIRM_TEAM_SUBMISSION = gql`
   }
 `
 
+export const PARSE_FFL_SQUAD_THREAD = gql`
+  mutation ParseFFLSquadThread($input: ParseFFLSquadThreadInput!) {
+    parseFFLSquadThread(input: $input) {
+      squads {
+        clubName
+        needsReview
+        members {
+          rank
+          parsedName
+          clubHint
+          costCents
+          resolvedName
+          resolvedClub
+          aflPlayerSeasonId
+          confidence
+        }
+      }
+    }
+  }
+`
+
+export const IMPORT_FFL_SQUAD = gql`
+  mutation ImportFFLSquad($input: ImportFFLSquadInput!) {
+    importFFLSquad(input: $input) {
+      id
+      player { id aflPlayer { name } }
+    }
+  }
+`
+
 export const MARK_FFL_TEAM_FINAL = gql`
   mutation MarkFFLTeamFinal($input: MarkFFLTeamFinalInput!) {
     markFFLTeamFinal(input: $input)

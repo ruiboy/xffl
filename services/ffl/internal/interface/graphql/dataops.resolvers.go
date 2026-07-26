@@ -303,6 +303,99 @@ func (r *mutationResolver) SaveFFLFixtures(ctx context.Context, input SaveFFLFix
 	return true, nil
 }
 
+// ParseFFLSquadThread is the resolver for the parseFFLSquadThread field.
+func (r *mutationResolver) ParseFFLSquadThread(ctx context.Context, input ParseFFLSquadThreadInput) (*ParseFFLSquadThreadResult, error) {
+	aflSeasonID, err := fromID(input.AflSeasonID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := r.DataOps.ParseSquadThreadForSeason(ctx, aflSeasonID, input.Thread)
+	if err != nil {
+		return nil, err
+	}
+
+	squads := make([]*ResolvedSquad, len(result.Squads))
+	for i, sq := range result.Squads {
+		members := make([]*ResolvedSquadMember, len(sq.Members))
+		for j, m := range sq.Members {
+			var aflPSID, resolvedName, resolvedClub *string
+			if m.AFLPlayerSeasonID != 0 {
+				id := toID(m.AFLPlayerSeasonID)
+				aflPSID = &id
+				name := m.BestMatch.Candidate.Name
+				resolvedName = &name
+				club := m.BestMatch.Candidate.Club
+				resolvedClub = &club
+			}
+			members[j] = &ResolvedSquadMember{
+				Rank:              m.Parsed.Rank,
+				ParsedName:        m.Parsed.Name,
+				ClubHint:          m.Parsed.ClubHint,
+				CostCents:         m.Parsed.CostCents,
+				ResolvedName:      resolvedName,
+				ResolvedClub:      resolvedClub,
+				AflPlayerSeasonID: aflPSID,
+				Confidence:        m.BestMatch.Confidence,
+			}
+		}
+		needsReview := make([]int, len(sq.NeedsReview))
+		copy(needsReview, sq.NeedsReview)
+		squads[i] = &ResolvedSquad{ClubName: sq.ClubName, Members: members, NeedsReview: needsReview}
+	}
+
+	return &ParseFFLSquadThreadResult{Squads: squads}, nil
+}
+
+// ImportFFLSquad is the resolver for the importFFLSquad field.
+func (r *mutationResolver) ImportFFLSquad(ctx context.Context, input ImportFFLSquadInput) ([]*FFLPlayerSeason, error) {
+	clubSeasonID, err := fromID(input.ClubSeasonID)
+	if err != nil {
+		return nil, err
+	}
+
+	var fromRoundID *int
+	if input.FromRoundID != nil && *input.FromRoundID != "" {
+		id, err := fromID(*input.FromRoundID)
+		if err != nil {
+			return nil, err
+		}
+		fromRoundID = &id
+	}
+
+	members := make([]dataops.ResolvedSquadMember, 0, len(input.Members))
+	for _, m := range input.Members {
+		aflPSID, err := fromID(m.AflPlayerSeasonID)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, dataops.ResolvedSquadMember{
+			Parsed:            application.ParsedSquadMember{Name: m.Name, CostCents: m.CostCents},
+			AFLPlayerSeasonID: aflPSID,
+			Confident:         true,
+		})
+	}
+
+	added, err := r.DataOps.ImportSquad(ctx, dataops.ImportSquadParams{
+		ClubSeasonID: clubSeasonID,
+		FromRoundID:  fromRoundID,
+		Members:      members,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*FFLPlayerSeason, len(added))
+	for i, ps := range added {
+		player, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = convertPlayerSeason(ps, player)
+	}
+	return result, nil
+}
+
 // FflCapturedPages is the resolver for the fflCapturedPages field.
 func (r *queryResolver) FflCapturedPages(ctx context.Context) ([]*FFLPreviewedPage, error) {
 	pages := r.Captures.Pages()

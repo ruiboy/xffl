@@ -84,6 +84,12 @@ type ConfirmedFFLPlayerInput struct {
 	Score               *int    `json:"score,omitempty"`
 }
 
+type ConfirmedFFLSquadMemberInput struct {
+	AflPlayerSeasonID string `json:"aflPlayerSeasonId"`
+	Name              string `json:"name"`
+	CostCents         *int   `json:"costCents,omitempty"`
+}
+
 type DeclareFFLSubstitutionsInput struct {
 	ClubMatchID string           `json:"clubMatchId"`
 	Subs        []*FFLSubPairing `json:"subs"`
@@ -294,6 +300,14 @@ type FFLTeamPlayerInput struct {
 	DisplayOrder        int     `json:"displayOrder"`
 }
 
+type ImportFFLSquadInput struct {
+	// The FFL club_season the reviewer assigned this squad to.
+	ClubSeasonID string `json:"clubSeasonId"`
+	// Round the squad takes effect from; null for season start.
+	FromRoundID *string                         `json:"fromRoundId,omitempty"`
+	Members     []*ConfirmedFFLSquadMemberInput `json:"members"`
+}
+
 type IngestFFLForumPageInput struct {
 	Season     string                  `json:"season"`
 	RoundTitle string                  `json:"roundTitle"`
@@ -314,6 +328,17 @@ type PageInfo struct {
 	HasNextPage bool    `json:"hasNextPage"`
 	EndCursor   *string `json:"endCursor,omitempty"`
 	TotalCount  *int    `json:"totalCount,omitempty"`
+}
+
+type ParseFFLSquadThreadInput struct {
+	// The AFL season whose players form the resolution candidate pool.
+	AflSeasonID string `json:"aflSeasonId"`
+	// The pasted squads thread — many clubs, ~30 members each.
+	Thread string `json:"thread"`
+}
+
+type ParseFFLSquadThreadResult struct {
+	Squads []*ResolvedSquad `json:"squads"`
 }
 
 type ParseFFLTeamSubmissionInput struct {
@@ -348,6 +373,27 @@ type ResolvedPlayer struct {
 	Notes               string  `json:"notes"`
 	PlayerSeasonID      *string `json:"playerSeasonId,omitempty"`
 	Confidence          float64 `json:"confidence"`
+}
+
+// One club's squad as read from the thread, each member resolved against the AFL season's players.
+type ResolvedSquad struct {
+	// The club name exactly as written in the thread header; the reviewer assigns it to a club_season.
+	ClubName string                 `json:"clubName"`
+	Members  []*ResolvedSquadMember `json:"members"`
+	// Indices into members whose best-match confidence is below the auto-accept threshold.
+	NeedsReview []int `json:"needsReview"`
+}
+
+type ResolvedSquadMember struct {
+	Rank         int     `json:"rank"`
+	ParsedName   string  `json:"parsedName"`
+	ClubHint     string  `json:"clubHint"`
+	CostCents    *int    `json:"costCents,omitempty"`
+	ResolvedName *string `json:"resolvedName,omitempty"`
+	ResolvedClub *string `json:"resolvedClub,omitempty"`
+	// The resolved AFL player_season handle; null when unresolved (reviewer must link).
+	AflPlayerSeasonID *string `json:"aflPlayerSeasonId,omitempty"`
+	Confidence        float64 `json:"confidence"`
 }
 
 type SaveFFLFixturesInput struct {

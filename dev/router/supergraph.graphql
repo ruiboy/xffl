@@ -264,6 +264,14 @@ input ConfirmedFFLPlayerInput
   score: Int
 }
 
+input ConfirmedFFLSquadMemberInput
+  @join__type(graph: FFL)
+{
+  aflPlayerSeasonId: ID!
+  name: String!
+  costCents: Int
+}
+
 input ConfirmFFLTeamSubmissionInput
   @join__type(graph: FFL)
 {
@@ -602,6 +610,17 @@ type ImportAFLMatchStatsResult
   match: AFLMatch!
 }
 
+input ImportFFLSquadInput
+  @join__type(graph: FFL)
+{
+  """The FFL club_season the reviewer assigned this squad to."""
+  clubSeasonId: ID!
+
+  """Round the squad takes effect from; null for season start."""
+  fromRoundId: ID
+  members: [ConfirmedFFLSquadMemberInput!]!
+}
+
 input IngestFFLForumPageInput
   @join__type(graph: FFL)
 {
@@ -745,6 +764,16 @@ type Mutation
   Save (create / edit / delete) a season's rounds and fixtures. Reconciled atomically; rounds with submitted teams are immutable.
   """
   saveFFLFixtures(input: SaveFFLFixturesInput!): Boolean! @join__field(graph: FFL)
+
+  """
+  Parse a squads thread against an AFL season's players. Returns resolved squads for review — no DB writes.
+  """
+  parseFFLSquadThread(input: ParseFFLSquadThreadInput!): ParseFFLSquadThreadResult! @join__field(graph: FFL)
+
+  """
+  Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped.
+  """
+  importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]! @join__field(graph: FFL)
 }
 
 type PageInfo
@@ -754,6 +783,22 @@ type PageInfo
   hasNextPage: Boolean!
   endCursor: String
   totalCount: Int
+}
+
+input ParseFFLSquadThreadInput
+  @join__type(graph: FFL)
+{
+  """The AFL season whose players form the resolution candidate pool."""
+  aflSeasonId: ID!
+
+  """The pasted squads thread — many clubs, ~30 members each."""
+  thread: String!
+}
+
+type ParseFFLSquadThreadResult
+  @join__type(graph: FFL)
+{
+  squads: [ResolvedSquad!]!
 }
 
 input ParseFFLTeamSubmissionInput
@@ -850,6 +895,41 @@ type ResolvedPlayer
   score: Int
   notes: String!
   playerSeasonId: ID
+  confidence: Float!
+}
+
+"""
+One club's squad as read from the thread, each member resolved against the AFL season's players.
+"""
+type ResolvedSquad
+  @join__type(graph: FFL)
+{
+  """
+  The club name exactly as written in the thread header; the reviewer assigns it to a club_season.
+  """
+  clubName: String!
+  members: [ResolvedSquadMember!]!
+
+  """
+  Indices into members whose best-match confidence is below the auto-accept threshold.
+  """
+  needsReview: [Int!]!
+}
+
+type ResolvedSquadMember
+  @join__type(graph: FFL)
+{
+  rank: Int!
+  parsedName: String!
+  clubHint: String!
+  costCents: Int
+  resolvedName: String
+  resolvedClub: String
+
+  """
+  The resolved AFL player_season handle; null when unresolved (reviewer must link).
+  """
+  aflPlayerSeasonId: ID
   confidence: Float!
 }
 

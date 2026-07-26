@@ -26,6 +26,12 @@ extend type Mutation {
 
   "Save (create / edit / delete) a season's rounds and fixtures. Reconciled atomically; rounds with submitted teams are immutable."
   saveFFLFixtures(input: SaveFFLFixturesInput!): Boolean!
+
+  "Parse a squads thread against an AFL season's players. Returns resolved squads for review — no DB writes."
+  parseFFLSquadThread(input: ParseFFLSquadThreadInput!): ParseFFLSquadThreadResult!
+
+  "Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped."
+  importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]!
 }
 
 extend type Query {
@@ -100,6 +106,52 @@ input ConfirmedFFLPlayerInput {
   backupPositions: String
   interchangePosition: String
   score: Int
+}
+
+input ParseFFLSquadThreadInput {
+  "The AFL season whose players form the resolution candidate pool."
+  aflSeasonId: ID!
+  "The pasted squads thread — many clubs, ~30 members each."
+  thread: String!
+}
+
+type ParseFFLSquadThreadResult {
+  squads: [ResolvedSquad!]!
+}
+
+"One club's squad as read from the thread, each member resolved against the AFL season's players."
+type ResolvedSquad {
+  "The club name exactly as written in the thread header; the reviewer assigns it to a club_season."
+  clubName: String!
+  members: [ResolvedSquadMember!]!
+  "Indices into members whose best-match confidence is below the auto-accept threshold."
+  needsReview: [Int!]!
+}
+
+type ResolvedSquadMember {
+  rank: Int!
+  parsedName: String!
+  clubHint: String!
+  costCents: Int
+  resolvedName: String
+  resolvedClub: String
+  "The resolved AFL player_season handle; null when unresolved (reviewer must link)."
+  aflPlayerSeasonId: ID
+  confidence: Float!
+}
+
+input ImportFFLSquadInput {
+  "The FFL club_season the reviewer assigned this squad to."
+  clubSeasonId: ID!
+  "Round the squad takes effect from; null for season start."
+  fromRoundId: ID
+  members: [ConfirmedFFLSquadMemberInput!]!
+}
+
+input ConfirmedFFLSquadMemberInput {
+  aflPlayerSeasonId: ID!
+  name: String!
+  costCents: Int
 }
 
 input MarkFFLTeamFinalInput {
