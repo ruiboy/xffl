@@ -517,11 +517,16 @@ type FFLPreviewedPost
   author: String!
 
   """
-  Parser format for the author; empty if the author is unknown (escape hatch).
+  Parser format identified for the post (from author, else content); empty if unrecognised.
   """
   team: String!
   isTeamSubmission: Boolean!
   parseError: String!
+
+  """
+  The post's plain text, kept so an unparsed post is still workable and so the team import can re-resolve it.
+  """
+  text: String!
   players: [FFLParsedPlayer!]!
 }
 

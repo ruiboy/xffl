@@ -191,7 +191,8 @@ func (b *Builder) writeReferenceScores(ctx context.Context, seasonID int, refs [
 					if !ok {
 						continue
 					}
-					if err := repos.ClubMatches.UpdateNotes(ctx, cm.ID, fmt.Sprintf("spreadsheet:%d", score)); err != nil {
+					merged := cm.UpsertNote("spreadsheet", score)
+					if err := repos.ClubMatches.UpdateNotes(ctx, cm.ID, merged); err != nil {
 						return err
 					}
 					written++

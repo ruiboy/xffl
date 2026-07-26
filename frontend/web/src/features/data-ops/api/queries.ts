@@ -68,6 +68,7 @@ export const GET_FFL_CAPTURED_PAGES = gql`
         team
         isTeamSubmission
         parseError
+        text
         players {
           name
           clubHint
@@ -77,6 +78,40 @@ export const GET_FFL_CAPTURED_PAGES = gql`
           score
         }
       }
+    }
+  }
+`
+
+// A season's context for the forum round importer: club_seasons (for attribution
+// + the club dropdown) and rounds→club_matches (to map a club to its club_match,
+// and to read back the derived score + reference notes after import).
+export const GET_FFL_CAPTURE_SEASON = gql`
+  query GetFFLCaptureSeason($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      name
+      ladder { id club { id name } }
+      rounds {
+        id
+        name
+        matches {
+          id
+          matchStyle
+          clubMatches { id clubSeasonId club { id name } dataStatus score notes }
+        }
+      }
+    }
+  }
+`
+
+// A single club_match's derived score + reference notes, read back after an
+// import to show derived vs forum vs fixtures.
+export const GET_FFL_CLUB_MATCH_SCORE = gql`
+  query GetFFLClubMatchScore($id: ID!) {
+    fflClubMatch(id: $id) {
+      id
+      score
+      notes
     }
   }
 `

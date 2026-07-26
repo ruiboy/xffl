@@ -24,6 +24,7 @@ func toPreviewedPage(p dataops.PreviewedPage) *FFLPreviewedPage {
 			Team:             pp.Team,
 			IsTeamSubmission: pp.IsTeamSubmission(),
 			ParseError:       pp.ParseError,
+			Text:             pp.Text,
 			Players:          players,
 		})
 	}

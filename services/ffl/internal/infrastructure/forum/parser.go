@@ -83,6 +83,13 @@ func (p *Parser) Parse(_ context.Context, teamName, post string) ([]application.
 
 // --- team detection ---
 
+// DetectFormat guesses the parser format from a post's content (or "" if none is
+// recognised), so a team posted by someone other than its usual author can still
+// be attributed from the post itself. Implements application.ForumProcessor.
+func (p *Parser) DetectFormat(post string) string {
+	return detectTeam(splitLines(post))
+}
+
 func detectTeam(lines []string) string {
 	text := strings.Join(lines[:min(5, len(lines))], "\n")
 	if strings.Contains(strings.ToUpper(text), "THC") {

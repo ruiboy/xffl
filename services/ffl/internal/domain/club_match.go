@@ -291,6 +291,39 @@ func (cm ClubMatch) Score() int {
 	return total
 }
 
+// Notes reference scores: club_match.notes stores space-separated "source:value"
+// tokens (e.g. "posted:452 spreadsheet:450"). References coexist — the forum
+// import records "posted", the fixture import records "spreadsheet", and neither
+// clobbers the other. drv_score stays the evaluated truth; these are references.
+
+// UpsertNote sets source:value in the club_match's notes, replacing an existing
+// token for that source and preserving every other token, and returns the merged
+// string. A brand-new source is appended; non-"key:value" text is left in place.
+func (cm ClubMatch) UpsertNote(source string, value int) string {
+	existing := ""
+	if cm.Notes != nil {
+		existing = *cm.Notes
+	}
+	newTok := fmt.Sprintf("%s:%d", source, value)
+	fields := strings.Fields(existing)
+	for i, f := range fields {
+		if k, ok := noteTokenKey(f); ok && k == source {
+			fields[i] = newTok
+			return strings.Join(fields, " ")
+		}
+	}
+	return strings.TrimSpace(strings.Join(append(fields, newTok), " "))
+}
+
+// noteTokenKey returns the key of a "key:value" token, or ok=false otherwise.
+func noteTokenKey(f string) (string, bool) {
+	i := strings.IndexByte(f, ':')
+	if i <= 0 {
+		return "", false
+	}
+	return f[:i], true
+}
+
 type ClubMatchRepository interface {
 	FindByMatchID(ctx context.Context, matchID int) ([]ClubMatch, error)
 	FindByID(ctx context.Context, id int) (ClubMatch, error)

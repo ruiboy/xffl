@@ -67,6 +67,11 @@ func (b *ForumCaptureBuffer) Ingest(ctx context.Context, params CapturedPagePara
 		// Always keep the plain text: an unparseable post (unknown author, or a
 		// non-team thread like a squads paste) shows nothing without it.
 		pp.Text = b.forum.HTMLToText(post.HTML)
+		// Unknown author → attribute from the post's own content, so a team posted
+		// on someone else's behalf is still parsed and attributed.
+		if pp.Team == "" {
+			pp.Team = b.forum.DetectFormat(pp.Text)
+		}
 		if pp.Team != "" {
 			rows, err := b.forum.Parse(ctx, pp.Team, pp.Text)
 			if err != nil {

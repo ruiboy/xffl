@@ -85,6 +85,10 @@ type ForumProcessor interface {
 	HTMLToText(html string) string
 	// TeamForAuthor returns the parser format for a forum author, or "" if unknown.
 	TeamForAuthor(author string) string
+	// DetectFormat guesses the parser format from a post's content, or "" if none
+	// is recognised — used when the author is unknown (a team posted on another's
+	// behalf), so attribution can still come from the post itself.
+	DetectFormat(post string) string
 }
 
 // ParsedPlayerRow is one player line extracted from a forum post.

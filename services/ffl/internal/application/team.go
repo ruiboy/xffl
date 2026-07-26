@@ -22,9 +22,9 @@ func (e ByeIneligibleError) Error() string {
 
 // SetTeamParams are the inputs to SetTeam.
 type SetTeamParams struct {
-	ClubMatchID    int
-	Entries        []SetTeamEntry
-	ClubMatchNotes *string // optional notes to write on the club_match row
+	ClubMatchID          int
+	Entries              []SetTeamEntry
+	ClubMatchPostedScore *int // optional forum-posted total; merged into notes as "posted:NN"
 }
 
 // SetTeamEntry represents a single player assignment in a team.
@@ -137,8 +137,9 @@ func (c *Commands) SetTeam(ctx context.Context, params SetTeamParams) ([]domain.
 		if err := repos.ClubMatches.UpdateScore(ctx, cm.ID, cm.Score()); err != nil {
 			return fmt.Errorf("update club match score: %w", err)
 		}
-		if params.ClubMatchNotes != nil {
-			if err := repos.ClubMatches.UpdateNotes(ctx, cm.ID, *params.ClubMatchNotes); err != nil {
+		if params.ClubMatchPostedScore != nil {
+			merged := cm.UpsertNote("posted", *params.ClubMatchPostedScore)
+			if err := repos.ClubMatches.UpdateNotes(ctx, cm.ID, merged); err != nil {
 				return fmt.Errorf("update club match notes: %w", err)
 			}
 		}

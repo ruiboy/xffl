@@ -214,6 +214,7 @@ type ComplexityRoot struct {
 		Players          func(childComplexity int) int
 		PostID           func(childComplexity int) int
 		Team             func(childComplexity int) int
+		Text             func(childComplexity int) int
 	}
 
 	FFLRound struct {
@@ -1167,6 +1168,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FFLPreviewedPost.Team(childComplexity), true
+	case "FFLPreviewedPost.text":
+		if e.ComplexityRoot.FFLPreviewedPost.Text == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FFLPreviewedPost.Text(childComplexity), true
 
 	case "FFLRound.aflRound":
 		if e.ComplexityRoot.FFLRound.AflRound == nil {
@@ -2275,10 +2282,12 @@ type FFLPreviewedPage {
 type FFLPreviewedPost {
   postId: String!
   author: String!
-  "Parser format for the author; empty if the author is unknown (escape hatch)."
+  "Parser format identified for the post (from author, else content); empty if unrecognised."
   team: String!
   isTeamSubmission: Boolean!
   parseError: String!
+  "The post's plain text, kept so an unparsed post is still workable and so the team import can re-resolve it."
+  text: String!
   players: [FFLParsedPlayer!]!
 }
 
@@ -6559,6 +6568,8 @@ func (ec *executionContext) fieldContext_FFLPreviewedPage_posts(_ context.Contex
 				return ec.fieldContext_FFLPreviewedPost_isTeamSubmission(ctx, field)
 			case "parseError":
 				return ec.fieldContext_FFLPreviewedPost_parseError(ctx, field)
+			case "text":
+				return ec.fieldContext_FFLPreviewedPost_text(ctx, field)
 			case "players":
 				return ec.fieldContext_FFLPreviewedPost_players(ctx, field)
 			}
@@ -6701,6 +6712,35 @@ func (ec *executionContext) _FFLPreviewedPost_parseError(ctx context.Context, fi
 }
 
 func (ec *executionContext) fieldContext_FFLPreviewedPost_parseError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FFLPreviewedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FFLPreviewedPost_text(ctx context.Context, field graphql.CollectedField, obj *FFLPreviewedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FFLPreviewedPost_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FFLPreviewedPost_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FFLPreviewedPost",
 		Field:      field,
@@ -15044,6 +15084,11 @@ func (ec *executionContext) _FFLPreviewedPost(ctx context.Context, sel ast.Selec
 			}
 		case "parseError":
 			out.Values[i] = ec._FFLPreviewedPost_parseError(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._FFLPreviewedPost_text(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

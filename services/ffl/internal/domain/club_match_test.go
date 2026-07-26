@@ -452,3 +452,22 @@ func TestClubMatch_DeclareSubs_RedeclareReplacesPreviousPairing(t *testing.T) {
 	assert.Equal(t, PlayerMatchStatusSubbedOut, *byID[2].Status) // new sub
 	assert.Equal(t, PlayerMatchStatusSubbedIn, *byID[3].Status)  // still subbed in
 }
+
+func TestClubMatch_UpsertNote(t *testing.T) {
+	ptr := func(s string) *string { return &s }
+
+	t.Run("adds a token to empty notes", func(t *testing.T) {
+		cm := ClubMatch{}
+		assert.Equal(t, "posted:452", cm.UpsertNote("posted", 452))
+	})
+
+	t.Run("a second source coexists with the first", func(t *testing.T) {
+		cm := ClubMatch{Notes: ptr("spreadsheet:450")}
+		assert.Equal(t, "spreadsheet:450 posted:452", cm.UpsertNote("posted", 452))
+	})
+
+	t.Run("replacing a source preserves the others", func(t *testing.T) {
+		cm := ClubMatch{Notes: ptr("spreadsheet:450 posted:452")}
+		assert.Equal(t, "spreadsheet:450 posted:460", cm.UpsertNote("posted", 460))
+	})
+}

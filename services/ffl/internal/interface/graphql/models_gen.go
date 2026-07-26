@@ -249,11 +249,13 @@ type FFLPreviewedPage struct {
 type FFLPreviewedPost struct {
 	PostID string `json:"postId"`
 	Author string `json:"author"`
-	// Parser format for the author; empty if the author is unknown (escape hatch).
-	Team             string             `json:"team"`
-	IsTeamSubmission bool               `json:"isTeamSubmission"`
-	ParseError       string             `json:"parseError"`
-	Players          []*FFLParsedPlayer `json:"players"`
+	// Parser format identified for the post (from author, else content); empty if unrecognised.
+	Team             string `json:"team"`
+	IsTeamSubmission bool   `json:"isTeamSubmission"`
+	ParseError       string `json:"parseError"`
+	// The post's plain text, kept so an unparsed post is still workable and so the team import can re-resolve it.
+	Text    string             `json:"text"`
+	Players []*FFLParsedPlayer `json:"players"`
 }
 
 type FFLRound struct {

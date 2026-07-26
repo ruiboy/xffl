@@ -733,52 +733,9 @@
       </template>
     </div>
 
-    <!-- Tab: Forum Capture (historical import, slice 1) -->
-    <div v-if="activeTab === 'forum-capture'" class="space-y-4">
-      <div class="flex items-center justify-between gap-4">
-        <p class="text-sm text-text-muted">
-          Pages captured this session via the forum userscript. Ephemeral preview — nothing is saved.
-        </p>
-        <div class="flex gap-2 shrink-0">
-          <button @click="refetchCaptured()" class="text-sm px-3 py-1.5 rounded border border-border hover:bg-surface-raised">Refresh</button>
-          <button @click="clearCaptures()" class="text-sm px-3 py-1.5 rounded border border-border hover:bg-surface-raised">Clear</button>
-        </div>
-      </div>
-
-      <div v-if="capturedPages.length === 0" class="text-text-faint text-sm">
-        No pages captured yet. Install <code>dev/userscripts/ffl-forum-capture.user.js</code>, open a round thread, and click “Capture round”.
-      </div>
-
-      <div v-for="page in capturedPages" :key="page.topicId" class="rounded-lg border border-border p-4 space-y-3">
-        <div class="text-sm font-semibold">
-          {{ page.season || '—' }} · {{ page.roundTitle }}
-          <span class="text-text-faint font-normal">(topic {{ page.topicId }}, {{ page.posts.length }} posts)</span>
-        </div>
-
-        <div v-for="post in page.posts" :key="post.postId" class="rounded border border-border p-3">
-          <div class="flex items-center gap-2 text-sm">
-            <span class="font-medium">{{ post.author }}</span>
-            <span
-              class="px-1.5 py-0.5 rounded text-xs"
-              :class="post.team ? 'bg-active text-white' : 'bg-surface-raised text-text-faint'"
-            >{{ post.team || 'unknown author' }}</span>
-            <span class="text-xs text-text-faint">
-              {{ post.isTeamSubmission ? `${post.players.length} players` : 'not a team submission' }}
-            </span>
-          </div>
-          <div v-if="post.parseError" class="mt-1 text-xs text-text-muted">parse error: {{ post.parseError }}</div>
-          <table v-if="post.players.length" class="mt-2 w-full text-xs">
-            <tbody>
-              <tr v-for="(pl, i) in post.players" :key="i" class="border-t border-border">
-                <td class="py-0.5 pr-3 text-text-faint">{{ pl.position }}{{ pl.backupPositions ? ' (' + pl.backupPositions + ')' : '' }}</td>
-                <td class="py-0.5 pr-3">{{ pl.name }}</td>
-                <td class="py-0.5 pr-3 text-text-faint">{{ pl.clubHint }}</td>
-                <td class="py-0.5 tabular-nums text-right">{{ pl.score ?? '' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <!-- Tab: Forum Capture → round team import (slice 5) -->
+    <div v-if="activeTab === 'forum-capture'">
+      <ForumRoundImport />
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -823,8 +780,8 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_FFL_CAPTURED_PAGES, GET_AFL_SEASON_CLUB_SEASONS, GET_FFL_FIXTURE_IMPORT_SEASON } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_FFL_CLUB_MATCH_SCORE, CLEAR_FFL_FORUM_CAPTURES, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, PARSE_FFL_SQUAD_THREAD, IMPORT_FFL_SQUAD, PARSE_FFL_FIXTURE_SHEET, IMPORT_FFL_FIXTURES } from '../api/mutations'
+import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_AFL_SEASON_CLUB_SEASONS, GET_FFL_FIXTURE_IMPORT_SEASON } from '../api/queries'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_FFL_CLUB_MATCH_SCORE, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, PARSE_FFL_SQUAD_THREAD, IMPORT_FFL_SQUAD, PARSE_FFL_FIXTURE_SHEET, IMPORT_FFL_FIXTURES } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { GET_FFL_SEASONS } from '@/features/ffl/api/queries'
 import { canonicalClub } from '../utils/clubAliases'
@@ -836,6 +793,7 @@ import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
 import SquadMemberLinkModal from '../components/SquadMemberLinkModal.vue'
+import ForumRoundImport from '../components/ForumRoundImport.vue'
 import AflRoundNav from '@/features/afl/components/RoundNav.vue'
 import FflRoundNav from '@/features/ffl/components/RoundNav.vue'
 
@@ -856,15 +814,6 @@ const tabs = [
   { id: 'forum-capture', label: 'FFL Round Forum Capture' },
 ]
 const activeTab = ref(initialTab)
-
-// ---- Forum Capture (historical import, slice 1) ----
-const { result: capturedResult, refetch: refetchCaptured } = useQuery(GET_FFL_CAPTURED_PAGES)
-const capturedPages = computed(() => capturedResult.value?.fflCapturedPages ?? [])
-const { mutate: clearCapturesMutate } = useMutation(CLEAR_FFL_FORUM_CAPTURES)
-async function clearCaptures() {
-  await clearCapturesMutate()
-  await refetchCaptured()
-}
 
 // ════════════════════════════════════════════
 // AFL Stats Import

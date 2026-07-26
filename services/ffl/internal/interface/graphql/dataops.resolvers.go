@@ -34,16 +34,24 @@ func (r *mutationResolver) ParseFFLTeamSubmission(ctx context.Context, input Par
 		return nil, fmt.Errorf("fetch squad: %w", err)
 	}
 
-	aflIDToPlayerSeasonID := make(map[int]int, len(playerSeasons))
+	// Scope the resolution pool to the FFL season's AFL season, keyed by each
+	// squad member's linked afl_player_season — so a player is matched at the club
+	// he plays for that season, not a former one from another year.
+	squadByAFLPlayerSeasonID := make(map[int]int, len(playerSeasons))
 	for _, ps := range playerSeasons {
-		p, err := r.Queries.GetPlayerForPlayerSeason(ctx, ps.ID)
-		if err != nil {
-			return nil, err
-		}
-		aflIDToPlayerSeasonID[p.AFLPlayerID] = ps.ID
+		squadByAFLPlayerSeasonID[ps.AFLPlayerSeasonID] = ps.ID
 	}
 
-	candidates, err := r.DataOps.LookupCandidates(ctx, aflIDToPlayerSeasonID)
+	clubSeason, err := r.Queries.GetClubSeason(ctx, clubSeasonID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch club season: %w", err)
+	}
+	season, err := r.Queries.GetSeason(ctx, clubSeason.SeasonID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch season: %w", err)
+	}
+
+	candidates, err := r.DataOps.LookupSquadCandidates(ctx, season.AFLSeasonID, squadByAFLPlayerSeasonID)
 	if err != nil {
 		return nil, fmt.Errorf("lookup candidates: %w", err)
 	}

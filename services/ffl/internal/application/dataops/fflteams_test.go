@@ -20,6 +20,7 @@ func (fakeForumProcessor) TeamForAuthor(author string) string {
 	}
 	return ""
 }
+func (fakeForumProcessor) DetectFormat(_ string) string { return "" }
 func (fakeForumProcessor) Parse(_ context.Context, _, _ string) ([]application.ParsedPlayerRow, error) {
 	return []application.ParsedPlayerRow{{Name: "Jake Waterman", Position: "goals"}}, nil
 }

@@ -73,28 +73,28 @@ func NewDataOpsCommands(tx application.TxManager, lookup application.PlayerLooku
 	}
 }
 
-// LookupCandidates fetches player names from the AFL service and returns a candidate pool.
-// aflIDToPlayerSeasonID maps afl_player_id → player_season_id (built by the caller who
-// already has both ffl.player and player_season records available).
-func (c *DataOpsCommands) LookupCandidates(ctx context.Context, aflIDToPlayerSeasonID map[int]int) ([]application.PlayerCandidate, error) {
-	aflPlayerIDs := make([]int, 0, len(aflIDToPlayerSeasonID))
-	for aflID := range aflIDToPlayerSeasonID {
-		aflPlayerIDs = append(aflPlayerIDs, aflID)
-	}
-
-	fetched, err := c.playerLookup.LookupPlayers(ctx, aflPlayerIDs)
+// LookupSquadCandidates builds a squad's resolution pool from the FFL season's AFL
+// season, so each member's name and club come from the season being imported (via
+// the linked afl_player_season) — not from the player's whole career, which would
+// surface a former club (e.g. a 2025 Port player showing as his 2021 Bulldogs).
+// squadByAFLPlayerSeasonID maps afl_player_season_id → ffl player_season_id.
+func (c *DataOpsCommands) LookupSquadCandidates(ctx context.Context, aflSeasonID int, squadByAFLPlayerSeasonID map[int]int) ([]application.PlayerCandidate, error) {
+	seasonPlayers, err := c.playerLookup.LookupPlayerSeasonsBySeasonID(ctx, aflSeasonID)
 	if err != nil {
 		return nil, err
 	}
-
-	candidates := make([]application.PlayerCandidate, 0, len(fetched))
-	for _, f := range fetched {
-		psID := aflIDToPlayerSeasonID[f.AFLPlayerID]
+	candidates := make([]application.PlayerCandidate, 0, len(squadByAFLPlayerSeasonID))
+	for _, sp := range seasonPlayers {
+		psID, ok := squadByAFLPlayerSeasonID[sp.AFLPlayerSeasonID]
+		if !ok {
+			continue
+		}
 		candidates = append(candidates, application.PlayerCandidate{
-			PlayerID:    psID, // player_season_id in squad context
-			AFLPlayerID: f.AFLPlayerID,
-			Name:        f.Name,
-			Club:        f.Club,
+			PlayerID:          psID, // ffl player_season_id in squad context
+			AFLPlayerID:       sp.AFLPlayerID,
+			AFLPlayerSeasonID: sp.AFLPlayerSeasonID,
+			Name:              sp.Name,
+			Club:              sp.Club,
 		})
 	}
 	return candidates, nil
@@ -186,8 +186,7 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		Entries:     entries,
 	}
 	if anyPosted {
-		note := fmt.Sprintf("posted:%d", postedTotal)
-		sp.ClubMatchNotes = &note
+		sp.ClubMatchPostedScore = &postedTotal
 	}
 	return c.commands.SetTeam(ctx, sp)
 }
