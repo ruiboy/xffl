@@ -170,8 +170,13 @@ func (c *DataOpsCommands) ImportRoundTeams(ctx context.Context, params ImportRou
 		if rp.Parsed.Score != nil {
 			note := fmt.Sprintf("posted:%d", *rp.Parsed.Score)
 			e.Notes = &note
-			postedTotal += *rp.Parsed.Score
 			anyPosted = true
+			// Bench players don't score toward the club total — only on-field ones
+			// do (summing bench inflated THC to 377 instead of 332); the on-field
+			// total matches drv_score.
+			if rp.Parsed.BackupPositions == "" {
+				postedTotal += *rp.Parsed.Score
+			}
 		}
 		if rp.Parsed.BackupPositions != "" {
 			e.BackupPositions = &rp.Parsed.BackupPositions

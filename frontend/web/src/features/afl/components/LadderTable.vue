@@ -23,10 +23,13 @@
         >
           <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
           <td class="py-2 pr-4 font-medium">
-            <div class="flex items-center gap-2">
+            <router-link
+              :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: entry.id } }"
+              class="flex items-center gap-2 hover:text-active transition-colors"
+            >
               <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />
               {{ entry.club.name }}
-            </div>
+            </router-link>
           </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.played }}</td>
           <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.won, 'won')">{{ entry.won }}</td>

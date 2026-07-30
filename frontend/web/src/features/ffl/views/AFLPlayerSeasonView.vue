@@ -104,7 +104,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="(row, i) in mergedRows"
+              v-for="(row, i) in displayRows"
               :key="row.id"
               class="border-b border-border-subtle group"
               :class="row.status === 'dnp' ? 'opacity-40' : 'hover:bg-surface-hover'"
@@ -138,7 +138,7 @@
               <td class="py-2 pl-5 pr-3 whitespace-nowrap border-l border-border bg-white/[0.03]">
                 <span v-if="row.fflClubName" class="inline-flex items-center gap-1.5">
                   <img :src="fflClubLogoUrl(row.fflClubName)" class="w-4 h-4 object-contain" />
-                  <span v-if="i === 0 || mergedRows[i - 1].fflClubName !== row.fflClubName" class="text-xs text-text-muted">{{ row.fflClubName }}</span>
+                  <span v-if="i === 0 || displayRows[i - 1].fflClubName !== row.fflClubName" class="text-xs text-text-muted">{{ row.fflClubName }}</span>
                 </span>
                 <span v-else class="text-text-faint text-xs">—</span>
               </td>
@@ -381,6 +381,10 @@ const mergedRows = computed((): MergedRow[] =>
     }
   }),
 )
+
+// The match-by-match table shows most recent round first; averages/median above
+// stay off the chronological mergedRows.
+const displayRows = computed((): MergedRow[] => [...mergedRows.value].reverse())
 
 // ── Analysis ─────────────────────────────────────────────────────────────────
 

@@ -508,7 +508,10 @@ export const GET_AFL_CLUB_SEASON = gql`
       playerSeasons {
         id
         player { id name }
-        stats {
+        statsAll: stats(method: MEAN) {
+          goals kicks handballs marks tackles hitouts games
+        }
+        statsLastN: stats(lastN: ${LAST_N}, method: MEAN) {
           goals kicks handballs marks tackles hitouts
         }
         fflPlayerSeasons {

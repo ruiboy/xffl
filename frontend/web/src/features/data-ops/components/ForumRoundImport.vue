@@ -120,8 +120,13 @@
               <td class="py-1.5 text-right">
                 <span class="inline-block rounded-full px-2 py-0.5 text-xs" :class="confidenceBadge(rp.confidence)">{{ (rp.confidence * 100).toFixed(0) }}%</span>
               </td>
-              <td class="py-1.5 pl-2 text-right">
+              <td class="py-1.5 pl-2 text-right whitespace-nowrap">
                 <button v-if="rp.confidence < 1" @click="openFix(ci, ri)" class="rounded border border-border px-2 py-0.5 text-xs hover:bg-surface-hover">Fix</button>
+                <button
+                  @click="removeRow(c, ri)"
+                  title="Remove this row — parser junk or not a player"
+                  class="ml-1 rounded border border-border px-2 py-0.5 text-xs text-text-faint hover:text-red-400 hover:bg-surface-hover"
+                >✕</button>
               </td>
             </tr>
           </tbody>
@@ -282,7 +287,11 @@ function buildTeams() {
   const groups = new Map<string, Candidate>()
   for (const post of posts) {
     const scored = post.players.some((p: any) => p.score !== null && p.score !== undefined)
-    const postedScore = scored ? post.players.reduce((n: number, p: any) => n + (p.score ?? 0), 0) : null
+    // Bench players (those with backup positions) don't score toward the club
+    // total — sum only the on-field players, matching the derived score.
+    const postedScore = scored
+      ? post.players.filter((p: any) => !p.backupPositions).reduce((n: number, p: any) => n + (p.score ?? 0), 0)
+      : null
     const attr = attributeClub(post.team)
     const key = attr.clubSeasonId ? `cs:${attr.clubSeasonId}` : (post.team ? `fmt:${post.team}` : `author:${post.author}`)
 
@@ -352,6 +361,13 @@ async function resolve(c: Candidate) {
 
 function unresolvedCount(c: Candidate): number {
   return c.resolved.filter(rp => !rp.playerSeasonId).length
+}
+
+// Drop a resolved row — parser junk (a stray number line) or a duplicate that
+// breaks team composition — so the rest can be imported and finished in the
+// team builder.
+function removeRow(c: Candidate, ri: number) {
+  c.resolved.splice(ri, 1)
 }
 
 async function confirmImport(c: Candidate, _ci: number) {
