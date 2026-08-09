@@ -38,6 +38,9 @@
 import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { clubColorRgba } from '../utils/clubColors'
+import { useTheme } from '@/composables/useTheme'
+
+const { isDark } = useTheme()
 
 interface ClubMatch {
   id: string
@@ -63,8 +66,8 @@ const awayLogo = computed(() => props.match.awayClubMatch ? clubLogoUrl(props.ma
 // Tint the row with each club's colour, fading in from its side so the middle
 // stays neutral — just to relieve the visual monotony of the list.
 const rowStyle = computed(() => {
-  const homeTint = clubColorRgba(props.match.homeClubMatch?.club.name, 0.18)
-  const awayTint = clubColorRgba(props.match.awayClubMatch?.club.name, 0.18)
+  const homeTint = clubColorRgba(props.match.homeClubMatch?.club.name, 0.18, isDark.value)
+  const awayTint = clubColorRgba(props.match.awayClubMatch?.club.name, 0.18, isDark.value)
   if (!homeTint && !awayTint) return {}
   return {
     backgroundImage: `linear-gradient(to right, ${homeTint ?? 'transparent'}, transparent 42%, transparent 58%, ${awayTint ?? 'transparent'})`,

@@ -21,6 +21,11 @@ const router = createRouter({
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },
     {
+      path: '/ffl/seasons',
+      name: 'ffl-seasons',
+      component: () => import('@/features/ffl/views/SeasonsIndexView.vue'),
+    },
+    {
       path: '/ffl/seasons/:seasonId',
       name: 'ffl-season',
       component: () => import('@/features/ffl/views/SeasonView.vue'),
@@ -94,6 +99,11 @@ const router = createRouter({
       path: '/afl/ladder',
       name: 'afl-ladder',
       component: () => import('@/features/afl/views/HomeView.vue'),
+    },
+    {
+      path: '/afl/seasons',
+      name: 'afl-seasons',
+      component: () => import('@/features/afl/views/SeasonsIndexView.vue'),
     },
     {
       path: '/afl/seasons/:seasonId',

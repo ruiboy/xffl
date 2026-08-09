@@ -59,8 +59,11 @@ import { useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { clubColorRgba } from '../utils/clubColors'
+import { useTheme } from '@/composables/useTheme'
 import PlayedCount from './PlayedCount.vue'
 import IconTeamBuilder from './icons/IconTeamBuilder.vue'
+
+const { isDark } = useTheme()
 
 interface PlayerMatch {
   status?: string | null
@@ -109,8 +112,8 @@ const away = computed(() => clubMatches.value[1] ?? null)
 // Experimental: tint the row with each club's colour, fading in from its side so
 // the middle stays neutral. Just to relieve the visual monotony of the list.
 const rowStyle = computed(() => {
-  const homeTint = clubColorRgba(clubMatches.value[0]?.club.name, 0.18)
-  const awayTint = clubColorRgba(clubMatches.value[1]?.club.name, 0.18)
+  const homeTint = clubColorRgba(clubMatches.value[0]?.club.name, 0.18, isDark.value)
+  const awayTint = clubColorRgba(clubMatches.value[1]?.club.name, 0.18, isDark.value)
   if (!homeTint && !awayTint) return {}
   return {
     backgroundImage: `linear-gradient(to right, ${homeTint ?? 'transparent'}, transparent 42%, transparent 58%, ${awayTint ?? 'transparent'})`,

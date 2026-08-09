@@ -17,7 +17,17 @@
       />
 
       <section class="mb-8">
-        <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-text-heading">Matches</h2>
+          <router-link
+            v-if="data.round.id === liveRoundId"
+            :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: data.round.id } }"
+            class="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text transition-colors"
+          >
+            <IconDataOps class="w-3.5 h-3.5" />
+            Import Stats
+          </router-link>
+        </div>
         <div class="space-y-2">
           <MatchSummary
             v-for="match in data.round.matches"
@@ -69,6 +79,7 @@ import MatchSummary from '../components/MatchSummary.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ roundId: string }>()
 

@@ -8,28 +8,44 @@
         </router-link>
         <router-link
           :to="fflSelectedRoundId ? { name: 'ffl-round', params: { roundId: fflSelectedRoundId } } : { name: 'home' }"
-          class="text-sm transition-colors"
+          class="flex items-center gap-1 text-sm transition-colors"
           :class="isFfl ? 'text-active font-semibold' : 'text-text-muted hover:text-text'"
-        >FFL</router-link>
+        >
+          FFL
+          <span v-if="isFflLiveToday" class="relative flex h-1.5 w-1.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-active opacity-75" />
+            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-active" />
+          </span>
+        </router-link>
         <router-link
           :to="aflSelectedRoundId ? { name: 'afl-round', params: { roundId: aflSelectedRoundId } } : { name: 'afl-home' }"
-          class="text-sm transition-colors"
+          class="flex items-center gap-1 text-sm transition-colors"
           :class="isAfl ? 'text-active font-semibold' : 'text-text-muted hover:text-text'"
-        >AFL</router-link>
+        >
+          AFL
+          <span v-if="isAflLiveToday" class="relative flex h-1.5 w-1.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-active opacity-75" />
+            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-active" />
+          </span>
+        </router-link>
 
-        <!-- Season selector, immediately after the service links -->
-        <SeasonSelector
-          v-if="isAfl && aflSeasons.length > 0"
-          :model-value="currentAflSeasonId"
-          :seasons="aflSeasons"
-          @update:model-value="goAflSeason"
-        />
-        <SeasonSelector
-          v-if="isFfl && fflSeasons.length > 0"
-          :model-value="currentFflSeasonId"
-          :seasons="fflSeasons"
-          @update:model-value="goFflSeason"
-        />
+        <!-- Ladder — links to the current section's ladder -->
+        <router-link
+          :to="isFfl ? { name: 'ffl-ladder' } : { name: 'afl-ladder' }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconLadder class="w-4 h-4" />
+          Ladder
+        </router-link>
+
+        <!-- Seasons — links to the current section's season archive -->
+        <router-link
+          :to="isFfl ? { name: 'ffl-seasons' } : { name: 'afl-seasons' }"
+          class="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+        >
+          <IconSeasons class="w-4 h-4" />
+          Seasons
+        </router-link>
 
         <!-- Right: FFL nav + settings -->
         <div class="ml-auto flex items-center gap-4">
@@ -134,19 +150,19 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTheme, initTheme } from '@/composables/useTheme'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_FFL_SEASON_CLUBS, GET_FFL_SEASONS } from '@/features/ffl/api/queries'
-import { GET_AFL_SEASONS } from '@/features/afl/api/queries'
+import { GET_FFL_SEASON_CLUBS } from '@/features/ffl/api/queries'
 import { useFflState } from '@/features/ffl/composables/useFflState'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import ClubSelector from '@/features/ffl/components/ClubSelector.vue'
-import SeasonSelector from '@/components/SeasonSelector.vue'
 import IconSquad from '@/features/ffl/components/icons/IconSquad.vue'
 import IconFreeAgents from '@/features/ffl/components/icons/IconFreeAgents.vue'
 import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 import IconAdmin from '@/features/admin/components/icons/IconAdmin.vue'
 import IconSearch from '@/components/icons/IconSearch.vue'
+import IconSeasons from '@/components/icons/IconSeasons.vue'
+import IconLadder from '@/components/icons/IconLadder.vue'
 import PlayerSearch from '@/components/PlayerSearch.vue'
 
 import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
@@ -154,50 +170,20 @@ import { useLiveRoundBootstrap } from '@/app/useLiveRoundBootstrap'
 const playerSearchOpen = ref(false)
 
 const route = useRoute()
-const router = useRouter()
-const { selectedClubId, liveSeasonId, selectedRoundId: fflSelectedRoundId, setClub } = useFflState()
-const { selectedRoundId: aflSelectedRoundId, liveSeasonId: aflLiveSeasonId } = useAflState()
+const { selectedClubId, liveSeasonId, selectedRoundId: fflSelectedRoundId, liveStartDate: fflLiveStartDate, setClub } = useFflState()
+const { selectedRoundId: aflSelectedRoundId, liveStartDate: aflLiveStartDate } = useAflState()
 useLiveRoundBootstrap()
 
 const isFfl = computed(() => route.path.startsWith('/ffl'))
 const isAfl = computed(() => route.path.startsWith('/afl'))
 
-// Season selectors — list seasons for whichever service is active, newest first.
-const { result: aflSeasonsResult } = useQuery(
-  GET_AFL_SEASONS,
-  undefined,
-  () => ({ enabled: isAfl.value }),
-)
-const { result: fflSeasonsResult } = useQuery(
-  GET_FFL_SEASONS,
-  undefined,
-  () => ({ enabled: isFfl.value }),
-)
-
-function byNameDesc(a: { name: string }, b: { name: string }) {
-  return b.name.localeCompare(a.name)
+function isLiveToday(startDate: string | undefined): boolean {
+  if (!startDate) return false
+  const today = new Date().toISOString().slice(0, 10)
+  return startDate.slice(0, 10) === today
 }
-const aflSeasons = computed<{ id: string; name: string }[]>(
-  () => [...(aflSeasonsResult.value?.aflSeasons ?? [])].sort(byNameDesc),
-)
-const fflSeasons = computed<{ id: string; name: string }[]>(
-  () => [...(fflSeasonsResult.value?.fflSeasons ?? [])].sort(byNameDesc),
-)
-
-// Current season = the one in the URL on a season route, else the live season.
-const currentAflSeasonId = computed(() =>
-  route.name === 'afl-season' ? String(route.params.seasonId) : aflLiveSeasonId.value,
-)
-const currentFflSeasonId = computed(() =>
-  route.name === 'ffl-season' ? String(route.params.seasonId) : liveSeasonId.value,
-)
-
-function goAflSeason(seasonId: string) {
-  router.push({ name: 'afl-season', params: { seasonId } })
-}
-function goFflSeason(seasonId: string) {
-  router.push({ name: 'ffl-season', params: { seasonId } })
-}
+const isFflLiveToday = computed(() => isLiveToday(fflLiveStartDate.value))
+const isAflLiveToday = computed(() => isLiveToday(aflLiveStartDate.value))
 
 // Load clubs for the current FFL season (driven by state, not route params)
 const { result: clubsResult } = useQuery(
