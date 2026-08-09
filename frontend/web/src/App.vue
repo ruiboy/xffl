@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-surface text-text">
-    <nav class="border-b border-border bg-surface-raised px-6 py-4">
+    <nav class="border-b-2 border-active bg-surface-raised px-6 py-4">
       <div class="max-w-5xl mx-auto flex items-center gap-6">
         <!-- Left: brand + service links -->
         <router-link to="/ffl" class="flex items-center">
@@ -8,11 +8,13 @@
         </router-link>
         <router-link
           :to="fflSelectedRoundId ? { name: 'ffl-round', params: { roundId: fflSelectedRoundId } } : { name: 'home' }"
-          class="text-sm text-text-muted hover:text-text transition-colors"
+          class="text-sm transition-colors"
+          :class="isFfl ? 'text-active font-semibold' : 'text-text-muted hover:text-text'"
         >FFL</router-link>
         <router-link
           :to="aflSelectedRoundId ? { name: 'afl-round', params: { roundId: aflSelectedRoundId } } : { name: 'afl-home' }"
-          class="text-sm text-text-muted hover:text-text transition-colors"
+          class="text-sm transition-colors"
+          :class="isAfl ? 'text-active font-semibold' : 'text-text-muted hover:text-text'"
         >AFL</router-link>
 
         <!-- Season selector, immediately after the service links -->

@@ -10,7 +10,7 @@
       :class="effectiveActiveId === round.id
         ? 'bg-active text-active-text'
         : round.id === liveRoundId
-          ? 'bg-control text-text-muted hover:bg-control-hover hover:text-text'
+          ? 'border border-active text-active hover:bg-active/10'
           : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
     >
       {{ roundPillLabel(round.name) }}
