@@ -252,7 +252,7 @@
                 <div
                   v-for="(slot, index) in teamSlots[pos.key]"
                   :key="index"
-                  class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
+                  class="flex items-center rounded-lg border px-4 py-2 transition-colors"
                   :class="[slot.player
                     ? (subsMode && slot.player.aflStatus === 'dnp'
                       ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
@@ -296,6 +296,17 @@
                     </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
+                  <span v-if="slot.player" class="flex-1 flex justify-center">
+                    <button
+                      v-if="subsMode && slot.player.aflStatus === 'dnp' && benchCoverFor(pos.key)"
+                      :title="subbedOutIds.has(slot.player.pmId ?? '') ? `Replaced with ${benchCoverFor(pos.key)?.name}` : `Replace with ${benchCoverFor(pos.key)?.name}`"
+                      class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-control px-2.5 py-1 text-xs font-semibold text-text shadow-sm hover:bg-control-hover transition-colors"
+                      @click.stop="toggleSub(slot.player.pmId ?? '')"
+                    >
+                      <IconSubs class="w-3 h-3" />
+                      {{ subbedOutIds.has(slot.player.pmId ?? '') ? 'Substituted' : 'Substitute' }}
+                    </button>
+                  </span>
                   <div v-if="slot.player && managing" class="relative flex items-center gap-2 shrink-0">
                     <span class="flex items-center gap-0.5" :title="statSourceTitle">
                       <span
@@ -391,7 +402,7 @@
 
               <div v-for="(slot, index) in benchDualSlots" :key="index" class="mb-1">
                 <div
-                  class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
+                  class="flex items-center rounded-lg border px-4 py-2 transition-colors"
                   :class="[
                     slot.player
                       ? (subsMode && isInterchangeSlot(slot)
@@ -435,6 +446,16 @@
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
                   </div>
+                  <span v-if="slot.player" class="flex-1 flex justify-center">
+                    <button
+                      v-if="subsMode && isInterchangeSlot(slot)"
+                      class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-control px-2.5 py-1 text-xs font-semibold text-text shadow-sm hover:bg-control-hover transition-colors"
+                      @click.stop="interchangeApplied = !interchangeApplied"
+                    >
+                      <IconSubs class="w-3 h-3" />
+                      {{ interchangeApplied ? 'Activated' : 'Activate' }}
+                    </button>
+                  </span>
                   <!-- Right: selectors + actions menu (manage) or read-only tags -->
                   <div class="relative flex items-center gap-2 ml-4 shrink-0">
                     <template v-if="slot.player && managing">
@@ -1874,6 +1895,17 @@ function toggleSub(pmId: string) {
     next.add(pmId)
   }
   subbedOutIds.value = next
+}
+
+// The bench player eligible to cover a given starter position, regardless of whether
+// that starter is currently toggled as subbed out — used to label the Substitute
+// button with who would actually come on.
+function benchCoverFor(posKey: string): SquadPlayer | null {
+  for (const bSlot of benchDualSlots.value) {
+    if (!bSlot.player) continue
+    if ((bSlot.positions as (string | null)[]).includes(posKey)) return bSlot.player
+  }
+  return null
 }
 
 // Maps subbed-out starter pmId → the first bench player whose backup positions cover that starter's position.
