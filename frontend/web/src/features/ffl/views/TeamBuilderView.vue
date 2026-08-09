@@ -255,7 +255,7 @@
                   class="flex items-center rounded-lg border px-4 py-2 transition-colors"
                   :class="[slot.player
                     ? (subsMode && slot.player.aflStatus === 'dnp'
-                      ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
+                      ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5' : 'border-amber-600/30 bg-amber-500/5')
                       : 'border-border bg-surface-raised')
                     : 'border-dashed border-border-subtle bg-surface',
                     managing && slot.player ? 'cursor-grab active:cursor-grabbing' : '',
@@ -266,7 +266,6 @@
                   @dragover="onDragOverTarget($event, `s:${pos.key}:${index}`, starterDropAction(pos.key, index))"
                   @dragleave="onDragLeave(`s:${pos.key}:${index}`)"
                   @drop.prevent="onDropTarget(starterDropAction(pos.key, index))"
-                  @click="onStarterClick(slot.player)"
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
                     <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
@@ -304,7 +303,7 @@
                       @click.stop="toggleSub(slot.player.pmId ?? '')"
                     >
                       <IconSubs class="w-3 h-3" />
-                      {{ subbedOutIds.has(slot.player.pmId ?? '') ? 'Substituted' : 'Substitute' }}
+                      {{ subbedOutIds.has(slot.player.pmId ?? '') ? 'Undo Substitute' : 'Substitute' }}
                     </button>
                   </span>
                   <div v-if="slot.player && managing" class="relative flex items-center gap-2 shrink-0">
@@ -406,7 +405,7 @@
                   :class="[
                     slot.player
                       ? (subsMode && isInterchangeSlot(slot)
-                        ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
+                        ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5' : 'border-amber-600/30 bg-amber-500/5')
                         : 'border-border bg-surface-raised')
                       : 'border-dashed border-border-subtle bg-surface',
                     recentlyClearedSlot === index ? '!border-orange-400' : '',
@@ -419,7 +418,6 @@
                   @dragover="onDragOverTarget($event, `b:${index}`, benchDropAction(index))"
                   @dragleave="onDragLeave(`b:${index}`)"
                   @drop.prevent="onDropTarget(benchDropAction(index))"
-                  @click="onBenchRowClick(slot)"
                 >
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
@@ -453,7 +451,7 @@
                       @click.stop="interchangeApplied = !interchangeApplied"
                     >
                       <IconSubs class="w-3 h-3" />
-                      {{ interchangeApplied ? 'Activated' : 'Activate' }}
+                      {{ interchangeApplied ? 'Deactivate' : 'Activate' }}
                     </button>
                   </span>
                   <!-- Right: selectors + actions menu (manage) or read-only tags -->
@@ -2042,16 +2040,6 @@ function effectiveCoveredPosition(benchPmId: string | null): string | null {
     }
   }
   return null
-}
-
-function onStarterClick(player: SquadPlayer | null) {
-  if (!player || !subsMode.value || player.aflStatus !== 'dnp') return
-  toggleSub(player.pmId ?? '')
-}
-
-function onBenchRowClick(slot: BenchDualSlot) {
-  if (!subsMode.value || !slot.player || !isInterchangeSlot(slot)) return
-  interchangeApplied.value = !interchangeApplied.value
 }
 
 function starterDisplayScore(player: SquadPlayer, posKey: string): number | string {
