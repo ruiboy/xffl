@@ -95,6 +95,22 @@ func (s *playerLookupServer) LookupPlayerMatch(ctx context.Context, req *aflv1.L
 	}
 }
 
+func (s *playerLookupServer) LookupFinalStatusBySeasonRound(ctx context.Context, req *aflv1.LookupBySeasonRound) (*aflv1.LookupFinalStatusResponse, error) {
+	psIDs := make([]int, len(req.PlayerSeasonIds))
+	for i, id := range req.PlayerSeasonIds {
+		psIDs[i] = int(id)
+	}
+	statusByPS, err := s.playerMatches.FindFinalStatusBySeasonIDsAndRoundID(ctx, psIDs, int(req.RoundId))
+	if err != nil {
+		return nil, err
+	}
+	players := make([]*aflv1.FinalPlayerStatus, 0, len(statusByPS))
+	for psID, status := range statusByPS {
+		players = append(players, &aflv1.FinalPlayerStatus{PlayerSeasonId: int32(psID), Status: status})
+	}
+	return &aflv1.LookupFinalStatusResponse{Players: players}, nil
+}
+
 func (s *playerLookupServer) LookupByeInfo(ctx context.Context, req *aflv1.LookupByeInfoRequest) (*aflv1.LookupByeInfoResponse, error) {
 	psIDs := make([]int, len(req.PlayerSeasonIds))
 	for i, id := range req.PlayerSeasonIds {

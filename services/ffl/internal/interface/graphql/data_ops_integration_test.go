@@ -30,9 +30,10 @@ import (
 // addFFLPlayerToSeason flow works against real seeded data without standing up
 // the AFL service over Twirp.
 type stubPlayerLookup struct {
-	pool       *pgxpool.Pool
-	candidates []application.PlayerCandidate
-	byeInfo    map[int]application.ByePlayerInfo // keyed by AFL player_season_id; nil = no bye handling
+	pool           *pgxpool.Pool
+	candidates     []application.PlayerCandidate
+	byeInfo        map[int]application.ByePlayerInfo // keyed by AFL player_season_id; nil = no bye handling
+	finalAFLStatus map[int]string                    // keyed by AFL player_season_id; nil = no confirmed final status
 }
 
 func (s *stubPlayerLookup) LookupPlayers(_ context.Context, _ []int) ([]application.PlayerCandidate, error) {
@@ -75,6 +76,10 @@ func (s *stubPlayerLookup) LookupByeInfo(_ context.Context, aflPSIDs []int, _ in
 
 func (s *stubPlayerLookup) LookupPlayerSeasonsBySeasonID(_ context.Context, _ int) ([]application.PlayerCandidate, error) {
 	return s.candidates, nil
+}
+
+func (s *stubPlayerLookup) LookupFinalAFLStatus(_ context.Context, _ []int, _ int) (map[int]string, error) {
+	return s.finalAFLStatus, nil
 }
 
 func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *dataops.DataOpsCommands) *httptest.Server {

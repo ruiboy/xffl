@@ -31,6 +31,12 @@ type Querier interface {
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
 	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
 	FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalMatchesBySeasonIDRow, error)
+	// For each player_season_id whose club has a match in the given round that is
+	// already final, returns "played" (a player_match row exists) or "dnp" (it
+	// doesn't). Players whose club's match in that round isn't final yet (or has
+	// no match at all, e.g. a bye) are omitted — callers must not infer DNP for
+	// them until this query includes them.
+	FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, arg FindFinalStatusBySeasonIDsAndRoundIDParams) ([]FindFinalStatusBySeasonIDsAndRoundIDRow, error)
 	// Picks the player_season belonging to the most chronologically recent AFL
 	// season the player has data for, based on the latest match start_dt within
 	// that season (afl.season.id ordering is not chronological).

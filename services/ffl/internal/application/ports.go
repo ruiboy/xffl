@@ -61,6 +61,10 @@ type PlayerLookup interface {
 	// candidate pool (with AFLPlayerSeasonID set), for fuzzy-matching imported names
 	// such as a pasted squads thread against a whole season's players.
 	LookupPlayerSeasonsBySeasonID(ctx context.Context, aflSeasonID int) ([]PlayerCandidate, error)
+	// LookupFinalAFLStatus returns "played"/"dnp" for each AFL player_season_id whose
+	// club's match in the round is already final. Player_season_ids whose club's match
+	// isn't final yet are omitted — callers must not infer DNP for them.
+	LookupFinalAFLStatus(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) (map[int]string, error)
 }
 
 // PlayerResolver fuzzy-matches a parsed name (with optional club hint) against

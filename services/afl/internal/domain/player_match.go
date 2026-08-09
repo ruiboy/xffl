@@ -83,6 +83,10 @@ type PlayerMatchRepository interface {
 	FindByIDs(ctx context.Context, ids []int) ([]PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)
 	FindByPlayerSeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerMatch, error)
+	// FindFinalStatusBySeasonIDsAndRoundID returns "played"/"dnp" for each player_season_id
+	// whose club's match in the round is already final. Player_season_ids whose club's match
+	// isn't final yet are omitted from the result.
+	FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) (map[int]string, error)
 	FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]ByeStatus, error)
 	GetSeasonAveragesBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]PlayerSeasonAverages, error)
 	Upsert(ctx context.Context, params UpsertPlayerMatchParams) (PlayerMatch, error)

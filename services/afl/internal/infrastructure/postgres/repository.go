@@ -748,6 +748,25 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 	return out, nil
 }
 
+func (r *PlayerMatchRepository) FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) (map[int]string, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindFinalStatusBySeasonIDsAndRoundID(ctx, sqlcgen.FindFinalStatusBySeasonIDsAndRoundIDParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]string, len(rows))
+	for _, row := range rows {
+		out[int(row.PlayerSeasonID)] = row.Status
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.ByeStatus, error) {
 	int32IDs := make([]int32, len(playerSeasonIDs))
 	for i, id := range playerSeasonIDs {
