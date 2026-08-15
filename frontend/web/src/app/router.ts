@@ -44,6 +44,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/ffl/clubs/:clubId',
+      name: 'ffl-club',
+      component: () => import('@/features/ffl/views/ClubView.vue'),
+      props: true,
+    },
+    {
       path: '/ffl/club-seasons/:clubSeasonId',
       name: 'ffl-club-season',
       component: () => import('@/features/ffl/views/SquadView.vue'),

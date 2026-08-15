@@ -27,6 +27,7 @@ func (cs ClubSeason) Percentage() float64 {
 
 type ClubSeasonRepository interface {
 	FindBySeasonID(ctx context.Context, seasonID int) ([]ClubSeason, error)
+	FindByClubID(ctx context.Context, clubID int) ([]ClubSeason, error)
 	FindByID(ctx context.Context, id int) (ClubSeason, error)
 	FindByClubAndSeason(ctx context.Context, clubID int, seasonID int) (ClubSeason, error)
 	Update(ctx context.Context, cs ClubSeason) error

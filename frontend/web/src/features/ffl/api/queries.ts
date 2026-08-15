@@ -14,6 +14,25 @@ export const GET_FFL_SEASON_CLUBS = gql`
   }
 `
 
+export const GET_FFL_CLUB = gql`
+  query GetFFLClub($id: ID!) {
+    fflClub(id: $id) {
+      id
+      name
+      seasons {
+        id
+        season { id name }
+        played
+        won
+        lost
+        drawn
+        percentage
+        premiershipPoints
+      }
+    }
+  }
+`
+
 export const GET_FFL_CLUB_SEASON = gql`
   query GetFFLClubSeason($id: ID!) {
     fflClubSeason(id: $id) {
@@ -586,6 +605,10 @@ export const GET_FFL_SEASONS = gql`
     fflSeasons {
       id
       name
+      ladder {
+        id
+        club { id name }
+      }
     }
   }
 `

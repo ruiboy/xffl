@@ -5,8 +5,14 @@
     <Breadcrumb v-if="clubSeason" :items="breadcrumbs" />
     <div class="mb-6 flex items-center">
       <h1 class="text-2xl font-bold flex items-center gap-3">
-        <img v-if="clubSeason" :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
-        {{ clubSeason?.club.name ?? '' }}
+        <router-link
+          v-if="clubSeason"
+          :to="{ name: 'ffl-club', params: { clubId: clubSeason.club.id } }"
+          class="flex items-center gap-3 hover:text-active transition-colors"
+        >
+          <img :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
+          {{ clubSeason.club.name }}
+        </router-link>
       </h1>
       <router-link
         v-if="isMyClub && liveClubMatchId"

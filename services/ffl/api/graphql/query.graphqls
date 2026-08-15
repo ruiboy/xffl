@@ -55,6 +55,8 @@ type FFLMatch {
 type FFLClub {
   id: ID!
   name: String!
+  "This club's record for every season it has participated in, most recent first."
+  seasons: [FFLClubSeason!]!
 }
 
 type FFLClubSeason {

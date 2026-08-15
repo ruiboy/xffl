@@ -110,6 +110,8 @@ type FFLBuiltSeason struct {
 type FFLClub struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	// This club's record for every season it has participated in, most recent first.
+	Seasons []*FFLClubSeason `json:"seasons"`
 }
 
 type FFLClubMatch struct {

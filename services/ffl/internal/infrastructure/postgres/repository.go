@@ -404,6 +404,18 @@ func (r *ClubSeasonRepository) FindBySeasonID(ctx context.Context, seasonID int)
 	return out, nil
 }
 
+func (r *ClubSeasonRepository) FindByClubID(ctx context.Context, clubID int) ([]domain.ClubSeason, error) {
+	rows, err := r.q.FindClubSeasonsByClubID(ctx, int32(clubID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ClubSeason, len(rows))
+	for i, row := range rows {
+		out[i] = toClubSeason(row.ID, row.ClubID, row.SeasonID, row.DrvPlayed, row.DrvWon, row.DrvLost, row.DrvDrawn, row.DrvFor, row.DrvAgainst, row.DrvExtraPoints, row.DrvPremiershipPoints)
+	}
+	return out, nil
+}
+
 func (r *ClubSeasonRepository) FindByID(ctx context.Context, id int) (domain.ClubSeason, error) {
 	row, err := r.q.FindClubSeasonByID(ctx, int32(id))
 	if errors.Is(err, pgx.ErrNoRows) {

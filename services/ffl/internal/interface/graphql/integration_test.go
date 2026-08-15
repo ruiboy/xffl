@@ -240,6 +240,52 @@ func TestFflClubs(t *testing.T) {
 	})
 }
 
+func TestFflClubWithSeasons(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	clubID := fmt.Sprintf("%d", ids.homeClubID)
+	result := execQuery(t, server, `{
+		fflClub(id: "`+clubID+`") {
+			name
+			seasons {
+				id
+				season { id name }
+				played
+				won
+			}
+		}
+	}`)
+
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		FflClub struct {
+			Name    string `json:"name"`
+			Seasons []struct {
+				ID     string `json:"id"`
+				Season struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"season"`
+				Played int `json:"played"`
+				Won    int `json:"won"`
+			} `json:"seasons"`
+		} `json:"fflClub"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("returns the club's own season record", func(t *testing.T) {
+		require.Len(t, data.FflClub.Seasons, 1)
+		assert.Equal(t, "Test Eagles", data.FflClub.Name)
+		assert.Equal(t, "Test 2025", data.FflClub.Seasons[0].Season.Name)
+		assert.Equal(t, 5, data.FflClub.Seasons[0].Played)
+		assert.Equal(t, 4, data.FflClub.Seasons[0].Won)
+	})
+}
+
 func TestFflSeasons(t *testing.T) {
 	pool := connectDB(t)
 	seedTestData(t, pool)
