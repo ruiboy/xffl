@@ -100,9 +100,15 @@
                     class="group flex-1 min-w-[2px] flex flex-col items-center"
                     :title="roundBarTooltip(round.id)"
                   >
+                    <img
+                      v-if="opponentLogo(round.id)"
+                      :src="opponentLogo(round.id)!"
+                      class="w-3.5 h-3.5 object-contain opacity-60 transition-opacity group-hover:opacity-100 mb-1"
+                    />
+                    <div v-else class="w-3.5 h-3.5 mb-1"></div>
                     <div class="w-full h-9 flex items-end">
                       <div
-                        class="w-full rounded-t-[2px] transition-[filter] group-hover:brightness-125"
+                        class="w-full rounded-t-[2px] opacity-70 transition-opacity group-hover:opacity-100"
                         :style="{ height: roundBarHeight(round.id) + '%', backgroundColor: roundBarColor(round.id) }"
                       ></div>
                     </div>
@@ -496,6 +502,11 @@ function roundMatchLink(roundId: string): { name: string; params: Record<string,
   const matchId = clubRoundEntryByRoundId.value.get(roundId)?.matchId
   if (matchId) return { name: 'ffl-match', params: { matchId } }
   return { name: 'ffl-round', params: { roundId } }
+}
+
+function opponentLogo(roundId: string): string | null {
+  const opponent = clubRoundEntryByRoundId.value.get(roundId)?.opponent
+  return opponent ? clubLogoUrl(opponent) : null
 }
 
 // --- Position grouping (recency-weighted) ---
