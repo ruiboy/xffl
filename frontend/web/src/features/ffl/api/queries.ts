@@ -297,6 +297,13 @@ export const GET_FFL_SEASON_POSITIONS = gql`
         name
         matches {
           id
+          clubMatches {
+            clubSeasonId
+            side
+            score
+            dataStatus
+            club { name }
+          }
           homeClubMatch {
             id
             playerMatches {
@@ -608,6 +615,28 @@ export const GET_FFL_SEASONS = gql`
       ladder {
         id
         club { id name }
+      }
+    }
+  }
+`
+
+export const GET_FFL_SEASON_ROUND_HISTORY = gql`
+  query GetFFLSeasonRoundHistory($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      rounds {
+        id
+        name
+        matches {
+          id
+          clubMatches {
+            clubSeasonId
+            side
+            score
+            dataStatus
+            club { name }
+          }
+        }
       }
     }
   }

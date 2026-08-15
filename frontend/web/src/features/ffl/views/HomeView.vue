@@ -33,6 +33,8 @@
         </div>
         <LadderTable :ladder="fflRound.season.ladder" />
       </section>
+
+      <SeasonScoresChart :season-id="fflRound.season.id" :clubs="fflRound.season.ladder" />
     </template>
   </div>
 </template>
@@ -44,6 +46,7 @@ import { GET_AFL_LIVE_ROUND, GET_FFL_ROUND_BY_AFL_ROUND } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import LadderTable from '../components/LadderTable.vue'
+import SeasonScoresChart from '../components/SeasonScoresChart.vue'
 import RoundNav from '../components/RoundNav.vue'
 import IconCopy from '../components/icons/IconCopy.vue'
 

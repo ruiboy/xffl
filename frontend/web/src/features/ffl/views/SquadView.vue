@@ -91,9 +91,23 @@
                 <template v-else>Club</template>
               </th>
               <!-- Squad headers -->
-              <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full">
-                <div class="flex">
-                  <span v-for="round in rounds" :key="round.id" class="flex-1 text-center text-[10px] text-text-faint font-normal">{{ roundLabel(round.name) }}</span>
+              <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full align-bottom">
+                <div class="flex items-end gap-1">
+                  <router-link
+                    v-for="round in rounds"
+                    :key="round.id"
+                    :to="roundMatchLink(round.id)"
+                    class="group flex-1 min-w-[2px] flex flex-col items-center"
+                    :title="roundBarTooltip(round.id)"
+                  >
+                    <div class="w-full h-9 flex items-end">
+                      <div
+                        class="w-full rounded-t-[2px] transition-[filter] group-hover:brightness-125"
+                        :style="{ height: roundBarHeight(round.id) + '%', backgroundColor: roundBarColor(round.id) }"
+                      ></div>
+                    </div>
+                    <span class="mt-1.5 text-[10px] text-text-faint font-normal transition-colors group-hover:text-text">{{ roundLabel(round.name) }}</span>
+                  </router-link>
                 </div>
               </th>
               <th v-show="statsView === 'squad' && isMyClub && managing" class="py-2 px-2"></th>
@@ -339,6 +353,7 @@ import { clubLogoUrl } from '../utils/clubLogos'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
+import { deriveClubRoundEntries, RESULT_COLORS, type ClubRoundEntry } from '../utils/roundHistory'
 
 const props = defineProps<{ clubSeasonId: string }>()
 
@@ -450,6 +465,37 @@ function roundColor(playerSeasonId: string, roundId: string): string {
 
 function roundLabel(name: string): string {
   return name.replace(/\D+/g, '')
+}
+
+// --- Round score bars (in the Positions header, above the round number) ---
+
+const clubRoundEntries = computed<ClubRoundEntry[]>(() => deriveClubRoundEntries(rounds.value, props.clubSeasonId))
+const clubRoundEntryByRoundId = computed(() => new Map(clubRoundEntries.value.map((e) => [e.roundId, e])))
+const maxRoundScore = computed(() => Math.max(1, ...clubRoundEntries.value.map((e) => e.score ?? 0)))
+
+function roundBarHeight(roundId: string): number {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  if (!e || e.score == null) return 0
+  return Math.max(6, Math.round((e.score / maxRoundScore.value) * 100))
+}
+
+function roundBarColor(roundId: string): string {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  return e ? RESULT_COLORS[e.kind] : RESULT_COLORS.pending
+}
+
+function roundBarTooltip(roundId: string): string {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  if (!e || e.kind === 'pending') return 'Upcoming'
+  if (e.kind === 'bye' || e.kind === 'superbye') return `Bye — ${e.score}`
+  const outcome = e.kind === 'win' ? 'Won' : e.kind === 'loss' ? 'Lost' : 'Drew'
+  return `${e.score} vs ${e.opponent} (${outcome})`
+}
+
+function roundMatchLink(roundId: string): { name: string; params: Record<string, string> } {
+  const matchId = clubRoundEntryByRoundId.value.get(roundId)?.matchId
+  if (matchId) return { name: 'ffl-match', params: { matchId } }
+  return { name: 'ffl-round', params: { roundId } }
 }
 
 // --- Position grouping (recency-weighted) ---

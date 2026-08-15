@@ -25,3 +25,4 @@ Quick reference for agents. Read full ADRs only when you need detail on a specif
 | 019 | Accepted | ✅ | vitest for pure frontend logic (algorithms, stat maths) as colocated `*.test.ts`; component behaviour stays in Playwright e2e |
 | 020 | Proposed | ✅ | Repositories delete aggregate children explicitly; FKs are RESTRICT (no `ON DELETE CASCADE`); `deleted_at` opt-in per entity with a reason; unique constraints on soft-deleted tables must be partial |
 | 021 | Accepted | ✅ | Importer layout: infra packages named by **source** (formats are files within); parser ports + DTOs in `application/ports.go`; import operations orchestrated in `application/dataops`, named by operation |
+| 022 | Accepted | ✅ | chart.js + vue-chartjs for frontend charts; register only elements/plugins in use, no `chart.js/auto` |
