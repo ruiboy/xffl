@@ -289,6 +289,8 @@
           </tbody>
         </table>
         </div>
+
+        <AllStatsFormScatter v-if="statsView === 'stats'" :players="scatterPlayers" />
       </div>
       <p v-else class="text-text-faint">No players on squad.</p>
     </template>
@@ -347,6 +349,7 @@ import { statCols, starScore, type StatSummary, type StatKey } from '../utils/pl
 import StatCell from '../components/StatCell.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import StatSourceToggle from '../components/StatSourceToggle.vue'
+import AllStatsFormScatter from '../components/AllStatsFormScatter.vue'
 import { useStatSource } from '../composables/useStatSource'
 import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS, GET_FFL_ROUND_CLUB_MATCHES } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
@@ -537,6 +540,15 @@ const statsSortKey = ref<StatsSortKey | null>(null)
 function toggleStatsSort(key: StatsSortKey) {
   statsSortKey.value = statsSortKey.value === key ? null : key
 }
+
+const scatterPlayers = computed(() =>
+  activePlayers.value.map((p: PlayerSeasonRow) => ({
+    id: p.id,
+    playerName: p.player.aflPlayer.name,
+    statsAll: p.aflPlayerSeason?.statsAll ?? null,
+    statsLastN: p.aflPlayerSeason?.statsLastN ?? null,
+  })),
+)
 
 const displayedGroups = computed(() => {
   const key = statsSortKey.value

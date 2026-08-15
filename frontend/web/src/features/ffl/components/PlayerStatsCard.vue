@@ -14,6 +14,10 @@
         <div v-if="loading" class="px-4 py-3 text-xs text-text-faint">Loading...</div>
         <template v-else-if="data">
           <div class="px-4 py-3">
+            <div v-if="starSparkline.length > 1" class="flex items-center justify-between mb-2">
+              <span class="text-[10px] text-text-faint uppercase tracking-wide">Star, by round</span>
+              <Sparkline :values="starSparkline" :color="sparklineColor" />
+            </div>
             <table class="w-full tabular-nums text-xs">
               <thead>
                 <tr class="text-text-faint">
@@ -77,6 +81,7 @@ import { GET_PLAYER_STATS_CARD } from '../api/queries'
 import { starScore, statCols, trendDir, LAST_N, type StatSummary } from '../utils/playerStats'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
+import Sparkline from '@/components/Sparkline.vue'
 
 const props = defineProps<{
   name: string
@@ -179,6 +184,21 @@ function lastNTrend(key: CardKey): 'up' | 'down' | null {
 function fmt(v: number): string {
   return v % 1 === 0 ? String(v) : v.toFixed(1)
 }
+
+// Chronological (oldest first) star score across played rounds — roundRows
+// itself is most-recent-first for the table, so this reverses it.
+const starSparkline = computed<number[]>(() =>
+  [...roundRows.value]
+    .filter((m) => m.status !== 'dnp')
+    .reverse()
+    .map((m) => starScore(m)),
+)
+
+const sparklineColor = computed(() => {
+  if (!lastN.value || !seasonAvg.value) return '#94a3b8'
+  const dir = trendDir(starScore(lastN.value), starScore(seasonAvg.value))
+  return dir === 'up' ? '#22c55e' : dir === 'down' ? '#ef4444' : '#94a3b8'
+})
 </script>
 
 <style scoped>
