@@ -14,6 +14,7 @@ func TestRoundType_IsFinal(t *testing.T) {
 	}{
 		{"minor round is not a final", RoundTypeMinor, false},
 		{"empty/unknown counts as non-final", RoundType(""), false},
+		{"semi-final is a final", RoundTypeSemiFinal, true},
 		{"grand final is a final", RoundTypeGrandFinal, true},
 	}
 	for _, tt := range tests {

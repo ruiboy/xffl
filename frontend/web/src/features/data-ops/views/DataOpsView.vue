@@ -183,41 +183,6 @@
       </template>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- Tab: Calculate                              -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div v-if="activeTab === 'calculate'" class="space-y-6 max-w-lg">
-      <!-- AFL Ladder -->
-      <div class="rounded-xl border border-border bg-surface-raised p-5">
-        <h2 class="text-sm font-semibold mb-1">AFL Ladder</h2>
-        <p class="text-xs text-text-faint mb-4">Rebuilds AFL club season standings from all final matches for the current season.</p>
-        <div class="flex items-center gap-3">
-          <button
-            @click="recalculateAFLLadder"
-            :disabled="recalcAflLoading || !aflSeasonId"
-            class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >{{ recalcAflLoading ? 'Recalculating…' : 'Recalculate AFL Ladder' }}</button>
-          <span v-if="recalcAflDone" class="text-sm text-green-500">Done</span>
-          <span v-if="recalcAflError" class="text-sm text-red-400">{{ recalcAflError }}</span>
-        </div>
-      </div>
-
-      <!-- FFL Ladder -->
-      <div class="rounded-xl border border-border bg-surface-raised p-5">
-        <h2 class="text-sm font-semibold mb-1">FFL Ladder</h2>
-        <p class="text-xs text-text-faint mb-4">Rebuilds FFL club season standings from all final matches for the current season.</p>
-        <div class="flex items-center gap-3">
-          <button
-            @click="recalculateFFLLadder"
-            :disabled="recalcFflLoading || !liveSeasonId"
-            class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >{{ recalcFflLoading ? 'Recalculating…' : 'Recalculate FFL Ladder' }}</button>
-          <span v-if="recalcFflDone" class="text-sm text-green-500">Done</span>
-          <span v-if="recalcFflError" class="text-sm text-red-400">{{ recalcFflError }}</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Player search modal -->
     <PlayerSearchModal
       v-if="resolveModalPlayer"
@@ -271,6 +236,10 @@
                     >
                       <img v-if="fflClubLogoUrl(row.clubName)" :src="fflClubLogoUrl(row.clubName)" :alt="row.clubName" class="w-5 h-5 object-contain" />
                       {{ row.clubName }}                    </router-link>
+                    <span
+                      v-if="row.matchStyle === 'bye' || row.matchStyle === 'superbye'"
+                      class="ml-2 inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs text-text-faint"
+                    >{{ row.matchStyle }}</span>
                   </td>
                   <td class="py-3 pr-4 whitespace-nowrap">
                     <span
@@ -465,6 +434,345 @@
         @linked="onPlayerLinked"
       />
     </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Tab: Import Squads                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="activeTab === 'squads'">
+      <!-- Season selector (local to this tab) -->
+      <div class="mb-5 max-w-2xl">
+        <label class="block text-xs font-medium text-text-muted mb-1">Season</label>
+        <select
+          v-model="squadSeasonId"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+        >
+          <option v-if="!fflSeasonOptions.length" value="">Loading…</option>
+          <option v-for="s in fflSeasonOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+
+      <div v-if="loadingSquadSeason" class="text-text-faint">Loading…</div>
+      <div v-else-if="squadSeasonError" class="text-red-400">{{ squadSeasonError.message }}</div>
+      <template v-else-if="squadSeason">
+        <!-- Paste + parse -->
+        <div v-if="squadPhase === 'input'" class="space-y-4 max-w-2xl">
+          <p class="text-sm text-text-muted">
+            Paste this season's squads thread. Members resolve against
+            <span class="font-medium text-text">{{ squadSeason.name }}</span>’s AFL players; assign each squad to a club and import.
+          </p>
+          <div>
+            <label class="block text-xs font-medium text-text-muted mb-1">Effective from</label>
+            <select
+              v-model="squadFromRoundId"
+              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+            >
+              <option value="">Season start</option>
+              <option v-for="r in squadSeason.rounds" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-text-muted mb-1">Squads thread</label>
+            <textarea
+              v-model="squadThread"
+              rows="16"
+              placeholder="Paste squads thread here…"
+              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
+            />
+          </div>
+          <p v-if="squadParseError" class="text-sm text-red-400">{{ squadParseError }}</p>
+          <div class="flex justify-end">
+            <button
+              @click="onParseSquads"
+              :disabled="!canParseSquads || parsingSquads"
+              class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >{{ parsingSquads ? 'Reading…' : 'Read Squads' }}</button>
+          </div>
+        </div>
+
+        <!-- Review -->
+        <div v-else-if="squadPhase === 'review'" class="space-y-5">
+          <div class="flex items-center gap-3">
+            <button
+              @click="squadPhase = 'input'"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >← Back</button>
+            <span class="text-sm text-text-muted">
+              {{ resolvedSquads.length }} squads · effective {{ squadFromRoundLabel }}
+            </span>
+          </div>
+
+          <div v-for="(sq, si) in resolvedSquads" :key="si" class="rounded-xl border border-border bg-surface-raised p-5">
+            <!-- Squad header -->
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+              <div class="font-semibold text-text">{{ sq.clubName }}</div>
+              <span class="text-xs text-text-faint">{{ sq.members.length }} members</span>
+              <span class="text-xs" :class="squadUnresolvedCount(sq) > 0 ? 'text-yellow-500' : 'text-green-500'">
+                {{ squadUnresolvedCount(sq) }} unresolved
+              </span>
+              <div class="ml-auto flex items-center gap-2">
+                <span v-if="sq.importedMsg" class="text-xs text-green-500">{{ sq.importedMsg }}</span>
+                <span v-if="sq.importError" class="text-xs text-red-400">{{ sq.importError }}</span>
+                <select
+                  v-model="sq.clubSeasonId"
+                  :disabled="sq.imported"
+                  class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active disabled:opacity-50"
+                >
+                  <option value="">Assign to club…</option>
+                  <option v-for="cs in fflClubSeasons" :key="cs.id" :value="cs.id">{{ cs.club.name }}</option>
+                </select>
+                <button
+                  @click="onImportSquad(si)"
+                  :disabled="!sq.clubSeasonId || squadUnresolvedCount(sq) > 0 || sq.importing || sq.imported"
+                  class="rounded-lg border border-active bg-active px-4 py-1.5 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >{{ sq.importing ? 'Importing…' : sq.imported ? 'Imported' : 'Import Squad' }}</button>
+              </div>
+            </div>
+
+            <!-- Members -->
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-border">
+                  <th class="pb-2 pr-2 text-right text-xs font-medium text-text-faint w-px">#</th>
+                  <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Posted</th>
+                  <th class="pb-2"></th>
+                  <th class="pb-2 pr-4 text-left text-xs font-medium text-text-faint">Resolved</th>
+                  <th class="pb-2 pr-4 text-right text-xs font-medium text-text-faint">Cost</th>
+                  <th class="pb-2 pr-4 text-right text-xs font-medium text-text-faint">Confidence</th>
+                  <th class="pb-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(m, mi) in sq.members"
+                  :key="mi"
+                  class="border-b border-border last:border-0"
+                  :class="!m.aflPlayerSeasonId ? 'bg-red-500/5' : (m.confidence < 1 ? 'bg-yellow-500/5' : '')"
+                >
+                  <td class="py-2 pr-2 text-right text-xs text-text-faint tabular-nums">{{ m.rank }}</td>
+                  <td class="py-2 pr-4">
+                    <span class="font-mono text-sm font-medium text-text">{{ m.parsedName }}</span>
+                    <span class="ml-2 text-xs text-text-faint">{{ m.clubHint }}</span>
+                  </td>
+                  <td class="py-2 text-text-faint text-sm select-none px-1">→</td>
+                  <td class="py-2 pr-4">
+                    <span v-if="m.resolvedName" class="text-sm font-semibold text-text">{{ m.resolvedName }}</span>
+                    <span v-else class="text-sm text-red-400">Unresolved</span>
+                    <span class="ml-2 text-xs text-text-muted">{{ m.resolvedClub ?? '' }}</span>
+                  </td>
+                  <td class="py-2 pr-4 text-right text-sm tabular-nums text-text-muted">
+                    {{ m.costCents != null ? (m.costCents / 100).toFixed(1) : '—' }}
+                  </td>
+                  <td class="py-2 pr-4 text-right">
+                    <span
+                      class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      :class="confidenceBadge(m.confidence)"
+                    >{{ (m.confidence * 100).toFixed(0) }}%</span>
+                  </td>
+                  <td class="py-2 text-right">
+                    <button
+                      v-if="m.confidence < 1 && !sq.imported"
+                      @click="openSquadLink(si, mi)"
+                      class="rounded border border-border px-2 py-1 text-xs font-medium text-text hover:bg-surface-hover transition-colors"
+                    >Fix</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+
+      <SquadMemberLinkModal
+        :show="squadLinkTarget !== null"
+        :ffl-season-id="squadSeasonId"
+        :parsed-name="squadLinkMember?.parsedName ?? ''"
+        :club-hint="squadLinkMember?.clubHint ?? ''"
+        @close="squadLinkTarget = null"
+        @linked="onSquadMemberLinked"
+      />
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Tab: Import Fixtures                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="activeTab === 'fixtures'">
+      <!-- Season selector (local to this tab) -->
+      <div class="mb-5 max-w-2xl">
+        <label class="block text-xs font-medium text-text-muted mb-1">Season</label>
+        <select
+          v-model="fixtureSeasonId"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-active"
+        >
+          <option v-if="!fflSeasonOptions.length" value="">Loading…</option>
+          <option v-for="s in fflSeasonOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+
+      <div v-if="loadingFixtureSeason" class="text-text-faint">Loading…</div>
+      <div v-else-if="fixtureSeasonError" class="text-red-400">{{ fixtureSeasonError.message }}</div>
+      <template v-else-if="fixtureSeason">
+        <!-- Paste + parse -->
+        <div v-if="fixturePhase === 'input'" class="space-y-4 max-w-2xl">
+          <p class="text-sm text-text-muted">
+            Paste <span class="font-medium text-text">{{ fixtureSeason.name }}</span>’s fixture sheet.
+            Rounds and pairings are read from it; club-level scores are kept as reference notes. Map each round to an AFL round, then import.
+          </p>
+          <div>
+            <label class="block text-xs font-medium text-text-muted mb-1">Fixture sheet</label>
+            <textarea
+              v-model="fixtureSheet"
+              rows="16"
+              placeholder="Paste the tab-separated fixture sheet here…"
+              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text font-mono focus:outline-none focus:ring-1 focus:ring-active resize-y"
+            />
+          </div>
+          <p v-if="fixtureParseError" class="text-sm text-red-400">{{ fixtureParseError }}</p>
+          <div class="flex justify-end">
+            <button
+              @click="onParseFixtures"
+              :disabled="!canParseFixtures || parsingFixtures"
+              class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >{{ parsingFixtures ? 'Reading…' : 'Read Fixtures' }}</button>
+          </div>
+        </div>
+
+        <!-- Review -->
+        <div v-else-if="fixturePhase === 'review'" class="space-y-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              @click="fixturePhase = 'input'"
+              class="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >← Back</button>
+            <span class="text-sm text-text-muted">
+              {{ includedFixtureRounds.length }} of {{ fixtureRounds.length }} rounds selected
+            </span>
+            <div class="ml-auto flex items-center gap-3">
+              <span v-if="fixtureImportResult" class="text-xs text-green-500">
+                {{ fixtureImportResult.roundsCreated }} rounds · {{ fixtureImportResult.scoresWritten }} reference scores
+              </span>
+              <span v-if="fixtureImportError" class="text-xs text-red-400">{{ fixtureImportError }}</span>
+              <button
+                @click="onImportFixtures"
+                :disabled="!canImportFixtures || importingFixtures"
+                class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >{{ importingFixtures ? 'Importing…' : 'Import Fixtures' }}</button>
+            </div>
+          </div>
+
+          <p v-if="fixtureUnresolved.length" class="text-sm text-red-400">
+            Unresolved club names — nothing was written. Fix the spelling in the sheet or register the club:
+            {{ fixtureUnresolved.join(', ') }}
+          </p>
+
+          <div
+            v-for="(rd, ri) in fixtureRounds"
+            :key="ri"
+            class="rounded-xl border p-5"
+            :class="[
+              rd.include ? 'bg-surface-raised' : 'bg-surface-raised/40 opacity-60',
+              fixtureRoundLooksFinal(rd) ? 'border-yellow-500/60 ring-1 ring-yellow-500/30' : 'border-border',
+            ]"
+          >
+            <!-- Round header -->
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+              <label class="flex items-center gap-2 text-sm font-semibold text-text">
+                <input type="checkbox" v-model="rd.include" class="accent-active" />
+                {{ rd.round > 0 ? `Round ${rd.round}` : 'Finals' }}
+                <span v-if="rd.label" class="text-xs font-normal text-text-faint">{{ rd.label }}</span>
+              </label>
+              <span class="text-xs text-text-faint">{{ rd.fixtures.length }} fixtures</span>
+              <span
+                v-if="fixtureRoundLooksFinal(rd)"
+                class="inline-flex items-center gap-1 text-xs text-yellow-500"
+                title="This round's name has no number — it's probably a final. Set its type."
+              >⚠ Probably a final — set its type</span>
+              <div class="ml-auto flex items-center gap-2">
+                <input
+                  v-model="rd.name"
+                  placeholder="Round name"
+                  class="w-36 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                />
+                <select
+                  v-model="rd.roundType"
+                  class="rounded-lg border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                  :class="fixtureRoundLooksFinal(rd) ? 'border-yellow-500/60' : 'border-border'"
+                >
+                  <option value="MINOR">Minor</option>
+                  <option value="SEMI_FINAL">Semi-final</option>
+                  <option value="GRAND_FINAL">Grand final</option>
+                </select>
+                <select
+                  v-model="rd.aflRoundId"
+                  class="rounded-lg border bg-surface px-3 py-1.5 text-sm text-text focus:outline-none focus:border-active"
+                  :class="rd.include && !rd.aflRoundId ? 'border-red-400' : 'border-border'"
+                >
+                  <option value="">Map to AFL round…</option>
+                  <option v-for="ar in fixtureAflRounds" :key="ar.id" :value="ar.id">{{ ar.name }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fixtures -->
+            <table class="w-full">
+              <tbody>
+                <tr v-for="(fx, fi) in rd.fixtures" :key="fi" class="border-b border-border last:border-0">
+                  <td class="py-2 pr-3 text-right text-sm" :class="clubResolves(fx.homeClub) ? 'text-text' : 'text-red-400'">
+                    {{ fx.homeClub }}
+                  </td>
+                  <td class="py-2 px-2 text-right text-sm tabular-nums text-text-muted w-px">{{ fx.homeScore ?? '' }}</td>
+                  <td class="py-2 px-1 text-center text-xs text-text-faint select-none w-px">vs</td>
+                  <td class="py-2 px-2 text-left text-sm tabular-nums text-text-muted w-px">{{ fx.awayScore ?? '' }}</td>
+                  <td class="py-2 pl-3 text-sm" :class="clubResolves(fx.awayClub) ? 'text-text' : 'text-red-400'">
+                    {{ fx.awayClub }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Tab: Forum Capture → round team import (slice 5) -->
+    <div v-if="activeTab === 'forum-capture'">
+      <ForumRoundImport />
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Tab: Calculate                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="activeTab === 'calculate'" class="space-y-6 max-w-lg">
+      <!-- AFL Ladder -->
+      <div class="rounded-xl border border-border bg-surface-raised p-5">
+        <h2 class="text-sm font-semibold mb-1">AFL Ladder</h2>
+        <p class="text-xs text-text-faint mb-4">Rebuilds AFL club season standings from all final matches for the current season.</p>
+        <div class="flex items-center gap-3">
+          <button
+            @click="recalculateAFLLadder"
+            :disabled="recalcAflLoading || !aflSeasonId"
+            class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >{{ recalcAflLoading ? 'Recalculating…' : 'Recalculate AFL Ladder' }}</button>
+          <span v-if="recalcAflDone" class="text-sm text-green-500">Done</span>
+          <span v-if="recalcAflError" class="text-sm text-red-400">{{ recalcAflError }}</span>
+        </div>
+      </div>
+
+      <!-- FFL Ladder -->
+      <div class="rounded-xl border border-border bg-surface-raised p-5">
+        <h2 class="text-sm font-semibold mb-1">FFL Ladder</h2>
+        <p class="text-xs text-text-faint mb-4">Rebuilds FFL club season standings from all final matches for the current season.</p>
+        <div class="flex items-center gap-3">
+          <button
+            @click="recalculateFFLLadder"
+            :disabled="recalcFflLoading || !liveSeasonId"
+            class="rounded-lg border border-active bg-active px-4 py-2 text-sm font-medium text-active-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >{{ recalcFflLoading ? 'Recalculating…' : 'Recalculate FFL Ladder' }}</button>
+          <span v-if="recalcFflDone" class="text-sm text-green-500">Done</span>
+          <span v-if="recalcFflError" class="text-sm text-red-400">{{ recalcFflError }}</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -472,9 +780,11 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation } from '@vue/apollo-composable'
-import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS } from '../api/queries'
-import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, RECALCULATE_FFL_CLUB_MATCH_SCORE } from '../api/mutations'
+import { GET_FFL_DATA_OPS, GET_AFL_ROUND_STATS, GET_AFL_SEASON_CLUB_SEASONS, GET_FFL_FIXTURE_IMPORT_SEASON } from '../api/queries'
+import { PARSE_TEAM_SUBMISSION, CONFIRM_TEAM_SUBMISSION, IMPORT_AFL_MATCH_STATS, MARK_AFL_MATCH_STATS_COMPLETE, MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED, RECALCULATE_FFL_CLUB_MATCH_SCORE, RECALCULATE_AFL_LADDER, RECALCULATE_FFL_LADDER, PARSE_FFL_SQUAD_THREAD, IMPORT_FFL_SQUAD, PARSE_FFL_FIXTURE_SHEET, IMPORT_FFL_FIXTURES } from '../api/mutations'
 import { useFflState } from '@/features/ffl/composables/useFflState'
+import { GET_FFL_SEASONS } from '@/features/ffl/api/queries'
+import { canonicalClub } from '../utils/clubAliases'
 import { useAflState } from '@/features/afl/composables/useAflState'
 import { GET_AFL_LIVE_ROUND } from '@/features/afl/api/queries'
 import { clubLogoUrl } from '@/features/afl/utils/clubLogos'
@@ -482,6 +792,8 @@ import { clubLogoUrl as fflClubLogoUrl } from '@/features/ffl/utils/clubLogos'
 import { POSITION_COLORS, POSITION_LABEL, POSITION_SLOTS } from '@/features/ffl/utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
 import FflPlayerLinkModal from '../components/FflPlayerLinkModal.vue'
+import SquadMemberLinkModal from '../components/SquadMemberLinkModal.vue'
+import ForumRoundImport from '../components/ForumRoundImport.vue'
 import AflRoundNav from '@/features/afl/components/RoundNav.vue'
 import FflRoundNav from '@/features/ffl/components/RoundNav.vue'
 
@@ -494,9 +806,12 @@ const initialRound = (route.query.round as string) || ''
 
 // ---- Tabs ----
 const tabs = [
-  { id: 'team-submission', label: 'FFL Teams' },
-  { id: 'afl-stats', label: 'AFL Stats' },
+  { id: 'team-submission', label: 'Import FFL Teams' },
+  { id: 'afl-stats', label: 'Import AFL Stats' },
   { id: 'calculate', label: 'Calculate' },
+  { id: 'squads', label: 'Import FFL Squads' },
+  { id: 'fixtures', label: 'Import FFL Fixtures' },
+  { id: 'forum-capture', label: 'FFL Round Forum Capture' },
 ]
 const activeTab = ref(initialTab)
 
@@ -687,32 +1002,25 @@ type FflClubRow = {
   clubName: string
   dataStatus: string
   score: number
+  matchStyle: string // '' | 'bye' | 'superbye'
 }
 
 const fflClubRows = computed<FflClubRow[]>(() => {
   if (!selectedRound.value) return []
   const rows: FflClubRow[] = []
+  // One row per club_match — covers home/away fixtures plus bye and superbye
+  // teams, which submit like any other club.
   for (const match of selectedRound.value.matches) {
-    if (match.homeClubMatch) {
+    for (const cm of match.clubMatches ?? []) {
       rows.push({
-        clubMatchId: match.homeClubMatch.id,
+        clubMatchId: cm.id,
         matchId: match.id,
         roundId: selectedRoundId.value,
-        clubSeasonId: match.homeClubMatch.clubSeasonId,
-        clubName: match.homeClubMatch.club.name,
-        dataStatus: match.homeClubMatch.dataStatus ?? 'no_data',
-        score: match.homeClubMatch.score ?? 0,
-      })
-    }
-    if (match.awayClubMatch) {
-      rows.push({
-        clubMatchId: match.awayClubMatch.id,
-        matchId: match.id,
-        roundId: selectedRoundId.value,
-        clubSeasonId: match.awayClubMatch.clubSeasonId,
-        clubName: match.awayClubMatch.club.name,
-        dataStatus: match.awayClubMatch.dataStatus ?? 'no_data',
-        score: match.awayClubMatch.score ?? 0,
+        clubSeasonId: cm.clubSeasonId,
+        clubName: cm.club.name,
+        dataStatus: cm.dataStatus ?? 'no_data',
+        score: cm.score ?? 0,
+        matchStyle: match.matchStyle ?? '',
       })
     }
   }
@@ -925,50 +1233,6 @@ async function recalculateScore(row: FflClubRow) {
   }
 }
 
-// ════════════════════════════════════════════
-// Calculate
-// ════════════════════════════════════════════
-
-const aflSeasonId = computed(() => liveRoundResult.value?.aflLiveRound?.round?.season?.id ?? '')
-
-const recalcAflLoading = ref(false)
-const recalcAflError = ref('')
-const recalcAflDone = ref(false)
-const recalcFflLoading = ref(false)
-const recalcFflError = ref('')
-const recalcFflDone = ref(false)
-
-const { mutate: recalcAflMutation } = useMutation(RECALCULATE_AFL_LADDER)
-const { mutate: recalcFflMutation } = useMutation(RECALCULATE_FFL_LADDER)
-
-async function recalculateAFLLadder() {
-  recalcAflLoading.value = true
-  recalcAflError.value = ''
-  recalcAflDone.value = false
-  try {
-    await recalcAflMutation({ seasonId: aflSeasonId.value })
-    recalcAflDone.value = true
-  } catch (e: any) {
-    recalcAflError.value = e.message ?? 'Failed'
-  } finally {
-    recalcAflLoading.value = false
-  }
-}
-
-async function recalculateFFLLadder() {
-  recalcFflLoading.value = true
-  recalcFflError.value = ''
-  recalcFflDone.value = false
-  try {
-    await recalcFflMutation({ seasonId: liveSeasonId.value })
-    recalcFflDone.value = true
-  } catch (e: any) {
-    recalcFflError.value = e.message ?? 'Failed'
-  } finally {
-    recalcFflLoading.value = false
-  }
-}
-
 // ---- FFL player link modal ----
 
 const linkModalRowIndex = ref<number | null>(null)
@@ -1018,5 +1282,363 @@ function rowClass(i: number): string {
   if (!rp.playerSeasonId) return 'bg-red-500/5'
   if (needsReview.value.includes(i)) return 'bg-yellow-500/5'
   return ''
+}
+
+// ════════════════════════════════════════════
+// Import Squads (historical import, slice 3)
+// ════════════════════════════════════════════
+
+type SquadMember = {
+  rank: number; parsedName: string; clubHint: string; costCents: number | null
+  resolvedName: string | null; resolvedClub: string | null
+  aflPlayerSeasonId: string | null; confidence: number
+}
+type ReviewSquad = {
+  clubName: string
+  clubSeasonId: string
+  members: SquadMember[]
+  importing: boolean; imported: boolean; importedMsg: string; importError: string
+}
+
+const squadPhase = ref<'input' | 'review'>('input')
+const squadThread = ref('')
+const squadFromRoundId = ref('')
+const parsingSquads = ref(false)
+const squadParseError = ref('')
+const resolvedSquads = ref<ReviewSquad[]>([])
+
+// ---- Season selection (local to this tab; not the global live season) ----
+// Squad import targets any historical season, so this tab picks its own —
+// defaulting to the live one — without disturbing the live-season-driven Teams tab.
+const { result: fflSeasonsResult } = useQuery(GET_FFL_SEASONS)
+const fflSeasonOptions = computed<{ id: string; name: string }[]>(() =>
+  [...(fflSeasonsResult.value?.fflSeasons ?? [])].sort((a: any, b: any) => b.name.localeCompare(a.name)),
+)
+
+const squadSeasonId = ref(liveSeasonId.value)
+watch(liveSeasonId, (val) => { if (val && !squadSeasonId.value) squadSeasonId.value = val }, { immediate: true })
+
+const { result: squadSeasonResult, loading: loadingSquadSeason, error: squadSeasonError } = useQuery(
+  GET_FFL_DATA_OPS,
+  () => ({ seasonId: squadSeasonId.value }),
+  () => ({ enabled: !!squadSeasonId.value }),
+)
+const squadSeason = computed(() => squadSeasonResult.value?.fflSeason ?? null)
+
+// The AFL season backing the selected FFL season — the resolution candidate pool.
+const { result: aflSeasonResult } = useQuery(
+  GET_AFL_SEASON_CLUB_SEASONS,
+  () => ({ fflSeasonId: squadSeasonId.value }),
+  () => ({ enabled: !!squadSeasonId.value }),
+)
+const squadAflSeasonId = computed(() => aflSeasonResult.value?.fflSeason?.aflSeason?.id ?? '')
+
+// FFL club_seasons for the selected season, for assigning each parsed squad to a club.
+const fflClubSeasons = computed(() => squadSeason.value?.ladder ?? [])
+
+// Switching season abandons any in-progress review.
+watch(squadSeasonId, () => {
+  squadPhase.value = 'input'
+  resolvedSquads.value = []
+  squadThread.value = ''
+  squadFromRoundId.value = ''
+  squadParseError.value = ''
+})
+
+const canParseSquads = computed(() => !!squadAflSeasonId.value && squadThread.value.trim().length > 0)
+
+const squadFromRoundLabel = computed(() => {
+  if (!squadFromRoundId.value) return 'from season start'
+  const r = squadSeason.value?.rounds.find((r: any) => r.id === squadFromRoundId.value)
+  return r ? `from ${r.name}` : 'from season start'
+})
+
+function squadUnresolvedCount(sq: ReviewSquad): number {
+  return sq.members.filter(m => !m.aflPlayerSeasonId).length
+}
+
+// Match a parsed club header to an FFL club_season by name (case-insensitive,
+// either direction contains) so the assignment dropdown is pre-filled.
+function autoAssignClubSeasonId(clubName: string): string {
+  const key = clubName.trim().toLowerCase()
+  const match = fflClubSeasons.value.find((cs: any) => {
+    const name = cs.club.name.toLowerCase()
+    return name === key || name.includes(key) || key.includes(name)
+  })
+  return match?.id ?? ''
+}
+
+const { mutate: parseSquadsMutation } = useMutation(PARSE_FFL_SQUAD_THREAD)
+const { mutate: importSquadMutation } = useMutation(IMPORT_FFL_SQUAD)
+
+async function onParseSquads() {
+  squadParseError.value = ''
+  parsingSquads.value = true
+  try {
+    const res = await parseSquadsMutation({
+      input: { aflSeasonId: squadAflSeasonId.value, thread: squadThread.value },
+    })
+    const data = res?.data?.parseFFLSquadThread
+    if (!data) throw new Error('No result returned')
+    resolvedSquads.value = data.squads.map((sq: any) => ({
+      clubName: sq.clubName,
+      clubSeasonId: autoAssignClubSeasonId(sq.clubName),
+      members: sq.members.map((m: any) => ({ ...m })),
+      importing: false, imported: false, importedMsg: '', importError: '',
+    }))
+    squadPhase.value = 'review'
+  } catch (e: any) {
+    squadParseError.value = e.message ?? 'Parse failed'
+  } finally {
+    parsingSquads.value = false
+  }
+}
+
+async function onImportSquad(si: number) {
+  const sq = resolvedSquads.value[si]
+  if (!sq || !sq.clubSeasonId) return
+  sq.importError = ''
+  sq.importing = true
+  try {
+    const members = sq.members
+      .filter(m => m.aflPlayerSeasonId)
+      .map(m => ({
+        aflPlayerSeasonId: m.aflPlayerSeasonId!,
+        name: m.resolvedName ?? m.parsedName,
+        costCents: m.costCents,
+      }))
+    const res = await importSquadMutation({
+      input: {
+        clubSeasonId: sq.clubSeasonId,
+        fromRoundId: squadFromRoundId.value || null,
+        members,
+      },
+    })
+    const saved = res?.data?.importFFLSquad ?? []
+    sq.imported = true
+    sq.importedMsg = `Imported ${saved.length} players`
+    await refetchSeasonData()
+  } catch (e: any) {
+    sq.importError = e?.graphQLErrors?.[0]?.message ?? e.message ?? 'Import failed'
+  } finally {
+    sq.importing = false
+  }
+}
+
+// ---- Squad member link modal ----
+
+const squadLinkTarget = ref<{ si: number; mi: number } | null>(null)
+
+const squadLinkMember = computed(() =>
+  squadLinkTarget.value ? resolvedSquads.value[squadLinkTarget.value.si]?.members[squadLinkTarget.value.mi] : null,
+)
+
+function openSquadLink(si: number, mi: number) {
+  squadLinkTarget.value = { si, mi }
+}
+
+function onSquadMemberLinked(data: { aflPlayerSeasonId: string; resolvedName: string; resolvedClub: string }) {
+  if (!squadLinkTarget.value) return
+  const { si, mi } = squadLinkTarget.value
+  const m = resolvedSquads.value[si]?.members[mi]
+  if (m) {
+    m.aflPlayerSeasonId = data.aflPlayerSeasonId
+    m.resolvedName = data.resolvedName
+    m.resolvedClub = data.resolvedClub
+    m.confidence = 1
+  }
+  squadLinkTarget.value = null
+}
+
+// ════════════════════════════════════════════
+// Import Fixtures (historical import, slice 4)
+// ════════════════════════════════════════════
+
+type ReviewFixture = { homeClub: string; homeScore: number | null; awayClub: string; awayScore: number | null }
+type FixtureReviewRound = {
+  round: number
+  label: string
+  name: string       // editable FFL round name
+  aflRoundId: string // reviewer-mapped AFL round
+  roundType: string  // MINOR | SEMI_FINAL | GRAND_FINAL
+  include: boolean
+  fixtures: ReviewFixture[]
+}
+
+// A parsed round whose name carries no number is probably a final rather than a
+// home-and-away round — flag it while still typed MINOR so the reviewer sets the
+// type (and byes aren't fabricated for it). Clears once typed.
+function fixtureRoundLooksFinal(r: FixtureReviewRound): boolean {
+  const name = r.name.trim()
+  return name !== '' && !/\d/.test(name) && r.roundType === 'MINOR'
+}
+
+const fixturePhase = ref<'input' | 'review'>('input')
+const fixtureSheet = ref('')
+const parsingFixtures = ref(false)
+const fixtureParseError = ref('')
+const fixtureRounds = ref<FixtureReviewRound[]>([])
+const importingFixtures = ref(false)
+const fixtureImportError = ref('')
+const fixtureImportResult = ref<{ roundsCreated: number; scoresWritten: number } | null>(null)
+const fixtureUnresolved = ref<string[]>([])
+
+// Season selection (local to this tab), and its club_seasons + AFL rounds.
+const fixtureSeasonId = ref(liveSeasonId.value)
+watch(liveSeasonId, (val) => { if (val && !fixtureSeasonId.value) fixtureSeasonId.value = val }, { immediate: true })
+
+const { result: fixtureSeasonResult, loading: loadingFixtureSeason, error: fixtureSeasonError } = useQuery(
+  GET_FFL_FIXTURE_IMPORT_SEASON,
+  () => ({ id: fixtureSeasonId.value }),
+  () => ({ enabled: !!fixtureSeasonId.value }),
+)
+const fixtureSeason = computed(() => fixtureSeasonResult.value?.fflSeason ?? null)
+const fixtureAflRounds = computed(() => fixtureSeason.value?.aflSeason?.rounds ?? [])
+
+// Canonical club keys registered for the season, for pre-import resolution hints.
+// Alias-aware (via clubAliases) so the hint matches the backend's resolution.
+const fixtureClubNames = computed(() => {
+  const set = new Set<string>()
+  for (const cs of fixtureSeason.value?.ladder ?? []) set.add(canonicalClub(cs.club.name))
+  return set
+})
+function clubResolves(name: string): boolean {
+  return fixtureClubNames.value.has(canonicalClub(name))
+}
+
+const canParseFixtures = computed(() => !!fixtureSeasonId.value && fixtureSheet.value.trim().length > 0)
+
+const includedFixtureRounds = computed(() => fixtureRounds.value.filter(r => r.include))
+const canImportFixtures = computed(() =>
+  includedFixtureRounds.value.length > 0 && includedFixtureRounds.value.every(r => !!r.aflRoundId),
+)
+
+// Best-effort map of a parsed round to an AFL round by matching the round number
+// against the AFL round name; the reviewer adjusts anything it misses.
+function autoMapAflRound(round: number): string {
+  if (round <= 0) return ''
+  const match = fixtureAflRounds.value.find((ar: any) => {
+    const name = ar.name.toLowerCase()
+    return name === `round ${round}` || new RegExp(`\\b${round}\\b`).test(name)
+  })
+  return match?.id ?? ''
+}
+
+// Switching season abandons any in-progress review.
+watch(fixtureSeasonId, () => {
+  fixturePhase.value = 'input'
+  fixtureSheet.value = ''
+  fixtureRounds.value = []
+  fixtureParseError.value = ''
+  fixtureImportResult.value = null
+  fixtureImportError.value = ''
+  fixtureUnresolved.value = []
+})
+
+const { mutate: parseFixturesMutation } = useMutation(PARSE_FFL_FIXTURE_SHEET)
+const { mutate: importFixturesMutation } = useMutation(IMPORT_FFL_FIXTURES)
+
+async function onParseFixtures() {
+  fixtureParseError.value = ''
+  fixtureImportResult.value = null
+  fixtureImportError.value = ''
+  fixtureUnresolved.value = []
+  parsingFixtures.value = true
+  try {
+    const res = await parseFixturesMutation({ input: { sheet: fixtureSheet.value } })
+    const data = res?.data?.parseFFLFixtureSheet
+    if (!data) throw new Error('No result returned')
+    fixtureRounds.value = data.rounds.map((r: any) => ({
+      round: r.round,
+      label: r.label,
+      name: r.round > 0 ? `Round ${r.round}` : (r.label || 'Finals'),
+      aflRoundId: autoMapAflRound(r.round),
+      roundType: 'MINOR', // reviewer sets finals; the highlight prompts non-numbered rounds
+      include: true,
+      fixtures: r.fixtures.map((fx: any) => ({ ...fx })),
+    }))
+    fixturePhase.value = 'review'
+  } catch (e: any) {
+    fixtureParseError.value = e.message ?? 'Parse failed'
+  } finally {
+    parsingFixtures.value = false
+  }
+}
+
+async function onImportFixtures() {
+  fixtureImportError.value = ''
+  fixtureImportResult.value = null
+  fixtureUnresolved.value = []
+  importingFixtures.value = true
+  try {
+    const rounds = includedFixtureRounds.value.map(r => ({
+      name: r.name,
+      aflRoundId: r.aflRoundId,
+      roundType: r.roundType,
+      fixtures: r.fixtures.map(fx => ({
+        homeClub: fx.homeClub,
+        homeScore: fx.homeScore,
+        awayClub: fx.awayClub,
+        awayScore: fx.awayScore,
+      })),
+    }))
+    const res = await importFixturesMutation({ input: { seasonId: fixtureSeasonId.value, rounds } })
+    const data = res?.data?.importFFLFixtures
+    if (!data) throw new Error('No result returned')
+    if (data.unresolved?.length) {
+      fixtureUnresolved.value = data.unresolved
+      return
+    }
+    fixtureImportResult.value = { roundsCreated: data.roundsCreated, scoresWritten: data.scoresWritten }
+  } catch (e: any) {
+    fixtureImportError.value = e?.graphQLErrors?.[0]?.message ?? e.message ?? 'Import failed'
+  } finally {
+    importingFixtures.value = false
+  }
+}
+
+// ════════════════════════════════════════════
+// Calculate
+// ════════════════════════════════════════════
+
+// Reuses the live-round query the AFL Stats tab already runs.
+const aflSeasonId = computed(() => liveRoundResult.value?.aflLiveRound?.round?.season?.id ?? '')
+
+const recalcAflLoading = ref(false)
+const recalcAflError = ref('')
+const recalcAflDone = ref(false)
+const recalcFflLoading = ref(false)
+const recalcFflError = ref('')
+const recalcFflDone = ref(false)
+
+const { mutate: recalcAflMutation } = useMutation(RECALCULATE_AFL_LADDER)
+const { mutate: recalcFflMutation } = useMutation(RECALCULATE_FFL_LADDER)
+
+async function recalculateAFLLadder() {
+  recalcAflLoading.value = true
+  recalcAflError.value = ''
+  recalcAflDone.value = false
+  try {
+    await recalcAflMutation({ seasonId: aflSeasonId.value })
+    recalcAflDone.value = true
+  } catch (e: any) {
+    recalcAflError.value = e.message ?? 'Failed'
+  } finally {
+    recalcAflLoading.value = false
+  }
+}
+
+async function recalculateFFLLadder() {
+  recalcFflLoading.value = true
+  recalcFflError.value = ''
+  recalcFflDone.value = false
+  try {
+    await recalcFflMutation({ seasonId: liveSeasonId.value })
+    recalcFflDone.value = true
+  } catch (e: any) {
+    recalcFflError.value = e.message ?? 'Failed'
+  } finally {
+    recalcFflLoading.value = false
+  }
 }
 </script>

@@ -313,6 +313,50 @@ func TestLookupByeInfo_AveragesExcludeMatchesAfterByeRound(t *testing.T) {
 	})
 }
 
+// ── LookupPlayerSeasonsBySeasonID ─────────────────────────────────────────────
+
+func TestLookupPlayerSeasonsBySeasonID_ReturnsPlayerSeasonsWithNameAndClub(t *testing.T) {
+	pool := testPool
+	ctx := context.Background()
+	cleanupTestData(ctx, t, pool)
+	t.Cleanup(func() { cleanupTestData(context.Background(), t, pool) })
+
+	base := seedBase(t, ctx, pool)
+	darcyPS := seedPlayer(t, ctx, pool, "Darcy Fogarty", base.clubSeasonID)  // Bye Club
+	reillyPS := seedPlayer(t, ctx, pool, "Reilly O'Brien", base.clubSeasonID) // Bye Club
+	otherPS := seedPlayer(t, ctx, pool, "Lachie Neale", base.otherCSID)      // No Bye Club
+
+	// A player in a different season must not leak into the result.
+	var otherSeasonID, otherLeagueID, farClubID, farCSID int
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.league (name) VALUES ('Other League') RETURNING id").Scan(&otherLeagueID))
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.season (name, league_id) VALUES ('T2099', $1) RETURNING id", otherLeagueID).Scan(&otherSeasonID))
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.club (name) VALUES ('Far Club') RETURNING id").Scan(&farClubID))
+	require.NoError(t, pool.QueryRow(ctx, "INSERT INTO afl.club_season (club_id, season_id) VALUES ($1, $2) RETURNING id", farClubID, otherSeasonID).Scan(&farCSID))
+	seedPlayer(t, ctx, pool, "Wrong Season Player", farCSID)
+
+	srv := newServer(pool)
+	resp, err := srv.LookupPlayerSeasonsBySeasonID(ctx, &aflv1.LookupPlayerSeasonsBySeasonIDRequest{AflSeasonId: int32(base.seasonID)})
+	require.NoError(t, err)
+	require.Len(t, resp.Players, 3, "only the three players in the season")
+
+	byPS := make(map[int32]*aflv1.PlayerSeasonWithClub, 3)
+	for _, p := range resp.Players {
+		byPS[p.PlayerSeasonId] = p
+	}
+
+	t.Run("carries player_season_id, name and club", func(t *testing.T) {
+		darcy := byPS[int32(darcyPS)]
+		require.NotNil(t, darcy)
+		assert.Equal(t, "Darcy Fogarty", darcy.Name)
+		assert.Equal(t, "Bye Club", darcy.ClubName)
+		assert.NotZero(t, darcy.PlayerId)
+	})
+	t.Run("includes players across clubs in the season", func(t *testing.T) {
+		assert.Equal(t, "No Bye Club", byPS[int32(otherPS)].ClubName)
+		assert.Equal(t, "Bye Club", byPS[int32(reillyPS)].ClubName)
+	})
+}
+
 // ── Test 4: mixed batch — one bye-eligible player and one non-bye player ──────
 
 func TestLookupByeInfo_MixedBatch(t *testing.T) {

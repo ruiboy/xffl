@@ -1,5 +1,11 @@
 import gql from 'graphql-tag'
 
+export const CLEAR_FFL_FORUM_CAPTURES = gql`
+  mutation ClearFFLForumCaptures {
+    clearFFLForumCaptures
+  }
+`
+
 export const IMPORT_AFL_MATCH_STATS = gql`
   mutation ImportAFLMatchStats($matchId: ID!) {
     importAFLMatchStats(matchId: $matchId) {
@@ -99,6 +105,63 @@ export const CONFIRM_TEAM_SUBMISSION = gql`
   }
 `
 
+export const PARSE_FFL_SQUAD_THREAD = gql`
+  mutation ParseFFLSquadThread($input: ParseFFLSquadThreadInput!) {
+    parseFFLSquadThread(input: $input) {
+      squads {
+        clubName
+        needsReview
+        members {
+          rank
+          parsedName
+          clubHint
+          costCents
+          resolvedName
+          resolvedClub
+          aflPlayerSeasonId
+          confidence
+        }
+      }
+    }
+  }
+`
+
+export const IMPORT_FFL_SQUAD = gql`
+  mutation ImportFFLSquad($input: ImportFFLSquadInput!) {
+    importFFLSquad(input: $input) {
+      id
+      player { id aflPlayer { name } }
+    }
+  }
+`
+
+export const PARSE_FFL_FIXTURE_SHEET = gql`
+  mutation ParseFFLFixtureSheet($input: ParseFFLFixtureSheetInput!) {
+    parseFFLFixtureSheet(input: $input) {
+      rounds {
+        round
+        label
+        fixtures {
+          homeClub
+          homeScore
+          awayClub
+          awayScore
+        }
+      }
+    }
+  }
+`
+
+export const IMPORT_FFL_FIXTURES = gql`
+  mutation ImportFFLFixtures($input: ImportFFLFixturesInput!) {
+    importFFLFixtures(input: $input) {
+      roundsCreated
+      scoresWritten
+      unresolved
+    }
+  }
+`
+
 export const MARK_FFL_TEAM_FINAL = gql`
   mutation MarkFFLTeamFinal($input: MarkFFLTeamFinalInput!) {
     markFFLTeamFinal(input: $input)
@@ -111,6 +174,14 @@ export const MARK_FFL_TEAM_SUBMITTED = gql`
   }
 `
 
+export const RECALCULATE_FFL_CLUB_MATCH_SCORE = gql`
+  mutation RecalculateFFLClubMatchScore($clubMatchId: ID!) {
+    recalculateFFLClubMatchScore(clubMatchId: $clubMatchId)
+  }
+`
+
+// ---- Calculate (ladder recompute) ----
+
 export const RECALCULATE_AFL_LADDER = gql`
   mutation RecalculateAFLLadder($seasonId: ID!) {
     recalculateAFLLadder(seasonId: $seasonId)
@@ -120,11 +191,5 @@ export const RECALCULATE_AFL_LADDER = gql`
 export const RECALCULATE_FFL_LADDER = gql`
   mutation RecalculateFFLLadder($seasonId: ID!) {
     recalculateFFLLadder(seasonId: $seasonId)
-  }
-`
-
-export const RECALCULATE_FFL_CLUB_MATCH_SCORE = gql`
-  mutation RecalculateFFLClubMatchScore($clubMatchId: ID!) {
-    recalculateFFLClubMatchScore(clubMatchId: $clubMatchId)
   }
 `

@@ -9,6 +9,22 @@ import (
 	"context"
 )
 
+const createClub = `-- name: CreateClub :one
+INSERT INTO ffl.club (name) VALUES ($1) RETURNING id, name
+`
+
+type CreateClubRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) CreateClub(ctx context.Context, name string) (CreateClubRow, error) {
+	row := q.db.QueryRow(ctx, createClub, name)
+	var i CreateClubRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const findAllClubs = `-- name: FindAllClubs :many
 SELECT id, name
 FROM ffl.club
@@ -55,6 +71,22 @@ type FindClubByIDRow struct {
 func (q *Queries) FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error) {
 	row := q.db.QueryRow(ctx, findClubByID, id)
 	var i FindClubByIDRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
+const findClubByName = `-- name: FindClubByName :one
+SELECT id, name FROM ffl.club WHERE name = $1 AND deleted_at IS NULL
+`
+
+type FindClubByNameRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) FindClubByName(ctx context.Context, name string) (FindClubByNameRow, error) {
+	row := q.db.QueryRow(ctx, findClubByName, name)
+	var i FindClubByNameRow
 	err := row.Scan(&i.ID, &i.Name)
 	return i, err
 }

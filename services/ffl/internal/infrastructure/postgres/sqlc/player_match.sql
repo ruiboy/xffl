@@ -83,3 +83,10 @@ DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP
 WHERE ffl.player_match.deleted_at IS NULL
 RETURNING id, club_match_id, player_season_id, position, status, drv_afl_status, backup_positions, interchange_position, display_order, notes, drv_score, afl_player_match_id;
+
+-- name: CountPlayerMatchesByRoundID :one
+SELECT COUNT(*)
+FROM ffl.player_match pm
+JOIN ffl.club_match cm ON cm.id = pm.club_match_id AND cm.deleted_at IS NULL
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+WHERE m.round_id = $1 AND pm.deleted_at IS NULL;

@@ -31,6 +31,12 @@ type Querier interface {
 	FindDataopsMatchSourceByMatchID(ctx context.Context, arg FindDataopsMatchSourceByMatchIDParams) (FindDataopsMatchSourceByMatchIDRow, error)
 	FindDataopsPlayerSource(ctx context.Context, arg FindDataopsPlayerSourceParams) (int32, error)
 	FindFinalMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalMatchesBySeasonIDRow, error)
+	// For each player_season_id whose club has a match in the given round that is
+	// already final, returns "played" (a player_match row exists) or "dnp" (it
+	// doesn't). Players whose club's match in that round isn't final yet (or has
+	// no match at all, e.g. a bye) are omitted — callers must not infer DNP for
+	// them until this query includes them.
+	FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, arg FindFinalStatusBySeasonIDsAndRoundIDParams) ([]FindFinalStatusBySeasonIDsAndRoundIDRow, error)
 	// Picks the player_season belonging to the most chronologically recent AFL
 	// season the player has data for, based on the latest match start_dt within
 	// that season (afl.season.id ordering is not chronological).
@@ -48,7 +54,12 @@ type Querier interface {
 	FindPlayerSeasonByID(ctx context.Context, id int32) (FindPlayerSeasonByIDRow, error)
 	FindPlayerSeasonsByClubSeasonIDWithPlayer(ctx context.Context, clubSeasonID int32) ([]FindPlayerSeasonsByClubSeasonIDWithPlayerRow, error)
 	FindPlayerSeasonsByIDs(ctx context.Context, ids []int32) ([]FindPlayerSeasonsByIDsRow, error)
+	// Every season the player has data for, most recent first. Ordered the same
+	// way as FindLatestPlayerSeasonByPlayerID: by the latest match start_dt within
+	// each season, because afl.season.id ordering is not chronological.
+	FindPlayerSeasonsByPlayerID(ctx context.Context, playerID int32) ([]int32, error)
 	FindPlayerSeasonsBySeasonID(ctx context.Context, arg FindPlayerSeasonsBySeasonIDParams) ([]int32, error)
+	FindPlayerSeasonsBySeasonIDWithClub(ctx context.Context, seasonID int32) ([]FindPlayerSeasonsBySeasonIDWithClubRow, error)
 	FindPlayersByExactName(ctx context.Context, name string) ([]FindPlayersByExactNameRow, error)
 	FindPlayersByIDs(ctx context.Context, ids []int32) ([]FindPlayersByIDsRow, error)
 	FindPlayersByIDsWithClub(ctx context.Context, ids []int32) ([]FindPlayersByIDsWithClubRow, error)

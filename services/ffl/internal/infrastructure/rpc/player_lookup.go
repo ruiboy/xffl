@@ -40,6 +40,23 @@ func (a *AFLPlayerLookup) LookupPlayers(ctx context.Context, aflPlayerIDs []int)
 	return candidates, nil
 }
 
+func (a *AFLPlayerLookup) LookupPlayerSeasonsBySeasonID(ctx context.Context, aflSeasonID int) ([]application.PlayerCandidate, error) {
+	resp, err := a.client.LookupPlayerSeasonsBySeasonID(ctx, &aflv1.LookupPlayerSeasonsBySeasonIDRequest{AflSeasonId: int32(aflSeasonID)})
+	if err != nil {
+		return nil, err
+	}
+	candidates := make([]application.PlayerCandidate, len(resp.Players))
+	for i, p := range resp.Players {
+		candidates[i] = application.PlayerCandidate{
+			AFLPlayerID:       int(p.PlayerId),
+			AFLPlayerSeasonID: int(p.PlayerSeasonId),
+			Name:              p.Name,
+			Club:              p.ClubName,
+		}
+	}
+	return candidates, nil
+}
+
 func (a *AFLPlayerLookup) LookupPlayerSeason(ctx context.Context, aflPlayerSeasonID int) (int, error) {
 	resp, err := a.client.LookupPlayerSeason(ctx, &aflv1.LookupPlayerSeasonRequest{PlayerSeasonId: int32(aflPlayerSeasonID)})
 	if err != nil {
@@ -81,6 +98,25 @@ func (a *AFLPlayerLookup) LookupPlayerMatchBySeasonRound(ctx context.Context, af
 		return nil, err
 	}
 	return toPlayerMatchStats(resp.Stats), nil
+}
+
+func (a *AFLPlayerLookup) LookupFinalAFLStatus(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) (map[int]string, error) {
+	psIDs := make([]int32, len(aflPlayerSeasonIDs))
+	for i, id := range aflPlayerSeasonIDs {
+		psIDs[i] = int32(id)
+	}
+	resp, err := a.client.LookupFinalStatusBySeasonRound(ctx, &aflv1.LookupBySeasonRound{
+		PlayerSeasonIds: psIDs,
+		RoundId:         int32(aflRoundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]string, len(resp.Players))
+	for _, p := range resp.Players {
+		out[int(p.PlayerSeasonId)] = p.Status
+	}
+	return out, nil
 }
 
 func (a *AFLPlayerLookup) LookupByeInfo(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]application.ByePlayerInfo, error) {

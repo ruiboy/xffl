@@ -49,6 +49,27 @@ WHERE pm.player_season_id = ANY(@player_season_ids::int[])
   AND pm.deleted_at IS NULL
 ORDER BY pm.id;
 
+-- name: FindFinalStatusBySeasonIDsAndRoundID :many
+-- For each player_season_id whose club has a match in the given round that is
+-- already final, returns "played" (a player_match row exists) or "dnp" (it
+-- doesn't). Players whose club's match in that round isn't final yet (or has
+-- no match at all, e.g. a bye) are omitted — callers must not infer DNP for
+-- them until this query includes them.
+SELECT
+  ps.id AS player_season_id,
+  CASE WHEN pm.id IS NOT NULL THEN 'played' ELSE 'dnp' END::text AS status
+FROM afl.player_season ps
+JOIN afl.club_match cm ON cm.club_season_id = ps.club_season_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id
+  AND m.round_id = @round_id
+  AND m.data_status = 'final'
+  AND m.deleted_at IS NULL
+LEFT JOIN afl.player_match pm ON pm.player_season_id = ps.id
+  AND pm.club_match_id = cm.id
+  AND pm.deleted_at IS NULL
+WHERE ps.id = ANY(@player_season_ids::int[])
+  AND ps.deleted_at IS NULL;
+
 -- name: FindByeStatusBatch :many
 -- For each player_season_id, returns whether their club has a bye in the given
 -- round, and whether they played in their club's most recent non-bye final match

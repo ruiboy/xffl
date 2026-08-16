@@ -23,6 +23,11 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 		return 0, fmt.Errorf("load player matches for club_match %d: %w", clubMatchID, err)
 	}
 
+	rules, err := c.rulesForClubMatch(ctx, clubMatchID)
+	if err != nil {
+		return 0, err
+	}
+
 	// Partition into linked (have AFL player_match_id) and unlinked.
 	var aflMatchIDs []int
 	var unlinkedPSIDs []int
@@ -49,6 +54,9 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 	// Network call 2: fetch stats for unlinked player_matches by (AFL player_season_id, AFL round_id).
 	// statsByAFLSeasonID maps AFL player_season_id → stats (includes the AFL player_match_id for linking).
 	statsByAFLSeasonID := make(map[int]PlayerMatchStats)
+	// finalStatusByAFLSeasonID maps AFL player_season_id → "dnp" for players confirmed
+	// not to have played, once their AFL match has finalised.
+	finalStatusByAFLSeasonID := make(map[int]string)
 	if len(unlinkedPSIDs) > 0 {
 		// Resolve AFL player_season_ids from ffl.player_season records.
 		playerSeasons, err := c.playerSeasons.FindByIDs(ctx, unlinkedPSIDs)
@@ -85,6 +93,26 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 				for _, s := range unlinked {
 					statsByAFLSeasonID[s.PlayerSeasonID] = s
 				}
+
+				// For players still without stats, check whether their AFL match is
+				// already final and they simply didn't play — as opposed to their match
+				// not having happened yet. Without this, a player whose FFL lineup row is
+				// created after their real AFL match already finalised (e.g. a backfilled
+				// team import) would never receive a status, since no future event
+				// re-checks already-finalised matches.
+				var missingAFLPSIDs []int
+				for _, psID := range aflPSIDs {
+					if _, ok := statsByAFLSeasonID[psID]; !ok {
+						missingAFLPSIDs = append(missingAFLPSIDs, psID)
+					}
+				}
+				if len(missingAFLPSIDs) > 0 {
+					fs, err := c.playerLookup.LookupFinalAFLStatus(ctx, missingAFLPSIDs, r.AFLRoundID)
+					if err != nil {
+						return 0, fmt.Errorf("lookup final AFL status: %w", err)
+					}
+					finalStatusByAFLSeasonID = fs
+				}
 			}
 		}
 	}
@@ -100,6 +128,7 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 		for _, pm := range pms {
 			var s PlayerMatchStats
 			var found bool
+			var aflPSID int
 
 			if pm.AFLPlayerMatchID != nil {
 				s, found = statsByAFLMatchID[*pm.AFLPlayerMatchID]
@@ -107,7 +136,8 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 				// Look up by AFL player_season_id via the unlinked path.
 				ps, err := repos.PlayerSeasons.FindByID(ctx, pm.PlayerSeasonID)
 				if err == nil && ps.AFLPlayerSeasonID != 0 {
-					s, found = statsByAFLSeasonID[ps.AFLPlayerSeasonID]
+					aflPSID = ps.AFLPlayerSeasonID
+					s, found = statsByAFLSeasonID[aflPSID]
 					if found && s.ID != 0 {
 						// Establish the AFL player_match link for future calls.
 						if linkErr := repos.PlayerMatches.UpdateAFLPlayerMatchID(ctx, pm.ID, s.ID); linkErr != nil {
@@ -118,6 +148,17 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 			}
 
 			if !found {
+				// No stats yet. If the player's AFL match has already finalised and
+				// they're confirmed not to have played, record dnp now rather than
+				// leaving the row permanently unresolved.
+				if status, ok := finalStatusByAFLSeasonID[aflPSID]; ok && aflPSID != 0 {
+					dnpParams := upsertParamsFromPlayerMatch(pm)
+					dnp := domain.AFLStatus(status)
+					dnpParams.AFLStatus = &dnp
+					if _, err := repos.PlayerMatches.Upsert(ctx, dnpParams); err != nil {
+						return fmt.Errorf("upsert dnp status for player_match %d: %w", pm.ID, err)
+					}
+				}
 				continue
 			}
 
@@ -139,7 +180,10 @@ func (c *Commands) RecalculateScore(ctx context.Context, clubMatchID int) (int, 
 				icPos := domain.Position(*pm.InterchangePosition)
 				scorePM.Position = &icPos
 			}
-			score := scorePM.CalculateScore(aflStats)
+			score := 0
+			if scorePM.Position != nil {
+				score = rules.Score(*scorePM.Position, aflStats)
+			}
 			upsertParams := domain.UpsertPlayerMatchParams{
 				ClubMatchID:         pm.ClubMatchID,
 				PlayerSeasonID:      pm.PlayerSeasonID,
@@ -183,7 +227,14 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 			return err
 		}
 
-		score := pm.CalculateScore(stats)
+		rules, err := c.rulesForClubMatch(ctx, pm.ClubMatchID)
+		if err != nil {
+			return err
+		}
+		score := 0
+		if pm.Position != nil {
+			score = rules.Score(*pm.Position, stats)
+		}
 		updated, err := repos.PlayerMatches.Upsert(ctx, domain.UpsertPlayerMatchParams{
 			ClubMatchID:         pm.ClubMatchID,
 			PlayerSeasonID:      pm.PlayerSeasonID,
@@ -216,47 +267,39 @@ func (c *Commands) CalculateFantasyScore(ctx context.Context, playerMatchID int,
 // RecalculateFflLadder rebuilds FFL ladder standings for the given season from all final matches.
 // Idempotent — safe to call multiple times.
 func (c *Commands) RecalculateFflLadder(ctx context.Context, seasonID int) error {
-	matches, err := c.matches.FindFinalBySeasonID(ctx, seasonID)
+	results, err := c.clubMatches.FindFinalClubMatchesBySeasonID(ctx, seasonID)
 	if err != nil {
-		return fmt.Errorf("load final FFL matches: %w", err)
+		return fmt.Errorf("load final FFL club_matches: %w", err)
 	}
-	for _, cs := range domain.CalculateLadder(matches) {
+	for _, cs := range domain.CalculateLadder(results) {
 		if err := c.clubSeasons.Update(ctx, cs); err != nil {
 			slog.WarnContext(ctx, "update club season failed",
 				slog.Int("club_season_id", cs.ID), slog.Any("error", err))
 		}
 	}
-	for _, m := range matches {
-		homePts, awayPts := matchPremiershipPoints(m)
-		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Home.ID, homePts); err != nil {
+	for clubMatchID, pts := range domain.ClubMatchPremiershipPoints(results) {
+		if err := c.clubMatches.UpdatePremiershipPoints(ctx, clubMatchID, pts); err != nil {
 			slog.WarnContext(ctx, "update club_match premiership_points failed",
-				slog.Int("club_match_id", m.Home.ID), slog.Any("error", err))
-		}
-		if err := c.clubMatches.UpdatePremiershipPoints(ctx, m.Away.ID, awayPts); err != nil {
-			slog.WarnContext(ctx, "update club_match premiership_points failed",
-				slog.Int("club_match_id", m.Away.ID), slog.Any("error", err))
+				slog.Int("club_match_id", clubMatchID), slog.Any("error", err))
 		}
 	}
 	return nil
-}
-
-func matchPremiershipPoints(m domain.Match) (home, away int) {
-	switch m.DeriveResult() {
-	case domain.MatchResultHomeWin:
-		return domain.PremiershipPointsWin, 0
-	case domain.MatchResultAwayWin:
-		return 0, domain.PremiershipPointsWin
-	case domain.MatchResultDraw:
-		return domain.PremiershipPointsDraw, domain.PremiershipPointsDraw
-	default:
-		return 0, 0
-	}
 }
 
 // AllAFLStatusesFinal returns true when every player_match in the club_match has
 // drv_afl_status ∈ {played, dnp} — none are null or playing.
 func (c *Commands) AllAFLStatusesFinal(ctx context.Context, clubMatchID int) (bool, error) {
 	return c.playerMatches.AllAFLStatusesFinal(ctx, clubMatchID)
+}
+
+// rulesForClubMatch resolves the rules for the season this club match belongs to.
+// An unknown rules id is an error (there is no implicit fallback).
+func (c *Commands) rulesForClubMatch(ctx context.Context, clubMatchID int) (domain.Rules, error) {
+	id, err := c.clubMatches.GetRulesID(ctx, clubMatchID)
+	if err != nil {
+		return domain.Rules{}, fmt.Errorf("resolve rules for club_match %d: %w", clubMatchID, err)
+	}
+	return domain.RulesFor(id)
 }
 
 func (c *Commands) emitClubMatchScoreFinalized(ctx context.Context, clubMatchID, matchID int) error {

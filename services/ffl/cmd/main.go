@@ -13,9 +13,11 @@ import (
 
 	contractevents "xffl/contracts/events"
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
 	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
+	"xffl/services/ffl/internal/infrastructure/spreadsheet"
 	"xffl/services/ffl/internal/infrastructure/rpc"
 	fflevents "xffl/services/ffl/internal/interface/events"
 	gql "xffl/services/ffl/internal/interface/graphql"
@@ -100,16 +102,20 @@ func main() {
 		}
 	}()
 
-	dataOps := application.NewDataOpsCommands(
+	parser := forum.NewParser()
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		playerLookup,
 		forum.NewLevenshteinResolver(),
-		forum.NewParser(),
+		parser,
 		dispatcher,
 		commands,
+		forum.NewSquadParser(),
 	)
+	captures := dataops.NewForumCaptureBuffer(parser)
+	builder := dataops.NewBuilder(db, spreadsheet.NewFixtureParser())
 
-	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps}
+	resolver := &gql.Resolver{Queries: queries, Commands: commands, DataOps: dataOps, Captures: captures, Builder: builder}
 	srv := handler.NewDefaultServer(gql.NewExecutableSchema(gql.Config{Resolvers: resolver}))
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		ctx = pg.WithQueryCounter(ctx)

@@ -21,8 +21,54 @@ func (q *Queries) CountFinalClubMatchesByMatchID(ctx context.Context, matchID in
 	return count, err
 }
 
+const createClubMatch = `-- name: CreateClubMatch :one
+INSERT INTO ffl.club_match (match_id, club_season_id, side)
+VALUES ($1, $2, $3)
+RETURNING id, match_id, club_season_id, side, data_status
+`
+
+type CreateClubMatchParams struct {
+	MatchID      int32
+	ClubSeasonID int32
+	Side         string
+}
+
+type CreateClubMatchRow struct {
+	ID           int32
+	MatchID      int32
+	ClubSeasonID int32
+	Side         string
+	DataStatus   string
+}
+
+func (q *Queries) CreateClubMatch(ctx context.Context, arg CreateClubMatchParams) (CreateClubMatchRow, error) {
+	row := q.db.QueryRow(ctx, createClubMatch, arg.MatchID, arg.ClubSeasonID, arg.Side)
+	var i CreateClubMatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.MatchID,
+		&i.ClubSeasonID,
+		&i.Side,
+		&i.DataStatus,
+	)
+	return i, err
+}
+
+const deleteClubMatchByID = `-- name: DeleteClubMatchByID :exec
+DELETE FROM ffl.club_match WHERE id = $1
+`
+
+// Drops a club from a match outright. The fixture builder only edits rounds with
+// no submitted teams, so there is nothing here worth keeping — and a soft delete
+// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+// later blocks the same club from rejoining the match against.
+func (q *Queries) DeleteClubMatchByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteClubMatchByID, id)
+	return err
+}
+
 const findClubMatchByID = `-- name: FindClubMatchByID :one
-SELECT id, match_id, club_season_id, data_status, notes, drv_score
+SELECT id, match_id, club_season_id, side, data_status, notes, drv_score
 FROM ffl.club_match
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -31,6 +77,7 @@ type FindClubMatchByIDRow struct {
 	ID           int32
 	MatchID      int32
 	ClubSeasonID int32
+	Side         string
 	DataStatus   string
 	Notes        *string
 	DrvScore     *int32
@@ -43,6 +90,7 @@ func (q *Queries) FindClubMatchByID(ctx context.Context, id int32) (FindClubMatc
 		&i.ID,
 		&i.MatchID,
 		&i.ClubSeasonID,
+		&i.Side,
 		&i.DataStatus,
 		&i.Notes,
 		&i.DrvScore,
@@ -51,7 +99,7 @@ func (q *Queries) FindClubMatchByID(ctx context.Context, id int32) (FindClubMatc
 }
 
 const findClubMatchesByIDs = `-- name: FindClubMatchesByIDs :many
-SELECT id, match_id, club_season_id, data_status, notes, drv_score
+SELECT id, match_id, club_season_id, side, data_status, notes, drv_score
 FROM ffl.club_match
 WHERE id = ANY($1::int[]) AND deleted_at IS NULL
 `
@@ -60,6 +108,7 @@ type FindClubMatchesByIDsRow struct {
 	ID           int32
 	MatchID      int32
 	ClubSeasonID int32
+	Side         string
 	DataStatus   string
 	Notes        *string
 	DrvScore     *int32
@@ -78,6 +127,7 @@ func (q *Queries) FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([
 			&i.ID,
 			&i.MatchID,
 			&i.ClubSeasonID,
+			&i.Side,
 			&i.DataStatus,
 			&i.Notes,
 			&i.DrvScore,
@@ -93,21 +143,27 @@ func (q *Queries) FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([
 }
 
 const findClubMatchesByMatchID = `-- name: FindClubMatchesByMatchID :many
-SELECT id, match_id, club_season_id, data_status, notes, drv_score
-FROM ffl.club_match
-WHERE match_id = $1 AND deleted_at IS NULL
-ORDER BY CASE WHEN side = 'home' THEN 0 ELSE 1 END
+SELECT cm.id, cm.match_id, cm.club_season_id, cm.side, cm.data_status, cm.notes, cm.drv_score
+FROM ffl.club_match cm
+JOIN ffl.club_season cs ON cs.id = cm.club_season_id
+JOIN ffl.club c ON c.id = cs.club_id
+WHERE cm.match_id = $1 AND cm.deleted_at IS NULL
+ORDER BY CASE WHEN cm.side = 'home' THEN 0 ELSE 1 END, c.name
 `
 
 type FindClubMatchesByMatchIDRow struct {
 	ID           int32
 	MatchID      int32
 	ClubSeasonID int32
+	Side         string
 	DataStatus   string
 	Notes        *string
 	DrvScore     *int32
 }
 
+// Home first so a versus match reads [home, away]; club name breaks the tie for
+// styles where every side is equal, so a bye/superbye lists alphabetically
+// instead of in whatever order the rows happen to come back in.
 func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error) {
 	rows, err := q.db.Query(ctx, findClubMatchesByMatchID, matchID)
 	if err != nil {
@@ -121,6 +177,7 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 			&i.ID,
 			&i.MatchID,
 			&i.ClubSeasonID,
+			&i.Side,
 			&i.DataStatus,
 			&i.Notes,
 			&i.DrvScore,
@@ -133,6 +190,70 @@ func (q *Queries) FindClubMatchesByMatchID(ctx context.Context, matchID int32) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const findFinalFflClubMatchesBySeasonID = `-- name: FindFinalFflClubMatchesBySeasonID :many
+SELECT cm.match_id, cm.id AS club_match_id, cm.club_season_id,
+       COALESCE(cm.drv_score, 0) AS score,
+       COALESCE(m.match_style, '') AS match_style,
+       r.round_type
+FROM ffl.club_match cm
+JOIN ffl.match m ON m.id = cm.match_id AND m.deleted_at IS NULL
+JOIN ffl.round r ON r.id = m.round_id AND r.deleted_at IS NULL
+WHERE r.season_id = $1 AND cm.data_status = 'final' AND cm.deleted_at IS NULL
+ORDER BY cm.match_id
+`
+
+type FindFinalFflClubMatchesBySeasonIDRow struct {
+	MatchID      int32
+	ClubMatchID  int32
+	ClubSeasonID int32
+	Score        int32
+	MatchStyle   string
+	RoundType    string
+}
+
+func (q *Queries) FindFinalFflClubMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflClubMatchesBySeasonIDRow, error) {
+	rows, err := q.db.Query(ctx, findFinalFflClubMatchesBySeasonID, seasonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindFinalFflClubMatchesBySeasonIDRow{}
+	for rows.Next() {
+		var i FindFinalFflClubMatchesBySeasonIDRow
+		if err := rows.Scan(
+			&i.MatchID,
+			&i.ClubMatchID,
+			&i.ClubSeasonID,
+			&i.Score,
+			&i.MatchStyle,
+			&i.RoundType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRulesIDByClubMatchID = `-- name: GetRulesIDByClubMatchID :one
+SELECT s.rules_id
+FROM ffl.club_match cm
+JOIN ffl.match m  ON m.id = cm.match_id
+JOIN ffl.round r  ON r.id = m.round_id
+JOIN ffl.season s ON s.id = r.season_id
+WHERE cm.id = $1 AND cm.deleted_at IS NULL
+`
+
+func (q *Queries) GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, getRulesIDByClubMatchID, id)
+	var rules_id string
+	err := row.Scan(&rules_id)
+	return rules_id, err
 }
 
 const updateClubMatchDataStatus = `-- name: UpdateClubMatchDataStatus :exec
@@ -200,5 +321,21 @@ type UpdateClubMatchScoreParams struct {
 
 func (q *Queries) UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error {
 	_, err := q.db.Exec(ctx, updateClubMatchScore, arg.ID, arg.DrvScore)
+	return err
+}
+
+const updateClubMatchSide = `-- name: UpdateClubMatchSide :exec
+UPDATE ffl.club_match
+SET side = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateClubMatchSideParams struct {
+	ID   int32
+	Side string
+}
+
+func (q *Queries) UpdateClubMatchSide(ctx context.Context, arg UpdateClubMatchSideParams) error {
+	_, err := q.db.Exec(ctx, updateClubMatchSide, arg.ID, arg.Side)
 	return err
 }

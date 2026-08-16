@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Round" />
     <template v-else-if="data">
       <Breadcrumb :items="[{ label: 'AFL' }, { label: data.season.name, to: { name: 'afl-home' } }]" />
       <h1 class="text-2xl font-bold mb-6">
@@ -16,7 +17,17 @@
       />
 
       <section class="mb-8">
-        <h2 class="text-lg font-semibold text-text-heading mb-3">Matches</h2>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-text-heading">Matches</h2>
+          <router-link
+            v-if="data.round.id === liveRoundId"
+            :to="{ name: 'ffl-data-ops', query: { tab: 'afl-stats', round: data.round.id } }"
+            class="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text transition-colors"
+          >
+            <IconDataOps class="w-3.5 h-3.5" />
+            Import Stats
+          </router-link>
+        </div>
         <div class="space-y-2">
           <MatchSummary
             v-for="match in data.round.matches"
@@ -57,6 +68,8 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_ROUND } from '../api/queries'
 import { GET_FFL_ROUND_ID_BY_AFL_ROUND } from '@/features/ffl/api/queries'
 import { useAflState } from '../composables/useAflState'
@@ -66,6 +79,7 @@ import MatchSummary from '../components/MatchSummary.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import RoundNav from '../components/RoundNav.vue'
 import TopPlayers from '../components/TopPlayers.vue'
+import IconDataOps from '@/features/data-ops/components/icons/IconDataOps.vue'
 
 const props = defineProps<{ roundId: string }>()
 
@@ -93,6 +107,8 @@ const data = computed(() => {
   if (!round) return null
   return { season: round.season, round }
 })
+
+const notFound = useNotFound(data, loading, error)
 
 const statCategories = [
   { key: 'kicks', label: 'Kicks' },

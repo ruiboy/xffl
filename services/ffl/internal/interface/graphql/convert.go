@@ -49,7 +49,7 @@ func convertPlayers(players []domain.Player) []*FFLPlayer {
 }
 
 func convertSeason(s domain.Season) *FFLSeason {
-	return &FFLSeason{ID: toID(s.ID), Name: s.Name}
+	return &FFLSeason{ID: toID(s.ID), Name: s.Name, RulesID: s.RulesID}
 }
 
 func convertSeasons(seasons []domain.Season) []*FFLSeason {
@@ -112,6 +112,7 @@ func convertClubSeason(cs domain.ClubSeason, club domain.Club, season domain.Sea
 		Against:    cs.Against,
 		Percentage:        cs.Percentage(),
 		PremiershipPoints: cs.PremiershipPoints,
+		ExtraPoints:       cs.ExtraPoints,
 	}
 }
 
@@ -120,6 +121,7 @@ func convertClubMatch(cm domain.ClubMatch, club domain.Club) *FFLClubMatch {
 		ID:           toID(cm.ID),
 		ClubSeasonID: toID(cm.ClubSeasonID),
 		Club:         convertClub(club),
+		Side:         cm.Side,
 		DataStatus:   string(cm.DataStatus),
 		Notes:        cm.Notes,
 		Score:        cm.StoredScore,

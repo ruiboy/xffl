@@ -1,6 +1,6 @@
 type Query {
   fflSeasons: [FFLSeason!]!
-  fflSeason(id: ID!): FFLSeason!
+  fflSeason(id: ID!): FFLSeason
   fflRound(id: ID!): FFLRound
   fflMatch(id: ID!): FFLMatch
 
@@ -20,6 +20,8 @@ type Query {
 type FFLSeason {
   id: ID!
   name: String!
+  "The scoring era (rules_id) in effect for this season."
+  rulesId: String!
   ladder: [FFLClubSeason!]!
   rounds: [FFLRound!]!
   aflSeason: AFLSeason
@@ -40,13 +42,21 @@ type FFLMatch {
   startTime: String
   result: String
   round: FFLRound!
+  "Convenience sugar over clubMatches: the home side of a versus match (null otherwise)."
   homeClubMatch: FFLClubMatch
+  "Convenience sugar over clubMatches: the away side of a versus match (null otherwise)."
   awayClubMatch: FFLClubMatch
+  "'versus', 'bye', or 'superbye'."
+  matchStyle: String!
+  "The canonical list of every club_match in this match, each tagged with its side. Home/away are sugar over this."
+  clubMatches: [FFLClubMatch!]!
 }
 
 type FFLClub {
   id: ID!
   name: String!
+  "This club's record for every season it has participated in, most recent first."
+  seasons: [FFLClubSeason!]!
 }
 
 type FFLClubSeason {
@@ -61,12 +71,16 @@ type FFLClubSeason {
   against: Int!
   percentage: Float!
   premiershipPoints: Int!
+  "Extra points earned eg from superbyes"
+  extraPoints: Int!
   players(first: Int, after: String, filter: FFLPlayerSeasonFilter): FFLPlayerSeasonConnection!
 }
 
 type FFLClubMatch {
   id: ID!
   clubSeasonId: ID!
+  "This club_match's role in its match: 'home' | 'away' | 'bye' | 'superbye'."
+  side: String!
   roundId: ID
   aflRoundId: ID
   seasonId: ID

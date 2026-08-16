@@ -9,6 +9,14 @@ service PlayerLookup {
   rpc LookupPlayerSeason(LookupPlayerSeasonRequest) returns (LookupPlayerSeasonResponse);
   rpc LookupPlayerMatch(LookupPlayerMatchRequest) returns (LookupPlayerMatchResponse);
   rpc LookupByeInfo(LookupByeInfoRequest) returns (LookupByeInfoResponse);
+  // LookupPlayerSeasonsBySeasonID returns every player_season in an AFL season with
+  // its name and club, for building a candidate pool to fuzzy-match imported names
+  // against (e.g. the FFL squad importer).
+  rpc LookupPlayerSeasonsBySeasonID(LookupPlayerSeasonsBySeasonIDRequest) returns (LookupPlayerSeasonsBySeasonIDResponse);
+  // LookupFinalStatusBySeasonRound returns "played"/"dnp" for each player_season_id
+  // whose club's match in the round is already final. Player_season_ids whose club's
+  // match isn't final yet are omitted from the response.
+  rpc LookupFinalStatusBySeasonRound(LookupBySeasonRound) returns (LookupFinalStatusResponse);
 }
 
 message LookupPlayersRequest {
@@ -84,4 +92,28 @@ message ByePlayerInfo {
 
 message LookupByeInfoResponse {
   repeated ByePlayerInfo players = 1;
+}
+
+message LookupPlayerSeasonsBySeasonIDRequest {
+  int32 afl_season_id = 1;
+}
+
+message LookupPlayerSeasonsBySeasonIDResponse {
+  repeated PlayerSeasonWithClub players = 1;
+}
+
+message PlayerSeasonWithClub {
+  int32  player_season_id = 1;
+  int32  player_id        = 2;
+  string name             = 3;
+  string club_name        = 4;
+}
+
+message LookupFinalStatusResponse {
+  repeated FinalPlayerStatus players = 1;
+}
+
+message FinalPlayerStatus {
+  int32  player_season_id = 1;
+  string status            = 2; // "played" or "dnp"
 }

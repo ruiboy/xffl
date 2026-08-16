@@ -11,24 +11,49 @@ import (
 type Querier interface {
 	AllAFLStatusesFinal(ctx context.Context, clubMatchID int32) (bool, error)
 	CountFinalClubMatchesByMatchID(ctx context.Context, matchID int32) (int64, error)
+	CountPlayerMatchesByRoundID(ctx context.Context, roundID int32) (int64, error)
+	CreateClub(ctx context.Context, name string) (CreateClubRow, error)
+	CreateClubMatch(ctx context.Context, arg CreateClubMatchParams) (CreateClubMatchRow, error)
+	CreateClubSeason(ctx context.Context, arg CreateClubSeasonParams) (CreateClubSeasonRow, error)
+	CreateLeague(ctx context.Context, name string) (CreateLeagueRow, error)
+	CreateMatch(ctx context.Context, arg CreateMatchParams) (CreateMatchRow, error)
 	CreatePlayer(ctx context.Context, aflPlayerID int32) (CreatePlayerRow, error)
 	CreatePlayerSeason(ctx context.Context, arg CreatePlayerSeasonParams) (CreatePlayerSeasonRow, error)
+	CreateRound(ctx context.Context, arg CreateRoundParams) (CreateRoundRow, error)
+	CreateSeason(ctx context.Context, arg CreateSeasonParams) (CreateSeasonRow, error)
+	// Drops a club from a match outright. The fixture builder only edits rounds with
+	// no submitted teams, so there is nothing here worth keeping — and a soft delete
+	// would leave a tombstone that uni_ffl_club_match (which ignores deleted_at)
+	// later blocks the same club from rejoining the match against.
+	DeleteClubMatchByID(ctx context.Context, id int32) error
+	DeleteMatchByID(ctx context.Context, id int32) error
+	// Matches are removed outright rather than soft-deleted: the fixture builder
+	// only edits rounds with no submitted teams, so a dropped match holds nothing
+	// worth keeping, and tombstones would accumulate on every save. club_match rows
+	// follow via ON DELETE CASCADE.
+	DeleteMatchesByRoundID(ctx context.Context, roundID int32) error
 	DeletePlayer(ctx context.Context, id int32) error
 	DeletePlayerMatchByID(ctx context.Context, id int32) error
 	DeletePlayerMatchesByClubMatchID(ctx context.Context, clubMatchID int32) error
 	DeletePlayerSeason(ctx context.Context, id int32) error
 	FindAllClubs(ctx context.Context) ([]FindAllClubsRow, error)
+	FindAllLeagues(ctx context.Context) ([]FindAllLeaguesRow, error)
 	FindAllPlayers(ctx context.Context) ([]FindAllPlayersRow, error)
 	FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error)
 	FindClubByID(ctx context.Context, id int32) (FindClubByIDRow, error)
+	FindClubByName(ctx context.Context, name string) (FindClubByNameRow, error)
 	FindClubMatchByID(ctx context.Context, id int32) (FindClubMatchByIDRow, error)
 	FindClubMatchesByIDs(ctx context.Context, dollar_1 []int32) ([]FindClubMatchesByIDsRow, error)
+	// Home first so a versus match reads [home, away]; club name breaks the tie for
+	// styles where every side is equal, so a bye/superbye lists alphabetically
+	// instead of in whatever order the rows happen to come back in.
 	FindClubMatchesByMatchID(ctx context.Context, matchID int32) ([]FindClubMatchesByMatchIDRow, error)
 	FindClubSeasonByClubAndSeason(ctx context.Context, arg FindClubSeasonByClubAndSeasonParams) (FindClubSeasonByClubAndSeasonRow, error)
 	FindClubSeasonByID(ctx context.Context, id int32) (FindClubSeasonByIDRow, error)
+	FindClubSeasonsByClubID(ctx context.Context, clubID int32) ([]FindClubSeasonsByClubIDRow, error)
 	FindClubSeasonsBySeasonID(ctx context.Context, seasonID int32) ([]FindClubSeasonsBySeasonIDRow, error)
 	FindClubsByIDs(ctx context.Context, ids []int32) ([]FindClubsByIDsRow, error)
-	FindFinalFflMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflMatchesBySeasonIDRow, error)
+	FindFinalFflClubMatchesBySeasonID(ctx context.Context, seasonID int32) ([]FindFinalFflClubMatchesBySeasonIDRow, error)
 	FindMatchByID(ctx context.Context, id int32) (FindMatchByIDRow, error)
 	FindMatchesByIDs(ctx context.Context, ids []int32) ([]FindMatchesByIDsRow, error)
 	FindMatchesByRoundID(ctx context.Context, roundID int32) ([]FindMatchesByRoundIDRow, error)
@@ -45,14 +70,23 @@ type Querier interface {
 	FindPlayersByPlayerSeasonIDs(ctx context.Context, playerSeasonIds []int32) ([]FindPlayersByPlayerSeasonIDsRow, error)
 	FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (FindRoundByAFLRoundIDRow, error)
 	FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error)
+	// Rounds run in season order. start_dt is the real key, but the fixture builder
+	// never sets it (an FFL round's timing comes from the AFL round it maps to, and
+	// that lives in the afl schema, which this one does not join to), so every
+	// builder-made round ties on NULL. afl_round_id breaks that tie: a season's AFL
+	// rounds are created in sequence, so ascending id is season order. Falling back
+	// to r.id alone would sort by creation, putting a round added late last.
 	FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error)
 	FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error)
+	GetRulesIDByClubMatchID(ctx context.Context, id int32) (string, error)
 	SetPlayerSeasonEndRound(ctx context.Context, arg SetPlayerSeasonEndRoundParams) error
+	SoftDeleteRound(ctx context.Context, id int32) error
 	UpdateAFLPlayerMatchID(ctx context.Context, arg UpdateAFLPlayerMatchIDParams) error
 	UpdateClubMatchDataStatus(ctx context.Context, arg UpdateClubMatchDataStatusParams) error
 	UpdateClubMatchNotes(ctx context.Context, arg UpdateClubMatchNotesParams) error
 	UpdateClubMatchPremiershipPoints(ctx context.Context, arg UpdateClubMatchPremiershipPointsParams) error
 	UpdateClubMatchScore(ctx context.Context, arg UpdateClubMatchScoreParams) error
+	UpdateClubMatchSide(ctx context.Context, arg UpdateClubMatchSideParams) error
 	UpdateDrvAFLStatus(ctx context.Context, arg UpdateDrvAFLStatusParams) error
 	UpdateFflClubSeason(ctx context.Context, arg UpdateFflClubSeasonParams) error
 	UpdateFflMatchResult(ctx context.Context, arg UpdateFflMatchResultParams) error
@@ -60,6 +94,7 @@ type Querier interface {
 	UpdatePlayerMatchPosition(ctx context.Context, arg UpdatePlayerMatchPositionParams) error
 	UpdatePlayerMatchStatus(ctx context.Context, arg UpdatePlayerMatchStatusParams) error
 	UpdatePlayerSeason(ctx context.Context, arg UpdatePlayerSeasonParams) (UpdatePlayerSeasonRow, error)
+	UpdateRound(ctx context.Context, arg UpdateRoundParams) error
 	UpsertPlayerMatch(ctx context.Context, arg UpsertPlayerMatchParams) (UpsertPlayerMatchRow, error)
 }
 

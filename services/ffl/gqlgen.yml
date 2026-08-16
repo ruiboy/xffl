@@ -33,6 +33,10 @@ models:
       rounds: { resolver: true }
       aflSeason: { resolver: true }
 
+  FFLClub:
+    fields:
+      seasons: { resolver: true }
+
   FFLRound:
     fields:
       season: { resolver: true }
@@ -43,6 +47,8 @@ models:
     fields:
       homeClubMatch: { resolver: true }
       awayClubMatch: { resolver: true }
+      matchStyle: { resolver: true }
+      clubMatches: { resolver: true }
 
   FFLClubSeason:
     fields:

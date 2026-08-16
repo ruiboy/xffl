@@ -56,7 +56,7 @@
                       :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: row.clubSeasonId } }"
                       class="inline-flex items-center gap-1.5 hover:text-text transition-colors"
                     >
-                      <img :src="clubLogoUrl(row.clubName)" class="w-4 h-4 object-contain" />
+                      <img :src="clubLogoUrl(row.clubName ?? '')" class="w-4 h-4 object-contain" />
                       {{ row.clubName }}
                     </router-link>
                     <span v-else>{{ row.clubName ?? '—' }}</span>
@@ -82,6 +82,8 @@
           </tbody>
         </table>
       </div>
+
+      <FormVsSeasonScatter :players="rows" v-model:stat-key="activeKey" />
     </template>
   </div>
 </template>
@@ -96,6 +98,7 @@ import { POSITION_LABEL } from '../utils/position'
 import StatCell from '../components/StatCell.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import StatSourceToggle from '../components/StatSourceToggle.vue'
+import FormVsSeasonScatter from '../components/FormVsSeasonScatter.vue'
 import { useStatSource } from '../composables/useStatSource'
 import { GET_FREE_AGENTS } from '../api/queries'
 import { useFflState } from '../composables/useFflState'

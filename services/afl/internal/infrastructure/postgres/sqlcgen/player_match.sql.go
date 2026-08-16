@@ -83,6 +83,58 @@ func (q *Queries) FindByeStatusBatch(ctx context.Context, arg FindByeStatusBatch
 	return items, nil
 }
 
+const findFinalStatusBySeasonIDsAndRoundID = `-- name: FindFinalStatusBySeasonIDsAndRoundID :many
+SELECT
+  ps.id AS player_season_id,
+  CASE WHEN pm.id IS NOT NULL THEN 'played' ELSE 'dnp' END::text AS status
+FROM afl.player_season ps
+JOIN afl.club_match cm ON cm.club_season_id = ps.club_season_id AND cm.deleted_at IS NULL
+JOIN afl.match m ON m.id = cm.match_id
+  AND m.round_id = $1
+  AND m.data_status = 'final'
+  AND m.deleted_at IS NULL
+LEFT JOIN afl.player_match pm ON pm.player_season_id = ps.id
+  AND pm.club_match_id = cm.id
+  AND pm.deleted_at IS NULL
+WHERE ps.id = ANY($2::int[])
+  AND ps.deleted_at IS NULL
+`
+
+type FindFinalStatusBySeasonIDsAndRoundIDParams struct {
+	RoundID         int32
+	PlayerSeasonIds []int32
+}
+
+type FindFinalStatusBySeasonIDsAndRoundIDRow struct {
+	PlayerSeasonID int32
+	Status         string
+}
+
+// For each player_season_id whose club has a match in the given round that is
+// already final, returns "played" (a player_match row exists) or "dnp" (it
+// doesn't). Players whose club's match in that round isn't final yet (or has
+// no match at all, e.g. a bye) are omitted — callers must not infer DNP for
+// them until this query includes them.
+func (q *Queries) FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, arg FindFinalStatusBySeasonIDsAndRoundIDParams) ([]FindFinalStatusBySeasonIDsAndRoundIDRow, error) {
+	rows, err := q.db.Query(ctx, findFinalStatusBySeasonIDsAndRoundID, arg.RoundID, arg.PlayerSeasonIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindFinalStatusBySeasonIDsAndRoundIDRow{}
+	for rows.Next() {
+		var i FindFinalStatusBySeasonIDsAndRoundIDRow
+		if err := rows.Scan(&i.PlayerSeasonID, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPlayerMatchByID = `-- name: FindPlayerMatchByID :one
 SELECT pm.id, pm.club_match_id, pm.player_season_id,
        pm.kicks, pm.handballs, pm.marks, pm.hitouts, pm.tackles, pm.goals, pm.behinds,

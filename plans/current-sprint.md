@@ -1,12 +1,14 @@
-# Current Sprint — Phase 25: FFL Scoring & Historical Import
+# Current Sprint — Phase 26: FFL Historical Import (2006–2025)
 
-**Sprint goal:** Make FFL scoring pluggable per season, then backfill historical FFL teams from forum data with era-correct scoring.
+**Sprint goal:** Run the Phase 25 importers across the seasons, backwards from 2025, stopping wherever the source data runs out. Not pure data entry — each season may need importer changes as new formats appear.
 
-See `plans/ideas.md` for full item descriptions where relevant.
+Per season, repeated: season + clubs → squads → minor-round fixtures → teams round by round, applying trades between rounds → verify ladder and per-round scores → finals → verify → close. See `plans/ffl-historical-import.md`.
 
 ---
 
 ## Tasks
 
-- [ ] Pluggable FFL scoring formula — strategy pattern keyed by season; `ScoringStrategy` interface + concrete implementations covering known formula variants; `ffl.season.scoring_strategy` column; wire into score calculation use case (deferred from Phase 20)
-- [ ] FFL historical team backfill — one-time CLI using `ForumPostParser` + `ImportRoundTeams` over historical forum data (requires pluggable scoring formula above)
+- [ ] Progress table in the sprint doc, one row per season, cross-checked against committed data with SQL — no dashboard is built, the need ends with this phase
+- [ ] 2025 first, proving the whole chain end to end before scaling
+- [ ] Importer fixes as new squad/team/spreadsheet formats appear
+- [ ] Reconciliation: per-match evaluated-vs-reference deltas, ladder at end of minor round, finals results

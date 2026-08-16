@@ -1,10 +1,18 @@
 <template>
   <div>
+    <NotFound v-if="notFound" entity="Squad" />
+    <template v-else>
     <Breadcrumb v-if="clubSeason" :items="breadcrumbs" />
     <div class="mb-6 flex items-center">
       <h1 class="text-2xl font-bold flex items-center gap-3">
-        <img v-if="clubSeason" :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
-        {{ clubSeason?.club.name ?? '' }}
+        <router-link
+          v-if="clubSeason"
+          :to="{ name: 'ffl-club', params: { clubId: clubSeason.club.id } }"
+          class="flex items-center gap-3 hover:text-active transition-colors"
+        >
+          <img :src="clubLogoUrl(clubSeason.club.name)" :alt="clubSeason.club.name" class="w-10 h-10 object-contain" />
+          {{ clubSeason.club.name }}
+        </router-link>
       </h1>
       <router-link
         v-if="isMyClub && liveClubMatchId"
@@ -83,9 +91,29 @@
                 <template v-else>Club</template>
               </th>
               <!-- Squad headers -->
-              <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full">
-                <div class="flex">
-                  <span v-for="round in rounds" :key="round.id" class="flex-1 text-center text-[10px] text-text-faint font-normal">{{ roundLabel(round.name) }}</span>
+              <th v-show="statsView === 'squad'" class="py-2 pl-4 w-full align-bottom">
+                <div class="flex items-end gap-1">
+                  <router-link
+                    v-for="round in rounds"
+                    :key="round.id"
+                    :to="roundMatchLink(round.id)"
+                    class="group flex-1 min-w-[2px] flex flex-col items-center"
+                    :title="roundBarTooltip(round.id)"
+                  >
+                    <img
+                      v-if="opponentLogo(round.id)"
+                      :src="opponentLogo(round.id)!"
+                      class="w-3.5 h-3.5 object-contain opacity-60 transition-opacity group-hover:opacity-100 mb-1"
+                    />
+                    <div v-else class="w-3.5 h-3.5 mb-1"></div>
+                    <div class="w-full h-9 flex items-end">
+                      <div
+                        class="w-full rounded-t-[2px] opacity-70 transition-opacity group-hover:opacity-100"
+                        :style="{ height: roundBarHeight(round.id) + '%', backgroundColor: roundBarColor(round.id) }"
+                      ></div>
+                    </div>
+                    <span class="mt-1.5 text-[10px] text-text-faint font-normal transition-colors group-hover:text-text">{{ roundLabel(round.name) }}</span>
+                  </router-link>
                 </div>
               </th>
               <th v-show="statsView === 'squad' && isMyClub && managing" class="py-2 px-2"></th>
@@ -261,6 +289,8 @@
           </tbody>
         </table>
         </div>
+
+        <AllStatsFormScatter v-if="statsView === 'stats'" :players="scatterPlayers" />
       </div>
       <p v-else class="text-text-faint">No players on squad.</p>
     </template>
@@ -304,6 +334,7 @@
         </div>
       </div>
     </Teleport>
+    </template>
   </div>
 </template>
 
@@ -311,11 +342,14 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery, useMutation, useApolloClient } from '@vue/apollo-composable'
 import { useTheme } from '@/composables/useTheme'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { heatStyle } from '@/utils/heatmap'
 import { statCols, starScore, type StatSummary, type StatKey } from '../utils/playerStats'
 import StatCell from '../components/StatCell.vue'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import StatSourceToggle from '../components/StatSourceToggle.vue'
+import AllStatsFormScatter from '../components/AllStatsFormScatter.vue'
 import { useStatSource } from '../composables/useStatSource'
 import { GET_FFL_CLUB_SEASON, GET_FFL_SEASON_POSITIONS, GET_FFL_ROUND_CLUB_MATCHES } from '../api/queries'
 import { REMOVE_FFL_PLAYER_FROM_SEASON, UPDATE_FFL_PLAYER_SEASON } from '../api/mutations'
@@ -328,6 +362,7 @@ import { clubLogoUrl } from '../utils/clubLogos'
 import { clubLogoUrl as aflClubLogoUrl } from '@/features/afl/utils/clubLogos'
 import { POSITION_LETTERS, POSITION_COLORS, POSITION_ORDER, POSITION_LABEL, primaryPosition, type RoundEntry } from '../utils/position'
 import PlayerSearchModal from '../components/PlayerSearchModal.vue'
+import { deriveClubRoundEntries, RESULT_COLORS, type ClubRoundEntry } from '../utils/roundHistory'
 
 const props = defineProps<{ clubSeasonId: string }>()
 
@@ -355,6 +390,7 @@ const { result: squadResult, loading: squadLoading, error: squadError, refetch: 
 )
 
 const clubSeason = computed(() => squadResult.value?.fflClubSeason ?? null)
+const notFound = useNotFound(clubSeason, squadLoading, squadError)
 
 // Live round club match — only fetched when viewing your own club
 const { result: liveRoundMatchesResult } = useQuery(
@@ -440,6 +476,42 @@ function roundLabel(name: string): string {
   return name.replace(/\D+/g, '')
 }
 
+// --- Round score bars (in the Positions header, above the round number) ---
+
+const clubRoundEntries = computed<ClubRoundEntry[]>(() => deriveClubRoundEntries(rounds.value, props.clubSeasonId))
+const clubRoundEntryByRoundId = computed(() => new Map(clubRoundEntries.value.map((e) => [e.roundId, e])))
+const maxRoundScore = computed(() => Math.max(1, ...clubRoundEntries.value.map((e) => e.score ?? 0)))
+
+function roundBarHeight(roundId: string): number {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  if (!e || e.score == null) return 0
+  return Math.max(6, Math.round((e.score / maxRoundScore.value) * 100))
+}
+
+function roundBarColor(roundId: string): string {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  return e ? RESULT_COLORS[e.kind] : RESULT_COLORS.pending
+}
+
+function roundBarTooltip(roundId: string): string {
+  const e = clubRoundEntryByRoundId.value.get(roundId)
+  if (!e || e.kind === 'pending') return 'Upcoming'
+  if (e.kind === 'bye' || e.kind === 'superbye') return `Bye — ${e.score}`
+  const outcome = e.kind === 'win' ? 'Won' : e.kind === 'loss' ? 'Lost' : 'Drew'
+  return `${e.score} vs ${e.opponent} (${outcome})`
+}
+
+function roundMatchLink(roundId: string): { name: string; params: Record<string, string> } {
+  const matchId = clubRoundEntryByRoundId.value.get(roundId)?.matchId
+  if (matchId) return { name: 'ffl-match', params: { matchId } }
+  return { name: 'ffl-round', params: { roundId } }
+}
+
+function opponentLogo(roundId: string): string | null {
+  const opponent = clubRoundEntryByRoundId.value.get(roundId)?.opponent
+  return opponent ? clubLogoUrl(opponent) : null
+}
+
 // --- Position grouping (recency-weighted) ---
 
 const groupedPlayers = computed(() => {
@@ -468,6 +540,15 @@ const statsSortKey = ref<StatsSortKey | null>(null)
 function toggleStatsSort(key: StatsSortKey) {
   statsSortKey.value = statsSortKey.value === key ? null : key
 }
+
+const scatterPlayers = computed(() =>
+  activePlayers.value.map((p: PlayerSeasonRow) => ({
+    id: p.id,
+    playerName: p.player.aflPlayer.name,
+    statsAll: p.aflPlayerSeason?.statsAll ?? null,
+    statsLastN: p.aflPlayerSeason?.statsLastN ?? null,
+  })),
+)
 
 const displayedGroups = computed(() => {
   const key = statsSortKey.value

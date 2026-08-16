@@ -4,10 +4,11 @@ import "context"
 
 // PlayerCandidate is a known player that can be matched against a parsed name.
 type PlayerCandidate struct {
-	PlayerID    int
-	AFLPlayerID int
-	Name        string
-	Club        string // AFL club name from afl.club
+	PlayerID          int
+	AFLPlayerID       int
+	AFLPlayerSeasonID int    // AFL player_season handle; used by squad import to call AddPlayerToSeason. 0 when not sourced.
+	Name              string
+	Club              string // AFL club name from afl.club
 }
 
 // PlayerNameMatch is the result of resolving a parsed name against a candidate pool.
@@ -56,6 +57,14 @@ type PlayerLookup interface {
 	// LookupByeInfo returns bye status, eligibility, and season averages for a batch of
 	// AFL player_season_ids for a given AFL round.
 	LookupByeInfo(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) ([]ByePlayerInfo, error)
+	// LookupPlayerSeasonsBySeasonID returns every AFL player_season in a season as a
+	// candidate pool (with AFLPlayerSeasonID set), for fuzzy-matching imported names
+	// such as a pasted squads thread against a whole season's players.
+	LookupPlayerSeasonsBySeasonID(ctx context.Context, aflSeasonID int) ([]PlayerCandidate, error)
+	// LookupFinalAFLStatus returns "played"/"dnp" for each AFL player_season_id whose
+	// club's match in the round is already final. Player_season_ids whose club's match
+	// isn't final yet are omitted — callers must not infer DNP for them.
+	LookupFinalAFLStatus(ctx context.Context, aflPlayerSeasonIDs []int, aflRoundID int) (map[int]string, error)
 }
 
 // PlayerResolver fuzzy-matches a parsed name (with optional club hint) against
@@ -71,6 +80,21 @@ type TeamParser interface {
 	Parse(ctx context.Context, teamName, post string) ([]ParsedPlayerRow, error)
 }
 
+// ForumProcessor turns raw forum capture (post content HTML + author) into
+// parseable text and team identity, then parses it. Implemented by the forum
+// adapter, keeping HTML/forum specifics out of the application layer.
+type ForumProcessor interface {
+	TeamParser
+	// HTMLToText converts a post's content HTML into newline-separated text.
+	HTMLToText(html string) string
+	// TeamForAuthor returns the parser format for a forum author, or "" if unknown.
+	TeamForAuthor(author string) string
+	// DetectFormat guesses the parser format from a post's content, or "" if none
+	// is recognised — used when the author is unknown (a team posted on another's
+	// behalf), so attribution can still come from the post itself.
+	DetectFormat(post string) string
+}
+
 // ParsedPlayerRow is one player line extracted from a forum post.
 type ParsedPlayerRow struct {
 	Name                string
@@ -80,4 +104,54 @@ type ParsedPlayerRow struct {
 	InterchangePosition string // bench players with interchange designation
 	Score               *int   // nil if not present in the post
 	Notes               string
+}
+
+// SquadThreadParser parses a squads thread — many clubs, ~30 members each — into
+// per-club squads. This is a distinct forum format from the four team-submission
+// formats handled by TeamParser.
+type SquadThreadParser interface {
+	ParseSquads(ctx context.Context, text string) ([]ParsedSquad, error)
+}
+
+// ParsedSquad is one club's squad as read from the thread. ClubName is the FFL
+// club name exactly as written in the header line — resolving it to a
+// club_season is a later step, not the parser's job.
+type ParsedSquad struct {
+	ClubName string // FFL club name as written (e.g. "Cheetahs", "RUIBOYS")
+	Members  []ParsedSquadMember
+}
+
+// ParsedSquadMember is one player line from a squads thread:
+// "<rank> <name> <price> <club>", e.g. "1 Darcy Fogarty 0.6 Adel".
+type ParsedSquadMember struct {
+	Rank      int
+	Name      string
+	ClubHint  string // AFL club code as written in the thread (e.g. "Adel", "WB")
+	CostCents *int   // squad price in cents ("0.6" → 60); nil if absent/unparseable
+}
+
+// FixtureSheetParser parses a pasted season fixture sheet into rounds and their
+// fixtures, carrying the reference (spreadsheet) scores. Resolving club names to
+// club_seasons and creating rounds/matches is the operation's job, not the parser's.
+type FixtureSheetParser interface {
+	ParseFixtures(ctx context.Context, text string) ([]ParsedFixtureRound, error)
+}
+
+// ParsedFixtureRound is one round from the sheet. Round is the printed round
+// number (0 for a labelled finals round with no number); Label carries any text
+// beside the number or a finals name ("Super Bye", "Semi-Final", "Grand Final").
+type ParsedFixtureRound struct {
+	Round    int
+	Label    string
+	Fixtures []ParsedFixture
+}
+
+// ParsedFixture is one fixture line: two clubs and their reference scores as
+// written. A score is nil when the sheet leaves it blank (e.g. an unplayed final).
+// Club names are exactly as written; placeholder ("n/a") lines are not emitted.
+type ParsedFixture struct {
+	HomeClub  string
+	HomeScore *int
+	AwayClub  string
+	AwayScore *int
 }

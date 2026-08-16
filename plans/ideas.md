@@ -64,7 +64,7 @@ The cross-lens actions from the 2026-07 codebase review. Full detail, severity t
 `file:line` references: [`doc/review-findings.md`](../doc/review-findings.md) (dated snapshot at
 commit `1ce978c`).
 
-REV-1 (event reliability) graduated to roadmap Phase 26.
+REV-1 (event reliability) graduated to roadmap Phase 27.
 
 | ID | Action | Detail in |
 |---|---|---|

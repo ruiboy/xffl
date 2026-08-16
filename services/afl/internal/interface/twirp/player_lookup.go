@@ -49,6 +49,23 @@ func (s *playerLookupServer) LookupPlayerSeason(ctx context.Context, req *aflv1.
 	return &aflv1.LookupPlayerSeasonResponse{PlayerId: int32(ps.PlayerID)}, nil
 }
 
+func (s *playerLookupServer) LookupPlayerSeasonsBySeasonID(ctx context.Context, req *aflv1.LookupPlayerSeasonsBySeasonIDRequest) (*aflv1.LookupPlayerSeasonsBySeasonIDResponse, error) {
+	players, err := s.playerSeasons.FindBySeasonIDWithClub(ctx, int(req.AflSeasonId))
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]*aflv1.PlayerSeasonWithClub, len(players))
+	for i, p := range players {
+		infos[i] = &aflv1.PlayerSeasonWithClub{
+			PlayerSeasonId: int32(p.PlayerSeasonID),
+			PlayerId:       int32(p.PlayerID),
+			Name:           p.Name,
+			ClubName:       p.ClubName,
+		}
+	}
+	return &aflv1.LookupPlayerSeasonsBySeasonIDResponse{Players: infos}, nil
+}
+
 func (s *playerLookupServer) LookupPlayerMatch(ctx context.Context, req *aflv1.LookupPlayerMatchRequest) (*aflv1.LookupPlayerMatchResponse, error) {
 	switch k := req.Key.(type) {
 	case *aflv1.LookupPlayerMatchRequest_ByIds:
@@ -76,6 +93,22 @@ func (s *playerLookupServer) LookupPlayerMatch(ctx context.Context, req *aflv1.L
 	default:
 		return &aflv1.LookupPlayerMatchResponse{}, nil
 	}
+}
+
+func (s *playerLookupServer) LookupFinalStatusBySeasonRound(ctx context.Context, req *aflv1.LookupBySeasonRound) (*aflv1.LookupFinalStatusResponse, error) {
+	psIDs := make([]int, len(req.PlayerSeasonIds))
+	for i, id := range req.PlayerSeasonIds {
+		psIDs[i] = int(id)
+	}
+	statusByPS, err := s.playerMatches.FindFinalStatusBySeasonIDsAndRoundID(ctx, psIDs, int(req.RoundId))
+	if err != nil {
+		return nil, err
+	}
+	players := make([]*aflv1.FinalPlayerStatus, 0, len(statusByPS))
+	for psID, status := range statusByPS {
+		players = append(players, &aflv1.FinalPlayerStatus{PlayerSeasonId: int32(psID), Status: status})
+	}
+	return &aflv1.LookupFinalStatusResponse{Players: players}, nil
 }
 
 func (s *playerLookupServer) LookupByeInfo(ctx context.Context, req *aflv1.LookupByeInfoRequest) (*aflv1.LookupByeInfoResponse, error) {

@@ -33,6 +33,12 @@ test.describe('FFL Round', () => {
     await expect(matchCard).toBeVisible()
   })
 
+  test('match rows show the on-field player count beside each score', async ({ page }) => {
+    // Both sides have one played starter → (1/18) on each side of the versus row.
+    const matchCard = page.locator('.cursor-pointer').filter({ hasText: 'Ruiboys' }).filter({ hasText: 'The Howling Cows' })
+    await expect(matchCard.getByText('(1/18)')).toHaveCount(2)
+  })
+
   test('displays top scorers grouped by position', async ({ page }) => {
     const topScorers = page.locator('section', { has: page.getByRole('heading', { name: 'Top Scorers' }) })
     await expect(topScorers).toBeVisible()

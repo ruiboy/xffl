@@ -21,6 +21,11 @@ const router = createRouter({
       component: () => import('@/features/ffl/views/HomeView.vue'),
     },
     {
+      path: '/ffl/seasons',
+      name: 'ffl-seasons',
+      component: () => import('@/features/ffl/views/SeasonsIndexView.vue'),
+    },
+    {
       path: '/ffl/seasons/:seasonId',
       name: 'ffl-season',
       component: () => import('@/features/ffl/views/SeasonView.vue'),
@@ -36,6 +41,12 @@ const router = createRouter({
       path: '/ffl/matches/:matchId',
       name: 'ffl-match',
       component: () => import('@/features/ffl/views/MatchView.vue'),
+      props: true,
+    },
+    {
+      path: '/ffl/clubs/:clubId',
+      name: 'ffl-club',
+      component: () => import('@/features/ffl/views/ClubView.vue'),
       props: true,
     },
     {
@@ -78,6 +89,11 @@ const router = createRouter({
       name: 'ffl-data-ops',
       component: () => import('@/features/data-ops/views/DataOpsView.vue'),
     },
+    {
+      path: '/ffl/admin',
+      name: 'ffl-admin',
+      component: () => import('@/features/admin/views/AdminView.vue'),
+    },
 
     // AFL routes
     {
@@ -89,6 +105,11 @@ const router = createRouter({
       path: '/afl/ladder',
       name: 'afl-ladder',
       component: () => import('@/features/afl/views/HomeView.vue'),
+    },
+    {
+      path: '/afl/seasons',
+      name: 'afl-seasons',
+      component: () => import('@/features/afl/views/SeasonsIndexView.vue'),
     },
     {
       path: '/afl/seasons/:seasonId',
@@ -113,6 +134,15 @@ const router = createRouter({
       name: 'afl-match-edit',
       component: () => import('@/features/afl/views/AdminMatchView.vue'),
       props: true,
+    },
+
+    // Unmatched paths. Entity-level 404s are handled inside each view (the
+    // route matches, the id just doesn't resolve); this catches the rest.
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/components/NotFound.vue'),
+      props: { entity: 'Page' },
     },
   ],
 })

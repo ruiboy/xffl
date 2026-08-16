@@ -9,6 +9,45 @@ import (
 	"context"
 )
 
+const createRound = `-- name: CreateRound :one
+INSERT INTO ffl.round (season_id, name, afl_round_id, round_type)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, season_id, afl_round_id, round_type
+`
+
+type CreateRoundParams struct {
+	SeasonID   int32
+	Name       string
+	AflRoundID int32
+	RoundType  string
+}
+
+type CreateRoundRow struct {
+	ID         int32
+	Name       string
+	SeasonID   int32
+	AflRoundID int32
+	RoundType  string
+}
+
+func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (CreateRoundRow, error) {
+	row := q.db.QueryRow(ctx, createRound,
+		arg.SeasonID,
+		arg.Name,
+		arg.AflRoundID,
+		arg.RoundType,
+	)
+	var i CreateRoundRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.SeasonID,
+		&i.AflRoundID,
+		&i.RoundType,
+	)
+	return i, err
+}
+
 const findRoundByAFLRoundID = `-- name: FindRoundByAFLRoundID :one
 SELECT id, name, season_id, afl_round_id
 FROM ffl.round
@@ -35,7 +74,7 @@ func (q *Queries) FindRoundByAFLRoundID(ctx context.Context, aflRoundID int32) (
 }
 
 const findRoundByID = `-- name: FindRoundByID :one
-SELECT id, name, season_id, afl_round_id
+SELECT id, name, season_id, afl_round_id, round_type
 FROM ffl.round
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -45,6 +84,7 @@ type FindRoundByIDRow struct {
 	Name       string
 	SeasonID   int32
 	AflRoundID int32
+	RoundType  string
 }
 
 func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow, error) {
@@ -55,17 +95,18 @@ func (q *Queries) FindRoundByID(ctx context.Context, id int32) (FindRoundByIDRow
 		&i.Name,
 		&i.SeasonID,
 		&i.AflRoundID,
+		&i.RoundType,
 	)
 	return i, err
 }
 
 const findRoundsBySeasonID = `-- name: FindRoundsBySeasonID :many
-SELECT r.id, r.name, r.season_id, r.afl_round_id
+SELECT r.id, r.name, r.season_id, r.afl_round_id, r.round_type
 FROM ffl.round r
 LEFT JOIN ffl.match m ON m.round_id = r.id AND m.deleted_at IS NULL
 WHERE r.season_id = $1 AND r.deleted_at IS NULL
-GROUP BY r.id, r.name, r.season_id, r.afl_round_id
-ORDER BY MIN(m.start_dt) NULLS LAST, r.id
+GROUP BY r.id, r.name, r.season_id, r.afl_round_id, r.round_type
+ORDER BY MIN(m.start_dt) NULLS LAST, r.afl_round_id, r.id
 `
 
 type FindRoundsBySeasonIDRow struct {
@@ -73,8 +114,15 @@ type FindRoundsBySeasonIDRow struct {
 	Name       string
 	SeasonID   int32
 	AflRoundID int32
+	RoundType  string
 }
 
+// Rounds run in season order. start_dt is the real key, but the fixture builder
+// never sets it (an FFL round's timing comes from the AFL round it maps to, and
+// that lives in the afl schema, which this one does not join to), so every
+// builder-made round ties on NULL. afl_round_id breaks that tie: a season's AFL
+// rounds are created in sequence, so ascending id is season order. Falling back
+// to r.id alone would sort by creation, putting a round added late last.
 func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]FindRoundsBySeasonIDRow, error) {
 	rows, err := q.db.Query(ctx, findRoundsBySeasonID, seasonID)
 	if err != nil {
@@ -89,6 +137,7 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 			&i.Name,
 			&i.SeasonID,
 			&i.AflRoundID,
+			&i.RoundType,
 		); err != nil {
 			return nil, err
 		}
@@ -98,4 +147,38 @@ func (q *Queries) FindRoundsBySeasonID(ctx context.Context, seasonID int32) ([]F
 		return nil, err
 	}
 	return items, nil
+}
+
+const softDeleteRound = `-- name: SoftDeleteRound :exec
+UPDATE ffl.round
+SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteRound(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, softDeleteRound, id)
+	return err
+}
+
+const updateRound = `-- name: UpdateRound :exec
+UPDATE ffl.round
+SET name = $2, afl_round_id = $3, round_type = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateRoundParams struct {
+	ID         int32
+	Name       string
+	AflRoundID int32
+	RoundType  string
+}
+
+func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error {
+	_, err := q.db.Exec(ctx, updateRound,
+		arg.ID,
+		arg.Name,
+		arg.AflRoundID,
+		arg.RoundType,
+	)
+	return err
 }

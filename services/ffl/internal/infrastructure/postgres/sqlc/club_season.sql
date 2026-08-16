@@ -6,6 +6,14 @@ FROM ffl.club_season
 WHERE season_id = $1 AND deleted_at IS NULL
 ORDER BY drv_premiership_points DESC, (drv_for - drv_against) DESC;
 
+-- name: FindClubSeasonsByClubID :many
+SELECT id, club_id, season_id,
+       drv_played, drv_won, drv_lost, drv_drawn,
+       drv_for, drv_against, drv_extra_points, drv_premiership_points
+FROM ffl.club_season
+WHERE club_id = $1 AND deleted_at IS NULL
+ORDER BY season_id DESC;
+
 -- name: FindClubSeasonByID :one
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,
@@ -32,3 +40,8 @@ SET drv_played             = $2,
     drv_premiership_points = $9,
     updated_at             = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: CreateClubSeason :one
+INSERT INTO ffl.club_season (club_id, season_id)
+VALUES ($1, $2)
+RETURNING id, club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_extra_points, drv_premiership_points;

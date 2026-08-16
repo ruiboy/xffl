@@ -9,6 +9,50 @@ import (
 	"context"
 )
 
+const createClubSeason = `-- name: CreateClubSeason :one
+INSERT INTO ffl.club_season (club_id, season_id)
+VALUES ($1, $2)
+RETURNING id, club_id, season_id, drv_played, drv_won, drv_lost, drv_drawn, drv_for, drv_against, drv_extra_points, drv_premiership_points
+`
+
+type CreateClubSeasonParams struct {
+	ClubID   int32
+	SeasonID int32
+}
+
+type CreateClubSeasonRow struct {
+	ID                   int32
+	ClubID               int32
+	SeasonID             int32
+	DrvPlayed            *int32
+	DrvWon               *int32
+	DrvLost              *int32
+	DrvDrawn             *int32
+	DrvFor               *int32
+	DrvAgainst           *int32
+	DrvExtraPoints       *int32
+	DrvPremiershipPoints *int32
+}
+
+func (q *Queries) CreateClubSeason(ctx context.Context, arg CreateClubSeasonParams) (CreateClubSeasonRow, error) {
+	row := q.db.QueryRow(ctx, createClubSeason, arg.ClubID, arg.SeasonID)
+	var i CreateClubSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.ClubID,
+		&i.SeasonID,
+		&i.DrvPlayed,
+		&i.DrvWon,
+		&i.DrvLost,
+		&i.DrvDrawn,
+		&i.DrvFor,
+		&i.DrvAgainst,
+		&i.DrvExtraPoints,
+		&i.DrvPremiershipPoints,
+	)
+	return i, err
+}
+
 const findClubSeasonByClubAndSeason = `-- name: FindClubSeasonByClubAndSeason :one
 SELECT id, club_id, season_id,
        drv_played, drv_won, drv_lost, drv_drawn,
@@ -94,6 +138,61 @@ func (q *Queries) FindClubSeasonByID(ctx context.Context, id int32) (FindClubSea
 		&i.DrvPremiershipPoints,
 	)
 	return i, err
+}
+
+const findClubSeasonsByClubID = `-- name: FindClubSeasonsByClubID :many
+SELECT id, club_id, season_id,
+       drv_played, drv_won, drv_lost, drv_drawn,
+       drv_for, drv_against, drv_extra_points, drv_premiership_points
+FROM ffl.club_season
+WHERE club_id = $1 AND deleted_at IS NULL
+ORDER BY season_id DESC
+`
+
+type FindClubSeasonsByClubIDRow struct {
+	ID                   int32
+	ClubID               int32
+	SeasonID             int32
+	DrvPlayed            *int32
+	DrvWon               *int32
+	DrvLost              *int32
+	DrvDrawn             *int32
+	DrvFor               *int32
+	DrvAgainst           *int32
+	DrvExtraPoints       *int32
+	DrvPremiershipPoints *int32
+}
+
+func (q *Queries) FindClubSeasonsByClubID(ctx context.Context, clubID int32) ([]FindClubSeasonsByClubIDRow, error) {
+	rows, err := q.db.Query(ctx, findClubSeasonsByClubID, clubID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindClubSeasonsByClubIDRow{}
+	for rows.Next() {
+		var i FindClubSeasonsByClubIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClubID,
+			&i.SeasonID,
+			&i.DrvPlayed,
+			&i.DrvWon,
+			&i.DrvLost,
+			&i.DrvDrawn,
+			&i.DrvFor,
+			&i.DrvAgainst,
+			&i.DrvExtraPoints,
+			&i.DrvPremiershipPoints,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const findClubSeasonsBySeasonID = `-- name: FindClubSeasonsBySeasonID :many

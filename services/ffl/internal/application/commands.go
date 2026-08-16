@@ -9,10 +9,16 @@ import (
 
 // WriteRepos provides repository access within a transaction.
 type WriteRepos struct {
+	Leagues       domain.LeagueRepository
+	Seasons       domain.SeasonRepository
+	Rounds        domain.RoundRepository
+	Matches       domain.MatchRepository
+	Clubs         domain.ClubRepository
+	ClubSeasons   domain.ClubSeasonRepository
+	ClubMatches   domain.ClubMatchRepository
 	Players       domain.PlayerRepository
 	PlayerSeasons domain.PlayerSeasonRepository
 	PlayerMatches domain.PlayerMatchRepository
-	ClubMatches   domain.ClubMatchRepository
 }
 
 // TxManager abstracts transactional execution.
@@ -31,6 +37,13 @@ type Commands struct {
 	rounds        domain.RoundRepository
 	playerMatches domain.PlayerMatchRepository
 	playerSeasons domain.PlayerSeasonRepository
+}
+
+// FindPlayerMatchesByClubMatch returns the player_matches for a club_match.
+// Exposed so the dataops package can build event snapshots without reaching
+// into Commands' private repositories.
+func (c *Commands) FindPlayerMatchesByClubMatch(ctx context.Context, clubMatchID int) ([]domain.PlayerMatch, error) {
+	return c.playerMatches.FindByClubMatchID(ctx, clubMatchID)
 }
 
 func NewCommands(

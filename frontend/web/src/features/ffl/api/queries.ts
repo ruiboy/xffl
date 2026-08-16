@@ -14,6 +14,25 @@ export const GET_FFL_SEASON_CLUBS = gql`
   }
 `
 
+export const GET_FFL_CLUB = gql`
+  query GetFFLClub($id: ID!) {
+    fflClub(id: $id) {
+      id
+      name
+      seasons {
+        id
+        season { id name }
+        played
+        won
+        lost
+        drawn
+        percentage
+        premiershipPoints
+      }
+    }
+  }
+`
+
 export const GET_FFL_CLUB_SEASON = gql`
   query GetFFLClubSeason($id: ID!) {
     fflClubSeason(id: $id) {
@@ -142,6 +161,7 @@ export const GET_FFL_ROUND_BY_AFL_ROUND = gql`
           against
           percentage
           premiershipPoints
+          extraPoints
         }
         rounds {
           id
@@ -175,8 +195,7 @@ export const GET_FFL_ROUND = gql`
           name
           aflRoundId
           matches {
-            homeClubMatch { id clubSeasonId }
-            awayClubMatch { id clubSeasonId }
+            clubMatches { id clubSeasonId }
           }
         }
       }
@@ -185,37 +204,11 @@ export const GET_FFL_ROUND = gql`
         venue
         startTime
         result
-        homeClubMatch {
+        matchStyle
+        clubMatches {
           id
-          club { id name }
-          score
-          dataStatus
-          suggestedSubstitutions { kind replacedPmId replacingPmId }
-          playerMatches {
-            id
-            playerSeasonId
-            player { aflPlayer { name } }
-            position
-            status
-            aflStatus
-            backupPositions
-            interchangePosition
-            score
-            playerSeason {
-              aflPlayerSeason {
-                id
-                clubSeason { club { name } }
-                stats(upToRoundId: $aflRoundId) { goals kicks handballs marks tackles hitouts games }
-              }
-            }
-            aflPlayerMatch {
-              clubMatch { match { id } }
-              goals kicks handballs marks tackles hitouts
-            }
-          }
-        }
-        awayClubMatch {
-          id
+          side
+          clubSeasonId
           club { id name }
           score
           dataStatus
@@ -260,39 +253,14 @@ export const GET_FFL_MATCH = gql`
         aflRoundId
         season { id name rounds { id name } }
       }
-      homeClubMatch {
+      matchStyle
+      clubMatches {
         id
+        side
         clubSeasonId
         club { id name }
         score
-        suggestedSubstitutions { kind replacedPmId replacingPmId }
-        playerMatches {
-          id
-          playerSeasonId
-          player { aflPlayer { name } }
-          position
-          status
-          aflStatus
-          backupPositions
-          interchangePosition
-          score
-          playerSeason {
-            aflPlayerSeason {
-              id
-              clubSeason { id club { name } }
-              stats { goals kicks handballs marks tackles hitouts games }
-            }
-          }
-          aflPlayerMatch {
-            goals kicks handballs marks tackles hitouts
-          }
-        }
-      }
-      awayClubMatch {
-        id
-        clubSeasonId
-        club { id name }
-        score
+        dataStatus
         suggestedSubstitutions { kind replacedPmId replacingPmId }
         playerMatches {
           id
@@ -329,6 +297,13 @@ export const GET_FFL_SEASON_POSITIONS = gql`
         name
         matches {
           id
+          clubMatches {
+            clubSeasonId
+            side
+            score
+            dataStatus
+            club { name }
+          }
           homeClubMatch {
             id
             playerMatches {
@@ -371,6 +346,7 @@ export const GET_FFL_SEASON = gql`
         against
         percentage
         premiershipPoints
+        extraPoints
       }
       rounds {
         id
@@ -458,7 +434,18 @@ export const GET_AFL_PLAYER_SEASON_STATS = gql`
   query GetAFLPlayerSeasonStats($id: ID!) {
     aflPlayerSeason(id: $id) {
       id
-      player { id name }
+      player {
+        id
+        name
+        playerSeasons {
+          id
+          clubSeason {
+            id
+            club { id name }
+            season { id name }
+          }
+        }
+      }
       clubSeason {
         id
         club { id name }
@@ -547,7 +534,10 @@ export const GET_AFL_CLUB_SEASON = gql`
       playerSeasons {
         id
         player { id name }
-        stats {
+        statsAll: stats(method: MEAN) {
+          goals kicks handballs marks tackles hitouts games
+        }
+        statsLastN: stats(lastN: ${LAST_N}, method: MEAN) {
           goals kicks handballs marks tackles hitouts
         }
         fflPlayerSeasons {
@@ -622,6 +612,32 @@ export const GET_FFL_SEASONS = gql`
     fflSeasons {
       id
       name
+      ladder {
+        id
+        club { id name }
+      }
+    }
+  }
+`
+
+export const GET_FFL_SEASON_ROUND_HISTORY = gql`
+  query GetFFLSeasonRoundHistory($id: ID!) {
+    fflSeason(id: $id) {
+      id
+      rounds {
+        id
+        name
+        matches {
+          id
+          clubMatches {
+            clubSeasonId
+            side
+            score
+            dataStatus
+            club { name }
+          }
+        }
+      }
     }
   }
 `
@@ -642,6 +658,7 @@ export const GET_FFL_SEASON_LADDER = gql`
         against
         percentage
         premiershipPoints
+        extraPoints
       }
       rounds {
         id

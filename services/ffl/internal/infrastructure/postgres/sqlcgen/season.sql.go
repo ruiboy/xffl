@@ -9,8 +9,47 @@ import (
 	"context"
 )
 
+const createSeason = `-- name: CreateSeason :one
+INSERT INTO ffl.season (league_id, name, afl_season_id, rules_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, league_id, afl_season_id, rules_id
+`
+
+type CreateSeasonParams struct {
+	LeagueID    int32
+	Name        string
+	AflSeasonID int32
+	RulesID     string
+}
+
+type CreateSeasonRow struct {
+	ID          int32
+	Name        string
+	LeagueID    int32
+	AflSeasonID int32
+	RulesID     string
+}
+
+func (q *Queries) CreateSeason(ctx context.Context, arg CreateSeasonParams) (CreateSeasonRow, error) {
+	row := q.db.QueryRow(ctx, createSeason,
+		arg.LeagueID,
+		arg.Name,
+		arg.AflSeasonID,
+		arg.RulesID,
+	)
+	var i CreateSeasonRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.LeagueID,
+		&i.AflSeasonID,
+		&i.RulesID,
+	)
+	return i, err
+}
+
 const findAllSeasons = `-- name: FindAllSeasons :many
-SELECT id, name, league_id, afl_season_id
+SELECT id, name, league_id, afl_season_id, rules_id
 FROM ffl.season
 WHERE deleted_at IS NULL
 ORDER BY name
@@ -21,6 +60,7 @@ type FindAllSeasonsRow struct {
 	Name        string
 	LeagueID    int32
 	AflSeasonID int32
+	RulesID     string
 }
 
 func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, error) {
@@ -37,6 +77,7 @@ func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, erro
 			&i.Name,
 			&i.LeagueID,
 			&i.AflSeasonID,
+			&i.RulesID,
 		); err != nil {
 			return nil, err
 		}
@@ -49,7 +90,7 @@ func (q *Queries) FindAllSeasons(ctx context.Context) ([]FindAllSeasonsRow, erro
 }
 
 const findSeasonByID = `-- name: FindSeasonByID :one
-SELECT id, name, league_id, afl_season_id
+SELECT id, name, league_id, afl_season_id, rules_id
 FROM ffl.season
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -59,6 +100,7 @@ type FindSeasonByIDRow struct {
 	Name        string
 	LeagueID    int32
 	AflSeasonID int32
+	RulesID     string
 }
 
 func (q *Queries) FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDRow, error) {
@@ -69,6 +111,7 @@ func (q *Queries) FindSeasonByID(ctx context.Context, id int32) (FindSeasonByIDR
 		&i.Name,
 		&i.LeagueID,
 		&i.AflSeasonID,
+		&i.RulesID,
 	)
 	return i, err
 }

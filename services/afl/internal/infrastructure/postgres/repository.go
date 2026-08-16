@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -162,6 +164,9 @@ func (r *SeasonRepository) FindAll(ctx context.Context) ([]domain.Season, error)
 
 func (r *SeasonRepository) FindByID(ctx context.Context, id int) (domain.Season, error) {
 	row, err := r.q.FindSeasonByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Season{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Season{}, err
 	}
@@ -193,6 +198,9 @@ func (r *RoundRepository) FindBySeasonID(ctx context.Context, seasonID int) ([]d
 
 func (r *RoundRepository) FindByID(ctx context.Context, id int) (domain.Round, error) {
 	row, err := r.q.FindRoundByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Round{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Round{}, err
 	}
@@ -279,6 +287,9 @@ func (r *MatchRepository) FindByRoundID(ctx context.Context, roundID int) ([]dom
 
 func (r *MatchRepository) FindByID(ctx context.Context, id int) (domain.Match, error) {
 	row, err := r.q.FindMatchByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Match{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Match{}, err
 	}
@@ -430,6 +441,9 @@ func (r *ClubSeasonRepository) FindBySeasonID(ctx context.Context, seasonID int)
 
 func (r *ClubSeasonRepository) FindByID(ctx context.Context, id int) (domain.ClubSeason, error) {
 	row, err := r.q.FindClubSeasonByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ClubSeason{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.ClubSeason{}, err
 	}
@@ -734,6 +748,25 @@ func (r *PlayerMatchRepository) FindByPlayerSeasonIDsAndRoundID(ctx context.Cont
 	return out, nil
 }
 
+func (r *PlayerMatchRepository) FindFinalStatusBySeasonIDsAndRoundID(ctx context.Context, playerSeasonIDs []int, roundID int) (map[int]string, error) {
+	int32IDs := make([]int32, len(playerSeasonIDs))
+	for i, id := range playerSeasonIDs {
+		int32IDs[i] = int32(id)
+	}
+	rows, err := r.q.FindFinalStatusBySeasonIDsAndRoundID(ctx, sqlcgen.FindFinalStatusBySeasonIDsAndRoundIDParams{
+		PlayerSeasonIds: int32IDs,
+		RoundID:         int32(roundID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]string, len(rows))
+	for _, row := range rows {
+		out[int(row.PlayerSeasonID)] = row.Status
+	}
+	return out, nil
+}
+
 func (r *PlayerMatchRepository) FindByeStatusBatch(ctx context.Context, playerSeasonIDs []int, roundID int) ([]domain.ByeStatus, error) {
 	int32IDs := make([]int32, len(playerSeasonIDs))
 	for i, id := range playerSeasonIDs {
@@ -840,6 +873,9 @@ func (r *PlayerSeasonRepository) Create(ctx context.Context, playerID, clubSeaso
 
 func (r *PlayerSeasonRepository) FindByID(ctx context.Context, id int) (domain.PlayerSeason, error) {
 	row, err := r.q.FindPlayerSeasonByID(ctx, int32(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.PlayerSeason{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.PlayerSeason{}, err
 	}
@@ -891,6 +927,23 @@ func (r *PlayerSeasonRepository) FindByClubSeasonIDWithPlayer(ctx context.Contex
 	return out, nil
 }
 
+func (r *PlayerSeasonRepository) FindBySeasonIDWithClub(ctx context.Context, seasonID int) ([]domain.PlayerSeasonWithClub, error) {
+	rows, err := r.q.FindPlayerSeasonsBySeasonIDWithClub(ctx, int32(seasonID))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeasonWithClub, len(rows))
+	for i, row := range rows {
+		out[i] = domain.PlayerSeasonWithClub{
+			PlayerSeasonID: int(row.PlayerSeasonID),
+			PlayerID:       int(row.PlayerID),
+			Name:           row.PlayerName,
+			ClubName:       row.ClubName,
+		}
+	}
+	return out, nil
+}
+
 func (r *PlayerSeasonRepository) FindIDsBySeasonID(ctx context.Context, seasonID int, nameQuery *string) ([]int, error) {
 	rows, err := r.q.FindPlayerSeasonsBySeasonID(ctx, sqlcgen.FindPlayerSeasonsBySeasonIDParams{
 		SeasonID:  int32(seasonID),
@@ -918,6 +971,31 @@ func (r *PlayerSeasonRepository) FindPlayersForPlayerSeasonIDs(ctx context.Conte
 	out := make(map[int]domain.Player, len(rows))
 	for _, row := range rows {
 		out[int(row.PlayerSeasonID)] = domain.Player{ID: int(row.PlayerID), Name: row.PlayerName}
+	}
+	return out, nil
+}
+
+// FindByPlayerID returns every season the player has data for, most recent
+// first. The SQL owns the ordering, so the ids are re-read in that order rather
+// than in whatever order the bulk lookup returns them.
+func (r *PlayerSeasonRepository) FindByPlayerID(ctx context.Context, playerID int) ([]domain.PlayerSeason, error) {
+	ids, err := r.q.FindPlayerSeasonsByPlayerID(ctx, int32(playerID))
+	if err != nil {
+		return nil, err
+	}
+	intIDs := make([]int, len(ids))
+	for i, id := range ids {
+		intIDs[i] = int(id)
+	}
+	byID, err := r.FindByIDs(ctx, intIDs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.PlayerSeason, 0, len(intIDs))
+	for _, id := range intIDs {
+		if ps, ok := byID[id]; ok {
+			out = append(out, ps)
+		}
 	}
 	return out, nil
 }

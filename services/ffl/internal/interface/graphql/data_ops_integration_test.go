@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"xffl/services/ffl/internal/application"
+	"xffl/services/ffl/internal/application/dataops"
 	"xffl/services/ffl/internal/infrastructure/forum"
 	pg "xffl/services/ffl/internal/infrastructure/postgres"
 	"xffl/services/ffl/internal/infrastructure/postgres/sqlcgen"
@@ -29,9 +30,10 @@ import (
 // addFFLPlayerToSeason flow works against real seeded data without standing up
 // the AFL service over Twirp.
 type stubPlayerLookup struct {
-	pool       *pgxpool.Pool
-	candidates []application.PlayerCandidate
-	byeInfo    map[int]application.ByePlayerInfo // keyed by AFL player_season_id; nil = no bye handling
+	pool           *pgxpool.Pool
+	candidates     []application.PlayerCandidate
+	byeInfo        map[int]application.ByePlayerInfo // keyed by AFL player_season_id; nil = no bye handling
+	finalAFLStatus map[int]string                    // keyed by AFL player_season_id; nil = no confirmed final status
 }
 
 func (s *stubPlayerLookup) LookupPlayers(_ context.Context, _ []int) ([]application.PlayerCandidate, error) {
@@ -72,7 +74,15 @@ func (s *stubPlayerLookup) LookupByeInfo(_ context.Context, aflPSIDs []int, _ in
 	return out, nil
 }
 
-func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *application.DataOpsCommands) *httptest.Server {
+func (s *stubPlayerLookup) LookupPlayerSeasonsBySeasonID(_ context.Context, _ int) ([]application.PlayerCandidate, error) {
+	return s.candidates, nil
+}
+
+func (s *stubPlayerLookup) LookupFinalAFLStatus(_ context.Context, _ []int, _ int) (map[int]string, error) {
+	return s.finalAFLStatus, nil
+}
+
+func setupDataOpsServer(t *testing.T, pool *pgxpool.Pool, dataOps *dataops.DataOpsCommands) *httptest.Server {
 	t.Helper()
 
 	q := sqlcgen.New(pool)
@@ -150,13 +160,14 @@ func TestParseAndConfirmFFLTeamSubmission(t *testing.T) {
 		pg.NewPlayerMatchRepository(testQ),
 		pg.NewPlayerSeasonRepository(testQ),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		testDB,
 		stub,
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
 		memevents.New(),
 		testCommands,
+		forum.NewSquadParser(),
 	)
 
 	server := setupDataOpsServer(t, pool, dataOps)
@@ -330,13 +341,14 @@ func TestMarkFFLTeamSubmitted(t *testing.T) {
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		&stubPlayerLookup{pool: pool},
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
 		memevents.New(),
 		cmds,
+		forum.NewSquadParser(),
 	)
 	server := setupDataOpsServer(t, pool, dataOps)
 	defer server.Close()
@@ -395,13 +407,14 @@ func TestMarkFFLTeamFinal(t *testing.T) {
 		pg.NewPlayerMatchRepository(q),
 		pg.NewPlayerSeasonRepository(q),
 	)
-	dataOps := application.NewDataOpsCommands(
+	dataOps := dataops.NewDataOpsCommands(
 		db,
 		&stubPlayerLookup{pool: pool},
 		forum.NewLevenshteinResolver(),
 		forum.NewParser(),
 		memevents.New(),
 		cmds,
+		forum.NewSquadParser(),
 	)
 	server := setupDataOpsServer(t, pool, dataOps)
 	defer server.Close()

@@ -2,6 +2,7 @@
   <div>
     <div v-if="loading" class="text-text-faint">Loading…</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Season" />
     <template v-else-if="season">
       <Breadcrumb :items="[{ label: 'FFL' }]" />
       <h1 class="text-2xl font-bold mb-6">{{ season.name }}</h1>
@@ -26,6 +27,8 @@ import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_FFL_SEASON_LADDER } from '../api/queries'
 import { useFflState } from '../composables/useFflState'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import LadderTable from '../components/LadderTable.vue'
 import RoundNav from '../components/RoundNav.vue'
@@ -40,4 +43,5 @@ const { result, loading, error } = useQuery(
 )
 
 const season = computed(() => result.value?.fflSeason ?? null)
+const notFound = useNotFound(season, loading, error)
 </script>

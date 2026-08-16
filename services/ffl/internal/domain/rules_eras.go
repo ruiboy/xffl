@@ -1,0 +1,129 @@
+package domain
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
+// Historical rules, one per scoring era. Each era is a standalone value — no
+// era is derived from another, so editing one can never silently shift another.
+// What has actually varied across eras is small (goal/tackle points, the star's
+// stat-set, interchange), so the parts that have *never* varied are supplied by
+// the constructors below rather than copy-pasted into every era.
+//
+//	2011 — goal 5, tackle 4, star excludes hitouts, bench, interchange
+//	2001 — goal 4, tackle 4, star excludes hitouts, bench, interchange
+//	2000 — goal 4, tackle 4, star excludes hitouts, no bench, no interchange
+//	1999 — goal 4, tackle 3, star excludes hitouts, no bench, no interchange
+//	1998 — goal 4, tackle 3, star includes hitouts, no bench, no interchange
+//
+// Years are era-start labels; which season uses which era is data
+// (ffl.season.rules_id), so exact boundaries can be pinned later.
+
+// statPoints builds the per-stat point map. Only goals and tackles have varied
+// across eras; kicks, handballs, marks, and hitouts have always been 1, 1, 2, 1.
+func statPoints(goals, tackles int) map[Stat]int {
+	return map[Stat]int{
+		StatGoals:     goals,
+		StatKicks:     1,
+		StatHandballs: 1,
+		StatMarks:     2,
+		StatTackles:   tackles,
+		StatHitouts:   1,
+	}
+}
+
+// standardPositions builds the position list shared by all known eras. The six
+// single-stat positions and their slot counts have never varied; only the star's
+// stat-set has (it once included hitouts), so that is the sole parameter. A fresh
+// slice is returned each call, so eras never alias one another.
+func standardPositions(starStats []Stat) []PositionRule {
+	return []PositionRule{
+		{Position: PositionGoals, Stats: []Stat{StatGoals}, Slots: 3},
+		{Position: PositionKicks, Stats: []Stat{StatKicks}, Slots: 4},
+		{Position: PositionHandballs, Stats: []Stat{StatHandballs}, Slots: 4},
+		{Position: PositionMarks, Stats: []Stat{StatMarks}, Slots: 2},
+		{Position: PositionTackles, Stats: []Stat{StatTackles}, Slots: 2},
+		{Position: PositionHitouts, Stats: []Stat{StatHitouts}, Slots: 2},
+		{Position: PositionStar, Stats: starStats, Slots: 1},
+	}
+}
+
+// The star scores every counting stat; before 1999 it also scored hitouts.
+func starStats() []Stat {
+	return []Stat{StatGoals, StatKicks, StatHandballs, StatMarks, StatTackles}
+}
+func starStatsWithHitouts() []Stat {
+	return []Stat{StatGoals, StatKicks, StatHandballs, StatMarks, StatTackles, StatHitouts}
+}
+
+var (
+	rules2011 = Rules{
+		ID:          "2011",
+		Scoring:     Scoring{Points: statPoints(5, 4)},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: true},
+	}
+	rules2001 = Rules{
+		ID:          "2001",
+		Scoring:     Scoring{Points: statPoints(4, 4)},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 4, Interchange: true},
+	}
+	rules2000 = Rules{
+		ID:          "2000",
+		Scoring:     Scoring{Points: statPoints(4, 4)},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 0, Interchange: false},
+	}
+	rules1999 = Rules{
+		ID:          "1999",
+		Scoring:     Scoring{Points: statPoints(4, 3)},
+		Composition: Composition{Positions: standardPositions(starStats()), BenchSize: 0, Interchange: false},
+	}
+	rules1998 = Rules{
+		ID:          "1998",
+		Scoring:     Scoring{Points: statPoints(4, 3)},
+		Composition: Composition{Positions: standardPositions(starStatsWithHitouts()), BenchSize: 0, Interchange: false},
+	}
+)
+
+func init() {
+	for _, r := range []Rules{rules1998, rules1999, rules2000, rules2001, rules2011} {
+		rulesByID[r.ID] = r
+	}
+}
+
+// AllRules returns every defined era, ascending by id (era ids are start years),
+// so callers such as the season builder can offer them for selection.
+func AllRules() []Rules {
+	out := make([]Rules, 0, len(rulesByID))
+	for _, r := range rulesByID {
+		out = append(out, r)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+// Describe summarises the parameters that distinguish this era from its
+// neighbours — the scoring and composition knobs that have actually varied —
+// as a short human label for a picker (e.g. "goals 5 · tackles 4 · bench 4 · interchange").
+func (r Rules) Describe() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "goals %d · tackles %d", r.Scoring.Points[StatGoals], r.Scoring.Points[StatTackles])
+	if r.Composition.BenchSize > 0 {
+		fmt.Fprintf(&b, " · bench %d", r.Composition.BenchSize)
+	} else {
+		b.WriteString(" · no bench")
+	}
+	if r.Composition.Interchange {
+		b.WriteString(" · interchange")
+	}
+	if star, ok := r.position(PositionStar); ok {
+		for _, s := range star.Stats {
+			if s == StatHitouts {
+				b.WriteString(" · star scores hitouts")
+				break
+			}
+		}
+	}
+	return b.String()
+}

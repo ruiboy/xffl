@@ -4,6 +4,7 @@
 
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Player season" />
     <template v-else-if="playerSeason">
 
       <!-- Header -->
@@ -15,6 +16,20 @@
             :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: playerSeason.clubSeason.id } }"
             class="text-sm text-text-muted mt-0.5 hover:text-text transition-colors"
           >{{ playerSeason.clubSeason.club.name }}</router-link>
+          <!-- Other AFL seasons for this player, most recent first. -->
+          <div v-if="otherSeasons.length > 0" class="flex flex-wrap items-center gap-2 mt-2">
+            <router-link
+              v-for="s in otherSeasons"
+              :key="s.id"
+              :to="{ name: 'ffl-afl-player-season', params: { aflPlayerSeasonId: s.id } }"
+              class="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-text-muted hover:text-text hover:bg-surface-hover transition-colors"
+              :title="`${s.clubName} · ${s.seasonName}`"
+            >
+              <img :src="aflClubLogoUrl(s.clubName)" class="w-4 h-4 object-contain" />
+              <span>{{ s.seasonName }}</span>
+            </router-link>
+          </div>
+
           <div v-if="stintEvents.length > 0" class="flex flex-wrap gap-5 mt-2">
             <div v-for="(event, i) in stintEvents" :key="i" class="flex items-center gap-2">
               <img :src="fflClubLogoUrl(event.clubName)" class="w-5 h-5 object-contain" />
@@ -89,7 +104,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="(row, i) in mergedRows"
+              v-for="(row, i) in displayRows"
               :key="row.id"
               class="border-b border-border-subtle group"
               :class="row.status === 'dnp' ? 'opacity-40' : 'hover:bg-surface-hover'"
@@ -123,7 +138,7 @@
               <td class="py-2 pl-5 pr-3 whitespace-nowrap border-l border-border bg-white/[0.03]">
                 <span v-if="row.fflClubName" class="inline-flex items-center gap-1.5">
                   <img :src="fflClubLogoUrl(row.fflClubName)" class="w-4 h-4 object-contain" />
-                  <span v-if="i === 0 || mergedRows[i - 1].fflClubName !== row.fflClubName" class="text-xs text-text-muted">{{ row.fflClubName }}</span>
+                  <span v-if="i === 0 || displayRows[i - 1].fflClubName !== row.fflClubName" class="text-xs text-text-muted">{{ row.fflClubName }}</span>
                 </span>
                 <span v-else class="text-text-faint text-xs">—</span>
               </td>
@@ -176,6 +191,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { GET_AFL_PLAYER_SEASON_STATS, GET_FFL_PLAYER_STINTS } from '../api/queries'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -201,15 +218,34 @@ const { result: fflResult } = useQuery(
   () => ({ aflPlayerSeasonId: props.aflPlayerSeasonId }),
 )
 
+interface PlayerSeasonLink {
+  id: string
+  clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
+}
+
 const playerSeason = computed(() => aflResult.value?.aflPlayerSeason as {
   id: string
-  player: { id: string; name: string }
+  player: { id: string; name: string; playerSeasons: PlayerSeasonLink[] }
   clubSeason: { id: string; club: { id: string; name: string }; season: { id: string; name: string } }
   matches: AFLPlayerMatch[]
   statsAll: AFLStatSummary | null
   statsLastN: AFLStatSummary | null
   statsMedian: AFLStatSummary | null
 } | null)
+const notFound = useNotFound(playerSeason, loading, error)
+
+// The player's other AFL seasons — the one being viewed is dropped, since it's
+// already the page you're on. Server orders these most recent first.
+const otherSeasons = computed(() => {
+  const all = playerSeason.value?.player.playerSeasons ?? []
+  return all
+    .filter(ps => ps.id !== playerSeason.value?.id)
+    .map(ps => ({
+      id: ps.id,
+      clubName: ps.clubSeason.club.name,
+      seasonName: ps.clubSeason.season.name,
+    }))
+})
 const stints = computed(() => fflResult.value?.fflPlayerSeasonsByAflPlayerSeason ?? [])
 
 const breadcrumbs = computed(() => {
@@ -345,6 +381,10 @@ const mergedRows = computed((): MergedRow[] =>
     }
   }),
 )
+
+// The match-by-match table shows most recent round first; averages/median above
+// stay off the chronological mergedRows.
+const displayRows = computed((): MergedRow[] => [...mergedRows.value].reverse())
 
 // ── Analysis ─────────────────────────────────────────────────────────────────
 

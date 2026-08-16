@@ -23,19 +23,22 @@
         >
           <td class="py-2 pr-4 tabular-nums text-text-faint">{{ index + 1 }}</td>
           <td class="py-2 pr-4 font-medium">
-            <div class="flex items-center gap-2">
+            <router-link
+              :to="{ name: 'ffl-afl-club-season', params: { clubSeasonId: entry.id } }"
+              class="flex items-center gap-2 hover:text-active transition-colors"
+            >
               <img :src="clubLogoUrl(entry.club.name)" :alt="entry.club.name" class="w-6 h-6 object-contain" />
               {{ entry.club.name }}
-            </div>
+            </router-link>
           </td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.played }}</td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ entry.won }}</td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ entry.lost }}</td>
+          <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.won, 'won')">{{ entry.won }}</td>
+          <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.lost, 'lost')">{{ entry.lost }}</td>
           <td class="py-2 px-2 text-right tabular-nums">{{ entry.drawn }}</td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ entry.for }}</td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ entry.against }}</td>
-          <td class="py-2 px-2 text-right tabular-nums">{{ entry.percentage.toFixed(1) }}</td>
-          <td class="py-2 px-2 text-right tabular-nums font-semibold">{{ entry.premiershipPoints }}</td>
+          <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.for, 'for')">{{ entry.for }}</td>
+          <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.against, 'against')">{{ entry.against }}</td>
+          <td class="py-2 px-2 text-right tabular-nums" :style="heat(entry.percentage, 'percentage')">{{ entry.percentage.toFixed(1) }}</td>
+          <td class="py-2 px-2 text-right tabular-nums font-semibold" :style="heat(entry.premiershipPoints, 'premiershipPoints')">{{ entry.premiershipPoints }}</td>
         </tr>
       </tbody>
     </table>
@@ -43,7 +46,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { clubLogoUrl } from '../utils/clubLogos'
+import { heatStyle } from '@/utils/heatmap'
+import { useTheme } from '@/composables/useTheme'
 
 interface LadderEntry {
   id: string
@@ -58,5 +64,34 @@ interface LadderEntry {
   premiershipPoints: number
 }
 
-defineProps<{ ladder: LadderEntry[] }>()
+const props = defineProps<{ ladder: LadderEntry[] }>()
+const { isDark } = useTheme()
+
+// Heatmap columns. The shared heatStyle highlights higher values, so lower-is-better
+// columns (L, A) are mirrored to keep "brighter = better". P (same for everyone) and
+// D (neutral) are left untinted.
+type HeatKey = 'won' | 'lost' | 'for' | 'against' | 'percentage' | 'premiershipPoints'
+const LOWER_IS_BETTER: Record<HeatKey, boolean> = {
+  won: false,
+  lost: true,
+  for: false,
+  against: true,
+  percentage: false,
+  premiershipPoints: false,
+}
+
+const ranges = computed(() => {
+  const r = {} as Record<HeatKey, { min: number; max: number }>
+  for (const key of Object.keys(LOWER_IS_BETTER) as HeatKey[]) {
+    const vals = props.ladder.map((e) => e[key])
+    r[key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  return r
+})
+
+function heat(value: number, key: HeatKey): Record<string, string> {
+  const { min, max } = ranges.value[key]
+  const v = LOWER_IS_BETTER[key] ? min + max - value : value
+  return heatStyle(v, min, max, isDark.value)
+}
 </script>

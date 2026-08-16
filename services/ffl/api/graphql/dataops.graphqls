@@ -1,0 +1,307 @@
+# Operational data-import surface (the DataOps concern): forum team import and
+# capture. Kept separate from the core FFL product schema. Resolvers land in
+# dataops.resolvers.go (gqlgen follow-schema layout).
+
+extend type Mutation {
+  "Parse a forum post and resolve players against the squad. Returns a result for review — no DB writes."
+  parseFFLTeamSubmission(input: ParseFFLTeamSubmissionInput!): ParseFFLTeamSubmissionResult!
+
+  "Confirm a reviewed parse result and write player matches to the database."
+  confirmFFLTeamSubmission(input: ConfirmFFLTeamSubmissionInput!): [FFLPlayerMatch!]!
+
+  "Lock a FFL club_match as final — triggers the FFL scoring chain."
+  markFFLTeamFinal(input: MarkFFLTeamFinalInput!): Boolean!
+
+  "Revert a FFL club_match from final back to submitted, allowing further edits."
+  markFFLTeamSubmitted(input: MarkFFLTeamFinalInput!): Boolean!
+
+  "Ingest a captured forum page (from the capture userscript). Parses each post in-session for preview — no DB writes."
+  ingestFFLForumPage(input: IngestFFLForumPageInput!): FFLPreviewedPage!
+
+  "Clear the in-session forum capture buffer."
+  clearFFLForumCaptures: Boolean!
+
+  "Create an FFL season (name + rules era + clubs)."
+  buildFFLSeason(input: BuildFFLSeasonInput!): FFLBuiltSeason!
+
+  "Save (create / edit / delete) a season's rounds and fixtures. Reconciled atomically; rounds with submitted teams are immutable."
+  saveFFLFixtures(input: SaveFFLFixturesInput!): Boolean!
+
+  "Parse a squads thread against an AFL season's players. Returns resolved squads for review — no DB writes."
+  parseFFLSquadThread(input: ParseFFLSquadThreadInput!): ParseFFLSquadThreadResult!
+
+  "Confirm one club's reviewed squad and add its members to the club_season squad. Members without a resolved AFL player_season are skipped."
+  importFFLSquad(input: ImportFFLSquadInput!): [FFLPlayerSeason!]!
+
+  "Parse a pasted season fixture sheet into rounds + fixtures with reference scores. No DB writes."
+  parseFFLFixtureSheet(input: ParseFFLFixtureSheetInput!): ParseFFLFixtureSheetResult!
+
+  "Confirm reviewed fixture rounds: build the season's rounds/fixtures (inferring byes) and record spreadsheet reference scores. Refuses the whole import if any club name is unresolved."
+  importFFLFixtures(input: ImportFFLFixturesInput!): ImportFFLFixturesResult!
+}
+
+extend type Query {
+  "Forum pages captured this session for preview (ephemeral; not persisted)."
+  fflCapturedPages: [FFLPreviewedPage!]!
+
+  "The scoring eras available to assign to a season (for the season builder)."
+  fflRulesEras: [FFLRulesEra!]!
+
+  "A season's rounds with their fixtures and byes, for the fixture builder."
+  fflSeasonFixtures(seasonId: ID!): [FFLFixtureRound!]!
+}
+
+"A round loaded for the fixture builder: its fixtures, byes, and lock state."
+type FFLFixtureRound {
+  roundId: ID!
+  name: String!
+  aflRoundId: ID!
+  roundType: String!
+  "True when the round has submitted teams — its fixtures are immutable."
+  locked: Boolean!
+  "The round's matches — versus, bye and superbye alike, distinguished by style."
+  matches: [FFLFixtureMatch!]!
+}
+
+"One match in a round: its style ('versus' | 'bye' | 'superbye') and the club_seasons in it (for versus, ordered [home, away])."
+type FFLFixtureMatch {
+  style: String!
+  clubSeasonIds: [ID!]!
+}
+
+"A selectable scoring era: its rules_id and a human summary of what distinguishes it."
+type FFLRulesEra {
+  id: String!
+  label: String!
+}
+
+type ParseFFLTeamSubmissionResult {
+  resolvedPlayers: [ResolvedPlayer!]!
+  needsReview: [Int!]!
+}
+
+type ResolvedPlayer {
+  parsedName: String!
+  clubHint: String!
+  resolvedName: String
+  resolvedClub: String
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+  playerSeasonId: ID
+  confidence: Float!
+}
+
+input ParseFFLTeamSubmissionInput {
+  clubSeasonId: ID!
+  clubMatchId: ID!
+  teamName: String!
+  post: String!
+}
+
+input ConfirmFFLTeamSubmissionInput {
+  clubMatchId: ID!
+  players: [ConfirmedFFLPlayerInput!]!
+}
+
+input ConfirmedFFLPlayerInput {
+  playerSeasonId: ID!
+  position: String!
+  backupPositions: String
+  interchangePosition: String
+  score: Int
+}
+
+input ParseFFLSquadThreadInput {
+  "The AFL season whose players form the resolution candidate pool."
+  aflSeasonId: ID!
+  "The pasted squads thread — many clubs, ~30 members each."
+  thread: String!
+}
+
+type ParseFFLSquadThreadResult {
+  squads: [ResolvedSquad!]!
+}
+
+"One club's squad as read from the thread, each member resolved against the AFL season's players."
+type ResolvedSquad {
+  "The club name exactly as written in the thread header; the reviewer assigns it to a club_season."
+  clubName: String!
+  members: [ResolvedSquadMember!]!
+  "Indices into members whose best-match confidence is below the auto-accept threshold."
+  needsReview: [Int!]!
+}
+
+type ResolvedSquadMember {
+  rank: Int!
+  parsedName: String!
+  clubHint: String!
+  costCents: Int
+  resolvedName: String
+  resolvedClub: String
+  "The resolved AFL player_season handle; null when unresolved (reviewer must link)."
+  aflPlayerSeasonId: ID
+  confidence: Float!
+}
+
+input ImportFFLSquadInput {
+  "The FFL club_season the reviewer assigned this squad to."
+  clubSeasonId: ID!
+  "Round the squad takes effect from; null for season start."
+  fromRoundId: ID
+  members: [ConfirmedFFLSquadMemberInput!]!
+}
+
+input ConfirmedFFLSquadMemberInput {
+  aflPlayerSeasonId: ID!
+  name: String!
+  costCents: Int
+}
+
+input ParseFFLFixtureSheetInput {
+  "The pasted season fixture sheet (tab-separated, one region per round)."
+  sheet: String!
+}
+
+type ParseFFLFixtureSheetResult {
+  rounds: [ParsedFixtureRound!]!
+}
+
+"One round as read from the sheet, before the reviewer maps it to an AFL round."
+type ParsedFixtureRound {
+  "The printed round number; 0 for a labelled finals round with no number."
+  round: Int!
+  "Any text beside the number, or a finals name ('Super Bye', 'Grand Final')."
+  label: String!
+  fixtures: [ParsedFixture!]!
+}
+
+"One fixture line: two clubs (names as written) and their reference scores (null when the sheet is blank)."
+type ParsedFixture {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+input ImportFFLFixturesInput {
+  seasonId: ID!
+  "The complete set of rounds to build — the season fixture is reconciled to this, so omitting a round removes it."
+  rounds: [FixtureImportRoundInput!]!
+}
+
+input FixtureImportRoundInput {
+  "The FFL round name the reviewer assigned (e.g. 'Round 1')."
+  name: String!
+  "The AFL round this maps to."
+  aflRoundId: ID!
+  "MINOR (default), SEMI_FINAL or GRAND_FINAL. Finals skip bye creation; superbyes are left to the manual builder."
+  roundType: String
+  fixtures: [ParsedFixtureInput!]!
+}
+
+input ParsedFixtureInput {
+  homeClub: String!
+  homeScore: Int
+  awayClub: String!
+  awayScore: Int
+}
+
+type ImportFFLFixturesResult {
+  roundsCreated: Int!
+  scoresWritten: Int!
+  "Club names from the sheet that did not map to a club_season; when non-empty nothing was written."
+  unresolved: [String!]!
+}
+
+input MarkFFLTeamFinalInput {
+  clubMatchId: ID!
+  matchId: ID!
+  roundId: ID!
+}
+
+input IngestFFLForumPageInput {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [CapturedFFLPostInput!]!
+}
+
+input CapturedFFLPostInput {
+  postId: String!
+  author: String!
+  timestamp: String
+  html: String!
+}
+
+"A captured forum page previewed in-session (historical import, slice 1). Not persisted."
+type FFLPreviewedPage {
+  season: String!
+  roundTitle: String!
+  topicId: String!
+  posts: [FFLPreviewedPost!]!
+}
+
+type FFLPreviewedPost {
+  postId: String!
+  author: String!
+  "Parser format identified for the post (from author, else content); empty if unrecognised."
+  team: String!
+  isTeamSubmission: Boolean!
+  parseError: String!
+  "The post's plain text, kept so an unparsed post is still workable and so the team import can re-resolve it."
+  text: String!
+  players: [FFLParsedPlayer!]!
+}
+
+type FFLParsedPlayer {
+  name: String!
+  clubHint: String!
+  position: String!
+  backupPositions: String!
+  interchangePosition: String!
+  score: Int
+  notes: String!
+}
+
+input BuildFFLSeasonInput {
+  seasonName: String!
+  rulesId: String!
+  aflSeasonId: ID!
+  clubIds: [ID!]!
+}
+
+type FFLBuiltSeason {
+  seasonId: ID!
+  rulesId: String!
+  clubSeasons: [FFLBuiltClubSeason!]!
+}
+
+type FFLBuiltClubSeason {
+  clubName: String!
+  clubSeasonId: ID!
+}
+
+input SaveFFLFixturesInput {
+  seasonId: ID!
+  rounds: [SaveFFLRoundInput!]!
+}
+
+input SaveFFLRoundInput {
+  "Existing round id to edit; null to create a new round."
+  roundId: ID
+  name: String!
+  aflRoundId: ID!
+  "MINOR (default), SEMI_FINAL or GRAND_FINAL."
+  roundType: String
+  matches: [SaveFFLMatchInput!]!
+}
+
+input SaveFFLMatchInput {
+  "'versus', 'bye', or 'superbye'."
+  style: String!
+  "The club_seasons in this match; for versus, ordered [home, away]."
+  clubSeasonIds: [ID!]!
+}

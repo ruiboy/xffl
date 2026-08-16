@@ -4,6 +4,7 @@
     <div v-if="openMenuKey" class="fixed inset-0 z-40" @click="closeMenu" />
     <div v-if="loading" class="text-text-faint">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error.message }}</div>
+    <NotFound v-else-if="notFound" entity="Team" />
     <template v-else-if="round">
       <div class="mb-6">
         <Breadcrumb v-if="currentRound" :items="breadcrumbs" />
@@ -217,19 +218,21 @@
             </div>
             <div class="flex items-center justify-end gap-3">
               <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
-              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+              <span class="text-xl font-bold tabular-nums">{{ grandTotal }}</span>
             </div>
           </div>
-          <div v-else class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-text-heading">Team</h2>
-            <div class="flex items-center gap-3">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-text-heading">Team</h2>
               <span
                 v-if="!readonly && projectedTotal > 0"
                 class="rounded-md bg-sky-500/15 ring-1 ring-sky-400/40 px-2.5 py-0.5 text-sm tabular-nums text-sky-400"
                 :title="`Estimated total from ${statSourceTitle.toLowerCase()}`"
               >Projected ~{{ projectedTotal }}</span>
-              <span class="text-sm tabular-nums text-text-muted">{{ starterCount }}/18 starters · {{ benchCount }}/4 bench</span>
-              <span class="text-sm font-semibold tabular-nums">{{ grandTotal }}</span>
+            </div>
+            <div class="flex items-center justify-end gap-3">
+              <PlayedCount :club-match="clubMatch" class="text-xs" />
+              <span class="text-xl font-bold tabular-nums">{{ grandTotal }}</span>
             </div>
           </div>
         </div>
@@ -249,10 +252,10 @@
                 <div
                   v-for="(slot, index) in teamSlots[pos.key]"
                   :key="index"
-                  class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
+                  class="flex items-center rounded-lg border px-4 py-2 transition-colors"
                   :class="[slot.player
                     ? (subsMode && slot.player.aflStatus === 'dnp'
-                      ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
+                      ? (subbedOutIds.has(slot.player.pmId ?? '') ? 'border-sky-500/40 bg-sky-500/5' : 'border-amber-600/30 bg-amber-500/5')
                       : 'border-border bg-surface-raised')
                     : 'border-dashed border-border-subtle bg-surface',
                     managing && slot.player ? 'cursor-grab active:cursor-grabbing' : '',
@@ -263,7 +266,6 @@
                   @dragover="onDragOverTarget($event, `s:${pos.key}:${index}`, starterDropAction(pos.key, index))"
                   @dragleave="onDragLeave(`s:${pos.key}:${index}`)"
                   @drop.prevent="onDropTarget(starterDropAction(pos.key, index))"
-                  @click="onStarterClick(slot.player)"
                 >
                   <div v-if="slot.player" class="flex items-center gap-3">
                     <span v-if="pos.key === 'star'" class="text-yellow-400 text-xs">★</span>
@@ -293,6 +295,17 @@
                     </div>
                   </div>
                   <span v-else class="text-text-faint text-sm">Empty slot</span>
+                  <span v-if="slot.player" class="flex-1 flex justify-center">
+                    <button
+                      v-if="subsMode && slot.player.aflStatus === 'dnp' && benchCoverFor(pos.key)"
+                      :title="subbedOutIds.has(slot.player.pmId ?? '') ? `Replaced with ${benchCoverFor(pos.key)?.name}` : `Replace with ${benchCoverFor(pos.key)?.name}`"
+                      class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-control px-2.5 py-1 text-xs font-semibold text-text shadow-sm hover:bg-control-hover transition-colors"
+                      @click.stop="toggleSub(slot.player.pmId ?? '')"
+                    >
+                      <IconSubs class="w-3 h-3" />
+                      {{ subbedOutIds.has(slot.player.pmId ?? '') ? 'Undo Substitute' : 'Substitute' }}
+                    </button>
+                  </span>
                   <div v-if="slot.player && managing" class="relative flex items-center gap-2 shrink-0">
                     <span class="flex items-center gap-0.5" :title="statSourceTitle">
                       <span
@@ -388,11 +401,11 @@
 
               <div v-for="(slot, index) in benchDualSlots" :key="index" class="mb-1">
                 <div
-                  class="flex items-center justify-between rounded-lg border px-4 py-2 transition-colors"
+                  class="flex items-center rounded-lg border px-4 py-2 transition-colors"
                   :class="[
                     slot.player
                       ? (subsMode && isInterchangeSlot(slot)
-                        ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5 cursor-pointer' : 'border-amber-600/30 bg-amber-500/5 cursor-pointer')
+                        ? (interchangeApplied ? 'border-sky-500/40 bg-sky-500/5' : 'border-amber-600/30 bg-amber-500/5')
                         : 'border-border bg-surface-raised')
                       : 'border-dashed border-border-subtle bg-surface',
                     recentlyClearedSlot === index ? '!border-orange-400' : '',
@@ -405,7 +418,6 @@
                   @dragover="onDragOverTarget($event, `b:${index}`, benchDropAction(index))"
                   @dragleave="onDragLeave(`b:${index}`)"
                   @drop.prevent="onDropTarget(benchDropAction(index))"
-                  @click="onBenchRowClick(slot)"
                 >
                   <!-- Left: name -->
                   <div class="flex items-center gap-3 min-w-0">
@@ -432,6 +444,16 @@
                     </div>
                     <span v-else class="text-text-faint text-sm">Empty slot</span>
                   </div>
+                  <span v-if="slot.player" class="flex-1 flex justify-center">
+                    <button
+                      v-if="subsMode && isInterchangeSlot(slot)"
+                      class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-control px-2.5 py-1 text-xs font-semibold text-text shadow-sm hover:bg-control-hover transition-colors"
+                      @click.stop="interchangeApplied = !interchangeApplied"
+                    >
+                      <IconSubs class="w-3 h-3" />
+                      {{ interchangeApplied ? 'Deactivate' : 'Activate' }}
+                    </button>
+                  </span>
                   <!-- Right: selectors + actions menu (manage) or read-only tags -->
                   <div class="relative flex items-center gap-2 ml-4 shrink-0">
                     <template v-if="slot.player && managing">
@@ -742,6 +764,7 @@ import { SET_FFL_TEAM, DECLARE_FFL_SUBSTITUTIONS } from '../api/mutations'
 import { MARK_FFL_TEAM_FINAL, MARK_FFL_TEAM_SUBMITTED } from '../../data-ops/api/mutations'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import StatusBadge from '../components/StatusBadge.vue'
+import PlayedCount from '../components/PlayedCount.vue'
 import { clubLogoUrl } from '../utils/clubLogos'
 import { clubAbbrev } from '../../afl/utils/clubAbbrev'
 import { positionFormula } from '../utils/position'
@@ -756,6 +779,8 @@ import IconCopy from '../components/icons/IconCopy.vue'
 import IconMenu from '../components/icons/IconMenu.vue'
 import { heatStyle } from '@/utils/heatmap'
 import { useTheme } from '@/composables/useTheme'
+import { useNotFound } from '@/composables/useNotFound'
+import NotFound from '@/components/NotFound.vue'
 import { solveBestAssignment } from '../utils/bestTeam'
 import PlayerStatsCard from '../components/PlayerStatsCard.vue'
 import { useFflState } from '../composables/useFflState'
@@ -822,6 +847,9 @@ const { result: clubMatchBootstrap, loading: bootstrapLoading } = useQuery(
   { errorPolicy: 'all' },
 )
 
+const bootstrapClubMatch = computed(() => clubMatchBootstrap.value?.fflClubMatch ?? null)
+const notFound = useNotFound(bootstrapClubMatch, bootstrapLoading, ref(null))
+
 const bootstrapRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.roundId ?? '')
 const bootstrapAflRoundId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.aflRoundId ?? null)
 const bootstrapSeasonId = computed(() => clubMatchBootstrap.value?.fflClubMatch?.seasonId ?? '')
@@ -874,9 +902,13 @@ const breadcrumbs = computed(() => {
     { label: round.value.name, to: { name: 'ffl-round', params: { roundId: bootstrapRoundId.value } } },
   ]
   if (currentMatch.value) {
-    const home = currentMatch.value.homeClubMatch?.club.name ?? '?'
-    const away = currentMatch.value.awayClubMatch?.club.name ?? '?'
-    crumbs.push({ label: `${home} v ${away}`, to: { name: 'ffl-match', params: { matchId: currentMatch.value.id } } })
+    const m = currentMatch.value
+    const cms = m.clubMatches ?? []
+    let label: string
+    if (m.matchStyle === 'bye') label = `${cms[0]?.club.name ?? '?'} (Bye)`
+    else if (m.matchStyle === 'superbye') label = 'Superbye'
+    else label = `${cms[0]?.club.name ?? '?'} v ${cms[1]?.club.name ?? '?'}`
+    crumbs.push({ label, to: { name: 'ffl-match', params: { matchId: m.id } } })
   }
   return crumbs
 })
@@ -893,17 +925,17 @@ const nextRound = computed(() => {
   return idx >= 0 && idx < rounds.length - 1 ? rounds[idx + 1] : null
 })
 
-type RoundMatchEntry = { homeClubMatch?: { id: string; clubSeasonId: string } | null; awayClubMatch?: { id: string; clubSeasonId: string } | null }
+type RoundMatchEntry = { clubMatches?: { id: string; clubSeasonId: string }[] | null }
 
 function clubMatchIdForRound(roundId: string): string | null {
   const roundData = round.value?.season.rounds.find((r: { id: string }) => r.id === roundId)
   if (!roundData) return null
   const csId = bootstrapClubSeasonId.value
-  const m: RoundMatchEntry | undefined = roundData.matches?.find((m: RoundMatchEntry) =>
-    m.homeClubMatch?.clubSeasonId === csId || m.awayClubMatch?.clubSeasonId === csId
-  )
-  if (!m) return null
-  return m.homeClubMatch?.clubSeasonId === csId ? (m.homeClubMatch?.id ?? null) : (m.awayClubMatch?.id ?? null)
+  for (const m of (roundData.matches ?? []) as RoundMatchEntry[]) {
+    const cm = (m.clubMatches ?? []).find((cm) => cm.clubSeasonId === csId)
+    if (cm) return cm.id
+  }
+  return null
 }
 
 const prevClubMatchId = computed(() => prevRound.value ? clubMatchIdForRound(prevRound.value.id) : null)
@@ -911,17 +943,14 @@ const nextClubMatchId = computed(() => nextRound.value ? clubMatchIdForRound(nex
 
 const currentMatch = computed(() => {
   if (!round.value) return null
-  return round.value.matches.find((m: { homeClubMatch?: { id: string } | null; awayClubMatch?: { id: string } | null }) =>
-    m.homeClubMatch?.id === props.clubMatchId || m.awayClubMatch?.id === props.clubMatchId
+  return round.value.matches.find((m: { clubMatches?: { id: string }[] | null }) =>
+    (m.clubMatches ?? []).some((cm) => cm.id === props.clubMatchId)
   ) ?? null
 })
 
 const clubMatch = computed(() => {
   if (!currentMatch.value) return null
-  const m = currentMatch.value
-  if (m.homeClubMatch?.id === props.clubMatchId) return m.homeClubMatch
-  if (m.awayClubMatch?.id === props.clubMatchId) return m.awayClubMatch
-  return null
+  return (currentMatch.value.clubMatches ?? []).find((cm: { id: string }) => cm.id === props.clubMatchId) ?? null
 })
 
 const playerMatchBySeasonId = computed(() => {
@@ -1209,7 +1238,7 @@ function formatTeamText(): string {
       const club = clubAbbrev(slot.player!.club)
       const tag = STATUS_TAG[playerStatus(slot.player!) ?? ''] ?? ''
       const isIc = isInterchangeSlot(slot)
-      const posLabel = isIc ? '*' : slot.positions.filter(Boolean).map(positionShort).join('/')
+      const posLabel = isIc ? '*' : slot.positions.filter((p): p is NonNullable<typeof p> => p != null).map(positionShort).join('/')
       const showScore = playerShowScore(slot.player!) || hasSubScore(slot.player!)
       const score = showScore ? ` ${benchScoreDisplay(slot)}` : ''
       lines.push(`${slot.player!.name}${club ? ` (${club})` : ''} ${posLabel}${tag ? ` ${tag}` : ''}${score}`)
@@ -1866,6 +1895,17 @@ function toggleSub(pmId: string) {
   subbedOutIds.value = next
 }
 
+// The bench player eligible to cover a given starter position, regardless of whether
+// that starter is currently toggled as subbed out — used to label the Substitute
+// button with who would actually come on.
+function benchCoverFor(posKey: string): SquadPlayer | null {
+  for (const bSlot of benchDualSlots.value) {
+    if (!bSlot.player) continue
+    if ((bSlot.positions as (string | null)[]).includes(posKey)) return bSlot.player
+  }
+  return null
+}
+
 // Maps subbed-out starter pmId → the first bench player whose backup positions cover that starter's position.
 const subsMapping = computed(() => {
   const map = new Map<string, SquadPlayer>()
@@ -2000,16 +2040,6 @@ function effectiveCoveredPosition(benchPmId: string | null): string | null {
     }
   }
   return null
-}
-
-function onStarterClick(player: SquadPlayer | null) {
-  if (!player || !subsMode.value || player.aflStatus !== 'dnp') return
-  toggleSub(player.pmId ?? '')
-}
-
-function onBenchRowClick(slot: BenchDualSlot) {
-  if (!subsMode.value || !slot.player || !isInterchangeSlot(slot)) return
-  interchangeApplied.value = !interchangeApplied.value
 }
 
 function starterDisplayScore(player: SquadPlayer, posKey: string): number | string {

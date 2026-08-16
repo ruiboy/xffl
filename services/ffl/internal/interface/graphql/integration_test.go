@@ -240,6 +240,52 @@ func TestFflClubs(t *testing.T) {
 	})
 }
 
+func TestFflClubWithSeasons(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+
+	clubID := fmt.Sprintf("%d", ids.homeClubID)
+	result := execQuery(t, server, `{
+		fflClub(id: "`+clubID+`") {
+			name
+			seasons {
+				id
+				season { id name }
+				played
+				won
+			}
+		}
+	}`)
+
+	require.Empty(t, result.Errors)
+
+	var data struct {
+		FflClub struct {
+			Name    string `json:"name"`
+			Seasons []struct {
+				ID     string `json:"id"`
+				Season struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"season"`
+				Played int `json:"played"`
+				Won    int `json:"won"`
+			} `json:"seasons"`
+		} `json:"fflClub"`
+	}
+	require.NoError(t, json.Unmarshal(result.Data, &data))
+
+	t.Run("returns the club's own season record", func(t *testing.T) {
+		require.Len(t, data.FflClub.Seasons, 1)
+		assert.Equal(t, "Test Eagles", data.FflClub.Name)
+		assert.Equal(t, "Test 2025", data.FflClub.Seasons[0].Season.Name)
+		assert.Equal(t, 5, data.FflClub.Seasons[0].Played)
+		assert.Equal(t, 4, data.FflClub.Seasons[0].Won)
+	})
+}
+
 func TestFflSeasons(t *testing.T) {
 	pool := connectDB(t)
 	seedTestData(t, pool)
@@ -516,6 +562,67 @@ func TestFflMatch(t *testing.T) {
 		require.NotNil(t, data.FflMatch.AwayClubMatch)
 		assert.Equal(t, "Test Lions", data.FflMatch.AwayClubMatch.Club.Name)
 		assert.Equal(t, 72, data.FflMatch.AwayClubMatch.Score)
+	})
+}
+
+// Bye and superbye club_matches must be reachable through FFLMatch so their teams
+// can be entered in DataOps like any other club_match.
+func TestFflMatch_ByeAndSuperbyeClubMatches(t *testing.T) {
+	pool := connectDB(t)
+	ids := seedTestData(t, pool)
+	server := setupTestServer(t, pool)
+	defer server.Close()
+	ctx := context.Background()
+
+	// A single-sided bye match.
+	var byeMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.match (round_id, match_style) VALUES ($1, 'bye') RETURNING id", ids.roundID).Scan(&byeMatchID))
+	_, err := pool.Exec(ctx,
+		"INSERT INTO ffl.club_match (match_id, club_season_id, side, drv_score) VALUES ($1, $2, 'bye', 90)",
+		byeMatchID, ids.homeClubSeaID)
+	require.NoError(t, err)
+
+	// A superbye match with both clubs.
+	var sbMatchID int
+	require.NoError(t, pool.QueryRow(ctx,
+		"INSERT INTO ffl.match (round_id, match_style) VALUES ($1, 'superbye') RETURNING id", ids.roundID).Scan(&sbMatchID))
+	_, err = pool.Exec(ctx,
+		"INSERT INTO ffl.club_match (match_id, club_season_id, side, drv_score) VALUES ($1, $2, 'superbye', 100), ($1, $3, 'superbye', 80)",
+		sbMatchID, ids.homeClubSeaID, ids.awayClubSeaID)
+	require.NoError(t, err)
+
+	type matchData struct {
+		FflMatch struct {
+			MatchStyle  string `json:"matchStyle"`
+			ClubMatches []struct {
+				ClubSeasonID string `json:"clubSeasonId"`
+			} `json:"clubMatches"`
+		} `json:"fflMatch"`
+	}
+	query := func(id int) matchData {
+		res := execQuery(t, server, `{ fflMatch(id: "`+fmt.Sprintf("%d", id)+`") { matchStyle clubMatches { clubSeasonId } } }`)
+		require.Empty(t, res.Errors)
+		var d matchData
+		require.NoError(t, json.Unmarshal(res.Data, &d))
+		return d
+	}
+
+	t.Run("regular match exposes both sides via clubMatches", func(t *testing.T) {
+		d := query(ids.matchID)
+		assert.Equal(t, "versus", d.FflMatch.MatchStyle)
+		assert.Len(t, d.FflMatch.ClubMatches, 2)
+	})
+	t.Run("bye match exposes its single club_match", func(t *testing.T) {
+		d := query(byeMatchID)
+		assert.Equal(t, "bye", d.FflMatch.MatchStyle)
+		require.Len(t, d.FflMatch.ClubMatches, 1)
+		assert.Equal(t, fmt.Sprintf("%d", ids.homeClubSeaID), d.FflMatch.ClubMatches[0].ClubSeasonID)
+	})
+	t.Run("superbye match exposes every club_match", func(t *testing.T) {
+		d := query(sbMatchID)
+		assert.Equal(t, "superbye", d.FflMatch.MatchStyle)
+		assert.Len(t, d.FflMatch.ClubMatches, 2)
 	})
 }
 

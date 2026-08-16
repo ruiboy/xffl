@@ -840,3 +840,11 @@ func (s *subsScoreStub) LookupPlayerMatchBySeasonRound(_ context.Context, _ []in
 func (s *subsScoreStub) LookupByeInfo(_ context.Context, _ []int, _ int) ([]application.ByePlayerInfo, error) {
 	return nil, nil
 }
+
+func (s *subsScoreStub) LookupPlayerSeasonsBySeasonID(_ context.Context, _ int) ([]application.PlayerCandidate, error) {
+	return nil, nil
+}
+
+func (s *subsScoreStub) LookupFinalAFLStatus(_ context.Context, _ []int, _ int) (map[int]string, error) {
+	return nil, nil
+}

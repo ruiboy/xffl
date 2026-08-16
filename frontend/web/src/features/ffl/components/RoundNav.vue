@@ -6,19 +6,15 @@
       :key="round.id"
       :to="toRound ? toRound(round) : { name: 'ffl-round', params: { roundId: round.id } }"
       :title="round.name"
-      class="relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
-      :class="effectiveActiveId === round.id
-        ? 'bg-active text-active-text'
-        : round.id === liveRoundId
-          ? 'bg-control text-text-muted hover:bg-control-hover hover:text-text'
-          : 'bg-control text-text-muted hover:bg-control-hover hover:text-text'"
+      class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
+      :class="[
+        effectiveActiveId === round.id
+          ? 'bg-active text-active-text'
+          : 'bg-control text-text-muted hover:bg-control-hover hover:text-text',
+        round.id === liveRoundId ? 'ring-2 ring-active ring-offset-2 ring-offset-surface' : '',
+      ]"
     >
       {{ roundPillLabel(round.name) }}
-      <!-- Pulsing dot when this is the live round and it starts today -->
-      <span
-        v-if="round.id === liveRoundId && isLiveToday"
-        class="absolute top-0 right-0 w-2 h-2 rounded-full bg-active animate-pulse"
-      />
     </router-link>
   </nav>
 </template>
@@ -44,10 +40,4 @@ const props = defineProps<{
 
 const route = useRoute()
 const effectiveActiveId = computed(() => props.activeId ?? route.params.roundId as string | undefined)
-
-const isLiveToday = computed(() => {
-  if (!props.liveStartDate) return false
-  const today = new Date().toISOString().slice(0, 10)
-  return props.liveStartDate.slice(0, 10) === today
-})
 </script>

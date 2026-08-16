@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"math"
 	"strings"
 )
 
@@ -17,27 +16,6 @@ const (
 	PositionTackles   Position = "tackles"
 	PositionHitouts   Position = "hitouts"
 	PositionStar      Position = "star"
-)
-
-// PositionSlots defines the maximum number of starter slots per position.
-var PositionSlots = map[Position]int{
-	PositionGoals:     3,
-	PositionKicks:     4,
-	PositionHandballs: 4,
-	PositionMarks:     2,
-	PositionTackles:   2,
-	PositionHitouts:   2,
-	PositionStar:      1,
-}
-
-// Scoring multipliers per position.
-const (
-	GoalsMultiplier     = 5
-	KicksMultiplier     = 1
-	HandballsMultiplier = 1
-	MarksMultiplier     = 2
-	TacklesMultiplier   = 4
-	HitoutsMultiplier   = 1
 )
 
 // PlayerMatchStatus reflects the TM's explicit declaration for this player's role.
@@ -62,16 +40,6 @@ const (
 	AFLStatusBye     AFLStatus = "bye"     // player's AFL club has a bye this round
 )
 
-// AFLStats holds the AFL performance statistics used to calculate fantasy scores.
-type AFLStats struct {
-	Goals     int
-	Kicks     int
-	Handballs int
-	Marks     int
-	Tackles   int
-	Hitouts   int
-}
-
 type PlayerMatch struct {
 	ID                  int
 	ClubMatchID         int
@@ -93,79 +61,6 @@ func (pm PlayerMatch) isBench() bool {
 	return pm.BackupPositions != nil
 }
 
-// CalculateScore computes the fantasy score for this player based on their
-// position and the given AFL match statistics. Returns 0 if position is nil.
-func (pm PlayerMatch) CalculateScore(stats AFLStats) int {
-	if pm.Position == nil {
-		return 0
-	}
-	switch *pm.Position {
-	case PositionGoals:
-		return stats.Goals * GoalsMultiplier
-	case PositionKicks:
-		return stats.Kicks * KicksMultiplier
-	case PositionHandballs:
-		return stats.Handballs * HandballsMultiplier
-	case PositionMarks:
-		return stats.Marks * MarksMultiplier
-	case PositionTackles:
-		return stats.Tackles * TacklesMultiplier
-	case PositionHitouts:
-		return stats.Hitouts * HitoutsMultiplier
-	case PositionStar:
-		return stats.Goals*GoalsMultiplier +
-			stats.Kicks*KicksMultiplier +
-			stats.Handballs*HandballsMultiplier +
-			stats.Marks*MarksMultiplier +
-			stats.Tackles*TacklesMultiplier
-	default:
-		return 0
-	}
-}
-
-// AFLAvgStats holds season-average AFL statistics for bye score calculation.
-// Values are raw averages (not yet floored); CalculateByeScore floors per stat before multiplying.
-type AFLAvgStats struct {
-	Goals     float64
-	Kicks     float64
-	Handballs float64
-	Marks     float64
-	Tackles   float64
-	Hitouts   float64
-}
-
-// CalculateByeScore computes the bye fantasy score from season-average stats.
-// Each stat is floored individually before the position multiplier is applied.
-// For star, each component is floored and multiplied separately before summing.
-func (pm PlayerMatch) CalculateByeScore(avg AFLAvgStats) int {
-	if pm.Position == nil {
-		return 0
-	}
-	fl := func(f float64) int { return int(math.Floor(f)) }
-	switch *pm.Position {
-	case PositionGoals:
-		return fl(avg.Goals) * GoalsMultiplier
-	case PositionKicks:
-		return fl(avg.Kicks) * KicksMultiplier
-	case PositionHandballs:
-		return fl(avg.Handballs) * HandballsMultiplier
-	case PositionMarks:
-		return fl(avg.Marks) * MarksMultiplier
-	case PositionTackles:
-		return fl(avg.Tackles) * TacklesMultiplier
-	case PositionHitouts:
-		return fl(avg.Hitouts) * HitoutsMultiplier
-	case PositionStar:
-		return fl(avg.Goals)*GoalsMultiplier +
-			fl(avg.Kicks)*KicksMultiplier +
-			fl(avg.Handballs)*HandballsMultiplier +
-			fl(avg.Marks)*MarksMultiplier +
-			fl(avg.Tackles)*TacklesMultiplier
-	default:
-		return 0
-	}
-}
-
 // parsePositions splits a comma-separated position string into a slice of Position values.
 func parsePositions(s string) []Position {
 	parts := strings.Split(s, ",")
@@ -180,13 +75,12 @@ func parsePositions(s string) []Position {
 }
 
 // Ptr helpers for use in struct literals.
-func PositionPtr(p Position) *Position                            { return &p }
-func PlayerMatchStatusPtr(s PlayerMatchStatus) *PlayerMatchStatus { return &s }
-func AFLStatusPtr(s AFLStatus) *AFLStatus                { return &s }
+func PositionPtr(p Position) *Position { return &p }
 
 type PlayerMatchRepository interface {
 	DeleteByClubMatchID(ctx context.Context, clubMatchID int) error
 	DeleteByID(ctx context.Context, id int) error
+	CountByRoundID(ctx context.Context, roundID int) (int, error)
 	FindByClubMatchID(ctx context.Context, clubMatchID int) ([]PlayerMatch, error)
 	FindByID(ctx context.Context, id int) (PlayerMatch, error)
 	FindByPlayerSeasonID(ctx context.Context, playerSeasonID int) ([]PlayerMatch, error)

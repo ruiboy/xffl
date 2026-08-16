@@ -46,6 +46,14 @@ func (s *matchStatLookupStub) LookupByeInfo(_ context.Context, _ []int, _ int) (
 	return nil, nil
 }
 
+func (s *matchStatLookupStub) LookupPlayerSeasonsBySeasonID(_ context.Context, _ int) ([]application.PlayerCandidate, error) {
+	return nil, nil
+}
+
+func (s *matchStatLookupStub) LookupFinalAFLStatus(_ context.Context, _ []int, _ int) (map[int]string, error) {
+	return nil, nil
+}
+
 // setupServerWithMatchStats creates a test HTTP server whose RecalculateScore
 // command will return the given AFL stats from LookupPlayerMatch.
 func setupServerWithMatchStats(t *testing.T, pool *pgxpool.Pool, stats []application.PlayerMatchStats) *httptest.Server {

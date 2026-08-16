@@ -258,3 +258,23 @@ Completed phases from the xffl rebuild. See `plans/roadmap.md` for active and up
 **Goal:** Season setup tooling and one-time historical backfill — the operations needed once per season (or once ever) rather than every round.
 
 - [x] AFL historical data import — afltables scrape + import CLIs; 1998–2023 loaded, 2024/2025 finalised + derived (scores, rushed behinds, ladders). Made navigable in the webapp (season picker, season-in-URL, ladder home) and finals typed via `round_type`.
+
+## Phase 25: FFL Scoring & Historical Import Setup ✅
+
+**Goal:** Make FFL scoring pluggable per season, then backfill historical FFL teams from forum data with era-correct scoring.
+
+- [x] Pluggable FFL scoring formula — per-season `Rules` value object with `Scoring` and `Composition` facets (`ffl.season.rules_id`) + generic scoring engine; refactor-to-parity first, then historical eras defined in `rules_eras.go`. Supersedes the `ScoringStrategy` interface / `scoring_strategy` column originally scoped here — parameterised rules replaced one implementation per variant. See [ffl-scoring-rules.md](ffl-scoring-rules.md)
+- [x] FFL historical import **tooling** — human-in-the-loop capture (userscript → ingest → parse) feeding a layered pipeline (fixtures → squads → trades → submitted teams), with scores recomputed via per-season `Rules` and every score found kept in notes as a reference. Replaces the one-time-CLI approach originally scoped. Running the import is Phase 26. See [ffl-historical-import.md](ffl-historical-import.md)
+- [x] Deletion semantics fast-follow (ADR-020 step 1) — `ffl.player_match.club_match_id` from `ON DELETE CASCADE` to `RESTRICT`, so a fixture delete slipping past the `hasTeams` guard fails loudly instead of silently destroying submitted teams. See [ADR-020](../ai/decisions/adr-020-deletion-semantics.md)
+
+Emerged during the phase rather than being scoped up front — byes and superbyes were deferred from slice 2 and added as-we-go, and the rest came out of using the fixture builder:
+
+- [x] Match model unification — one match = a style (`versus` / `bye` / `superbye`) plus its participating `club_match` rows, replacing the home/away pair. Byes and superbyes render on round and match pages; a bye counts toward For only, not games played
+- [x] Fixture builder — staged round-by-round editor, round-robin generator plus manual rounds, superbyes, saves reconciled in place rather than rebuilt; rounds ordered by AFL round rather than creation order
+- [x] Add Season rework — explicit rules-era selection and club picker at creation time
+- [x] Admin / Data Ops separation — data-ops split into its own package and schema, Admin (Seasons, Fixtures) split out of Data Ops, Calculate tab moved to Data Ops, nav decluttered
+
+Not-found and player navigation, arising from use rather than plan:
+
+- [x] Not-found handling — single-entity queries resolve unknown and unparseable ids to null instead of erroring (`pgx.ErrNoRows` → `domain.ErrNotFound` through repo and resolver), a shared `NotFound` page across the FFL and AFL views, and a catch-all route for unmatched paths. Remaining unreached call paths and the typecheck gate are Phase 28
+- [x] Player navigation — header player search jumping to any player's season page, and a player's other seasons linked as year + club chips from their season page

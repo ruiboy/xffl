@@ -25,7 +25,7 @@ var positionAliases = map[string]string{
 	"TACKLES": "tackles", "TACKLE": "tackles",
 	"HITOUTS": "hitouts", "HITOUT": "hitouts",
 	"RUCK": "hitouts", "RUCKS": "hitouts", "HO": "hitouts",
-	"STAR": "star",
+	"STAR":  "star",
 	"BENCH": "bench", "INTERCHANGE": "bench",
 }
 
@@ -48,20 +48,26 @@ var nicknames = map[string][2]string{
 var stripWords = []string{"Journeyman", "Mountain Goat"}
 
 var (
-	artifactRE   = regexp.MustCompile(`(?i)^(Quote|Edit|Share|Like|Dislike|Pin\s+Topic|TATLTWDNMTS|Bloody\s+Legend|hugs?\s*$|reacted\s+to|\w+\s+reacted\s+to|\w+\s+likes?\s+this\s+post|likes?\s+this\s+post|\d{1,2}:\d{2}\s*(AM|PM))`)
-	memberNumRE  = regexp.MustCompile(`^\d[\d,]{3,}$`)
-	subtotalRE   = regexp.MustCompile(`^\s*\d+\s*$`)
-	sectionRE    = regexp.MustCompile(`(?i)^\s*(?:I/C[–-]\s*)?(GOALS?|KICKS?|HANDBALLS?|HANDBALL|HB|HBS|MARKS?|TACKLES?|HITOUTS?|RUCK[S]?|HO|STAR|BENCH|INTERCHANGE)\b[\s\d=]*$`)
-	icSectionRE  = regexp.MustCompile(`(?i)^\s*I/C[–\-]\s*\w+`)
-	thcScoreRE   = regexp.MustCompile(`(?i)^THC[-–\s]+(\d+)`)
-	cheetahRE    = regexp.MustCompile(`(?i)^CHEETAHS\s+(\d+)`)
-	totalRE      = regexp.MustCompile(`(?i)^TOTAL\s*:\s*(\d+)`)
-	ruiHeaderRE  = regexp.MustCompile(`^R\d+\s+(\d+)$`)
-	bareScoreRE  = regexp.MustCompile(`^(\d{3,})\s*$`)
-	icStarMRE    = regexp.MustCompile(`^\*\s*=\s*(.+)`)
+	artifactRE    = regexp.MustCompile(`(?i)^(Quote|Edit|Share|Like|Dislike|Pin\s+Topic|TATLTWDNMTS|Bloody\s+Legend|hugs?\s*$|reacted\s+to|\w+\s+reacted\s+to|\w+\s+likes?\s+this\s+post|likes?\s+this\s+post|\d{1,2}:\d{2}\s*(AM|PM))`)
+	memberNumRE   = regexp.MustCompile(`^\d[\d,]{3,}$`)
+	subtotalRE    = regexp.MustCompile(`^\s*\d+\s*$`)
+	sectionRE     = regexp.MustCompile(`(?i)^\s*(?:I/C[–-]\s*)?(GOALS?|KICKS?|HANDBALLS?|HANDBALL|HB|HBS|MARKS?|TACKLES?|HITOUTS?|RUCK[S]?|HO|STAR|BENCH|INTERCHANGE)\b[\s\d=]*$`)
+	icSectionRE   = regexp.MustCompile(`(?i)^\s*I/C[–\-]\s*\w+`)
+	thcScoreRE    = regexp.MustCompile(`(?i)^THC[-–\s]+(\d+)`)
+	cheetahRE     = regexp.MustCompile(`(?i)^CHEETAHS\s+(\d+)`)
+	totalRE       = regexp.MustCompile(`(?i)^TOTAL\s*:\s*(\d+)`)
+	ruiHeaderRE   = regexp.MustCompile(`^R\d+\s+(\d+)$`)
+	bareScoreRE   = regexp.MustCompile(`^(\d{3,})\s*$`)
+	icStarMRE     = regexp.MustCompile(`^\*\s*=\s*(.+)`)
 	icStarLabelRE = regexp.MustCompile(`(?i)^Star[-–]\s*(.+)`)
-	benchCodeRE  = regexp.MustCompile(`(?i)^([A-Z]+/[A-Z]+)\s*[-=]\s*(.+)`)
+	benchCodeRE   = regexp.MustCompile(`(?i)^([A-Z]+/[A-Z]+)\s*[-=]\s*(.+)`)
 )
+
+// HTMLToText converts a post's content HTML into newline-separated text.
+func (p *Parser) HTMLToText(html string) string { return PostHTMLToText(html) }
+
+// TeamForAuthor returns the parser format for a forum author, or "" if unknown.
+func (p *Parser) TeamForAuthor(author string) string { return TeamForAuthor(author) }
 
 func (p *Parser) Parse(_ context.Context, teamName, post string) ([]application.ParsedPlayerRow, error) {
 	lines := splitLines(post)
@@ -76,6 +82,13 @@ func (p *Parser) Parse(_ context.Context, teamName, post string) ([]application.
 }
 
 // --- team detection ---
+
+// DetectFormat guesses the parser format from a post's content (or "" if none is
+// recognised), so a team posted by someone other than its usual author can still
+// be attributed from the post itself. Implements application.ForumProcessor.
+func (p *Parser) DetectFormat(post string) string {
+	return detectTeam(splitLines(post))
+}
 
 func detectTeam(lines []string) string {
 	text := strings.Join(lines[:min(5, len(lines))], "\n")
@@ -390,12 +403,12 @@ func parseTHC(line, position string, inIC bool) *application.ParsedPlayerRow {
 }
 
 var (
-	thcDNPStatRE  = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s+DNP[-=]\s*(\d+)[A-Za-z]+`)
-	thcDNPRE      = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s*[-–]?\s*DNP[-=]\s*(\d+)`)
-	thcMultRE     = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s+x(\d+)\s*=\s*(\d+)`)
+	thcDNPStatRE   = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s+DNP[-=]\s*(\d+)[A-Za-z]+`)
+	thcDNPRE       = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s*[-–]?\s*DNP[-=]\s*(\d+)`)
+	thcMultRE      = regexp.MustCompile(`(?i)^(.+?)\s+([A-Z]+)\s+x(\d+)\s*=\s*(\d+)`)
 	thcScoreLineRE = regexp.MustCompile(`^(.+?)\s+([A-Za-z]{2,4})\s*[-=]\s*(\d+)`)
-	thcSpaceRE    = regexp.MustCompile(`^(.+?)\s+([A-Za-z]{2,4})\s+(\d+)\s*$`)
-	thcNoScoreRE  = regexp.MustCompile(`^(.+?)\s+([A-Za-z]{2,4})\s*$`)
+	thcSpaceRE     = regexp.MustCompile(`^(.+?)\s+([A-Za-z]{2,4})\s+(\d+)\s*$`)
+	thcNoScoreRE   = regexp.MustCompile(`^(.+?)\s+([A-Za-z]{2,4})\s*$`)
 )
 
 func thcNameScore(s string) (name, club string, score *int, notes string) {

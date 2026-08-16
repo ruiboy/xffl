@@ -65,6 +65,8 @@ type AFLPlayer struct {
 	ID                 string           `json:"id"`
 	Name               string           `json:"name"`
 	LatestPlayerSeason *AFLPlayerSeason `json:"latestPlayerSeason,omitempty"`
+	// Every season this player has data for, most recent first.
+	PlayerSeasons []*AFLPlayerSeason `json:"playerSeasons"`
 }
 
 func (AFLPlayer) IsEntity() {}
