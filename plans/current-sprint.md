@@ -1,29 +1,14 @@
-# Current Sprint — Phase 25: FFL Scoring & Historical Import
+# Current Sprint — Phase 26: FFL Historical Import (2006–2025)
 
-**Sprint goal:** Make FFL scoring pluggable per season, and build the tooling to backfill historical FFL teams from forum data with era-correct scoring. Running that import across 2006–2025 is Phase 26.
+**Sprint goal:** Run the Phase 25 importers across the seasons, backwards from 2025, stopping wherever the source data runs out. Not pure data entry — each season may need importer changes as new formats appear.
 
-See `plans/ideas.md` for full item descriptions where relevant.
+Per season, repeated: season + clubs → squads → minor-round fixtures → teams round by round, applying trades between rounds → verify ladder and per-round scores → finals → verify → close. See `plans/ffl-historical-import.md`.
 
 ---
 
 ## Tasks
 
-- [x] Pluggable FFL scoring formula — per-season `Rules` value object (parameterized scoring + team structure), `ffl.season.rules_id` column, generic scoring engine; refactor-to-parity first, then define historical eras. See [ffl-scoring-rules.md](ffl-scoring-rules.md)
-- [ ] FFL historical import **tooling** — the importers, not the import. Running them across 2006–2025 is Phase 26. Scores recomputed via per-season `Rules`; every score found (forum-posted or spreadsheet) is a reference kept in notes, never `drv_score`. See [ffl-historical-import.md](ffl-historical-import.md)
-  - [x] Slice 0 — nail down scoring eras (confirmed history in `rules_eras.go`; season→era tagging folded into slice 2, since seasons are created there)
-  - [x] Slice 1 — capture + inspect (userscript → ingest → in-session parse; DataOps "Forum Capture" tab; validated end-to-end on real 2025 data)
-  - [x] Slice 2 — season + fixtures (manual builders, no forum parsing): write-side persistence (2a); season creation with year→`rules_id` (2b); fixture builder — round-robin generator + manual rounds/fixtures (2c). Byes, superbye and finals added as-we-go. **UI needs `just supergraph-compose` to expose the new mutations.**
-  - [x] Slice 3 — squad importer: squads-thread parser + bulk resolution-review UI, plus a raw-text passthrough in the capture preview (`ForumCaptureBuffer.Ingest` currently discards raw HTML, so an unparseable thread shows nothing). Trades stay manual on the existing squad page
-    - Backend done + tested: parser (`forum/squads.go`); `ParseSquadThread`/`ParseSquadThreadForSeason`/`ImportSquad` (`dataops/squads.go`); raw-text passthrough (`PreviewedPost.Text`); candidate sourcing via new AFL `ListSeasonPlayers` twirp endpoint + FFL `LookupSeasonPlayers`.
-    - GraphQL + UI done: `parseFFLSquadThread`/`importFFLSquad` mutations (`dataops.graphqls` + resolvers, supergraph recomposed); "Import Squads" DataOps tab — paste thread → per-club review with auto club-assignment, cost, confidence, per-member "Fix" via `SquadMemberLinkModal`, per-squad import. Resolver parse-path test in `squad_import_test.go`.
-  - [x] Slice 4 — spreadsheet fixture importer (pasted season sheet → rounds, fixtures, reference club scores to `notes`). Fixtures are upstream of teams in the per-season workflow (step 3 before step 4), so it lands before the submitted-teams importer
-    - Backend done + tested (unit + integration): parser (`spreadsheet/fixtures.go`); `ImportFixtures` (`dataops/fixtures_import.go`) builds rounds/fixtures + inferred byes via `SaveFixtures` and writes reference scores to `club_match.notes`.
-    - GraphQL + UI done: `parseFFLFixtureSheet`/`importFFLFixtures` mutations (parser now injected into `Builder`; `ParseFixtureSheet` entrypoint; supergraph recomposed); "Import FFL Fixtures" DataOps tab — paste sheet → per-round review with editable name, AFL-round mapping (auto by round number), round-type dropdown (MINOR/SEMI_FINAL/GRAND_FINAL) with a "probably a final" highlight on non-numbered rounds, include toggle, per-fixture club-resolution hints, and unresolved-club feedback on import. Finals skip bye creation (`planFixtureImport`); superbyes still via the manual builder. Resolver parse-path test in `fixture_import_test.go`.
-    - Club-name aliases: `dataops/clubalias.go` (`canonicalClub`) + `data-ops/utils/clubAliases.ts` (frontend) fold spellings like "THC" / "The Howling Cows" onto one identity; fixture club resolution canonicalises both sides. Sibling importers in `dataops` can reuse it.
-  - [x] Slice 5 — submitted-teams importer built as a guided flow **inside the Forum Capture tab** (`ForumRoundImport.vue`), not a separate tab. Delta *reporting* is deferred to a later, separate process; the per-team delta shows inline at import.
-    - **Notes merge (done):** `domain.UpsertNoteToken`/`NoteTokenValue` — `posted:` (forum) and `spreadsheet:` (fixtures) now coexist in `club_match.notes`; both writers (`SetTeam`, `writeReferenceScores`) read-modify-write instead of clobbering. `SetTeamParams.ClubMatchNotes` → `ClubMatchPostedScore *int`.
-    - **Content attribution (done):** forum parser already auto-detects format from content; exposed via `ForumProcessor.DetectFormat`, and `ForumCaptureBuffer.Ingest` now falls back to it when the author is unknown (so a team posted on someone's behalf still parses). `FFLPreviewedPost.text` exposed for re-resolution.
-    - **The flow (done):** capture multiple pages of a thread → pick season + round → **Build teams** groups posts by attributed club (via `clubalias`), classifies team vs banter and scored vs not, and keeps the **latest scored post** per club. Unknown clubs show the author + a club dropdown. Per club: reuses `parseFFLTeamSubmission`/`confirmFFLTeamSubmission` for resolve+fix+import, then shows **derived vs forum vs fixtures** inline (just noted, no action). A **round-page link** (new tab) appears once every club is imported.
-    - Score-delta *reporting* (season-wide) is a separate, much-later process — deliberately not a permanent surface now.
-- [ ] Deletion semantics fast-follow (ADR-020 step 1) — change `ffl.player_match.club_match_id` from `ON DELETE CASCADE` to `RESTRICT`, so a fixture delete that slips past the `hasTeams` guard fails loudly instead of silently destroying submitted teams. Remaining steps (`deleted_at` audit, partial unique indexes, removing the other 23 cascades) are a later slice. See [ADR-020](../ai/decisions/adr-020-deletion-semantics.md)
-- [x] Move Admin > Calculate tab to Data Ops > Calculate
+- [ ] Progress table in the sprint doc, one row per season, cross-checked against committed data with SQL — no dashboard is built, the need ends with this phase
+- [ ] 2025 first, proving the whole chain end to end before scaling
+- [ ] Importer fixes as new squad/team/spreadsheet formats appear
+- [ ] Reconciliation: per-match evaluated-vs-reference deltas, ladder at end of minor round, finals results

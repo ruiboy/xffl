@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS ffl.player_match (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    club_match_id INTEGER NOT NULL REFERENCES ffl.club_match(id) ON DELETE CASCADE,
+    club_match_id INTEGER NOT NULL REFERENCES ffl.club_match(id),
     player_season_id INTEGER NOT NULL REFERENCES ffl.player_season(id) ON DELETE CASCADE,
     afl_player_match_id INTEGER,
     status VARCHAR(50),
